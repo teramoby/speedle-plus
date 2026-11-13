@@ -54,19 +54,14 @@ func TestSyncAppliesPagedChanges(t *testing.T) {
 		t.Fatalf("initial revision = %d", first.Revision)
 	}
 
-	service.publish(t, fixture.signer,
-		Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000201",
-			Name: stringPointer("read-books"), SPDL: stringPointer(`grant read on "/books/*"`)})
-	service.publish(t, fixture.signer,
-		Change{Op: "upsert", Kind: "role", ID: "01HF7YAT000000000000000301",
-			Name: stringPointer("reader"), SPDL: stringPointer(`grant role "reader" to read`)})
-	service.publish(t, fixture.signer,
-		Change{Op: "upsert", Kind: "service", ID: service.ID, Name: stringPointer("books-v2")})
-	service.publish(t, fixture.signer,
-		Change{Op: "delete", Kind: "authz", ID: "01HF7YAT000000000000000201"})
-	service.publish(t, fixture.signer,
-		Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000202",
-			Name: stringPointer("read-orders"), SPDL: stringPointer(`grant read on "/orders/*"`)})
+	service.publish(t, Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000201",
+		Name: stringPointer("read-books"), SPDL: stringPointer(`grant read on "/books/*"`)})
+	service.publish(t, Change{Op: "upsert", Kind: "role", ID: "01HF7YAT000000000000000301",
+		Name: stringPointer("reader"), SPDL: stringPointer(`grant role "reader" to read`)})
+	service.publish(t, Change{Op: "upsert", Kind: "service", ID: service.ID, Name: stringPointer("books-v2")})
+	service.publish(t, Change{Op: "delete", Kind: "authz", ID: "01HF7YAT000000000000000201"})
+	service.publish(t, Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000202",
+		Name: stringPointer("read-orders"), SPDL: stringPointer(`grant read on "/orders/*"`)})
 
 	state := syncFixtureService(t, syncer, "books-v2")
 	if state.Revision != service.Revision || state.Revision != 6 {
@@ -111,10 +106,9 @@ func TestSyncAppliesPagedChanges(t *testing.T) {
 func TestSyncSnapshotBehindHeadCatchesUpImmediately(t *testing.T) {
 	service := newFixtureService(testServiceID1, "books")
 	fixture := newFixture(t, service)
-	initial := signedFixtureSnapshot(service, fixture.signer)
-	service.publish(t, fixture.signer,
-		Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000201",
-			Name: stringPointer("read-books"), SPDL: stringPointer("grant read")})
+	initial := fixtureSnapshot(service)
+	service.publish(t, Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000201",
+		Name: stringPointer("read-books"), SPDL: stringPointer("grant read")})
 	fixture.source.configure(func(source *fixtureSource) { source.snapshotOverride = initial })
 	syncer := fixture.newSyncer("", nil)
 
@@ -149,21 +143,17 @@ func TestSyncSnapshotIdentityMustMatchDiscovery(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			service := newFixtureService(testServiceID1, "books")
 			fixture := newFixture(t, service)
-			response := signedFixtureSnapshot(service, fixture.signer)
+			response := fixtureSnapshot(service)
 			response.SourceID = testCase.sourceID
 			response.Epoch = testCase.epoch
-			// The mismatched identity is validly signed, so only the requested
-			// service binding can reject it.
-			response.Signature = fixture.signer.sign(SnapshotSignedBytes(
-				response.SourceID, response.Epoch, response.Revision, response.StateHash, response.CommitHash))
 			fixture.source.configure(func(source *fixtureSource) { source.snapshotOverride = response })
 			syncer := fixture.newSyncer("", nil)
 			discovery, err := syncer.Services(context.Background())
 			if err != nil {
 				t.Fatalf("Services: %v", err)
 			}
-			if _, err := syncer.Sync(context.Background(), discovery.Services[0]); !errors.Is(err, ErrProtocol) {
-				t.Fatalf("Sync error = %v, want ErrProtocol", err)
+			if _, err := syncer.Sync(context.Background(), discovery.Services[0]); !errors.Is(err, ErrIntegrity) {
+				t.Fatalf("Sync error = %v, want ErrIntegrity", err)
 			}
 			if _, found := syncer.State(service.ID); found {
 				t.Fatal("a snapshot with the wrong identity was stored")
@@ -178,33 +168,11 @@ func TestSyncRevisionGapFallsBackToSnapshot(t *testing.T) {
 	syncer := fixture.newSyncer("", nil)
 	syncFixtureService(t, syncer, "books")
 
-	service.publish(t, fixture.signer,
-		Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000201",
-			Name: stringPointer("read-books"), SPDL: stringPointer("grant read")})
-	service.publish(t, fixture.signer,
-		Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000202",
-			Name: stringPointer("write-books"), SPDL: stringPointer("grant write")})
+	service.publish(t, Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000201",
+		Name: stringPointer("read-books"), SPDL: stringPointer("grant read")})
+	service.publish(t, Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000202",
+		Name: stringPointer("write-books"), SPDL: stringPointer("grant write")})
 	fixture.source.configure(func(source *fixtureSource) { source.dropCommitRevision = 2 })
-
-	state := syncFixtureService(t, syncer, "books")
-	if state.Revision != service.Revision || state.StateHash != service.StateHash {
-		t.Fatalf("state did not recover through a snapshot")
-	}
-	if count := fixture.requestCount(testServiceID1 + "/snapshot"); count != 2 {
-		t.Errorf("snapshots = %d, want 2", count)
-	}
-}
-
-func TestSyncBadCommitSignatureFallsBackToSnapshot(t *testing.T) {
-	service := newFixtureService(testServiceID1, "books")
-	fixture := newFixture(t, service)
-	syncer := fixture.newSyncer("", nil)
-	syncFixtureService(t, syncer, "books")
-
-	service.publish(t, fixture.signer,
-		Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000201",
-			Name: stringPointer("read-books"), SPDL: stringPointer("grant read")})
-	fixture.source.configure(func(source *fixtureSource) { source.corruptCommitSignature = true })
 
 	state := syncFixtureService(t, syncer, "books")
 	if state.Revision != service.Revision || state.StateHash != service.StateHash {
@@ -221,9 +189,8 @@ func TestSyncBadHeadStateHashFallsBackToSnapshot(t *testing.T) {
 	syncer := fixture.newSyncer("", nil)
 	syncFixtureService(t, syncer, "books")
 
-	service.publish(t, fixture.signer,
-		Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000201",
-			Name: stringPointer("read-books"), SPDL: stringPointer("grant read")})
+	service.publish(t, Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000201",
+		Name: stringPointer("read-books"), SPDL: stringPointer("grant read")})
 	fixture.source.configure(func(source *fixtureSource) { source.corruptHeadStateHash = true })
 
 	state := syncFixtureService(t, syncer, "books")
@@ -272,9 +239,8 @@ func TestSyncSnapshotRequiredReloadsSnapshot(t *testing.T) {
 			syncer := fixture.newSyncer("", nil)
 			syncFixtureService(t, syncer, "books")
 
-			service.publish(t, fixture.signer,
-				Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000201",
-					Name: stringPointer("read-books"), SPDL: stringPointer("grant read")})
+			service.publish(t, Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000201",
+				Name: stringPointer("read-books"), SPDL: stringPointer("grant read")})
 			fixture.source.configure(func(source *fixtureSource) { source.changesReason = reason })
 
 			state := syncFixtureService(t, syncer, "books")
@@ -294,8 +260,7 @@ func TestSyncSourceGoneForgetsTheService(t *testing.T) {
 	syncer := fixture.newSyncer("", nil)
 	syncFixtureService(t, syncer, "books")
 
-	service.publish(t, fixture.signer,
-		Change{Op: "delete", Kind: "authz", ID: "01HF7YAT000000000000000201"})
+	service.publish(t, Change{Op: "delete", Kind: "authz", ID: "01HF7YAT000000000000000201"})
 	fixture.source.configure(func(source *fixtureSource) { source.changesReason = "source_gone" })
 
 	services, err := syncer.Services(context.Background())
@@ -322,10 +287,8 @@ func TestSyncSnapshotCatchUpSourceGoneRemovesCachedCopy(t *testing.T) {
 	// head, while its snapshot still anchors the first revision of that epoch
 	// and the change log reports the source gone.
 	newEpoch := testServiceID2
-	stale := signedFixtureSnapshot(service, fixture.signer)
+	stale := fixtureSnapshot(service)
 	stale.Epoch = newEpoch
-	stale.Signature = fixture.signer.sign(SnapshotSignedBytes(
-		stale.SourceID, stale.Epoch, stale.Revision, stale.StateHash, stale.CommitHash))
 	fixture.source.configure(func(source *fixtureSource) {
 		source.snapshotOverride = stale
 		source.changesReason = "source_gone"
@@ -349,7 +312,6 @@ func TestSyncSnapshotIntegrityFailure(t *testing.T) {
 	fixture := newFixture(t, newFixtureService(testServiceID1, "books"))
 	fixture.source.configure(func(source *fixtureSource) {
 		source.corruptSnapshotHash = true
-		source.corruptSnapshotSignature = true
 	})
 	syncer := fixture.newSyncer("", nil)
 

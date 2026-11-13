@@ -36,8 +36,12 @@ type wsOutcome struct {
 func (c *Channel) runWebSocket(ctx context.Context) wsOutcome {
 	c.setCurrent(TransportWebSocket)
 
+	header, err := c.requestHeaders()
+	if err != nil {
+		return wsOutcome{err: &terminalError{err: err}}
+	}
 	dialCtx, cancel := context.WithTimeout(ctx, c.client.requestTimeout)
-	conn, response, err := c.dialer.DialContext(dialCtx, c.channelURL(), c.requestHeaders())
+	conn, response, err := c.dialer.DialContext(dialCtx, c.channelURL(), header)
 	cancel()
 	if err != nil {
 		if response != nil {
@@ -74,7 +78,6 @@ func (c *Channel) runWebSocket(ctx context.Context) wsOutcome {
 	stopOnCancel := context.AfterFunc(ctx, func() { _ = conn.Close() })
 	defer stopOnCancel()
 
-	conn.SetReadLimit(maxChannelFrameBytes)
 	var ackedAt time.Time
 	// The first ack is bounded by an absolute deadline. Keepalive traffic must
 	// not keep a connection that never gets an ack alive, or auto mode could
@@ -125,6 +128,8 @@ readLoop:
 		if err != nil {
 			if ctxErr := ctx.Err(); ctxErr != nil {
 				outcome.err = ctxErr
+			} else if websocket.IsCloseError(err, websocket.CloseMessageTooBig) {
+				outcome.err = c.frameRejected()
 			} else {
 				outcome.err = fmt.Errorf("adsync: channel read: %w", err)
 				var netErr net.Error
@@ -253,9 +258,7 @@ func (c *Channel) writeChannelJSON(conn *websocket.Conn, value any) error {
 	if err != nil {
 		return fmt.Errorf("adsync: encode channel frame: %w", err)
 	}
-	if len(payload) > maxChannelFrameBytes {
-		return fmt.Errorf("%w: channel frame exceeds %d bytes", ErrProtocol, maxChannelFrameBytes)
-	}
+	c.sentFrameBytes.Store(int64(len(payload)))
 	_ = conn.SetWriteDeadline(time.Now().Add(c.writeTimeout()))
 	if err := conn.WriteMessage(websocket.TextMessage, payload); err != nil {
 		return fmt.Errorf("adsync: write channel frame: %w", err)

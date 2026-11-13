@@ -95,6 +95,19 @@ func (g *Gate) Route(serviceName string) Route {
 	if status.Service.State == adsync.SyncStateRemoved {
 		return Route{Kind: RouteLocal}
 	}
+	// A service that failed reconciliation is denied, never
+	// forwarded and never evaluated from its copy.
+	if status.Service.Reason == adsync.SyncReasonIntegrity {
+		return Route{Kind: RouteUnavailable, Reason: adsync.ReasonIntegrityFailure}
+	}
+	// A stale instance no longer trusts even a complete copy and
+	// forwards every request until an ack arrives again.
+	if instance.Liveness == adsync.LivenessStale && g.staleIsUntrusted() {
+		if g.source.FallbackAvailable() {
+			return Route{Kind: RouteFallback}
+		}
+		return Route{Kind: RouteUnavailable, Reason: adsync.ReasonFallbackUnavailable}
+	}
 	switch status.Service.State {
 	case adsync.SyncStateSyncing:
 		if g.source.FallbackAvailable() {
@@ -106,7 +119,15 @@ func (g *Gate) Route(serviceName string) Route {
 	}
 }
 
-// Forward sends one authorization request to Cloud. The caller already
+// staleIsUntrusted reports whether a stale instance must not evaluate locally.
+// The policy-source store says so; whether the request is then forwarded or
+// denied is decided separately by FallbackAvailable.
+func (g *Gate) staleIsUntrusted() bool {
+	stale, ok := g.source.(interface{ StaleIsUntrusted() bool })
+	return ok && stale.StaleIsUntrusted()
+}
+
+// Forward sends one authorization request to the upstream. The caller already
 // decided that the service is syncing.
 func (g *Gate) Forward(ctx context.Context, operation adsync.FallbackOperation, body []byte) (*adsync.FallbackResponse, error) {
 	if !g.Enabled() {
@@ -122,7 +143,7 @@ func FallbackAuditFields(operation adsync.FallbackOperation, serviceName string)
 	return map[string]interface{}{
 		"operation":      string(operation),
 		"serviceName":    serviceName,
-		"decisionSource": svcs.DecisionSourceCloudFallback,
+		"decisionSource": svcs.DecisionSourceUpstream,
 	}
 }
 
@@ -254,7 +275,7 @@ func (g *Gate) Ready() Readiness {
 			continue
 		}
 		usable := service.State == adsync.SyncStateInSync ||
-			(service.State == adsync.SyncStateSyncing && fallback)
+			(service.State == adsync.SyncStateSyncing && fallback && service.Reason != adsync.SyncReasonIntegrity)
 		if !usable {
 			ready = false
 		}

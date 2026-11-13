@@ -156,7 +156,10 @@ func TestDiscoveryDataPullsDoNotConfirmLiveness(t *testing.T) {
 	}
 }
 
-func TestFinalIntegrityFailureStopsInstance(t *testing.T) {
+// TestFinalIntegrityFailureFailsOnlyTheService checks that a copy that still
+// does not match the head after a snapshot reload fails that service closed
+// while the instance keeps serving.
+func TestFinalIntegrityFailureFailsOnlyTheService(t *testing.T) {
 	fixture := newTestFixture(t, booksService())
 	store := fixture.open(nil)
 	fixture.source.publishService("books", func(snapshot *adsync.Snapshot) {
@@ -166,12 +169,15 @@ func TestFinalIntegrityFailureStopsInstance(t *testing.T) {
 	if err := store.Sync(nil); !errors.Is(err, adsync.ErrIntegrity) {
 		t.Fatalf("Sync error = %v, want final ErrIntegrity", err)
 	}
-	instance := store.Instance()
-	if instance.Liveness != adsync.LivenessStopped || instance.Reason != adsync.ReasonIntegrityFailure {
+	if instance := store.Instance(); instance.Liveness == adsync.LivenessStopped {
 		t.Fatalf("instance after final integrity failure = %+v", instance)
 	}
-	if err := store.CheckHealth(context.Background()); err == nil || !strings.Contains(err.Error(), string(adsync.ReasonIntegrityFailure)) {
-		t.Fatalf("health after integrity failure = %v", err)
+	status, _ := store.Status("books")
+	if status.Service.State != adsync.SyncStateSyncing || status.Service.Reason != adsync.SyncReasonIntegrity {
+		t.Fatalf("service after final integrity failure = %+v", status.Service)
+	}
+	if err := store.CheckHealth(context.Background()); err != nil {
+		t.Fatalf("health after a per-service integrity failure = %v", err)
 	}
 }
 
@@ -190,11 +196,81 @@ func TestRevokedCredentialStopsTheInstance(t *testing.T) {
 
 	// Revocation is terminal: restoring the credential in the source does not
 	// revive a running process.
-	fixture.source.mutate(func(source *testSource) { source.credential = testCredential })
+	fixture.source.mutate(func(source *testSource) { source.credential = testAPIKey })
 	if err := store.Sync(nil); err != nil {
 		t.Fatal(err)
 	}
 	if err := store.CheckHealth(context.Background()); err == nil {
 		t.Fatal("a terminal stop was cleared by a later successful sync")
+	}
+}
+
+// TestIntegrityFailureRetriesWithBackoff checks that a service whose copy
+// keeps failing integrity at the same head is fetched again after 1 minute,
+// then 2, doubling up to 1 hour, and that a new head resets the backoff.
+func TestIntegrityFailureRetriesWithBackoff(t *testing.T) {
+	clock := newTestClock()
+	fixture := newTestFixture(t, booksService())
+	store := fixture.open(func(options *Options) { options.Clock = clock })
+	snapshots := func() int {
+		return fixture.source.requestsForSuffix("/services/" + testServiceID1 + "/snapshot")
+	}
+	pass := func(wantFetch bool) {
+		t.Helper()
+		before := snapshots()
+		_ = store.Sync(nil)
+		if err := store.Confirm(); err != nil {
+			t.Fatal(err)
+		}
+		if fetched := snapshots() > before; fetched != wantFetch {
+			t.Fatalf("fetched = %v, want %v (at %s)", fetched, wantFetch, clock.Now())
+		}
+		if status, _ := store.Status("books"); status.Service.Reason != adsync.SyncReasonIntegrity {
+			t.Fatalf("service = %+v, want an integrity failure", status.Service)
+		}
+	}
+
+	fixture.source.publishService("books", func(snapshot *adsync.Snapshot) {
+		snapshot.Policies = []adsync.Policy{policy("p-new", "new", "grant user carol read books")}
+	})
+	fixture.source.mutate(func(source *testSource) { source.corruptSnapshotHash = true })
+	pass(true)
+	pass(false)
+	clock.Advance(59 * time.Second)
+	pass(false)
+	clock.Advance(2 * time.Second)
+	pass(true) // 1 minute elapsed; the next delay is 2 minutes
+	clock.Advance(61 * time.Second)
+	pass(false)
+	clock.Advance(60 * time.Second)
+	pass(true)
+	if retry := store.integrity[testServiceID1]; retry.delay != 4*time.Minute {
+		t.Fatalf("delay after three failures = %s", retry.delay)
+	}
+	head := store.integrity[testServiceID1].head
+	for range 10 {
+		store.recordIntegrityFailure(head, store.integrity[testServiceID1].attempt)
+	}
+	if retry := store.integrity[testServiceID1]; retry.delay != time.Hour {
+		t.Fatalf("delay is not capped: %s", retry.delay)
+	}
+
+	// A new head is fetched at once and restarts the backoff at 1 minute.
+	fixture.source.publishService("books", func(snapshot *adsync.Snapshot) {
+		snapshot.Policies = []adsync.Policy{policy("p-newer", "newer", "grant user dave read books")}
+	})
+	pass(true)
+	if retry := store.integrity[testServiceID1]; retry.delay != time.Minute {
+		t.Fatalf("delay after a new head = %s", retry.delay)
+	}
+
+	// A resync command fetches now; a verified copy clears the backoff.
+	fixture.source.mutate(func(source *testSource) { source.corruptSnapshotHash = false })
+	store.clearIntegrityRetry(testServiceID1)
+	if err := store.Sync(nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, waiting := store.integrity[testServiceID1]; waiting {
+		t.Fatal("a verified copy kept its backoff")
 	}
 }

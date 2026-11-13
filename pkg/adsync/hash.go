@@ -13,13 +13,6 @@ import (
 )
 
 const (
-	// signatureDomain separates policy-source signatures from any other use of
-	// the same Ed25519 key.
-	signatureDomain = "speedle-policy-v1"
-	// Signature payload tags.
-	signatureKindSnapshot = 1
-	signatureKindCommit   = 2
-
 	// Wire names of the change operations and kinds.
 	changeOpUpsertName    = "upsert"
 	changeOpDeleteName    = "delete"
@@ -222,29 +215,4 @@ func changeKindCode(kind string) (byte, error) {
 	default:
 		return 0, fmt.Errorf("%w: unknown change kind %q", ErrProtocol, kind)
 	}
-}
-
-// SnapshotSignedBytes returns the Ed25519 message for a snapshot signature.
-func SnapshotSignedBytes(sourceID, epoch string, revision uint64, stateHash, commitHash Hash) []byte {
-	var writer canonicalWriter
-	writer.bytes([]byte(signatureDomain))
-	writer.uint8(signatureKindSnapshot)
-	writer.string(sourceID)
-	writer.string(epoch)
-	writer.uint64(revision)
-	writer.bytes(stateHash[:])
-	writer.bytes(commitHash[:])
-	return writer.buffer.Bytes()
-}
-
-// CommitSignedBytes returns the Ed25519 message for a commit signature.
-func CommitSignedBytes(sourceID, epoch string, revision uint64, hash Hash) []byte {
-	var writer canonicalWriter
-	writer.bytes([]byte(signatureDomain))
-	writer.uint8(signatureKindCommit)
-	writer.string(sourceID)
-	writer.string(epoch)
-	writer.uint64(revision)
-	writer.bytes(hash[:])
-	return writer.buffer.Bytes()
 }

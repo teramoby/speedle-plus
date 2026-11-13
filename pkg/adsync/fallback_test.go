@@ -20,12 +20,10 @@ func newFallbackClient(t *testing.T, handler http.HandlerFunc) (*Client, *httpte
 	server := httptest.NewTLSServer(handler)
 	t.Cleanup(server.Close)
 	client, err := NewClient(Config{
-		BaseURL:            server.URL,
-		Credential:         testCredential,
-		FallbackBaseURL:    server.URL,
-		FallbackCredential: testCredential,
-		PublicKeys:         goldenPublicKeys(t, loadGolden(t)),
-		HTTPClient:         server.Client(),
+		BaseURL:    server.URL,
+		APIKey:     testAPIKey,
+		InstanceID: testInstanceID,
+		HTTPClient: server.Client(),
 	})
 	if err != nil {
 		t.Fatalf("create client: %v", err)
@@ -74,7 +72,7 @@ func TestForwardFallbackPassesTheCloudResponseThrough(t *testing.T) {
 	if gotMethod != http.MethodPost || gotPath != AuthzCheckAPIPrefix+"is-allowed" {
 		t.Fatalf("request = %s %s", gotMethod, gotPath)
 	}
-	if gotAuth != "Bearer "+testCredential {
+	if gotAuth != "Bearer "+testAPIKey {
 		t.Fatalf("Authorization = %q", gotAuth)
 	}
 	if gotType != "application/json" {
@@ -141,12 +139,10 @@ func dialFailure(*http.Request) (*http.Response, error) {
 func scriptedClient(t *testing.T, transport *scriptedTransport) *Client {
 	t.Helper()
 	client, err := NewClient(Config{
-		BaseURL:            "https://policy.example",
-		Credential:         testCredential,
-		FallbackBaseURL:    "https://cloud.example",
-		FallbackCredential: testCredential,
-		PublicKeys:         goldenPublicKeys(t, loadGolden(t)),
-		HTTPClient:         &http.Client{Transport: transport},
+		BaseURL:    "https://cloud.example",
+		APIKey:     testAPIKey,
+		InstanceID: testInstanceID,
+		HTTPClient: &http.Client{Transport: transport},
 	})
 	if err != nil {
 		t.Fatalf("create client: %v", err)
@@ -271,66 +267,6 @@ func TestForwardFallbackClassifiesCloudErrors(t *testing.T) {
 	}
 }
 
-func TestFallbackUsesOnlyTheConfiguredCloudDestination(t *testing.T) {
-	var mu sync.Mutex
-	proxyCalls := 0
-	cloudCredential := "adsi_" + testInstanceID + "_" + strings.Repeat("x", 43)
-	cloud := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		mu.Lock()
-		defer mu.Unlock()
-		if r.Header.Get("Authorization") != "Bearer "+cloudCredential {
-			t.Errorf("Cloud authorization = %q", r.Header.Get("Authorization"))
-		}
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = io.WriteString(w, `{"allowed":true,"reason":0}`)
-	}))
-	defer cloud.Close()
-	proxy := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		mu.Lock()
-		proxyCalls++
-		mu.Unlock()
-		w.WriteHeader(http.StatusInternalServerError)
-	}))
-	defer proxy.Close()
-
-	client, err := NewClient(Config{
-		BaseURL:            proxy.URL,
-		Credential:         testCredential,
-		FallbackBaseURL:    cloud.URL,
-		FallbackCredential: cloudCredential,
-		FallbackHTTPClient: cloud.Client(),
-		PublicKeys:         goldenPublicKeys(t, loadGolden(t)),
-		HTTPClient:         proxy.Client(),
-	})
-	if err != nil {
-		t.Fatalf("NewClient: %v", err)
-	}
-	if _, err := client.ForwardFallback(context.Background(), FallbackIsAllowed, []byte(`{"serviceName":"books"}`)); err != nil {
-		t.Fatalf("ForwardFallback: %v", err)
-	}
-	mu.Lock()
-	if proxyCalls != 0 {
-		t.Fatalf("the upstream proxy received %d fallback requests", proxyCalls)
-	}
-	mu.Unlock()
-
-	withoutCloud, err := NewClient(Config{
-		BaseURL:    proxy.URL,
-		Credential: testCredential,
-		PublicKeys: goldenPublicKeys(t, loadGolden(t)),
-		HTTPClient: proxy.Client(),
-	})
-	if err != nil {
-		t.Fatalf("NewClient without Cloud: %v", err)
-	}
-	if withoutCloud.FallbackAvailable() {
-		t.Fatal("a proxy credential implicitly enabled Cloud fallback")
-	}
-	if _, err := withoutCloud.ForwardFallback(context.Background(), FallbackIsAllowed, []byte(`{}`)); !errors.Is(err, ErrFallbackUnavailable) {
-		t.Fatalf("fallback without Cloud configuration = %v", err)
-	}
-}
-
 func TestFallbackRejectsRedirectsOnACustomClient(t *testing.T) {
 	var mu sync.Mutex
 	var redirected bool
@@ -348,18 +284,15 @@ func TestFallbackRejectsRedirectsOnACustomClient(t *testing.T) {
 	}))
 	defer cloud.Close()
 
-	// A caller-supplied fallback client that would follow a redirect by
-	// default must not move the instance credential to another destination.
+	// A caller-supplied client that would follow a redirect by default must
+	// not move the API key to another destination.
 	custom := cloud.Client()
 	custom.CheckRedirect = nil
 	client, err := NewClient(Config{
-		BaseURL:            cloud.URL,
-		Credential:         testCredential,
-		FallbackBaseURL:    cloud.URL,
-		FallbackCredential: testCredential,
-		FallbackHTTPClient: custom,
-		PublicKeys:         goldenPublicKeys(t, loadGolden(t)),
-		HTTPClient:         cloud.Client(),
+		BaseURL:    cloud.URL,
+		APIKey:     testAPIKey,
+		InstanceID: testInstanceID,
+		HTTPClient: custom,
 	})
 	if err != nil {
 		t.Fatalf("NewClient: %v", err)
@@ -374,7 +307,7 @@ func TestFallbackRejectsRedirectsOnACustomClient(t *testing.T) {
 		t.Fatalf("the redirect target was reached with Authorization %q", redirectedAuth)
 	}
 	if custom.CheckRedirect != nil {
-		t.Fatal("the caller-owned fallback client was mutated")
+		t.Fatal("the caller-owned client was mutated")
 	}
 }
 
@@ -441,5 +374,14 @@ func TestFallbackAvailabilityFollowsOutcomes(t *testing.T) {
 	_, _ = client.ForwardFallback(context.Background(), FallbackIsAllowed, []byte("{}"))
 	if !client.FallbackAvailable() {
 		t.Fatal("a quota refusal is not a transport failure")
+	}
+}
+
+func TestForwardFallbackAcceptsResponseBeyondOldSizeLimit(t *testing.T) {
+	body := strings.Repeat("x", 6<<20)
+	client, _ := newFallbackClient(t, func(w http.ResponseWriter, r *http.Request) { _, _ = io.WriteString(w, body) })
+	response, err := client.ForwardFallback(context.Background(), FallbackAllGrantedPermissions, []byte(`{}`))
+	if err != nil || response == nil || string(response.Body) != body {
+		t.Fatalf("large fallback response failed: %v", err)
 	}
 }

@@ -3,6 +3,7 @@
 package policysource
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,97 +16,37 @@ import (
 )
 
 func TestBuilderRejectsInvalidConfiguration(t *testing.T) {
-	fixture := newTestFixture(t, booksService())
-	valid := fixture.storeProperties()
-
-	missing := func(key string) map[string]interface{} {
-		properties := cloneProperties(valid)
-		delete(properties, key)
-		return properties
+	valid := map[string]interface{}{UpstreamURLKey: "https://source.example"}
+	cases := map[string]interface{}{
+		UpstreamURLKey: 42, APIKeyKey: []string{"secret"}, RequestTimeoutKey: "soon",
+		HeartbeatIntervalKey: "30", StopAfterKey: "-1s", FallbackWhileSyncingKey: "perhaps",
+		TransportKey: "sse", ServeDownstreamKey: true, MaxDownstreamKey: "many", MaxConnectionsKey: 1.5,
+		CacheDirKey: 42, CAFileKey: false,
 	}
-	with := func(key string, value interface{}) map[string]interface{} {
-		properties := cloneProperties(valid)
-		properties[key] = value
-		return properties
-	}
-
-	badKeys := filepath.Join(t.TempDir(), "bad-keys.json")
-	if err := os.WriteFile(badKeys, []byte(`{"keys":`), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	readableCredential := filepath.Join(t.TempDir(), "credential")
-	if err := os.WriteFile(readableCredential, []byte(testCredential), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	notAFile := filepath.Join(t.TempDir(), "directory")
-	if err := os.Mkdir(notAFile, 0o700); err != nil {
-		t.Fatal(err)
-	}
-
-	cases := map[string]map[string]interface{}{
-		"missing url":                     missing(PolicySourceURLKey),
-		"empty url":                       with(PolicySourceURLKey, ""),
-		"url is not a string":             with(PolicySourceURLKey, 42),
-		"url is not https":                with(PolicySourceURLKey, "http://policy.example"),
-		"missing credential":              missing(CredentialFileKey),
-		"credential file missing":         with(CredentialFileKey, filepath.Join(t.TempDir(), "absent")),
-		"credential file is public":       with(CredentialFileKey, readableCredential),
-		"credential file is a dir":        with(CredentialFileKey, notAFile),
-		"missing public keys":             missing(PublicKeysKey),
-		"public keys file is broken":      with(PublicKeysKey, badKeys),
-		"services mixed with star":        with(ServicesKey, "*,books"),
-		"services has empty entry":        with(ServicesKey, "books,,orders"),
-		"services is not a list":          with(ServicesKey, map[string]interface{}{"a": 1}),
-		"services has a non-string":       with(ServicesKey, []interface{}{"books", 7}),
-		"bad request timeout":             with(RequestTimeoutKey, "soon"),
-		"negative request timeout":        with(RequestTimeoutKey, "-1s"),
-		"bad heartbeat":                   with(HeartbeatIntervalKey, "30"),
-		"heartbeat out of range":          with(HeartbeatIntervalKey, "1s"),
-		"stop before stale":               with(StopAfterKey, "10s"),
-		"client cert without key":         with(ClientCertFileKey, "/tmp/cert.pem"),
-		"fallback is not a boolean":       with(FallbackWhileSyncingKey, "perhaps"),
-		"fallback URL without credential": missing(CloudCredentialFileKey),
-		"fallback credential without URL": missing(CloudFallbackURLKey),
-		"unknown transport":               with(TransportKey, "sse"),
-		"downstream without credentials":  with(ServeDownstreamKey, true),
-		"invalid downstream limit":        with(MaxDownstreamKey, "many"),
-		"invalid connection limit":        with(MaxConnectionsKey, 1.5),
-	}
-	for name, properties := range cases {
-		t.Run(name, func(t *testing.T) {
-			t.Setenv(adsync.CredentialEnv, "")
-			if _, err := store.NewStore(StoreType, properties); speedleerrors.Code(err) != speedleerrors.ConfigError {
-				t.Fatalf("error %v, code %s, want %s", err, speedleerrors.Code(err), speedleerrors.ConfigError)
+	for key, value := range cases {
+		t.Run(key, func(t *testing.T) {
+			props := cloneProperties(valid)
+			props[key] = value
+			if _, err := optionsFromConfig(props); speedleerrors.Code(err) != speedleerrors.ConfigError {
+				t.Fatalf("error: %v", err)
 			}
 		})
 	}
-}
-
-func TestBuilderRejectsAnUnknownSelectedService(t *testing.T) {
-	fixture := newTestFixture(t, booksService())
-	properties := fixture.storeProperties()
-	properties[ServicesKey] = "books,missing"
-	_, err := store.NewStore(StoreType, properties)
-	wantErrorCode(t, "unknown selected service", err, speedleerrors.ConfigError)
-	if !strings.Contains(err.Error(), "missing") {
-		t.Fatalf("error does not name the unknown service: %v", err)
+	for _, url := range []string{"", "http://source.example", "https://user:password@source.example", "https://source.example?key=secret", "https://source.example#fragment", "://"} {
+		if _, err := optionsFromConfig(map[string]interface{}{UpstreamURLKey: url}); err == nil {
+			t.Fatalf("invalid URL accepted: %q", url)
+		}
+	}
+	if _, err := optionsFromConfig(nil); err == nil {
+		t.Fatal("missing upstream accepted")
+	}
+	// The builder validates configuration before the registration path is wired in #372.
+	if _, err := store.NewStore(StoreType, valid); speedleerrors.Code(err) != speedleerrors.ConfigError {
+		t.Fatalf("unregistered client: %v", err)
 	}
 }
 
-func TestBuilderCreatesTheRegisteredStore(t *testing.T) {
-	fixture := newTestFixture(t, booksService())
-	manager, err := store.NewStore(StoreType, fixture.storeProperties())
-	if err != nil {
-		t.Fatal(err)
-	}
-	policyStore, err := manager.ReadPolicyStore()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(policyStore.Services) != 1 || policyStore.Services[0].Name != "books" {
-		t.Fatalf("services %+v", policyStore.Services)
-	}
-
+func TestBuilderRegistrationAndParams(t *testing.T) {
 	found := false
 	for _, name := range store.StoreBuilders() {
 		if name == StoreType {
@@ -113,7 +54,7 @@ func TestBuilderCreatesTheRegisteredStore(t *testing.T) {
 		}
 	}
 	if !found {
-		t.Fatalf("store type %q is not registered: %v", StoreType, store.StoreBuilders())
+		t.Fatal("policy-source store not registered")
 	}
 	params := store.GetAllStoreParams()
 	for flag, key := range (Builder{}).GetStoreParams() {
@@ -124,48 +65,15 @@ func TestBuilderCreatesTheRegisteredStore(t *testing.T) {
 }
 
 func TestFallbackWhileSyncingProperty(t *testing.T) {
-	fixture := newTestFixture(t, booksService())
-
-	enabled, err := store.NewStore(StoreType, fixture.storeProperties())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !enabled.(*Store).FallbackAvailable() {
-		t.Fatal("the fallback is enabled by default")
-	}
-
-	properties := fixture.storeProperties()
-	properties[FallbackWhileSyncingKey] = "false"
-	disabled, err := store.NewStore(StoreType, properties)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if disabled.(*Store).FallbackAvailable() {
-		t.Fatal("FallbackWhileSyncing=false did not disable the fallback")
-	}
-
-	properties[FallbackWhileSyncingKey] = true
-	fromBool, err := store.NewStore(StoreType, properties)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !fromBool.(*Store).FallbackAvailable() {
-		t.Fatal("a boolean property value was not accepted")
-	}
-}
-
-func TestCredentialFromEnvironment(t *testing.T) {
-	fixture := newTestFixture(t, booksService())
-	t.Setenv(adsync.CredentialEnv, testCredential)
-	properties := fixture.storeProperties()
-	delete(properties, CredentialFileKey)
-	manager, err := store.NewStore(StoreType, properties)
-	if err != nil {
-		t.Fatal(err)
-	}
-	policyStore, err := manager.ReadPolicyStore()
-	if err != nil || len(policyStore.Services) != 1 {
-		t.Fatalf("services %+v, error %v", policyStore.Services, err)
+	for _, value := range []interface{}{nil, true, "true", false, "false"} {
+		properties := map[string]interface{}{UpstreamURLKey: "https://source.example", FallbackWhileSyncingKey: value}
+		options, err := optionsFromConfig(properties)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if options.DisableFallback != (value == false || value == "false") {
+			t.Fatalf("fallback option for %v", value)
+		}
 	}
 }
 
@@ -179,16 +87,16 @@ func TestOpenValidatesOptions(t *testing.T) {
 		return options
 	}
 	cases := map[string]Options{
-		"no public keys": with(func(options *Options) { options.PublicKeys = nil }),
-		"no url":         with(func(options *Options) { options.PolicySourceURL = "" }),
-		"malformed credential": with(func(options *Options) {
-			options.Credential = "not-a-credential"
+		"no API key": with(func(options *Options) { options.APIKey = "" }),
+		"no url":     with(func(options *Options) { options.UpstreamURL = "" }),
+		"malformed API key": with(func(options *Options) {
+			options.APIKey = "not a key"
 		}),
-		"star mixed with a name": with(func(options *Options) {
-			options.Services = []string{"*", "books"}
+		"ULID instance id": with(func(options *Options) {
+			options.InstanceID = testServiceID1
 		}),
-		"empty service name": with(func(options *Options) {
-			options.Services = []string{""}
+		"serve downstream": with(func(options *Options) {
+			options.ServeDownstream = true
 		}),
 		"heartbeat out of range": with(func(options *Options) {
 			options.HeartbeatInterval = 5 * time.Second
@@ -264,4 +172,69 @@ func writeTestFile(t *testing.T, name string) string {
 		t.Fatal(err)
 	}
 	return path
+}
+
+// TestOpenUsesThePersistedInstanceID opens stores the way production does:
+// the instance ID is created on the first request, kept in CacheDir and
+// reused by the next start, and a corrupt ID file fails that request instead
+// of sending one without an identity.
+func TestOpenUsesThePersistedInstanceID(t *testing.T) {
+	fixture := newTestFixture(t, booksService())
+	cacheDir := filepath.Join(t.TempDir(), "cache")
+	persisted := func(options *Options) { options.InstanceID = ""; options.CacheDir = cacheDir }
+	first := fixture.open(persisted)
+	defer first.Close()
+	id, err := first.client.InstanceID()
+	if err != nil || !adsync.ValidInstanceID(id) {
+		t.Fatalf("instance id = %q, %v", id, err)
+	}
+	second := fixture.open(persisted)
+	defer second.Close()
+	if again, _ := second.client.InstanceID(); again != id {
+		t.Fatalf("restart id = %q, want %q", again, id)
+	}
+	if !first.FallbackAvailable() || !first.StaleIsUntrusted() {
+		t.Fatal("forwarding is off by default")
+	}
+
+	corruptDir := filepath.Join(t.TempDir(), "corrupt")
+	if err := os.MkdirAll(corruptDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(corruptDir, adsync.InstanceIDFile), []byte("garbage"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	options := fixture.options
+	options.InstanceID = ""
+	options.CacheDir = corruptDir
+	options.DisableFallback = true
+	before := fixture.source.requestCount()
+	corrupt, err := Open(context.Background(), options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer corrupt.Close()
+	if fixture.source.requestCount() != before {
+		t.Fatal("a request was sent without a valid instance id")
+	}
+	if corrupt.FallbackAvailable() {
+		t.Fatal("forwarding with forwarding disabled")
+	}
+}
+
+// TestRuntimeStoreWaitsForTheFirstAck opens a store for the owned runtime: it
+// fetches nothing before the first channel ack, and Sync is a no-op until
+// then.
+func TestRuntimeStoreWaitsForTheFirstAck(t *testing.T) {
+	fixture := newTestFixture(t, booksService())
+	options := fixture.options
+	options.StartRuntime = true
+	opened, err := Open(context.Background(), options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer opened.Close()
+	if err := opened.Sync(context.Background()); err != nil || fixture.source.requestCount() != 0 {
+		t.Fatalf("sync without an ack: %v, %d requests", err, fixture.source.requestCount())
+	}
 }

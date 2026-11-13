@@ -20,17 +20,13 @@ const cacheFormat = "speedle-adsync-cache-v1"
 // SHA-256 checksum of their payload. The cache is optional and never
 // authoritative: Sync still confirms the revision against the source.
 type Cache struct {
-	dir  string
-	keys *PublicKeySet
+	dir string
 }
 
 // NewCache creates cacheDir with mode 0700 when needed.
-func NewCache(dir string, keys *PublicKeySet) (*Cache, error) {
+func NewCache(dir string) (*Cache, error) {
 	if dir == "" {
 		return nil, fmt.Errorf("adsync: cache directory is empty")
-	}
-	if keys == nil {
-		return nil, fmt.Errorf("adsync: cache requires public keys")
 	}
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return nil, fmt.Errorf("adsync: create cache directory: %w", err)
@@ -48,7 +44,7 @@ func NewCache(dir string, keys *PublicKeySet) (*Cache, error) {
 	if !cacheDirectoryOwnedByUser(info) {
 		return nil, fmt.Errorf("%w: cache directory is not owned by the current user", ErrUnsafeCache)
 	}
-	return &Cache{dir: dir, keys: keys}, nil
+	return &Cache{dir: dir}, nil
 }
 
 type cacheEnvelope struct {
@@ -58,14 +54,13 @@ type cacheEnvelope struct {
 }
 
 type cachePayload struct {
-	ServiceID  string    `json:"serviceId"`
-	SourceID   string    `json:"sourceId"`
-	Epoch      string    `json:"epoch"`
-	Revision   uint64    `json:"revision"`
-	StateHash  Hash      `json:"stateHash"`
-	CommitHash Hash      `json:"commitHash"`
-	Snapshot   Snapshot  `json:"snapshot"`
-	Signature  Signature `json:"signature"`
+	ServiceID  string   `json:"serviceId"`
+	SourceID   string   `json:"sourceId"`
+	Epoch      string   `json:"epoch"`
+	Revision   uint64   `json:"revision"`
+	StateHash  Hash     `json:"stateHash"`
+	CommitHash Hash     `json:"commitHash"`
+	Snapshot   Snapshot `json:"snapshot"`
 }
 
 // Load returns the cached state for one service, or nil when no file exists.
@@ -89,16 +84,14 @@ func (c *Cache) Load(serviceID string) (*ServiceState, error) {
 	if runtime.GOOS != "windows" && info.Mode().Perm()&0o077 != 0 {
 		return nil, fmt.Errorf("%w: cache file must be 0600", ErrUnsafeCache)
 	}
-	if info.Size() > maxCacheBytes {
-		return nil, fmt.Errorf("%w: cache file is too large", ErrCacheCorrupt)
-	}
-	data, err := os.ReadFile(path)
+	file, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("adsync: read cache file: %w", err)
 	}
 
+	defer file.Close()
 	var envelope cacheEnvelope
-	if err := decodeStrict(data, &envelope); err != nil {
+	if err := decodeStrictReader(file, &envelope); err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrCacheCorrupt, err)
 	}
 	if envelope.Format != cacheFormat {
@@ -135,22 +128,6 @@ func (c *Cache) Load(serviceID string) (*ServiceState, error) {
 		return nil, fmt.Errorf("%w: state hash does not match the cached content", ErrCacheCorrupt)
 	}
 
-	if payload.Signature.KeyID != "" || payload.Signature.Alg != "" || payload.Signature.Value != "" {
-		snapshot := &SnapshotResponse{
-			ServiceID:  payload.ServiceID,
-			SourceID:   payload.SourceID,
-			Epoch:      payload.Epoch,
-			Revision:   payload.Revision,
-			StateHash:  payload.StateHash,
-			CommitHash: payload.CommitHash,
-			Signature:  payload.Signature,
-			Snapshot:   payload.Snapshot,
-		}
-		if err := c.keys.verifySnapshot(snapshot); err != nil {
-			return nil, fmt.Errorf("%w: %v", ErrCacheCorrupt, err)
-		}
-	}
-
 	return &ServiceState{
 		ServiceID:  payload.ServiceID,
 		SourceID:   payload.SourceID,
@@ -159,7 +136,6 @@ func (c *Cache) Load(serviceID string) (*ServiceState, error) {
 		StateHash:  payload.StateHash,
 		CommitHash: payload.CommitHash,
 		Snapshot:   cloneSnapshot(payload.Snapshot),
-		signature:  payload.Signature,
 	}, nil
 }
 
@@ -185,7 +161,6 @@ func (c *Cache) Save(state *ServiceState) error {
 		StateHash:  state.StateHash,
 		CommitHash: state.CommitHash,
 		Snapshot:   state.Snapshot,
-		Signature:  state.signature,
 	}
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
@@ -263,4 +238,31 @@ func writeFileAtomic(path string, data []byte) error {
 		_ = handle.Close()
 	}
 	return nil
+}
+
+// List returns the verified states of every readable cache file, sorted by
+// service ID. Unreadable or corrupt files are skipped: they are cache misses,
+// and the next successful sync replaces them.
+func (c *Cache) List() []*ServiceState {
+	entries, err := os.ReadDir(c.dir)
+	if err != nil {
+		return nil
+	}
+	var states []*ServiceState
+	for _, entry := range entries {
+		name := entry.Name()
+		if !strings.HasPrefix(name, "service-") || !strings.HasSuffix(name, ".json") {
+			continue
+		}
+		serviceID := strings.TrimSuffix(strings.TrimPrefix(name, "service-"), ".json")
+		if !validEntityID(serviceID) {
+			continue
+		}
+		state, err := c.Load(serviceID)
+		if err != nil || state == nil {
+			continue
+		}
+		states = append(states, state)
+	}
+	return states
 }

@@ -26,19 +26,23 @@ var ErrInvalidSPDL = stderrors.New("policysource: invalid SPDL")
 // verified copies of every synchronized service and publishes them as one
 // pms.PolicyStore.
 type Store struct {
-	syncer    *adsync.Syncer
-	client    *adsync.Client
-	machine   *adsync.Machine
-	selection []string
-	options   Options
+	syncer  *adsync.Syncer
+	client  *adsync.Client
+	machine *adsync.Machine
+	options Options
 
-	// fallback is true when authorization requests for a syncing service may
-	// be forwarded to Cloud. The client carries the instance credential and
-	// the transport, so no separate configuration is needed.
+	// fallback is true when authorization requests for a syncing or stale
+	// service may be forwarded to the upstream. The client carries the API
+	// key and the transport, so no separate configuration is needed.
 	fallback bool
 
 	// syncMu serializes synchronization passes.
 	syncMu sync.Mutex
+
+	// integrity holds the retry backoff of services whose copy failed
+	// integrity.
+	integrityMu sync.Mutex
+	integrity   map[string]integrityRetry
 
 	// mu guards copies and the published assembly. pendingRemoved records the
 	// names of removed services until the evaluator has installed the assembly
@@ -71,9 +75,8 @@ type Store struct {
 	afterFetch func(serviceID string)
 
 	// hookMu guards the test-only hooks below. Production leaves them nil.
-	hookMu              sync.Mutex
-	beforeMirrorRestore func(serviceID string)
-	beforeDiscover      func()
+	hookMu         sync.Mutex
+	beforeDiscover func()
 }
 
 // serviceCopy is one verified service, parsed and ready to publish.
@@ -91,38 +94,52 @@ var (
 	_ adsync.StatusProvider     = (*Store)(nil)
 )
 
-// Open validates the options, builds the protocol client and the state
-// machine, and performs one bootstrap synchronization. A transient bootstrap
-// failure does not fail startup: the store stays empty and fail closed, and a
-// later Sync can fill it. A configuration error does fail startup.
-func Open(ctx context.Context, options Options) (*Store, error) {
+// Open validates the options and builds the protocol client and the state
+// machine. The instance authenticates with its API key and identifies itself
+// with the instance ID the client creates on its first request and persists in
+// CacheDir.
+//
+// With the owned runtime (StartRuntime), the service set and heads come only
+// from channel acks, and the source registers the instance on its first
+// channel request, so nothing is fetched here. Cached services are tracked as
+// syncing: their requests are forwarded until the first ack confirms the
+// cached revision and state hash. Without the runtime, Open performs one
+// bootstrap pass through discovery; a transient failure leaves the store empty
+// and fail closed, while a configuration error fails startup.
+func Open(ctx context.Context, options Options) (_ *Store, err error) {
+	defer func() { err = redactConfigError(err, options.APIKey) }()
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	selection, err := normalizeServices(options.Services)
-	if err != nil {
+	if err := validateUpstream(&options); err != nil {
 		return nil, err
 	}
-	if options.PublicKeys == nil {
-		return nil, errors.New(errors.ConfigError, "policy source public keys are required")
+	if options.APIKey == "" {
+		return nil, errors.New(errors.ConfigError, "configure item APIKey is required")
 	}
-	if options.PolicySourceURL == "" {
-		return nil, errors.New(errors.ConfigError, "policy source URL is required")
+	if options.ServeDownstream {
+		// Serving downstream instances needs the relay identity of the
+		// cascade design; until then a relay cannot be configured.
+		return nil, errors.New(errors.ConfigError, "ServeDownstream is not supported yet")
+	}
+	if options.InstanceID != "" && !adsync.ValidInstanceID(options.InstanceID) {
+		return nil, errors.New(errors.ConfigError, "policy source InstanceID must be a UUIDv7")
+	}
+	if options.CacheDir == "" && options.InstanceID == "" {
+		log.Warn("policy-source store has no CacheDir: the instance ID is not persisted, so every restart registers a new instance")
 	}
 
 	client, err := adsync.NewClient(adsync.Config{
-		BaseURL:            options.PolicySourceURL,
-		Credential:         options.Credential,
-		FallbackBaseURL:    options.FallbackURL,
-		FallbackCredential: options.FallbackCredential,
-		FallbackHTTPClient: options.FallbackHTTPClient,
-		PublicKeys:         options.PublicKeys,
-		HTTPClient:         options.HTTPClient,
-		CAFile:             options.CAFile,
-		ClientCertFile:     options.ClientCertFile,
-		ClientKeyFile:      options.ClientKeyFile,
-		RequestTimeout:     options.RequestTimeout,
-		Retry:              options.Retry,
+		BaseURL:        options.UpstreamURL,
+		APIKey:         string(options.APIKey),
+		InstanceID:     options.InstanceID,
+		InstanceIDDir:  options.CacheDir,
+		HTTPClient:     options.HTTPClient,
+		CAFile:         options.CAFile,
+		ClientCertFile: options.ClientCertFile,
+		ClientKeyFile:  options.ClientKeyFile,
+		RequestTimeout: options.RequestTimeout,
+		Retry:          options.Retry,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, errors.ConfigError, "invalid policy source client configuration")
@@ -136,6 +153,7 @@ func Open(ctx context.Context, options Options) (*Store, error) {
 		HeartbeatInterval: options.HeartbeatInterval,
 		StaleAfter:        options.StaleAfter,
 		StopAfter:         options.StopAfter,
+		ReconcileOnAck:    true,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, errors.ConfigError, "invalid policy source thresholds")
@@ -145,11 +163,19 @@ func Open(ctx context.Context, options Options) (*Store, error) {
 		syncer:         syncer,
 		client:         client,
 		machine:        machine,
-		selection:      selection,
 		options:        options,
 		fallback:       !options.DisableFallback,
 		copies:         make(map[string]*serviceCopy),
 		pendingRemoved: make(map[string]string),
+		integrity:      make(map[string]integrityRetry),
+	}
+	for _, service := range syncer.CachedServices() {
+		if err := machine.Track(service.ID, service.Name); err != nil {
+			log.Warnf("policy-source store ignores cached service %q: %v", service.ID, err)
+		}
+	}
+	if options.StartRuntime {
+		return store, nil
 	}
 
 	bootstrapCtx, cancel := context.WithTimeout(ctx, defaultBootstrapWindow)
@@ -160,10 +186,15 @@ func Open(ctx context.Context, options Options) (*Store, error) {
 		}
 		// The source may be unreachable at startup. The instance is then not
 		// confirmed live and every decision fails closed until a sync succeeds.
-		log.Warnf("policy-source store started without a complete bootstrap: %v", err)
+		log.Warnf("policy-source store started without a complete bootstrap: %v", redactConfigError(err, options.APIKey))
 	}
 	return store, nil
 }
+
+// StaleIsUntrusted reports that a stale instance never evaluates locally,
+// whatever forwarding allows: it forwards every request to the upstream, or
+// denies it when forwarding is disabled or unavailable.
+func (s *Store) StaleIsUntrusted() bool { return true }
 
 // Type returns the store type name.
 func (s *Store) Type() string { return StoreType }
@@ -172,8 +203,9 @@ func (s *Store) Type() string { return StoreType }
 // events: the published assembly is switched only through them.
 func (s *Store) RequireWatch() bool { return true }
 
-// Sync performs one synchronization pass: it discovers the visible services
-// and advertised heads, drops services that are no longer visible, brings every
+// Sync performs one synchronization pass: it takes the assigned services and
+// heads from the most recent channel ack (or, for a store without the owned
+// runtime, from discovery), drops services that are no longer visible, brings every
 // selected service to a verified revision, and publishes the resulting
 // assembly. A pass that changed any service emits one FULL_RELOAD event.
 //
@@ -192,17 +224,24 @@ func (s *Store) Sync(ctx context.Context) error {
 	s.syncMu.Lock()
 	defer s.syncMu.Unlock()
 
-	discovery, err := s.syncer.Services(ctx)
-	if err != nil {
-		if stderrors.Is(err, adsync.ErrUnauthorized) || stderrors.Is(err, adsync.ErrForbidden) {
-			s.machine.Stop(adsync.ReasonRevoked)
+	var selected []adsync.Service
+	if s.runtimeChannel() {
+		// The owned runtime never pulls discovery: every ack carries the
+		// authoritative set and heads.
+		services, acked := s.ackedServices()
+		if !acked {
+			return nil
 		}
-		return err
-	}
-	selected, err := s.selectServices(discovery.Services)
-	if err != nil {
-		s.machine.Stop(adsync.ReasonConfigError)
-		return err
+		selected = services
+	} else {
+		discovery, err := s.syncer.Services(ctx)
+		if err != nil {
+			if stderrors.Is(err, adsync.ErrUnauthorized) || stderrors.Is(err, adsync.ErrForbidden) {
+				s.machine.Stop(adsync.ReasonRevoked)
+			}
+			return err
+		}
+		selected = discovery.Services
 	}
 	selectedIDs := make(map[string]struct{}, len(selected))
 	for _, service := range selected {
@@ -213,6 +252,7 @@ func (s *Store) Sync(ctx context.Context) error {
 	// stop evaluating a removed service as soon as the machine reports it
 	// removed, not after a possibly slow fetch of another service finishes.
 	removed := s.dropUnselected(selectedIDs)
+	s.keepIntegrityRetries(selectedIDs)
 	for _, serviceID := range removed {
 		if err := s.syncer.Forget(serviceID); err != nil {
 			errs = append(errs, fmt.Errorf("service %q: %w", serviceID, err))
@@ -243,6 +283,12 @@ func (s *Store) Sync(ctx context.Context) error {
 
 	failed := make(map[string]struct{})
 	for _, service := range selected {
+		// A copy that failed integrity at this head is retried with
+		// backoff, so a persistent mismatch does not pull a snapshot on
+		// every ack.
+		if s.integrityWaiting(service) {
+			continue
+		}
 		if err := s.syncService(ctx, service); err != nil {
 			errs = append(errs, err)
 			failed[service.ID] = struct{}{}
@@ -255,7 +301,6 @@ func (s *Store) Sync(ctx context.Context) error {
 	}
 
 	s.publish()
-	s.syncMirror(ctx, selected, failed)
 	return joinErrors(errs)
 }
 
@@ -286,16 +331,35 @@ func (s *Store) Confirm() error {
 // reported, and the next pass fetches again.
 func (s *Store) syncService(ctx context.Context, service adsync.Service) error {
 	attempt := s.machine.BeginSync(service.ID)
-	state, err := s.syncer.Sync(ctx, service)
+	// A notified head newer than the ack is fetched right away. A copy that
+	// still does not match the acknowledged head after a snapshot reload
+	// fails only this service closed. An authentication failure on a data
+	// endpoint is not a revocation here: the channel, which uses the same key,
+	// decides that.
+	minRevision := uint64(0)
+	if status, known := s.machineService(service.ID); known {
+		minRevision = status.Head
+	}
+	state, err := s.syncer.SyncAtLeast(ctx, service, minRevision)
 	if err != nil {
-		s.machine.SyncFailed(service.ID, err)
-		if stderrors.Is(err, adsync.ErrIntegrity) {
-			// Syncer already retried through a signed snapshot. A final
-			// integrity failure stops the whole instance, not just this service.
-			s.machine.Stop(adsync.ReasonIntegrityFailure)
+		if !stderrors.Is(err, adsync.ErrUnauthorized) && !stderrors.Is(err, adsync.ErrForbidden) {
+			s.machine.SyncFailed(service.ID, err)
+		}
+		// A resync, removal or re-add while the fetch was in flight makes
+		// its integrity failure obsolete: the next pass fetches again.
+		if stderrors.Is(err, adsync.ErrIntegrity) && s.machine.FailAttempt(attempt) {
+			log.Errorf("policy-source service %q fails closed: its copy does not match the acknowledged head: %v", service.Name, err)
+			s.recordIntegrityFailure(service, attempt)
 		}
 		return fmt.Errorf("service %q: %w", service.Name, err)
 	}
+	s.clearIntegrityRetry(service.ID)
+	return s.installFetched(service, state, attempt)
+}
+
+// installFetched parses a fetched copy and stores it for the next publish,
+// unless the attempt became stale while the fetch was in flight.
+func (s *Store) installFetched(service adsync.Service, state *adsync.ServiceState, attempt adsync.SyncAttempt) error {
 	if s.afterFetch != nil {
 		s.afterFetch(service.ID)
 	}
@@ -328,38 +392,6 @@ func (s *Store) syncService(ctx context.Context, service adsync.Service) error {
 	// deferred until the exact published generation has completed its
 	// FULL_RELOAD.
 	return nil
-}
-
-// selectServices applies the configured service selection. Every explicit
-// entry must match a visible service by name or by ULID; a stale selection is
-// a configuration error.
-func (s *Store) selectServices(discovered []adsync.Service) ([]adsync.Service, error) {
-	if len(s.selection) == 1 && s.selection[0] == DefaultServicesSelection {
-		return discovered, nil
-	}
-	found := make(map[string]bool, len(s.selection))
-	matched := make([]adsync.Service, 0, len(s.selection))
-	seen := make(map[string]struct{}, len(s.selection))
-	for _, service := range discovered {
-		for _, entry := range s.selection {
-			if entry != service.ID && entry != service.Name {
-				continue
-			}
-			found[entry] = true
-			if _, duplicate := seen[service.ID]; !duplicate {
-				seen[service.ID] = struct{}{}
-				matched = append(matched, service)
-			}
-			break
-		}
-	}
-	for _, entry := range s.selection {
-		if !found[entry] {
-			return nil, errors.Errorf(errors.ConfigError,
-				"configured service %q is not visible to the policy source credential", entry)
-		}
-	}
-	return matched, nil
 }
 
 // dropCopy deletes one local copy while the service remains tracked, for

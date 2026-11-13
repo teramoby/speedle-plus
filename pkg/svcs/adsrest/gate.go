@@ -120,7 +120,7 @@ func copyFallbackResponse(w http.ResponseWriter, response *adsync.FallbackRespon
 			header.Add(name, value)
 		}
 	}
-	header.Set(svcs.DecisionSourceHeader, svcs.DecisionSourceCloudFallback)
+	header.Set(svcs.DecisionSourceHeader, svcs.DecisionSourceUpstream)
 	if header.Get("Cache-Control") == "" {
 		header.Set("Cache-Control", "no-store")
 	}

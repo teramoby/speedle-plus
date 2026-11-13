@@ -35,6 +35,8 @@ import (
 
 // Parameters is the parameters for Speedle
 type Parameters struct {
+	// Retain properties that deliberately have no flag or environment binding.
+	configOnlyStore *cfg.StoreConfig
 	////////// Common flags //////////
 	Version bool
 	Help    bool
@@ -539,6 +541,35 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 		}
 	})
 
+	// Use the resolved store type after flag/environment precedence.
+	k.configOnlyStore = nil
+	if conf != nil && conf.StoreConfig != nil && k.StoreType.Value == "policy-source" {
+		k.configOnlyStore = &cfg.StoreConfig{StoreType: "policy-source", StoreProps: make(map[string]interface{})}
+		for _, key := range []string{"UpstreamURL", "APIKey", "PolicySourceURL", "CredentialFile", "PolicySourcePublicKeys", "Services", "CloudFallbackURL", "CloudCredentialFile", "InstanceName"} {
+			// Properties with a flag binding have already passed through the
+			// normal precedence/conversion path. Removed properties have no
+			// binding and must reach the builder so it can reject them.
+			bound := false
+			for _, property := range storeParamsMap {
+				if property == key {
+					bound = true
+					break
+				}
+			}
+			if bound {
+				continue
+			}
+			if value, exists := conf.StoreConfig.StoreProps[key]; exists {
+				if key == "APIKey" {
+					if text, ok := value.(string); ok {
+						value = cfg.Secret(text)
+					}
+				}
+				k.configOnlyStore.StoreProps[key] = value
+			}
+		}
+	}
+
 	log.Debugf("parameters: %v", k)
 }
 
@@ -621,6 +652,11 @@ func (k *Parameters) Param2Config(storeParamsMap map[string]string) (*cfg.Config
 		}
 	}
 
+	if storeConf.StoreType == "policy-source" && k.configOnlyStore != nil {
+		for key, value := range k.configOnlyStore.StoreProps {
+			storeConf.StoreProps[key] = value
+		}
+	}
 	conf.StoreConfig = &storeConf
 
 	watchEnabled, _ := strconv.ParseBool(k.StoreWatchEnabled.Value)

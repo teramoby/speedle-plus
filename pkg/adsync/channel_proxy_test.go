@@ -149,11 +149,10 @@ func TestChannelThroughConnectProxy(t *testing.T) {
 	t.Setenv("NO_PROXY", "")
 	t.Setenv("no_proxy", "")
 
-	vectors := loadGolden(t)
 	client, err := NewClient(Config{
 		BaseURL:        baseURL,
-		Credential:     testCredential,
-		PublicKeys:     goldenPublicKeys(t, vectors),
+		APIKey:         testAPIKey,
+		InstanceID:     testInstanceID,
 		CAFile:         writeTestFile(t, t.TempDir(), "ca.pem", pki.caPEM, 0o644),
 		RequestTimeout: 2 * time.Second,
 		Retry: RetryPolicy{
@@ -187,12 +186,11 @@ func TestChannelRequiresTrustedCA(t *testing.T) {
 	books := newFixtureService(testServiceID1, "books")
 	source := newChannelSource(t, books)
 	server := startChannelFixture(t, source)
-	vectors := loadGolden(t)
 	// No CAFile: the httptest certificate is signed by an unknown authority.
 	client, err := NewClient(Config{
 		BaseURL:        server.URL,
-		Credential:     testCredential,
-		PublicKeys:     goldenPublicKeys(t, vectors),
+		APIKey:         testAPIKey,
+		InstanceID:     testInstanceID,
 		RequestTimeout: time.Second,
 		Retry: RetryPolicy{
 			MaxAttempts:    1,
@@ -247,11 +245,10 @@ func TestChannelClientCertificate(t *testing.T) {
 	certFile := writeTestFile(t, directory, "client.pem", pki.clientCertPEM, 0o600)
 	keyFile := writeTestFile(t, directory, "client.key", pki.clientKeyPEM, 0o600)
 
-	vectors := loadGolden(t)
 	client, err := NewClient(Config{
 		BaseURL:        server.URL,
-		Credential:     testCredential,
-		PublicKeys:     goldenPublicKeys(t, vectors),
+		APIKey:         testAPIKey,
+		InstanceID:     testInstanceID,
 		CAFile:         caFile,
 		ClientCertFile: certFile,
 		ClientKeyFile:  keyFile,
@@ -277,8 +274,8 @@ func TestChannelClientCertificate(t *testing.T) {
 	// reaches the source.
 	withoutCertificate, err := NewClient(Config{
 		BaseURL:        server.URL,
-		Credential:     testCredential,
-		PublicKeys:     goldenPublicKeys(t, vectors),
+		APIKey:         testAPIKey,
+		InstanceID:     testInstanceID,
 		CAFile:         caFile,
 		RequestTimeout: time.Second,
 		Retry: RetryPolicy{

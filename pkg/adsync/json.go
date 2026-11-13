@@ -14,10 +14,14 @@ import (
 // misspelled or unexpected field is a protocol violation rather than a value
 // silently ignored.
 func decodeStrict(data []byte, dst any) error {
-	decoder := json.NewDecoder(bytes.NewReader(data))
+	return decodeStrictReader(bytes.NewReader(data), dst)
+}
+
+func decodeStrictReader(reader io.Reader, dst any) error {
+	decoder := json.NewDecoder(reader)
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(dst); err != nil {
-		return fmt.Errorf("%w: %v", ErrProtocol, err)
+		return fmt.Errorf("%w: %w", ErrProtocol, err)
 	}
 	var extra json.RawMessage
 	switch err := decoder.Decode(&extra); err {
@@ -26,7 +30,7 @@ func decodeStrict(data []byte, dst any) error {
 	case nil:
 		return fmt.Errorf("%w: unexpected data after the JSON value", ErrProtocol)
 	default:
-		return fmt.Errorf("%w: %v", ErrProtocol, err)
+		return fmt.Errorf("%w: %w", ErrProtocol, err)
 	}
 }
 

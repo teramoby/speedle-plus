@@ -12,15 +12,15 @@ import (
 	"github.com/teramoby/speedle-plus/pkg/adsync"
 )
 
-func newPopulatedMirror(t *testing.T, signer *testSigner) (*Mirror, *fixtureService, *fixtureService) {
+func newPopulatedMirror(t *testing.T) (*Mirror, *fixtureService, *fixtureService) {
 	t.Helper()
-	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	mirror := newTestMirror(t, nil)
 	books := newFixtureService(testServiceID1, "books")
 	orders := newFixtureService(testServiceID2, "orders")
-	if err := mirror.ApplySnapshot(books.snapshotResponse(t, signer)); err != nil {
+	if err := mirror.ApplySnapshot(books.snapshotResponse(t)); err != nil {
 		t.Fatalf("apply books snapshot: %v", err)
 	}
-	if err := mirror.ApplySnapshot(orders.snapshotResponse(t, signer)); err != nil {
+	if err := mirror.ApplySnapshot(orders.snapshotResponse(t)); err != nil {
 		t.Fatalf("apply orders snapshot: %v", err)
 	}
 	return mirror, books, orders
@@ -36,10 +36,9 @@ func decodeBody[T any](t *testing.T, body []byte) T {
 }
 
 func TestServerAuthentication(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, _, _ := newPopulatedMirror(t, signer)
+	mirror, _, _ := newPopulatedMirror(t)
 	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+	server := newTestServer(t, mirror, nil, testCredential{
 		downstreamID: testDownstreamID,
 		token:        token,
 	})
@@ -74,10 +73,9 @@ func TestServerAuthentication(t *testing.T) {
 }
 
 func TestServiceSubsetRejectsLikeUnknown(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, _, _ := newPopulatedMirror(t, signer)
+	mirror, _, _ := newPopulatedMirror(t)
 	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+	server := newTestServer(t, mirror, nil, testCredential{
 		downstreamID: testDownstreamID,
 		token:        token,
 		services:     []string{testServiceID1},
@@ -112,7 +110,7 @@ func TestServiceSubsetRejectsLikeUnknown(t *testing.T) {
 
 	// A credential with * sees the second service.
 	allToken := testToken(testDownstreamB, 2)
-	allServer := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+	allServer := newTestServer(t, mirror, nil, testCredential{
 		downstreamID: testDownstreamB,
 		token:        allToken,
 	})
@@ -127,10 +125,9 @@ func TestServiceSubsetRejectsLikeUnknown(t *testing.T) {
 }
 
 func TestSnapshotETag(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, books, _ := newPopulatedMirror(t, signer)
+	mirror, books, _ := newPopulatedMirror(t)
 	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+	server := newTestServer(t, mirror, nil, testCredential{
 		downstreamID: testDownstreamID,
 		token:        token,
 	})
@@ -144,8 +141,8 @@ func TestSnapshotETag(t *testing.T) {
 		t.Fatal("snapshot has no ETag")
 	}
 	snapshot := decodeBody[adsync.SnapshotResponse](t, body)
-	if snapshot.Signature != books.snapshotResponse(t, signer).Signature {
-		t.Error("snapshot signature was not passed through unchanged")
+	if expected := books.snapshotResponse(t); snapshot.StateHash != expected.StateHash || snapshot.CommitHash != expected.CommitHash {
+		t.Error("snapshot hashes were not passed through unchanged")
 	}
 
 	header := http.Header{}
@@ -174,14 +171,13 @@ func TestSnapshotETag(t *testing.T) {
 }
 
 func TestStateEndpoint(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, books, _ := newPopulatedMirror(t, signer)
-	books.publish(t, signer, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
+	mirror, books, _ := newPopulatedMirror(t)
+	books.publish(t, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
 	if err := mirror.ApplyChanges(pageFor(t, books, 1, 100)); err != nil {
 		t.Fatalf("apply changes: %v", err)
 	}
 	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+	server := newTestServer(t, mirror, nil, testCredential{
 		downstreamID: testDownstreamID,
 		token:        token,
 	})
@@ -198,17 +194,16 @@ func TestStateEndpoint(t *testing.T) {
 }
 
 func TestChangesPaging(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, books, _ := newPopulatedMirror(t, signer)
+	mirror, books, _ := newPopulatedMirror(t)
 	for index := 0; index < 3; index++ {
-		books.publish(t, signer, upsertAuthz(
+		books.publish(t, upsertAuthz(
 			testServiceID1+"A"+string(rune('1'+index)), "policy", "grant read"))
 		if err := mirror.ApplyChanges(pageFor(t, books, books.Revision-1, 100)); err != nil {
 			t.Fatalf("apply commit %d: %v", index, err)
 		}
 	}
 	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+	server := newTestServer(t, mirror, nil, testCredential{
 		downstreamID: testDownstreamID,
 		token:        token,
 	})
@@ -260,11 +255,10 @@ func TestChangesPaging(t *testing.T) {
 }
 
 func TestServerNeedsSnapshotAndRemovedMapping(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, books, _ := newPopulatedMirror(t, signer)
+	mirror, books, _ := newPopulatedMirror(t)
 	mirror.RemoveService(testServiceID2)
 	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+	server := newTestServer(t, mirror, nil, testCredential{
 		downstreamID: testDownstreamID,
 		token:        token,
 	})
@@ -285,11 +279,10 @@ func TestServerNeedsSnapshotAndRemovedMapping(t *testing.T) {
 }
 
 func TestDistributionPaused(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, _, _ := newPopulatedMirror(t, signer)
+	mirror, _, _ := newPopulatedMirror(t)
 	token := testToken(testDownstreamID, 1)
 	var paused atomic.Bool
-	server := newTestServer(t, mirror, signer.publicKeys(t), &testServerOptions{
+	server := newTestServer(t, mirror, &testServerOptions{
 		paused: paused.Load,
 	}, testCredential{
 		downstreamID: testDownstreamID,
@@ -347,10 +340,9 @@ func TestDistributionPaused(t *testing.T) {
 }
 
 func TestServerUnknownPathAndMethod(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, _, _ := newPopulatedMirror(t, signer)
+	mirror, _, _ := newPopulatedMirror(t)
 	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+	server := newTestServer(t, mirror, nil, testCredential{
 		downstreamID: testDownstreamID,
 		token:        token,
 	})
@@ -365,8 +357,7 @@ func TestServerUnknownPathAndMethod(t *testing.T) {
 }
 
 func TestServerConfigValidation(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	mirror := newTestMirror(t, nil)
 	credentials, err := NewCredentialSet([]Credential{{DownstreamID: "edge", Token: "token", Services: []string{"*"}}})
 	if err != nil {
 		t.Fatalf("credentials: %v", err)

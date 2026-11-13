@@ -116,9 +116,7 @@ func writeTestFile(t *testing.T, directory, name string, data []byte, mode os.Fi
 }
 
 func TestClientCertificate(t *testing.T) {
-	vectors := loadGolden(t)
-	signer := &fixtureSigner{keyID: vectors.TestKey.KeyID, private: goldenPrivateKey(t, vectors)}
-	source := newFixtureSource(testCredential, signer, newFixtureService(testServiceID1, "books"))
+	source := newFixtureSource(testAPIKey, newFixtureService(testServiceID1, "books"))
 	pki := newTestPKI(t)
 
 	server := httptest.NewUnstartedServer(source)
@@ -138,8 +136,8 @@ func TestClientCertificate(t *testing.T) {
 
 	config := Config{
 		BaseURL:        server.URL,
-		Credential:     testCredential,
-		PublicKeys:     goldenPublicKeys(t, vectors),
+		APIKey:         testAPIKey,
+		InstanceID:     testInstanceID,
 		CAFile:         caFile,
 		ClientCertFile: certFile,
 		ClientKeyFile:  keyFile,

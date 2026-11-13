@@ -4,9 +4,6 @@ package policysource
 
 import (
 	"context"
-	"crypto/ed25519"
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
 	"encoding/pem"
 	"io"
@@ -22,66 +19,15 @@ import (
 
 	"github.com/teramoby/speedle-plus/pkg/adsync"
 	speedleerrors "github.com/teramoby/speedle-plus/pkg/errors"
-	"github.com/teramoby/speedle-plus/pkg/store"
 )
 
 const (
-	testInstanceID = "01HF7YAT000000000000000001"
-	// 43 base62 characters.
-	testCredential = "adsi_" + testInstanceID + "_0123456789abcdefghijklmnopqrstuvwxyzABCDEFG"
+	testInstanceID = "0193a5c2-7d1e-7b3a-9f10-4c2d8e6a1b20"
+	testAPIKey     = "spdl_01HF7YAT000000000000000K01_storeSecretValue0123456789abcdef"
 	testServiceID1 = "01HF7YAT000000000000000101"
 	testServiceID2 = "01HF7YAT000000000000000102"
 	testServiceID3 = "01HF7YAT000000000000000103"
 )
-
-// testSigner signs snapshots with a key generated for one test.
-type testSigner struct {
-	keyID   string
-	private ed25519.PrivateKey
-	public  ed25519.PublicKey
-}
-
-func newTestSigner(t *testing.T) *testSigner {
-	t.Helper()
-	public, private, err := ed25519.GenerateKey(rand.Reader)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return &testSigner{keyID: "test-key-1", private: private, public: public}
-}
-
-func (s *testSigner) sign(message []byte) adsync.Signature {
-	return adsync.Signature{
-		KeyID: s.keyID,
-		Alg:   "Ed25519",
-		Value: base64.StdEncoding.EncodeToString(ed25519.Sign(s.private, message)),
-	}
-}
-
-func (s *testSigner) keySet(t *testing.T) *adsync.PublicKeySet {
-	t.Helper()
-	keys, err := adsync.NewPublicKeySet(map[string]ed25519.PublicKey{s.keyID: s.public})
-	if err != nil {
-		t.Fatal(err)
-	}
-	return keys
-}
-
-func (s *testSigner) writeKeysFile(t *testing.T) string {
-	t.Helper()
-	document := adsync.PublicKeyFile{Keys: []adsync.PublicKeyEntry{
-		{KeyID: s.keyID, PublicKey: base64.StdEncoding.EncodeToString(s.public)},
-	}}
-	data, err := json.Marshal(document)
-	if err != nil {
-		t.Fatal(err)
-	}
-	path := filepath.Join(t.TempDir(), "policy-keys.json")
-	if err := os.WriteFile(path, data, 0o644); err != nil {
-		t.Fatal(err)
-	}
-	return path
-}
 
 // testService is one service held by the fixture source.
 type testService struct {
@@ -132,7 +78,6 @@ func policy(id, name, spdl string) adsync.Policy {
 // behaviour when the change log has been trimmed.
 type testSource struct {
 	mu         sync.Mutex
-	signer     *testSigner
 	services   []*testService
 	credential string
 
@@ -151,8 +96,8 @@ type testSource struct {
 	fallbackBody   string
 }
 
-func newTestSource(signer *testSigner, services ...*testService) *testSource {
-	return &testSource{signer: signer, services: services, credential: testCredential}
+func newTestSource(services ...*testService) *testSource {
+	return &testSource{services: services, credential: testAPIKey}
 }
 
 func (f *testSource) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -260,8 +205,6 @@ func (f *testSource) serveSnapshot(w http.ResponseWriter, r *http.Request, servi
 		Revision:   service.Revision,
 		StateHash:  stateHash,
 		CommitHash: service.CommitHash,
-		Signature: f.signer.sign(adsync.SnapshotSignedBytes(
-			service.ID, service.Epoch, service.Revision, stateHash, service.CommitHash)),
 		Snapshot: adsync.Snapshot{
 			Name:         service.Snapshot.Name,
 			Policies:     append([]adsync.Policy(nil), service.Snapshot.Policies...),
@@ -409,7 +352,6 @@ func writeJSONError(w http.ResponseWriter, status int, code, reason string) {
 
 type testFixture struct {
 	t       *testing.T
-	signer  *testSigner
 	source  *testSource
 	server  *httptest.Server
 	caFile  string
@@ -418,8 +360,7 @@ type testFixture struct {
 
 func newTestFixture(t *testing.T, services ...*testService) *testFixture {
 	t.Helper()
-	signer := newTestSigner(t)
-	source := newTestSource(signer, services...)
+	source := newTestSource(services...)
 	server := httptest.NewUnstartedServer(source)
 	server.StartTLS()
 	t.Cleanup(server.Close)
@@ -435,18 +376,15 @@ func newTestFixture(t *testing.T, services ...*testService) *testFixture {
 	}
 	return &testFixture{
 		t:      t,
-		signer: signer,
 		source: source,
 		server: server,
 		caFile: caFile,
 		options: Options{
-			PolicySourceURL:    server.URL,
-			Credential:         testCredential,
-			FallbackURL:        server.URL,
-			FallbackCredential: testCredential,
-			PublicKeys:         signer.keySet(t),
-			HTTPClient:         server.Client(),
-			RequestTimeout:     2 * time.Second,
+			UpstreamURL:    server.URL,
+			APIKey:         testAPIKey,
+			InstanceID:     testInstanceID,
+			HTTPClient:     server.Client(),
+			RequestTimeout: 2 * time.Second,
 			Retry: adsync.RetryPolicy{
 				MaxAttempts:    1,
 				InitialBackoff: time.Millisecond,
@@ -490,35 +428,14 @@ func confirmStoreGeneration(t *testing.T, store *Store) {
 	acknowledge()
 }
 
-// storeProperties returns store properties that use the real transport, for
-// the registered-store builder path.
+// storeProperties exercises the new configuration surface, without registration.
 func (f *testFixture) storeProperties() map[string]interface{} {
-	f.t.Helper()
-	credentialFile := filepath.Join(f.t.TempDir(), "credential")
-	if err := os.WriteFile(credentialFile, []byte(testCredential+"\n"), 0o600); err != nil {
-		f.t.Fatal(err)
-	}
-	return map[string]interface{}{
-		PolicySourceURLKey:     f.server.URL,
-		CredentialFileKey:      credentialFile,
-		CloudFallbackURLKey:    f.server.URL,
-		CloudCredentialFileKey: credentialFile,
-		PublicKeysKey:          f.signer.writeKeysFile(f.t),
-		CAFileKey:              f.caFile,
-	}
+	return map[string]interface{}{UpstreamURLKey: f.server.URL, CAFileKey: f.caFile}
 }
 
 func (f *testFixture) newStore() *Store {
 	f.t.Helper()
-	manager, err := store.NewStore(StoreType, f.storeProperties())
-	if err != nil {
-		f.t.Fatalf("create registered store: %v", err)
-	}
-	store, ok := manager.(*Store)
-	if !ok {
-		f.t.Fatalf("registered store has type %T", manager)
-	}
-	return store
+	return f.open(func(options *Options) { options.StartRuntime = true })
 }
 
 func wantErrorCode(t *testing.T, what string, err error, code speedleerrors.ErrorCode) {

@@ -311,3 +311,40 @@ func TestUnavailableReason(t *testing.T) {
 		}
 	}
 }
+
+func TestDirectModeRouting(t *testing.T) {
+	source := adsyncfake.New()
+	source.SetService(adsync.ServiceStatus{Name: "books", State: adsync.SyncStateInSync})
+	source.SetService(adsync.ServiceStatus{Name: "broken", State: adsync.SyncStateSyncing, Reason: adsync.SyncReasonIntegrity})
+	gate := New(source)
+
+	// A failed service is denied in every mode; the reason only exists in
+	// direct mode.
+	if route := gate.Route("broken"); route.Kind != RouteUnavailable || route.Reason != adsync.ReasonIntegrityFailure {
+		t.Fatalf("failed service route = %+v", route)
+	}
+	if readiness := gate.Ready(); readiness.Ready {
+		t.Fatal("an instance with a failed service is ready")
+	}
+
+	// A stale instance of another source still evaluates complete copies
+	// locally.
+	source.SetInstance(adsync.InstanceStatus{Liveness: adsync.LivenessStale})
+	if route := gate.Route("books"); route.Kind != RouteLocal {
+		t.Fatalf("stale credential route = %+v", route)
+	}
+	// A stale policy-source instance forwards, or denies without forwarding.
+	source.SetStaleIsUntrusted(true)
+	if route := gate.Route("books"); route.Kind != RouteFallback {
+		t.Fatalf("stale direct route = %+v", route)
+	}
+	source.SetFallbackAvailable(false)
+	if route := gate.Route("books"); route.Kind != RouteUnavailable || route.Reason != adsync.ReasonFallbackUnavailable {
+		t.Fatalf("stale direct route without forwarding = %+v", route)
+	}
+	// Past stopAfter everything is denied.
+	source.SetInstance(adsync.InstanceStatus{Liveness: adsync.LivenessStopped, Reason: adsync.ReasonHeartbeatLost})
+	if route := gate.Route("books"); route.Kind != RouteUnavailable {
+		t.Fatalf("stopped route = %+v", route)
+	}
+}

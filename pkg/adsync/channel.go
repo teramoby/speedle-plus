@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -19,9 +20,6 @@ import (
 )
 
 const (
-	// maxChainDepth is the number of proxies allowed between Cloud and a leaf.
-	maxChainDepth = 3
-
 	defaultPollWait = 25 * time.Second
 	maxPollWait     = 30 * time.Second
 	// minPollGap is the shortest interval between the starts of two long polls
@@ -91,17 +89,13 @@ type Notify struct {
 // transport only delivers commands; applying them is the caller's job.
 type Command struct {
 	ID string
-	// Action is resync, pause, resume, set_source or stop.
+	// Action is resync, pause, resume or stop.
 	Action string
 	// ServiceID scopes the command to one service; empty means the instance.
 	ServiceID string
 	// ExpiresAt is when the source stops caring about the command. The
 	// transport does not deliver a command past its expiry.
 	ExpiresAt time.Time
-	// SourceURL and CredentialProfile are set for set_source only. The command
-	// never carries a credential; CredentialProfile names a local file.
-	SourceURL         string
-	CredentialProfile string
 }
 
 // CommandResult is the outcome of one command. Status is acked or rejected; an
@@ -114,15 +108,13 @@ type CommandResult struct {
 
 // ChannelOptions configures a Channel.
 type ChannelOptions struct {
-	// InstanceID is this instance's ULID. It is required.
-	InstanceID string
 	// AgentVersion is reported in hello and heartbeats. It is required.
 	AgentVersion string
-	// Chain lists the instance ids from Cloud to this instance, inclusive.
-	// The last entry should be InstanceID.
-	Chain []string
-	// CredentialID is the public credential id from registration, when known.
-	CredentialID string
+	// HostInfo returns the host object sent in the hello and in each
+	// long-poll heartbeat. Nil collects it with CollectHostInfo. The instance
+	// ID is not an option: the channel takes it from the client, which
+	// generates and persists it before the first hello.
+	HostInfo func(startedAt time.Time) HostInfo
 	// Machine receives confirming acks and head notifications. It is required.
 	Machine *Machine
 
@@ -145,9 +137,8 @@ type ChannelOptions struct {
 
 	// Fallback reports the fallback state for heartbeats. Nil reports inactive.
 	Fallback func() FallbackState
-	// UpstreamInstanceID and DownstreamCount are optional heartbeat fields.
-	UpstreamInstanceID string
-	DownstreamCount    *uint64
+	// DownstreamCount is an optional heartbeat field.
+	DownstreamCount *uint64
 
 	// OnNotify is called after a head notification was applied to the machine,
 	// and also when a confirming ack shows a service's head advanced or its
@@ -159,6 +150,10 @@ type ChannelOptions struct {
 	// service set. It should return quickly; the channel calls it on its read
 	// loop.
 	OnServiceSetChange func(ServiceSetChange)
+	// OnAck is called after every confirming ack has been applied, after
+	// OnServiceSetChange and OnNotify. The store uses it to
+	// reconcile every service against every ack. It should return quickly.
+	OnAck func()
 	// OnCommand is called for every delivered command. A source may repeat a
 	// command in several acks, so the callback must ignore an id it has already
 	// executed. A nil result means no result is sent. In long-poll mode the
@@ -220,10 +215,8 @@ type Channel struct {
 	client  *Client
 	machine *Machine
 
-	instanceID   string
-	credentialID string
 	agentVersion string
-	chain        []string
+	hostInfo     func(time.Time) HostInfo
 	mode         Transport
 
 	heartbeatOverride time.Duration
@@ -233,25 +226,34 @@ type Channel struct {
 	backoff           Backoff
 	dialer            *websocket.Dialer
 
-	upstreamInstanceID string
 	downstreamCount    *uint64
 	fallback           func() FallbackState
 	onNotify           func(Notify)
 	onServiceSetChange func(ServiceSetChange)
+	onAck              func()
 	onCommand          func(Command) *CommandResult
 
 	startedAt time.Time
 
+	// instanceID is resolved by Run before the first hello.
+	instanceID string
+	// host is the host object, refreshed on every hello and long-poll loop.
+	host atomic.Pointer[HostInfo]
+
 	sequence atomic.Uint64
-	running  atomic.Bool
+	// sentFrameBytes is the size of the last frame sent, named when the
+	// source rejects a frame as too large.
+	sentFrameBytes atomic.Int64
+	running        atomic.Bool
 
 	mu       sync.Mutex
 	current  Transport
 	services []Service
+	acked    bool
 }
 
 // NewChannel validates the options and returns a Channel for the policy source
-// of client. The client's base URL, credential, TLS settings and proxy
+// of client. The client's base URL, API key, TLS settings and proxy
 // configuration are reused, so the channel and the data client always talk to
 // the same source with the same transport trust.
 func NewChannel(client *Client, options ChannelOptions) (*Channel, error) {
@@ -261,27 +263,9 @@ func NewChannel(client *Client, options ChannelOptions) (*Channel, error) {
 	if options.Machine == nil {
 		return nil, fmt.Errorf("adsync: ChannelOptions.Machine is required")
 	}
-	if !validULID(options.InstanceID) {
-		return nil, fmt.Errorf("%w: invalid instance id %q", ErrProtocol, options.InstanceID)
-	}
-	if options.CredentialID != "" && !validULID(options.CredentialID) {
-		return nil, fmt.Errorf("%w: invalid credential id %q", ErrProtocol, options.CredentialID)
-	}
 	if options.AgentVersion == "" || len(options.AgentVersion) > 64 {
 		return nil, fmt.Errorf("adsync: AgentVersion must be 1 to 64 characters")
 	}
-	if len(options.Chain) > maxChainEntries {
-		return nil, fmt.Errorf("adsync: chain has %d entries, the protocol allows %d", len(options.Chain), maxChainEntries)
-	}
-	for _, instanceID := range options.Chain {
-		if !validULID(instanceID) {
-			return nil, fmt.Errorf("%w: invalid chain entry %q", ErrProtocol, instanceID)
-		}
-	}
-	if options.UpstreamInstanceID != "" && !validULID(options.UpstreamInstanceID) {
-		return nil, fmt.Errorf("%w: invalid upstream instance id %q", ErrProtocol, options.UpstreamInstanceID)
-	}
-
 	mode := options.Transport
 	if mode == "" {
 		mode = TransportAuto
@@ -322,7 +306,10 @@ func NewChannel(client *Client, options ChannelOptions) (*Channel, error) {
 		return nil, err
 	}
 
-	chain := append([]string(nil), options.Chain...)
+	hostInfo := options.HostInfo
+	if hostInfo == nil {
+		hostInfo = CollectHostInfo
+	}
 	current := TransportWebSocket
 	if mode == TransportLongPoll || client.dialer == nil {
 		current = TransportLongPoll
@@ -330,10 +317,8 @@ func NewChannel(client *Client, options ChannelOptions) (*Channel, error) {
 	channel := &Channel{
 		client:             client,
 		machine:            options.Machine,
-		instanceID:         options.InstanceID,
-		credentialID:       options.CredentialID,
 		agentVersion:       options.AgentVersion,
-		chain:              chain,
+		hostInfo:           hostInfo,
 		mode:               mode,
 		heartbeatOverride:  heartbeatOverride,
 		pollWait:           pollWait,
@@ -341,11 +326,11 @@ func NewChannel(client *Client, options ChannelOptions) (*Channel, error) {
 		probeInterval:      probeInterval,
 		backoff:            backoff,
 		dialer:             client.dialer,
-		upstreamInstanceID: options.UpstreamInstanceID,
 		downstreamCount:    options.DownstreamCount,
 		fallback:           options.Fallback,
 		onNotify:           options.OnNotify,
 		onServiceSetChange: options.OnServiceSetChange,
+		onAck:              options.OnAck,
 		onCommand:          options.OnCommand,
 		startedAt:          time.Now(),
 		current:            current,
@@ -369,9 +354,21 @@ func (c *Channel) Services() []Service {
 	return append([]Service(nil), c.services...)
 }
 
+// AckedServices returns the authoritative service set and heads from the most
+// recent ack, and false before the first ack.
+func (c *Channel) AckedServices() ([]Service, bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return append([]Service(nil), c.services...), c.acked
+}
+
 // Run carries the channel until the context is canceled or the source reports a
-// terminal condition such as a revoked credential. It reconnects with jittered
+// terminal condition such as a revoked API key. It reconnects with jittered
 // backoff in between.
+//
+// Before the first hello Run resolves the instance ID from the client, which
+// generates it and persists it in the cache directory on first use. A failure
+// to read or persist the ID is terminal and stops the machine.
 func (c *Channel) Run(ctx context.Context) error {
 	if ctx == nil {
 		return fmt.Errorf("adsync: nil context")
@@ -380,6 +377,13 @@ func (c *Channel) Run(ctx context.Context) error {
 		return fmt.Errorf("adsync: channel is already running")
 	}
 	defer c.running.Store(false)
+
+	instanceID, err := c.client.InstanceID()
+	if err != nil {
+		c.machine.Stop(ReasonConfigError)
+		return &terminalError{err: err}
+	}
+	c.instanceID = instanceID
 
 	switch c.mode {
 	case TransportWebSocket:
@@ -507,6 +511,7 @@ func (c *Channel) sleepBeforeRetry(ctx context.Context, attempt int, cause error
 }
 
 func (c *Channel) runLongPollLoop(ctx context.Context, probeAt time.Time) error {
+	c.refreshHost()
 	attempt := 0
 	for {
 		if err := ctx.Err(); err != nil {
@@ -581,6 +586,9 @@ func (c *Channel) applyAck(ack *channelAck, results chan<- channelCommandResult,
 			c.onNotify(Notify{ServiceID: service.ID, Head: service.Revision})
 		}
 	}
+	if c.onAck != nil {
+		c.onAck()
+	}
 	c.deliverCommands(ack.Commands, results)
 	return nil
 }
@@ -647,6 +655,7 @@ func (c *Channel) storeServiceSet(extraKnown, services []Service) (*ServiceSetCh
 		}
 	}
 	c.services = append([]Service(nil), services...)
+	c.acked = true
 	c.mu.Unlock()
 
 	sort.Slice(added, func(left, right int) bool { return added[left].ID < added[right].ID })
@@ -726,8 +735,7 @@ func (c *Channel) writeTimeout() time.Duration {
 	return c.client.requestTimeout
 }
 
-// localServices returns the services to announce, excluding removed ones and
-// bounding the list by the protocol limit.
+// localServices returns the services to announce, excluding removed ones.
 func (c *Channel) localServices() []ServiceStatus {
 	all := c.machine.Services()
 	services := make([]ServiceStatus, 0, len(all))
@@ -736,9 +744,6 @@ func (c *Channel) localServices() []ServiceStatus {
 			continue
 		}
 		services = append(services, service)
-	}
-	if len(services) > maxServicesPerSource {
-		services = services[:maxServicesPerSource]
 	}
 	return services
 }
@@ -754,16 +759,23 @@ func (c *Channel) helloMessage(transport Transport) channelHello {
 			State:    string(status.State),
 		})
 	}
+	host := c.refreshHost()
+	host.Transport = string(transport)
 	return channelHello{
 		Type:         channelTypeHello,
 		InstanceID:   c.instanceID,
-		CredentialID: c.credentialID,
 		Services:     services,
-		Chain:        append([]string(nil), c.chain...),
 		AgentVersion: c.agentVersion,
-		StartedAt:    c.startedAt.UnixMilli(),
-		Transport:    string(transport),
+		Host:         &host,
 	}
+}
+
+// refreshHost collects the host object again and returns a copy. Collection
+// never fails; a field that cannot be read stays empty.
+func (c *Channel) refreshHost() HostInfo {
+	host := c.hostInfo(c.startedAt).bounded()
+	c.host.Store(&host)
+	return host
 }
 
 func (c *Channel) heartbeatMessage(transport Transport) channelHeartbeat {
@@ -786,7 +798,7 @@ func (c *Channel) heartbeatMessage(transport Transport) channelHeartbeat {
 		fallback.Active = state.Active
 		fallback.RoutedCalls = state.RoutedCalls
 		for _, serviceID := range state.Services {
-			if validEntityID(serviceID) && len(fallback.Services) < maxServicesPerSource {
+			if validEntityID(serviceID) {
 				fallback.Services = append(fallback.Services, serviceID)
 			}
 		}
@@ -799,16 +811,20 @@ func (c *Channel) heartbeatMessage(transport Transport) channelHeartbeat {
 		Type:         channelTypeHeartbeat,
 		Seq:          c.sequence.Add(1),
 		Services:     services,
+		InstanceID:   c.instanceID,
 		Liveness:     string(c.machine.Instance().Liveness),
-		Chain:        append([]string(nil), c.chain...),
 		Fallback:     fallback,
 		AgentVersion: c.agentVersion,
-		StartedAt:    c.startedAt.UnixMilli(),
 		Transport:    string(transport),
 	}
-	if c.upstreamInstanceID != "" {
-		upstream := c.upstreamInstanceID
-		message.UpstreamInstanceID = &upstream
+	if transport == TransportLongPoll {
+		// A long poll has no hello, so each heartbeat carries the host object.
+		host := HostInfo{IPs: []string{}}
+		if current := c.host.Load(); current != nil {
+			host = *current
+		}
+		host.Transport = string(transport)
+		message.Host = &host
 	}
 	if c.downstreamCount != nil {
 		count := *c.downstreamCount
@@ -846,12 +862,14 @@ func (c *Channel) pollURL() string {
 	return target.String()
 }
 
-func (c *Channel) requestHeaders() http.Header {
+func (c *Channel) requestHeaders() (http.Header, error) {
 	header := http.Header{}
-	header.Set("Authorization", "Bearer "+c.client.credential)
+	if err := c.client.authorize(header); err != nil {
+		return nil, err
+	}
 	header.Set("Accept", "application/json")
 	header.Set("User-Agent", c.client.userAgent)
-	return header
+	return header, nil
 }
 
 func (c *Channel) setCurrent(transport Transport) {
@@ -876,6 +894,17 @@ func isTerminalError(err error) bool {
 
 // terminalStatusError stops the machine and returns a terminal error for a
 // status that retrying cannot fix. It returns nil for a retryable status.
+// frameRejected reports a frame the source refused as too large. The ADS
+// bounds no frame itself (a stalled transfer is cut by the read and write
+// timeouts), so this is the only place an oversized hello, heartbeat or ack
+// surfaces; it is logged as an error because the channel cannot connect
+// until the frame shrinks.
+func (c *Channel) frameRejected() error {
+	size := c.sentFrameBytes.Load()
+	log.Errorf("policy-source channel: the upstream rejected a %d-byte channel frame as too large", size)
+	return fmt.Errorf("%w: %d bytes", ErrFrameTooLarge, size)
+}
+
 func (c *Channel) terminalStatusError(method, path string, status int, body []byte) error {
 	statusErr := newStatusError(method, path, status, body)
 	switch status {
@@ -883,6 +912,11 @@ func (c *Channel) terminalStatusError(method, path string, status int, body []by
 		c.machine.Stop(ReasonRevoked)
 		return &terminalError{err: statusErr}
 	case http.StatusRequestTimeout, http.StatusTooEarly, http.StatusTooManyRequests:
+		return nil
+	case http.StatusConflict:
+		// The account has no free instance slot (quota_exceeded). A slot can
+		// be freed in the console, so keep retrying with backoff while the
+		// instance serves nothing.
 		return nil
 	}
 	if status >= 500 {

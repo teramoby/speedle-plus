@@ -121,29 +121,13 @@ func TestDecodeServerMessageRejects(t *testing.T) {
 			},
 		},
 		{
-			name: "set source without params",
+			name: "set_source is not a command",
 			payload: func() []byte {
 				ack := validChannelAck()
 				ack.Commands = []channelCommand{{
 					ID:        "01HF7YAT000000000000000301",
-					Action:    commandActionSetSource,
-					ExpiresAt: time.Now().Add(time.Minute).UnixMilli(),
-				}}
-				payload, _ := json.Marshal(ack)
-				return payload
-			},
-		},
-		{
-			name: "set source over plain http",
-			payload: func() []byte {
-				ack := validChannelAck()
-				ack.Commands = []channelCommand{{
-					ID:     "01HF7YAT000000000000000301",
-					Action: commandActionSetSource,
-					Params: &channelCommandParams{
-						URL:               "http://proxy.example",
-						CredentialProfile: "upstream",
-					},
+					Action:    "set_source",
+					Params:    json.RawMessage(`{"url":"https://proxy.example"}`),
 					ExpiresAt: time.Now().Add(time.Minute).UnixMilli(),
 				}}
 				payload, _ := json.Marshal(ack)
@@ -184,10 +168,10 @@ func TestDecodeServerMessageRejects(t *testing.T) {
 			},
 		},
 		{
-			name: "too many services",
+			name: "duplicate services",
 			payload: func() []byte {
 				ack := validChannelAck()
-				for index := 0; index < maxServicesPerSource; index++ {
+				for index := 0; index < 10; index++ {
 					ack.Services = append(ack.Services, ack.Services[0])
 				}
 				payload, _ := json.Marshal(ack)
@@ -236,39 +220,7 @@ func TestDecodeServerMessageRejects(t *testing.T) {
 				ack.Commands = []channelCommand{{
 					ID:        "01HF7YAT000000000000000301",
 					Action:    "resync",
-					Params:    &channelCommandParams{URL: "https://proxy.example"},
-					ExpiresAt: time.Now().Add(time.Minute).UnixMilli(),
-				}}
-				payload, _ := json.Marshal(ack)
-				return payload
-			},
-		},
-		{
-			name: "set source naming a service",
-			payload: func() []byte {
-				ack := validChannelAck()
-				ack.Commands = []channelCommand{{
-					ID:        "01HF7YAT000000000000000301",
-					Action:    commandActionSetSource,
-					ServiceID: testServiceID1,
-					Params: &channelCommandParams{
-						URL:               "https://proxy.example",
-						CredentialProfile: "upstream",
-					},
-					ExpiresAt: time.Now().Add(time.Minute).UnixMilli(),
-				}}
-				payload, _ := json.Marshal(ack)
-				return payload
-			},
-		},
-		{
-			name: "set source without a credential profile",
-			payload: func() []byte {
-				ack := validChannelAck()
-				ack.Commands = []channelCommand{{
-					ID:        "01HF7YAT000000000000000301",
-					Action:    commandActionSetSource,
-					Params:    &channelCommandParams{URL: "https://proxy.example"},
+					Params:    json.RawMessage(`{"url":"https://proxy.example"}`),
 					ExpiresAt: time.Now().Add(time.Minute).UnixMilli(),
 				}}
 				payload, _ := json.Marshal(ack)

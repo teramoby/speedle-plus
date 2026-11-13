@@ -55,7 +55,7 @@ func TestServicesDiscovery(t *testing.T) {
 	if len(fixture.source.requests) == 0 {
 		t.Fatal("no request reached the fixture source")
 	}
-	if got := fixture.source.requests[0].Authorization; got != "Bearer "+testCredential {
+	if got := fixture.source.requests[0].Authorization; got != "Bearer "+testAPIKey {
 		t.Errorf("Authorization = %q", got)
 	}
 	if got := fixture.source.requests[0].Path; got != APIPrefix+"/services" {
@@ -66,9 +66,8 @@ func TestServicesDiscovery(t *testing.T) {
 func TestSnapshotAndNotModified(t *testing.T) {
 	service := newFixtureService(testServiceID1, "books")
 	fixture := newFixture(t, service)
-	service.publish(t, fixture.signer,
-		Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000201",
-			Name: stringPointer("read-books"), SPDL: stringPointer(`grant principal "user:alice" to read on "/books/*"`)})
+	service.publish(t, Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000201",
+		Name: stringPointer("read-books"), SPDL: stringPointer(`grant principal "user:alice" to read on "/books/*"`)})
 	client := fixture.newClient(nil)
 
 	response, notModified, err := client.Snapshot(context.Background(), service.ID, "")
@@ -109,16 +108,6 @@ func TestSnapshotRejectsBadHash(t *testing.T) {
 	}
 }
 
-func TestSnapshotRejectsBadSignature(t *testing.T) {
-	fixture := newFixture(t, newFixtureService(testServiceID1, "books"))
-	fixture.source.configure(func(source *fixtureSource) { source.corruptSnapshotSignature = true })
-	client := fixture.newClient(nil)
-
-	if _, _, err := client.Snapshot(context.Background(), testServiceID1, ""); !errors.Is(err, ErrIntegrity) {
-		t.Fatalf("Snapshot error = %v, want ErrIntegrity", err)
-	}
-}
-
 func TestChangesVerifiesChain(t *testing.T) {
 	service := newFixtureService(testServiceID1, "books")
 	fixture := newFixture(t, service)
@@ -132,11 +121,9 @@ func TestChangesVerifiesChain(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Snapshot: %v", err)
 	}
-	service.publish(t, fixture.signer,
-		Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000201",
-			Name: stringPointer("read-books"), SPDL: stringPointer("grant read")})
-	service.publish(t, fixture.signer,
-		Change{Op: "upsert", Kind: "service", ID: service.ID, Name: stringPointer("books-v2")})
+	service.publish(t, Change{Op: "upsert", Kind: "authz", ID: "01HF7YAT000000000000000201",
+		Name: stringPointer("read-books"), SPDL: stringPointer("grant read")})
+	service.publish(t, Change{Op: "upsert", Kind: "service", ID: service.ID, Name: stringPointer("books-v2")})
 
 	page, err := client.Changes(ctx, service.ID, snapshot.SourceID, snapshot.Epoch,
 		snapshot.Revision, snapshot.CommitHash, 100)
@@ -148,9 +135,6 @@ func TestChangesVerifiesChain(t *testing.T) {
 	}
 	if len(page.Commits) != 1 {
 		t.Fatalf("page has %d commits, want 1 due to pageSize", len(page.Commits))
-	}
-	if page.Commits[0].Signature.KeyID != fixture.signer.keyID {
-		t.Errorf("commit signature keyId = %q", page.Commits[0].Signature.KeyID)
 	}
 
 	// The next page resumes at the last applied revision: "since" is
@@ -169,25 +153,6 @@ func TestChangesVerifiesChain(t *testing.T) {
 	}
 }
 
-func TestChangesRejectsBadSignature(t *testing.T) {
-	service := newFixtureService(testServiceID1, "books")
-	fixture := newFixture(t, service)
-	client := fixture.newClient(nil)
-	snapshot, _, err := client.Snapshot(context.Background(), service.ID, "")
-	if err != nil {
-		t.Fatalf("Snapshot: %v", err)
-	}
-	service.publish(t, fixture.signer,
-		Change{Op: "delete", Kind: "authz", ID: "01HF7YAT000000000000000201"})
-	fixture.source.configure(func(source *fixtureSource) { source.corruptCommitSignature = true })
-
-	_, err = client.Changes(context.Background(), service.ID, snapshot.SourceID, snapshot.Epoch,
-		snapshot.Revision, snapshot.CommitHash, 100)
-	if !errors.Is(err, ErrIntegrity) {
-		t.Fatalf("Changes error = %v, want ErrIntegrity", err)
-	}
-}
-
 func TestChangesRejectsGap(t *testing.T) {
 	service := newFixtureService(testServiceID1, "books")
 	fixture := newFixture(t, service)
@@ -196,10 +161,8 @@ func TestChangesRejectsGap(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Snapshot: %v", err)
 	}
-	service.publish(t, fixture.signer,
-		Change{Op: "delete", Kind: "authz", ID: "01HF7YAT000000000000000201"})
-	service.publish(t, fixture.signer,
-		Change{Op: "delete", Kind: "authz", ID: "01HF7YAT000000000000000202"})
+	service.publish(t, Change{Op: "delete", Kind: "authz", ID: "01HF7YAT000000000000000201"})
+	service.publish(t, Change{Op: "delete", Kind: "authz", ID: "01HF7YAT000000000000000202"})
 	fixture.source.configure(func(source *fixtureSource) { source.dropCommitRevision = 2 })
 
 	_, err = client.Changes(context.Background(), service.ID, snapshot.SourceID, snapshot.Epoch,
@@ -322,11 +285,10 @@ func TestCAFileRequired(t *testing.T) {
 }
 
 func TestConfigValidation(t *testing.T) {
-	keys := goldenPublicKeys(t, loadGolden(t))
 	valid := Config{
 		BaseURL:    "https://cloud.example",
-		Credential: testCredential,
-		PublicKeys: keys,
+		APIKey:     testAPIKey,
+		InstanceID: testInstanceID,
 	}
 	cases := []struct {
 		name   string
@@ -334,8 +296,8 @@ func TestConfigValidation(t *testing.T) {
 	}{
 		{"http base URL", func(config *Config) { config.BaseURL = "http://cloud.example" }},
 		{"credential in URL", func(config *Config) { config.BaseURL = "https://user@cloud.example" }},
-		{"missing keys", func(config *Config) { config.PublicKeys = nil }},
-		{"bad credential", func(config *Config) { config.Credential = "adsi_short" }},
+		{"missing key", func(config *Config) { config.APIKey = "" }},
+		{"bad key", func(config *Config) { config.APIKey = "spdl key" }},
 		{"client cert without key", func(config *Config) { config.ClientCertFile = "/tmp/cert.pem" }},
 		{"negative timeout", func(config *Config) { config.RequestTimeout = -time.Second }},
 		{"negative attempts", func(config *Config) { config.Retry.MaxAttempts = -1 }},
@@ -480,8 +442,8 @@ func TestCustomHTTPClientRejectsRedirectsWithoutMutation(t *testing.T) {
 	})}
 	client, err := NewClient(Config{
 		BaseURL:    "https://source.example",
-		Credential: testCredential,
-		PublicKeys: goldenPublicKeys(t, loadGolden(t)),
+		APIKey:     testAPIKey,
+		InstanceID: testInstanceID,
 		HTTPClient: custom,
 		Retry:      RetryPolicy{MaxAttempts: 1},
 	})

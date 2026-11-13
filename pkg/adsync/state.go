@@ -20,11 +20,8 @@ const (
 	minStopAfter         = 60 * time.Second
 	maxStopAfter         = 15 * time.Minute
 
-	// maxTrackedServices bounds the records the machine keeps, including
-	// tombstones for removed services. The live set is bounded by the
-	// protocol's maxServicesPerSource; the extra room only absorbs service
-	// churn over the lifetime of a process.
-	maxTrackedServices = 100
+	// Only removed-service history is bounded. Live services have no count limit.
+	maxRemovedServiceHistory = 1024
 )
 
 // Clock supplies the current time. The state machine never reads the wall
@@ -83,6 +80,12 @@ const (
 	SyncReasonCatchUp SyncReason = "catch_up"
 	// SyncReasonResync means an explicit resync command invalidated the copy.
 	SyncReasonResync SyncReason = "resync"
+	// SyncReasonIntegrity means the instance failed the service
+	// closed: its copy is ahead of the acknowledged head, or a reloaded
+	// snapshot still did not match it. Requests for the service are denied,
+	// not forwarded, until a later ack or a verified copy clears it. Only a
+	// machine with ReconcileOnAck reports it.
+	SyncReasonIntegrity SyncReason = "integrity_failure"
 )
 
 // Reason is a machine-readable cause reported with unavailable authorization
@@ -228,6 +231,13 @@ type MachineOptions struct {
 	// protocol range is 60s to 15m and it must be greater than the stale
 	// threshold.
 	StopAfter time.Duration
+	// ReconcileOnAck enables the per-ack reconciliation: on every
+	// confirming ack a service whose verified copy is ahead of the ack head in
+	// the same epoch fails closed (SyncReasonIntegrity) instead of waiting,
+	// and FailService can fail one service closed without stopping the
+	// instance. The policy-source store always sets it; the zero value is the
+	// behaviour of a relay mirror, which stops as a whole instead.
+	ReconcileOnAck bool
 }
 
 // Machine tracks the instance liveness and the per-service sync state. It is
@@ -262,7 +272,8 @@ type Machine struct {
 	cloudStale     time.Duration
 	cloudStop      time.Duration
 
-	paused bool
+	paused    bool
+	reconcile bool
 
 	stopped      bool
 	stopReason   Reason
@@ -300,8 +311,15 @@ type serviceRecord struct {
 
 	pendingResync     bool
 	verifiedSinceStop bool
+	removedSeq        uint64
 
-	removedSeq uint64
+	// aheadOfAck is set by an ack whose head is behind the
+	// verified copy. failed is set by FailService and holds until an ack
+	// carries a different head than failedHead, or a verified copy arrives.
+	aheadOfAck bool
+	failed     bool
+	failedHead Head
+
 	// generation changes whenever a result fetched earlier must no longer be
 	// reported: on creation, removal and resync of the record.
 	generation uint64
@@ -356,6 +374,7 @@ func NewMachine(options MachineOptions) (*Machine, error) {
 		localHeartbeat: heartbeat,
 		localStale:     stale,
 		localStop:      stop,
+		reconcile:      options.ReconcileOnAck,
 		records:        make(map[string]*serviceRecord),
 	}, nil
 }
@@ -533,12 +552,6 @@ func (m *Machine) apply(state *ServiceState, attempt *SyncAttempt) error {
 		if m.setKnown {
 			return nil
 		}
-		// Until the first authoritative ack the set is unknown, but the
-		// protocol still bounds how many services one source can serve, so a
-		// caller cannot grow the record map without bound.
-		if len(m.records) >= maxServicesPerSource {
-			return fmt.Errorf("%w: more than %d services reported before the first ack", ErrProtocol, maxServicesPerSource)
-		}
 		record = m.newRecordLocked(state.ServiceID, state.Snapshot.Name)
 	}
 	if m.setKnown && !record.setMember {
@@ -554,6 +567,12 @@ func (m *Machine) apply(state *ServiceState, attempt *SyncAttempt) error {
 	record.localStateHash = state.StateHash
 	record.pendingResync = false
 	record.verifiedSinceStop = true
+	if record.failed && state.Epoch == record.epoch && state.Revision == record.headRevision &&
+		state.StateHash == record.headStateHash {
+		// Only a copy that matches the head the service failed against clears
+		// the failure; re-reporting the previous copy does not.
+		record.failed = false
+	}
 	m.recomputeRecordLocked(record)
 	if m.stopped {
 		m.tryRecoverLocked(now)
@@ -590,6 +609,67 @@ func (m *Machine) SyncFailed(serviceID string, err error) {
 		return
 	}
 	m.removeRecordLocked(record)
+	m.evictRemovedLocked()
+}
+
+// FailService fails one service closed after a reconciliation
+// could not make its copy match the acknowledged head, for example because a
+// reloaded snapshot still has a different state hash. The service reports
+// SyncReasonIntegrity until an ack carries a different head or a verified copy
+// matching the head is applied; the rest of the instance keeps serving. Without ReconcileOnAck
+// it does nothing.
+func (m *Machine) FailService(serviceID string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.failServiceLocked(serviceID)
+}
+
+// FailAttempt fails the service of attempt closed, like FailService, only if
+// nothing invalidated the attempt: a resync, removal or re-add while the
+// fetch was in flight makes its failure obsolete. It reports whether the
+// service was failed.
+func (m *Machine) FailAttempt(attempt SyncAttempt) bool {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if !m.attemptCurrentLocked(attempt) {
+		return false
+	}
+	return m.failServiceLocked(attempt.serviceID)
+}
+
+func (m *Machine) failServiceLocked(serviceID string) bool {
+	m.advanceLocked(m.clock.Now())
+	record := m.records[serviceID]
+	if !m.reconcile || record == nil || record.state == SyncStateRemoved {
+		return false
+	}
+	record.failed = true
+	record.failedHead = Head{ID: record.id, Epoch: record.epoch, Revision: record.headRevision, StateHash: record.headStateHash}
+	m.recomputeRecordLocked(record)
+	return true
+}
+
+// Track records a service known from a local cache before the first ack. It
+// has no verified copy in the machine, so it reports syncing (bootstrap) and
+// requests for it are forwarded until an ack confirms it and a verified copy
+// is installed; an ack that omits it removes it. Once the authoritative set is
+// known Track does nothing.
+func (m *Machine) Track(serviceID, name string) error {
+	if !validEntityID(serviceID) {
+		return fmt.Errorf("%w: invalid service id %q", ErrProtocol, serviceID)
+	}
+	if !validServiceName(name) {
+		return fmt.Errorf("%w: invalid service name %q", ErrProtocol, name)
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.advanceLocked(m.clock.Now())
+	if m.setKnown || m.records[serviceID] != nil {
+		return nil
+	}
+	record := m.newRecordLocked(serviceID, name)
+	m.recomputeRecordLocked(record)
+	return nil
 }
 
 // Resync marks one service for a forced re-synchronization after a resync
@@ -695,9 +775,6 @@ func (m *Machine) Thresholds() Thresholds {
 var _ StatusProvider = (*Machine)(nil)
 
 func validateAck(ack Ack) error {
-	if len(ack.Services) > maxServicesPerSource {
-		return fmt.Errorf("%w: %d services exceed the protocol bound", ErrProtocol, len(ack.Services))
-	}
 	seenIDs := make(map[string]struct{}, len(ack.Services))
 	seenNames := make(map[string]struct{}, len(ack.Services))
 	for index := range ack.Services {
@@ -782,12 +859,23 @@ func (m *Machine) applySetLocked(services []Service, confirmed bool) {
 		}
 		record.setMember = true
 		record.name = service.Name
+		if m.reconcile && confirmed {
+			// Reconcile against this ack's own head, which may be lower than a
+			// head already announced: a known head is never lowered.
+			record.aheadOfAck = record.hasLocal && record.localEpoch == service.Epoch &&
+				record.localRevision > service.Revision
+			if record.failed && (record.failedHead.Epoch != service.Epoch ||
+				record.failedHead.Revision != service.Revision ||
+				record.failedHead.StateHash != service.HeadStateHash) {
+				record.failed = false
+			}
+		}
 		m.updateRecordHeadLocked(record, service.Epoch, service.Revision, service.HeadStateHash, confirmed)
 	}
 	for _, record := range m.records {
 		m.recomputeRecordLocked(record)
 	}
-	m.evictLocked()
+	m.evictRemovedLocked()
 }
 
 func (m *Machine) newRecordLocked(id, name string) *serviceRecord {
@@ -814,6 +902,9 @@ func (m *Machine) recomputeRecordLocked(record *serviceRecord) {
 		return
 	}
 	switch {
+	case record.aheadOfAck || record.failed:
+		record.state = SyncStateSyncing
+		record.reason = SyncReasonIntegrity
 	case record.pendingResync:
 		record.state = SyncStateSyncing
 		record.reason = SyncReasonResync
@@ -857,6 +948,34 @@ func (m *Machine) removeRecordLocked(record *serviceRecord) {
 	record.localStateHash = Hash{}
 	record.pendingResync = false
 	record.verifiedSinceStop = false
+	record.aheadOfAck = false
+	record.failed = false
+	record.failedHead = Head{}
+}
+
+// evictRemovedLocked keeps only the most recently removed records. It never
+// evicts live services, including copies loaded before the first ack. The
+// machine-wide attempt sequence survives eviction, so recreating a record
+// cannot make an older fetch current again.
+func (m *Machine) evictRemovedLocked() {
+	if len(m.records) <= maxRemovedServiceHistory {
+		return
+	}
+	var removed []*serviceRecord
+	for _, record := range m.records {
+		if record.state == SyncStateRemoved {
+			removed = append(removed, record)
+		}
+	}
+	if len(removed) <= maxRemovedServiceHistory {
+		return
+	}
+	sort.Slice(removed, func(left, right int) bool {
+		return removed[left].removedSeq < removed[right].removedSeq
+	})
+	for _, record := range removed[:len(removed)-maxRemovedServiceHistory] {
+		delete(m.records, record.id)
+	}
 }
 
 // updateHead advances the known head. Within one epoch a lower revision never
@@ -910,27 +1029,6 @@ func (r *serviceRecord) status() ServiceStatus {
 		Reason:   r.reason,
 		Revision: r.localRevision,
 		Head:     r.headRevision,
-	}
-}
-
-func (m *Machine) evictLocked() {
-	if len(m.records) <= maxTrackedServices {
-		return
-	}
-	removed := make([]*serviceRecord, 0, len(m.records))
-	for _, record := range m.records {
-		if record.state == SyncStateRemoved {
-			removed = append(removed, record)
-		}
-	}
-	sort.Slice(removed, func(left, right int) bool {
-		return removed[left].removedSeq < removed[right].removedSeq
-	})
-	for _, record := range removed {
-		if len(m.records) <= maxTrackedServices {
-			return
-		}
-		delete(m.records, record.id)
 	}
 }
 

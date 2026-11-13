@@ -3,7 +3,6 @@
 package adsproxy
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -30,10 +29,9 @@ func heartbeatFrame(chain []string) []byte {
 }
 
 func TestChannelChainValidationLongPoll(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, _, _ := newPopulatedMirror(t, signer)
+	mirror, _, _ := newPopulatedMirror(t)
 	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, signer.publicKeys(t), &testServerOptions{
+	server := newTestServer(t, mirror, &testServerOptions{
 		chain: []string{testUpstreamID, testProxyID},
 	}, testCredential{
 		downstreamID: testDownstreamID,
@@ -90,14 +88,13 @@ func TestChannelChainValidationLongPoll(t *testing.T) {
 }
 
 func TestChannelWebSocketHelloAndHeartbeat(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, books, _ := newPopulatedMirror(t, signer)
-	books.publish(t, signer, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
+	mirror, books, _ := newPopulatedMirror(t)
+	books.publish(t, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
 	if err := mirror.ApplyChanges(pageFor(t, books, 1, 100)); err != nil {
 		t.Fatalf("apply changes: %v", err)
 	}
 	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+	server := newTestServer(t, mirror, nil, testCredential{
 		downstreamID: testDownstreamID,
 		token:        token,
 	})
@@ -142,10 +139,9 @@ func TestChannelWebSocketHelloAndHeartbeat(t *testing.T) {
 }
 
 func TestChannelWebSocketChainRejections(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, _, orders := newPopulatedMirror(t, signer)
+	mirror, _, orders := newPopulatedMirror(t)
 	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, signer.publicKeys(t), &testServerOptions{
+	server := newTestServer(t, mirror, &testServerOptions{
 		chain: []string{testUpstreamID, testProxyID},
 	}, testCredential{
 		downstreamID: testDownstreamID,
@@ -228,10 +224,9 @@ func TestChannelWebSocketChainRejections(t *testing.T) {
 }
 
 func TestChannelWebSocketAuthentication(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, _, _ := newPopulatedMirror(t, signer)
+	mirror, _, _ := newPopulatedMirror(t)
 	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+	server := newTestServer(t, mirror, nil, testCredential{
 		downstreamID: testDownstreamID,
 		token:        token,
 	})
@@ -248,128 +243,6 @@ func TestChannelWebSocketAuthentication(t *testing.T) {
 			t.Errorf("status = %v", response)
 		}
 	}
-}
-
-func TestDownstreamChannelEndToEnd(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, books, orders := newPopulatedMirror(t, signer)
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, signer.publicKeys(t), &testServerOptions{
-		coalesceWindow: 300 * time.Millisecond,
-	}, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
-
-	client := server.newClient(token)
-	machine, err := adsync.NewMachine(adsync.MachineOptions{})
-	if err != nil {
-		t.Fatalf("new machine: %v", err)
-	}
-	updates := make(chan adsync.Notify, 16)
-	channel, err := adsync.NewChannel(client, adsync.ChannelOptions{
-		InstanceID:   testDownstreamID,
-		AgentVersion: "test",
-		Chain:        []string{testProxyID, testDownstreamID},
-		Machine:      machine,
-		Transport:    adsync.TransportWebSocket,
-		OnNotify: func(notification adsync.Notify) {
-			select {
-			case updates <- notification:
-			default:
-			}
-		},
-	})
-	if err != nil {
-		t.Fatalf("new channel: %v", err)
-	}
-	ctx, cancel := context.WithCancel(context.Background())
-	done := make(chan error, 1)
-	go func() { done <- channel.Run(ctx) }()
-	defer func() {
-		cancel()
-		// The downstream client's WebSocket read only notices cancellation at
-		// its read deadline; closing the proxy's sessions makes the test quick.
-		server.server.Close()
-		select {
-		case <-done:
-		case <-time.After(5 * time.Second):
-			t.Error("channel did not stop")
-		}
-	}()
-
-	waitFor(t, 5*time.Second, "the first ack", func() bool {
-		status, found := machine.Status("books")
-		return found && status.Service.Head == 1
-	})
-
-	// Two revisions inside one coalescing window produce one notification
-	// carrying the latest head.
-	books.publish(t, signer, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
-	if err := mirror.ApplyChanges(pageFor(t, books, 1, 100)); err != nil {
-		t.Fatalf("apply first change: %v", err)
-	}
-	books.publish(t, signer, upsertAuthz(testServiceID1+"A2", "read-more", "grant read"))
-	if err := mirror.ApplyChanges(pageFor(t, books, 2, 100)); err != nil {
-		t.Fatalf("apply second change: %v", err)
-	}
-
-	select {
-	case notification := <-updates:
-		if notification.ServiceID != testServiceID1 || notification.Head != 3 {
-			t.Errorf("notification = %+v, want books at 3", notification)
-		}
-	case <-time.After(5 * time.Second):
-		t.Fatal("no notification arrived")
-	}
-	select {
-	case extra := <-updates:
-		t.Errorf("unexpected extra notification %+v", extra)
-	case <-time.After(500 * time.Millisecond):
-	}
-	_ = orders
-}
-
-func TestLongPollChannelEndToEnd(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, _, _ := newPopulatedMirror(t, signer)
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
-	client := server.newClient(token)
-	machine, err := adsync.NewMachine(adsync.MachineOptions{})
-	if err != nil {
-		t.Fatalf("new machine: %v", err)
-	}
-	channel, err := adsync.NewChannel(client, adsync.ChannelOptions{
-		InstanceID:   testDownstreamID,
-		AgentVersion: "test",
-		Chain:        []string{testProxyID, testDownstreamID},
-		Machine:      machine,
-		Transport:    adsync.TransportLongPoll,
-		PollWait:     time.Second,
-	})
-	if err != nil {
-		t.Fatalf("new channel: %v", err)
-	}
-	ctx, cancel := context.WithCancel(context.Background())
-	done := make(chan error, 1)
-	go func() { done <- channel.Run(ctx) }()
-	defer func() {
-		cancel()
-		select {
-		case <-done:
-		case <-time.After(5 * time.Second):
-			t.Error("channel did not stop")
-		}
-	}()
-
-	waitFor(t, 5*time.Second, "a confirming long-poll ack", func() bool {
-		status, found := machine.Status("orders")
-		return found && status.Service.Head == 1
-	})
 }
 
 func TestHubCoalescesNotifications(t *testing.T) {
@@ -458,8 +331,7 @@ func TestHubFanoutLimit(t *testing.T) {
 }
 
 func TestServerFanoutLimit(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, _, _ := newPopulatedMirror(t, signer)
+	mirror, _, _ := newPopulatedMirror(t)
 	hub, err := NewHub(1, 10*time.Millisecond)
 	if err != nil {
 		t.Fatalf("new hub: %v", err)
@@ -468,7 +340,7 @@ func TestServerFanoutLimit(t *testing.T) {
 		t.Fatalf("reserve downstream: %v", err)
 	}
 	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, signer.publicKeys(t), &testServerOptions{hub: hub}, testCredential{
+	server := newTestServer(t, mirror, &testServerOptions{hub: hub}, testCredential{
 		downstreamID: testDownstreamID,
 		token:        token,
 	})
@@ -504,10 +376,9 @@ func TestCredentialReloadClosesChannelsWhoseGrantsChanged(t *testing.T) {
 		{name: "narrowed", subset: testServiceID1},
 	} {
 		t.Run(testCase.name, func(t *testing.T) {
-			signer := newTestSigner(t)
-			mirror, _, _ := newPopulatedMirror(t, signer)
+			mirror, _, _ := newPopulatedMirror(t)
 			token := testToken(testDownstreamID, 1)
-			server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+			server := newTestServer(t, mirror, nil, testCredential{
 				downstreamID: testDownstreamID,
 				token:        token,
 			})
@@ -601,10 +472,9 @@ func TestPollWaitBounds(t *testing.T) {
 }
 
 func TestPollRejectsOverflowingWait(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, _, _ := newPopulatedMirror(t, signer)
+	mirror, _, _ := newPopulatedMirror(t)
 	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+	server := newTestServer(t, mirror, nil, testCredential{
 		downstreamID: testDownstreamID,
 		token:        token,
 	})
@@ -618,10 +488,9 @@ func TestPollRejectsOverflowingWait(t *testing.T) {
 }
 
 func TestChannelRejectsNonCanonicalQuery(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, _, _ := newPopulatedMirror(t, signer)
+	mirror, _, _ := newPopulatedMirror(t)
 	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+	server := newTestServer(t, mirror, nil, testCredential{
 		downstreamID: testDownstreamID,
 		token:        token,
 	})
@@ -646,10 +515,9 @@ func TestChannelRejectsNonCanonicalQuery(t *testing.T) {
 }
 
 func TestHeartbeatAncestorChainWithoutThisProxy(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, _, _ := newPopulatedMirror(t, signer)
+	mirror, _, _ := newPopulatedMirror(t)
 	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, signer.publicKeys(t), &testServerOptions{
+	server := newTestServer(t, mirror, &testServerOptions{
 		chain: []string{testUpstreamID, testProxyID},
 	}, testCredential{
 		downstreamID: testDownstreamID,
@@ -676,10 +544,9 @@ func TestHeartbeatAncestorChainWithoutThisProxy(t *testing.T) {
 }
 
 func TestWebSocketHeartbeatAncestorChainWithoutThisProxy(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, _, _ := newPopulatedMirror(t, signer)
+	mirror, _, _ := newPopulatedMirror(t)
 	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, signer.publicKeys(t), &testServerOptions{
+	server := newTestServer(t, mirror, &testServerOptions{
 		chain: []string{testUpstreamID, testProxyID},
 	}, testCredential{
 		downstreamID: testDownstreamID,
@@ -714,10 +581,9 @@ func TestWebSocketHeartbeatAncestorChainWithoutThisProxy(t *testing.T) {
 }
 
 func TestWebSocketHelloFromAnAncestor(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, _, _ := newPopulatedMirror(t, signer)
+	mirror, _, _ := newPopulatedMirror(t)
 	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, signer.publicKeys(t), &testServerOptions{
+	server := newTestServer(t, mirror, &testServerOptions{
 		chain: []string{testUpstreamID, testProxyID},
 	}, testCredential{
 		downstreamID: testDownstreamID,

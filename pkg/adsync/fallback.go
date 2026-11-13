@@ -16,9 +16,9 @@ import (
 )
 
 const (
-	// AuthzCheckAPIPrefix is the Cloud endpoint that evaluates authorization
-	// requests and accepts an instance credential. Fallback calls use the same
-	// body as a local evaluation request.
+	// AuthzCheckAPIPrefix is the upstream endpoint that evaluates
+	// authorization requests with the instance's API key. Forwarded calls use
+	// the same body as a local evaluation request.
 	AuthzCheckAPIPrefix = "/authz-check/v1/"
 
 	// DefaultFallbackTimeout bounds one forwarded authorization request.
@@ -28,14 +28,22 @@ const (
 	// it never latches fallback off permanently.
 	DefaultFallbackRetryBackoff = time.Second
 
-	// maxFallbackResponseBytes bounds a forwarded response. Authorization
-	// responses are much smaller; the limit only guards against a hostile or
-	// broken source.
-	maxFallbackResponseBytes = 5 << 20
+	// MaxUpstreamInFlight bounds the forwarded requests an instance has in
+	// flight. A request beyond it is denied, not queued.
+	MaxUpstreamInFlight = 20
+	// MaxUpstreamRetryAfter caps how long a Retry-After from the upstream
+	// suppresses forwarding. A daily_quota_exceeded answer is the exception:
+	// its Retry-After is honoured in full, up to the next UTC midnight, when
+	// the daily quota resets.
+	MaxUpstreamRetryAfter = 60 * time.Second
+
+	// DecisionSourceUpstream marks a response the upstream produced.
+	DecisionSourceUpstream = "upstream"
 )
 
 // FallbackOperation is one authorization operation that can be forwarded to
-// Cloud while a service is syncing. Cloud exposes only these three operations.
+// the upstream while a service is syncing or stale. The upstream exposes only
+// these three operations.
 type FallbackOperation string
 
 const (
@@ -54,16 +62,19 @@ func (o FallbackOperation) Valid() bool {
 	}
 }
 
-// FallbackResponse is Cloud's authorization response. StatusCode, Header and
-// Body are passed through to the caller unchanged.
+// FallbackResponse is the upstream's authorization response. StatusCode,
+// Header and Body are passed through to the caller unchanged.
 type FallbackResponse struct {
 	StatusCode int
 	Header     http.Header
 	Body       []byte
+	// DecisionSource is the decision-source marker for the caller; it is
+	// always DecisionSourceUpstream.
+	DecisionSource string
 }
 
-// FallbackForwarder forwards an authorization request to the configured
-// Speedle Cloud destination with the configured Cloud credential. It is
+// FallbackForwarder forwards an authorization request to the upstream with
+// the instance's API key. It is
 // implemented by the policy-source store and used by the REST and gRPC request
 // gates.
 type FallbackForwarder interface {
@@ -72,8 +83,8 @@ type FallbackForwarder interface {
 }
 
 var (
-	// ErrFallbackUnavailable means no fallback is configured for this instance,
-	// for example because the feature is disabled or no credential was loaded.
+	// ErrFallbackUnavailable means forwarding is not possible for this
+	// instance.
 	ErrFallbackUnavailable = errors.New("adsync: fallback is not configured")
 	// ErrFallbackQuotaExhausted means Cloud refused the fallback call because
 	// the instance or account reached its fallback limit. Cloud answered, so
@@ -100,10 +111,11 @@ func (e *fallbackTransportError) Is(target error) bool {
 
 // fallbackStatusError is a non-2xx response from Cloud.
 type fallbackStatusError struct {
-	status int
-	code   string
-	reason string
-	cause  error
+	status     int
+	code       string
+	reason     string
+	retryAfter time.Duration
+	cause      error
 }
 
 func (e *fallbackStatusError) Error() string {
@@ -144,30 +156,36 @@ func newFallbackStatusError(status int, body []byte) error {
 	return e
 }
 
-// ForwardFallback evaluates one authorization request on the configured Cloud
-// destination with the Cloud credential. The request body is sent unchanged and
-// the credential never appears in a URL or a log message.
+// ForwardFallback evaluates one authorization request on the upstream with
+// the instance's API key. The request body is sent unchanged and the key never
+// appears in a URL or a log message.
 //
-// A request is retried at most once, and only when the connection could not be
-// established, so a request that may have reached Cloud is never repeated.
-// HTTP 429 and 5xx responses are not retried.
+// At most MaxUpstreamInFlight requests are in flight; a request beyond that is
+// refused. A request is retried at most once, and only when the connection
+// could not be established, so a request that may have reached the upstream is
+// never repeated. HTTP 429 and 5xx responses are not retried.
 func (c *Client) ForwardFallback(ctx context.Context, operation FallbackOperation, body []byte) (*FallbackResponse, error) {
-	if c.fallbackBase == nil || c.fallbackCredential == "" || c.fallbackHTTP == nil {
-		return nil, ErrFallbackUnavailable
-	}
 	if !operation.Valid() {
 		return nil, fmt.Errorf("%w: unknown fallback operation %q", ErrProtocol, operation)
 	}
 	if len(body) == 0 {
 		return nil, fmt.Errorf("%w: empty fallback request body", ErrProtocol)
 	}
+	select {
+	case c.fallbackSlots <- struct{}{}:
+		defer func() { <-c.fallbackSlots }()
+	default:
+		return nil, fmt.Errorf("%w: %d forwarded requests are already in flight", ErrUnavailable, MaxUpstreamInFlight)
+	}
 	for attempt := 0; ; attempt++ {
+		started := c.fallbackRetrySequence()
 		response, err := c.forwardOnce(ctx, operation, body)
 		if err == nil {
-			c.recordFallbackOutcome(nil)
+			c.recordFallbackOutcome(nil, started)
+			response.DecisionSource = DecisionSourceUpstream
 			return response, nil
 		}
-		c.recordFallbackOutcome(err)
+		c.recordFallbackOutcome(err, started)
 		if attempt == 0 && ctx.Err() == nil && isConnectionEstablishmentFailure(err) {
 			continue
 		}
@@ -183,19 +201,21 @@ func (c *Client) forwardOnce(ctx context.Context, operation FallbackOperation, b
 	requestCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	target := *c.fallbackBase
-	target.Path = c.fallbackBase.Path + AuthzCheckAPIPrefix + string(operation)
+	target := *c.base
+	target.Path = c.base.Path + AuthzCheckAPIPrefix + string(operation)
 	request, err := http.NewRequestWithContext(requestCtx, http.MethodPost, target.String(), bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("adsync: build fallback request: %w", err)
 	}
-	request.Header.Set("Authorization", "Bearer "+c.fallbackCredential)
+	if err := c.authorize(request.Header); err != nil {
+		return nil, err
+	}
 	request.Header.Set("Content-Type", "application/json")
 	request.Header.Set("Accept", "application/json")
 	request.Header.Set("Accept-Encoding", "identity")
 	request.Header.Set("User-Agent", c.userAgent)
 
-	response, err := c.fallbackHTTP.Do(request)
+	response, err := c.http.Do(request)
 	if err != nil {
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
@@ -207,18 +227,21 @@ func (c *Client) forwardOnce(ctx context.Context, operation FallbackOperation, b
 	}
 	defer response.Body.Close()
 
-	responseBody, readErr := io.ReadAll(io.LimitReader(response.Body, maxFallbackResponseBytes+1))
+	reader := io.Reader(response.Body)
+	if response.StatusCode < 200 || response.StatusCode > 299 {
+		reader = io.LimitReader(reader, maxErrorResponseBytes)
+	}
+	responseBody, readErr := io.ReadAll(reader)
 	if readErr != nil {
 		if ctx.Err() != nil {
 			return nil, ctx.Err()
 		}
 		return nil, &fallbackTransportError{err: readErr}
 	}
-	if len(responseBody) > maxFallbackResponseBytes {
-		return nil, fmt.Errorf("%w: fallback response exceeds %d bytes", ErrProtocol, maxFallbackResponseBytes)
-	}
 	if response.StatusCode < 200 || response.StatusCode > 299 {
-		return nil, newFallbackStatusError(response.StatusCode, responseBody)
+		statusErr := newFallbackStatusError(response.StatusCode, responseBody)
+		statusErr.(*fallbackStatusError).retryAfter = retryAfterDuration(response.Header)
+		return nil, statusErr
 	}
 	return &FallbackResponse{
 		StatusCode: response.StatusCode,
@@ -231,26 +254,56 @@ func (c *Client) forwardOnce(ctx context.Context, operation FallbackOperation, b
 // rate-limit, authentication or 5xx failure. Other HTTP answers clear the
 // delay. A later request is always allowed once the delay expires, so one
 // transient error cannot disable fallback forever.
-func (c *Client) recordFallbackOutcome(err error) {
+//
+// Requests complete out of order. A failure keeps the later of its own
+// deadline and the current one. An answer clears the deadline only when no
+// other response set one while this request was in flight (started is the
+// sequence observed when it was sent), so a response that was already on its
+// way never shortens or clears a newer deadline.
+func (c *Client) recordFallbackOutcome(err error, started uint64) {
 	retryLater := err != nil && (errors.Is(err, ErrUnavailable) || errors.Is(err, ErrRateLimited) ||
 		errors.Is(err, ErrUnauthorized) || errors.Is(err, ErrForbidden))
+	delay := c.fallbackBackoff
+	// The upstream's Retry-After is honoured on any failure, up to a minute,
+	// or up to the next UTC midnight for an exhausted daily quota; requests
+	// are denied meanwhile.
+	var statusErr *fallbackStatusError
+	if errors.As(err, &statusErr) && statusErr.retryAfter > 0 {
+		retryLater = true
+		delay = statusErr.retryAfter
+		limit := MaxUpstreamRetryAfter
+		if statusErr.code == "daily_quota_exceeded" {
+			now := c.now().UTC()
+			limit = time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, time.UTC).Sub(now)
+		}
+		if delay > limit {
+			delay = limit
+		}
+	}
 	c.fallbackMu.Lock()
+	defer c.fallbackMu.Unlock()
 	if retryLater {
-		c.fallbackRetryAt = c.now().Add(c.fallbackBackoff)
-	} else {
+		if deadline := c.now().Add(delay); deadline.After(c.fallbackRetryAt) {
+			c.fallbackRetryAt = deadline
+			c.fallbackRetrySeq++
+		}
+		return
+	}
+	if c.fallbackRetrySeq == started {
 		c.fallbackRetryAt = time.Time{}
 	}
-	c.fallbackMu.Unlock()
 }
 
-// FallbackAvailable reports whether fallback is configured and not inside its
-// short retry delay. Configuration and transient reachability are deliberately
-// separate: an expired delay permits the next request, which can then restore
+func (c *Client) fallbackRetrySequence() uint64 {
+	c.fallbackMu.Lock()
+	defer c.fallbackMu.Unlock()
+	return c.fallbackRetrySeq
+}
+
+// FallbackAvailable reports whether forwarding is outside its short retry
+// delay. An expired delay permits the next request, which can then restore
 // readiness after a successful response.
 func (c *Client) FallbackAvailable() bool {
-	if c.fallbackBase == nil || c.fallbackCredential == "" || c.fallbackHTTP == nil {
-		return false
-	}
 	c.fallbackMu.Lock()
 	defer c.fallbackMu.Unlock()
 	return c.fallbackRetryAt.IsZero() || !c.now().Before(c.fallbackRetryAt)
@@ -259,7 +312,7 @@ func (c *Client) FallbackAvailable() bool {
 // isConnectionEstablishmentFailure reports whether the request failed before
 // it could be sent: DNS, TCP or proxy CONNECT failures, and TLS handshake or
 // certificate errors. A timeout while waiting for a response is not included,
-// because the request may have reached Cloud.
+// because the request may have reached the upstream.
 func isConnectionEstablishmentFailure(err error) bool {
 	var transportErr *fallbackTransportError
 	if !errors.As(err, &transportErr) {

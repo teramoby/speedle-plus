@@ -12,6 +12,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"fmt"
 	"io"
 	"math/big"
 	"net"
@@ -23,6 +24,7 @@ import (
 	"time"
 
 	"github.com/spf13/pflag"
+	"github.com/teramoby/speedle-plus/pkg/cfg"
 	"github.com/teramoby/speedle-plus/pkg/errors"
 	mysqlstore "github.com/teramoby/speedle-plus/pkg/store/mysql"
 )
@@ -517,5 +519,60 @@ func TestConfigStringListsJoinIntoStringStoreFlags(t *testing.T) {
 	}
 	if got := configuration.StoreConfig.StoreProps["Services"]; got != "books,orders" {
 		t.Fatalf("store property = %v", got)
+	}
+}
+
+func TestPolicySourceConfigOnlyPropertiesSurviveFlags(t *testing.T) {
+	for _, selection := range []struct{ name, fileType, envType, flagType string }{
+		{"file", "policy-source", "", ""},
+		{"environment", "", "policy-source", ""},
+		{"environment override", "file", "policy-source", ""},
+		{"flag override", "file", "", "policy-source"},
+		{"other store override", "policy-source", "", "file"},
+	} {
+		t.Run(selection.name, func(t *testing.T) {
+			oldArgs, oldFlags := os.Args, pflag.CommandLine
+			defer func() { os.Args, pflag.CommandLine = oldArgs, oldFlags }()
+			pflag.CommandLine = pflag.NewFlagSet("config-only", pflag.ContinueOnError)
+			pflag.CommandLine.SetOutput(io.Discard)
+			const secret = "file-only-private-key-371"
+			path := writeFile(t, "config.json", `{"storeConfig":{"storeType":"`+selection.fileType+`","storeProps":{"UpstreamURL":"https://source.example","APIKey":"`+secret+`","PolicySourceURL":"https://removed.example","CredentialFile":"removed","PolicySourcePublicKeys":"removed","Services":["old"],"CloudFallbackURL":"removed","CloudCredentialFile":"removed","InstanceName":"removed"}}}`)
+			t.Setenv(FlagToEnv("store-type"), selection.envType)
+			t.Setenv(FlagToEnv("policy-source-api-key"), "env-must-be-ignored")
+			t.Setenv(FlagToEnv("api-key"), "env-must-be-ignored")
+			os.Args = []string{"speedle", "--config-file", path}
+			if selection.flagType != "" {
+				os.Args = append(os.Args, "--store-type", selection.flagType)
+			}
+			params := &Parameters{}
+			if code := run(t, func() { params.ParseFlags("0.0.0.0:1", func() {}, map[string]string{}) }); code != -1 {
+				t.Fatalf("exit %d", code)
+			}
+			configuration, err := params.Param2Config(map[string]string{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			props := configuration.StoreConfig.StoreProps
+			if selection.flagType == "file" {
+				if len(props) != 0 {
+					t.Fatal("policy-source properties carried into another store")
+				}
+				return
+			}
+			if props["UpstreamURL"] != "https://source.example" || props["InstanceName"] != "removed" || props["APIKey"] != cfg.Secret(secret) {
+				t.Fatal("config-only properties dropped or overwritten")
+			}
+			for _, key := range []string{"PolicySourceURL", "CredentialFile", "PolicySourcePublicKeys", "Services", "CloudFallbackURL", "CloudCredentialFile", "InstanceName"} {
+				if _, exists := props[key]; !exists {
+					t.Fatalf("removed property %s dropped before validation", key)
+				}
+			}
+			if strings.Contains(fmt.Sprintf("%+v", params), secret) {
+				t.Fatal("parameter dump exposed key")
+			}
+			if pflag.Lookup("policy-source-api-key") != nil {
+				t.Fatal("secret flag registered")
+			}
+		})
 	}
 }

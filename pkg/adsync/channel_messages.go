@@ -5,15 +5,14 @@ package adsync
 import (
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"regexp"
 	"time"
 )
 
 // Channel wire types from the shared policy-source contract. Client frames are
 // hello, heartbeat and command_result; server frames are ack and notify. A
-// frame is capped at 64 KiB, carries no policy content and never carries the
-// credential: the channel is authenticated by the Authorization header of the
+// frame has no size limit on the ADS side, carries no policy content and never
+// carries the credential: the channel is authenticated by the Authorization header of the
 // upgrade or poll request.
 const (
 	channelTypeHello         = "hello"
@@ -22,19 +21,13 @@ const (
 	channelTypeNotify        = "notify"
 	channelTypeCommandResult = "command_result"
 
-	commandActionResync    = "resync"
-	commandActionPause     = "pause"
-	commandActionResume    = "resume"
-	commandActionSetSource = "set_source"
-	commandActionStop      = "stop"
+	commandActionResync = "resync"
+	commandActionPause  = "pause"
+	commandActionResume = "resume"
+	commandActionStop   = "stop"
 
 	commandStatusAcked    = "acked"
 	commandStatusRejected = "rejected"
-
-	maxChannelFrameBytes = 64 << 10
-	// maxChainEntries is the contract bound: one entry per proxy plus this
-	// instance.
-	maxChainEntries = maxChainDepth + 1
 )
 
 // channelDurationPattern is the contract's duration syntax. time.ParseDuration
@@ -53,12 +46,11 @@ type channelHelloService struct {
 type channelHello struct {
 	Type         string                `json:"type"`
 	InstanceID   string                `json:"instanceId"`
-	CredentialID string                `json:"credentialId,omitempty"`
 	Services     []channelHelloService `json:"services"`
-	Chain        []string              `json:"chain"`
 	AgentVersion string                `json:"agentVersion"`
-	StartedAt    int64                 `json:"startedAt,omitempty"`
-	Transport    string                `json:"transport,omitempty"`
+	// Host is display-only; it is never used for identity. It carries the
+	// start time and the transport.
+	Host *HostInfo `json:"host"`
 }
 
 // channelHeartbeatService is one entry of the heartbeat service list.
@@ -81,17 +73,17 @@ type channelFallback struct {
 // channelHeartbeat covers every service in one message. In long-poll mode it is
 // the body of each poll request.
 type channelHeartbeat struct {
-	Type               string                    `json:"type"`
-	Seq                uint64                    `json:"seq"`
-	Services           []channelHeartbeatService `json:"services"`
-	Liveness           string                    `json:"liveness"`
-	Chain              []string                  `json:"chain"`
-	Fallback           channelFallback           `json:"fallback"`
-	AgentVersion       string                    `json:"agentVersion"`
-	StartedAt          int64                     `json:"startedAt"`
-	Transport          string                    `json:"transport"`
-	UpstreamInstanceID *string                   `json:"upstreamInstanceId,omitempty"`
-	DownstreamCount    *uint64                   `json:"downstreamCount,omitempty"`
+	Type       string `json:"type"`
+	InstanceID string `json:"instanceId"`
+	// Host is sent with each long poll, which has no hello.
+	Host            *HostInfo                 `json:"host,omitempty"`
+	Seq             uint64                    `json:"seq"`
+	Services        []channelHeartbeatService `json:"services"`
+	Liveness        string                    `json:"liveness"`
+	Fallback        channelFallback           `json:"fallback"`
+	AgentVersion    string                    `json:"agentVersion"`
+	Transport       string                    `json:"transport"`
+	DownstreamCount *uint64                   `json:"downstreamCount,omitempty"`
 }
 
 // channelAckService is one service entry of an ack. Head is the source head;
@@ -124,20 +116,13 @@ type channelNotify struct {
 	Head      uint64 `json:"head"`
 }
 
-// channelCommandParams carries the set_source parameters. The command never
-// carries a credential: credentialProfile names a local file.
-type channelCommandParams struct {
-	URL               string `json:"url"`
-	CredentialProfile string `json:"credentialProfile"`
-}
-
 // channelCommand is one management command from the ack.
 type channelCommand struct {
-	ID        string                `json:"id"`
-	Action    string                `json:"action"`
-	ServiceID string                `json:"serviceId,omitempty"`
-	Params    *channelCommandParams `json:"params,omitempty"`
-	ExpiresAt int64                 `json:"expiresAt"`
+	ID        string          `json:"id"`
+	Action    string          `json:"action"`
+	ServiceID string          `json:"serviceId,omitempty"`
+	Params    json.RawMessage `json:"params,omitempty"`
+	ExpiresAt int64           `json:"expiresAt"`
 }
 
 // channelCommandResult reports a delivered command back to the source.
@@ -175,9 +160,6 @@ func (a *channelAck) validate() error {
 	}
 	if a.ServicesVersion <= 0 || a.ServicesVersion > maxSafeInteger {
 		return fmt.Errorf("%w: invalid servicesVersion %d", ErrProtocol, a.ServicesVersion)
-	}
-	if len(a.Services) > maxServicesPerSource {
-		return fmt.Errorf("%w: %d services exceed the protocol bound", ErrProtocol, len(a.Services))
 	}
 	seen := make(map[string]struct{}, len(a.Services))
 	for index := range a.Services {
@@ -231,25 +213,11 @@ func (c *channelCommand) validate() error {
 	}
 	switch c.Action {
 	case commandActionResync, commandActionPause, commandActionResume, commandActionStop:
-		if c.Params != nil {
+		if len(c.Params) != 0 {
 			return fmt.Errorf("%w: command %q must not carry params", ErrProtocol, c.ID)
 		}
 		if c.ServiceID != "" && !validEntityID(c.ServiceID) {
 			return fmt.Errorf("%w: command %q has an invalid service id", ErrProtocol, c.ID)
-		}
-	case commandActionSetSource:
-		if c.ServiceID != "" {
-			return fmt.Errorf("%w: set_source command %q must not name a service", ErrProtocol, c.ID)
-		}
-		if c.Params == nil {
-			return fmt.Errorf("%w: set_source command %q has no params", ErrProtocol, c.ID)
-		}
-		target, err := url.Parse(c.Params.URL)
-		if err != nil || target.Scheme != "https" || target.Host == "" || target.User != nil {
-			return fmt.Errorf("%w: set_source command %q has an invalid url", ErrProtocol, c.ID)
-		}
-		if c.Params.CredentialProfile == "" || len(c.Params.CredentialProfile) > 128 {
-			return fmt.Errorf("%w: set_source command %q has an invalid credential profile", ErrProtocol, c.ID)
 		}
 	default:
 		return fmt.Errorf("%w: unknown command action %q", ErrProtocol, c.Action)
@@ -263,10 +231,6 @@ func (c channelCommand) command() Command {
 		Action:    c.Action,
 		ServiceID: c.ServiceID,
 		ExpiresAt: time.UnixMilli(c.ExpiresAt).UTC(),
-	}
-	if c.Params != nil {
-		command.SourceURL = c.Params.URL
-		command.CredentialProfile = c.Params.CredentialProfile
 	}
 	return command
 }

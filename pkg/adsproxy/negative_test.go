@@ -44,10 +44,9 @@ func doRequest(t *testing.T, server *testServer, method, path, token string, bod
 }
 
 func TestServerRouteAndMethodErrors(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, _, _ := newPopulatedMirror(t, signer)
+	mirror, _, _ := newPopulatedMirror(t)
 	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+	server := newTestServer(t, mirror, nil, testCredential{
 		downstreamID: testDownstreamID,
 		token:        token,
 	})
@@ -75,9 +74,8 @@ func TestServerRouteAndMethodErrors(t *testing.T) {
 }
 
 func TestServerAccessors(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, _, _ := newPopulatedMirror(t, signer)
-	server := newTestServer(t, mirror, signer.publicKeys(t), &testServerOptions{
+	mirror, _, _ := newPopulatedMirror(t)
+	server := newTestServer(t, mirror, &testServerOptions{
 		chain: []string{testUpstreamID, testProxyID},
 	}, testCredential{downstreamID: testDownstreamID, token: testToken(testDownstreamID, 1)})
 	if got := server.server.InstanceID(); got != testProxyID {
@@ -170,22 +168,21 @@ func TestWriteMirrorErrorMapping(t *testing.T) {
 }
 
 func TestResolveServiceSourceUnavailable(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror := newTestMirror(t, signer.publicKeys(t), func(options *MirrorOptions) {
+	mirror := newTestMirror(t, func(options *MirrorOptions) {
 		options.MaxLogCommits = 1
 	})
 	service := newFixtureService(testServiceID1, "books")
-	if err := mirror.ApplySnapshot(snapshotAt(t, service, signer)); err != nil {
+	if err := mirror.ApplySnapshot(snapshotAt(t, service)); err != nil {
 		t.Fatalf("apply snapshot: %v", err)
 	}
 	for index := 0; index < 2; index++ {
-		service.publish(t, signer, upsertAuthz(testServiceID1+string(rune('A'+index)), "policy", "grant read"))
+		service.publish(t, upsertAuthz(testServiceID1+string(rune('A'+index)), "policy", "grant read"))
 		if err := mirror.ApplyChanges(pageFor(t, service, service.Revision-1, 100)); err != nil {
 			t.Fatalf("apply changes: %v", err)
 		}
 	}
 	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+	server := newTestServer(t, mirror, nil, testCredential{
 		downstreamID: testDownstreamID,
 		token:        token,
 	})
@@ -198,8 +195,7 @@ func TestResolveServiceSourceUnavailable(t *testing.T) {
 }
 
 func TestNormalizeThresholdsErrors(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	mirror := newTestMirror(t, nil)
 	credentials, err := NewCredentialSet([]Credential{{DownstreamID: "edge", Token: "token", Services: []string{"*"}}})
 	if err != nil {
 		t.Fatalf("credentials: %v", err)
@@ -230,8 +226,7 @@ func TestNormalizeThresholdsErrors(t *testing.T) {
 }
 
 func TestNewServerCredentialFileError(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	mirror := newTestMirror(t, nil)
 	_, err := NewServer(Config{
 		InstanceID:     testProxyID,
 		Mirror:         mirror,
@@ -371,10 +366,9 @@ func TestNewCredentialSetValidation(t *testing.T) {
 }
 
 func TestWatchReloadEdgeCases(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, _, _ := newPopulatedMirror(t, signer)
+	mirror, _, _ := newPopulatedMirror(t)
 	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+	server := newTestServer(t, mirror, nil, testCredential{
 		downstreamID: testDownstreamID,
 		token:        token,
 	})
@@ -443,8 +437,7 @@ func TestHubEdgeCases(t *testing.T) {
 }
 
 func TestChannelWebSocketFrameErrors(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, _, _ := newPopulatedMirror(t, signer)
+	mirror, _, _ := newPopulatedMirror(t)
 	token := testToken(testDownstreamID, 1)
 	validHello := func() helloMessage {
 		return helloMessage{
@@ -649,7 +642,7 @@ func TestChannelWebSocketFrameErrors(t *testing.T) {
 			if testCase.name == "service outside subset" {
 				credential.services = []string{testServiceID1}
 			}
-			server := newTestServer(t, mirror, signer.publicKeys(t), nil, credential)
+			server := newTestServer(t, mirror, nil, credential)
 			conn, _, err := server.dial(token)
 			if err != nil {
 				t.Fatalf("dial: %v", err)
@@ -665,10 +658,9 @@ func TestChannelWebSocketFrameErrors(t *testing.T) {
 }
 
 func TestPollBodyTooLarge(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, _, _ := newPopulatedMirror(t, signer)
+	mirror, _, _ := newPopulatedMirror(t)
 	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+	server := newTestServer(t, mirror, nil, testCredential{
 		downstreamID: testDownstreamID,
 		token:        token,
 	})
@@ -680,10 +672,9 @@ func TestPollBodyTooLarge(t *testing.T) {
 }
 
 func TestPollRevokedWhileHeld(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, _, _ := newPopulatedMirror(t, signer)
+	mirror, _, _ := newPopulatedMirror(t)
 	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+	server := newTestServer(t, mirror, nil, testCredential{
 		downstreamID: testDownstreamID,
 		token:        token,
 	})
@@ -712,12 +703,11 @@ func TestPollRevokedWhileHeld(t *testing.T) {
 }
 
 func TestMirrorOptionValidation(t *testing.T) {
-	signer := newTestSigner(t)
 	for name, mutate := range map[string]func(*MirrorOptions){
 		"commits": func(options *MirrorOptions) { options.MaxLogCommits = -1 },
 		"bytes":   func(options *MirrorOptions) { options.MaxLogBytes = -1 },
 	} {
-		options := MirrorOptions{PublicKeys: signer.publicKeys(t)}
+		options := MirrorOptions{}
 		mutate(&options)
 		if _, err := NewMirror(options); !errors.Is(err, ErrConfig) {
 			t.Errorf("%s: %v, want ErrConfig", name, err)
@@ -726,13 +716,12 @@ func TestMirrorOptionValidation(t *testing.T) {
 }
 
 func TestMirrorChangesEdgeCases(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	mirror := newTestMirror(t, nil)
 	service := newFixtureService(testServiceID1, "books")
-	if err := mirror.ApplySnapshot(snapshotAt(t, service, signer)); err != nil {
+	if err := mirror.ApplySnapshot(snapshotAt(t, service)); err != nil {
 		t.Fatalf("apply snapshot: %v", err)
 	}
-	service.publish(t, signer, upsertAuthz(testServiceID1+"A1", "policy", "grant read"))
+	service.publish(t, upsertAuthz(testServiceID1+"A1", "policy", "grant read"))
 	if err := mirror.ApplyChanges(pageFor(t, service, 1, 100)); err != nil {
 		t.Fatalf("apply changes: %v", err)
 	}
@@ -748,15 +737,15 @@ func TestMirrorChangesEdgeCases(t *testing.T) {
 		t.Fatalf("changes: %v", err)
 	}
 
-	overflowed := newTestMirror(t, signer.publicKeys(t), func(options *MirrorOptions) {
+	overflowed := newTestMirror(t, func(options *MirrorOptions) {
 		options.MaxLogCommits = 1
 	})
 	other := newFixtureService(testServiceID2, "orders")
-	if err := overflowed.ApplySnapshot(snapshotAt(t, other, signer)); err != nil {
+	if err := overflowed.ApplySnapshot(snapshotAt(t, other)); err != nil {
 		t.Fatalf("apply snapshot: %v", err)
 	}
 	for index := 0; index < 2; index++ {
-		other.publish(t, signer, upsertAuthz(testServiceID2+string(rune('A'+index)), "policy", "grant read"))
+		other.publish(t, upsertAuthz(testServiceID2+string(rune('A'+index)), "policy", "grant read"))
 		if err := overflowed.ApplyChanges(pageFor(t, other, other.Revision-1, 100)); err != nil {
 			t.Fatalf("apply changes: %v", err)
 		}
@@ -767,8 +756,7 @@ func TestMirrorChangesEdgeCases(t *testing.T) {
 }
 
 func TestMirrorNilInputs(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	mirror := newTestMirror(t, nil)
 	if err := mirror.ApplySnapshot(nil); !errors.Is(err, ErrConfig) {
 		t.Errorf("nil snapshot: %v, want ErrConfig", err)
 	}
@@ -781,8 +769,7 @@ func TestMirrorNilInputs(t *testing.T) {
 }
 
 func TestMirrorSnapshotValidation(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	mirror := newTestMirror(t, nil)
 	service := newFixtureService(testServiceID1, "books")
 	for _, testCase := range []struct {
 		name   string
@@ -795,7 +782,7 @@ func TestMirrorSnapshotValidation(t *testing.T) {
 		{name: "invalid name", mutate: func(response *adsync.SnapshotResponse) { response.Snapshot.Name = "-bad" }},
 		{name: "missing hashes", mutate: func(response *adsync.SnapshotResponse) { response.StateHash = adsync.Hash{} }},
 	} {
-		response := service.snapshotResponse(t, signer)
+		response := service.snapshotResponse(t)
 		testCase.mutate(response)
 		if err := mirror.ApplySnapshot(response); !errors.Is(err, adsync.ErrProtocol) {
 			t.Errorf("%s: %v, want ErrProtocol", testCase.name, err)
@@ -804,15 +791,14 @@ func TestMirrorSnapshotValidation(t *testing.T) {
 }
 
 func TestMirrorChangePageValidation(t *testing.T) {
-	signer := newTestSigner(t)
 	newMirrorWithCommit := func(t *testing.T) (*Mirror, *fixtureService) {
 		t.Helper()
-		mirror := newTestMirror(t, signer.publicKeys(t), nil)
+		mirror := newTestMirror(t, nil)
 		service := newFixtureService(testServiceID1, "books")
-		if err := mirror.ApplySnapshot(snapshotAt(t, service, signer)); err != nil {
+		if err := mirror.ApplySnapshot(snapshotAt(t, service)); err != nil {
 			t.Fatalf("apply snapshot: %v", err)
 		}
-		service.publish(t, signer, upsertAuthz(testServiceID1+"A1", "policy", "grant read"))
+		service.publish(t, upsertAuthz(testServiceID1+"A1", "policy", "grant read"))
 		return mirror, service
 	}
 	valid := func(t *testing.T, service *fixtureService) *adsync.ChangesResponse {
@@ -869,7 +855,7 @@ func TestMirrorChangePageValidation(t *testing.T) {
 
 	t.Run("not contiguous", func(t *testing.T) {
 		mirror, service := newMirrorWithCommit(t)
-		service.publish(t, signer, upsertAuthz(testServiceID1+"A2", "policy", "grant read"))
+		service.publish(t, upsertAuthz(testServiceID1+"A2", "policy", "grant read"))
 		page := pageFor(t, service, 1, 100)
 		if len(page.Commits) != 2 {
 			t.Fatalf("fixture commits = %d", len(page.Commits))
@@ -899,18 +885,9 @@ func TestMirrorChangePageValidation(t *testing.T) {
 		}
 	})
 
-	t.Run("bad signature", func(t *testing.T) {
-		mirror, service := newMirrorWithCommit(t)
-		page := valid(t, service)
-		page.Commits[0].Signature.Value = signer.sign([]byte("other")).Value
-		if err := mirror.ApplyChanges(page); !errors.Is(err, adsync.ErrIntegrity) {
-			t.Errorf("bad signature: %v, want ErrIntegrity", err)
-		}
-	})
-
 	t.Run("service change targets another service", func(t *testing.T) {
 		mirror, service := newMirrorWithCommit(t)
-		service.publish(t, signer, renameService(testServiceID2, "other"))
+		service.publish(t, renameService(testServiceID2, "other"))
 		page := pageFor(t, service, 1, 100)
 		if err := mirror.ApplyChanges(page); !errors.Is(err, adsync.ErrProtocol) {
 			t.Errorf("foreign service change: %v, want ErrProtocol", err)
@@ -919,7 +896,7 @@ func TestMirrorChangePageValidation(t *testing.T) {
 
 	t.Run("last commit before page end", func(t *testing.T) {
 		mirror, service := newMirrorWithCommit(t)
-		service.publish(t, signer, upsertAuthz(testServiceID1+"A2", "policy", "grant read"))
+		service.publish(t, upsertAuthz(testServiceID1+"A2", "policy", "grant read"))
 		page := pageFor(t, service, 1, 1)
 		page.To = page.Head
 		if err := mirror.ApplyChanges(page); !errors.Is(err, adsync.ErrProtocol) {
@@ -938,28 +915,27 @@ func TestMirrorChangePageValidation(t *testing.T) {
 }
 
 func TestMirrorRemovedAndOverflowedPages(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	mirror := newTestMirror(t, nil)
 	service := newFixtureService(testServiceID1, "books")
-	if err := mirror.ApplySnapshot(snapshotAt(t, service, signer)); err != nil {
+	if err := mirror.ApplySnapshot(snapshotAt(t, service)); err != nil {
 		t.Fatalf("apply snapshot: %v", err)
 	}
-	service.publish(t, signer, upsertAuthz(testServiceID1+"A1", "policy", "grant read"))
+	service.publish(t, upsertAuthz(testServiceID1+"A1", "policy", "grant read"))
 	page := pageFor(t, service, 1, 100)
 	mirror.RemoveService(testServiceID1)
 	if err := mirror.ApplyChanges(page); !errors.Is(err, ErrServiceRemoved) {
 		t.Errorf("removed service: %v, want ErrServiceRemoved", err)
 	}
 
-	overflowed := newTestMirror(t, signer.publicKeys(t), func(options *MirrorOptions) {
+	overflowed := newTestMirror(t, func(options *MirrorOptions) {
 		options.MaxLogCommits = 1
 	})
 	other := newFixtureService(testServiceID2, "orders")
-	if err := overflowed.ApplySnapshot(snapshotAt(t, other, signer)); err != nil {
+	if err := overflowed.ApplySnapshot(snapshotAt(t, other)); err != nil {
 		t.Fatalf("apply snapshot: %v", err)
 	}
 	for index := 0; index < 2; index++ {
-		other.publish(t, signer, upsertAuthz(testServiceID2+string(rune('A'+index)), "policy", "grant read"))
+		other.publish(t, upsertAuthz(testServiceID2+string(rune('A'+index)), "policy", "grant read"))
 		if err := overflowed.ApplyChanges(pageFor(t, other, other.Revision-1, 100)); err != nil {
 			t.Fatalf("apply changes: %v", err)
 		}
@@ -977,10 +953,9 @@ func TestCredentialSetReloadWithoutFile(t *testing.T) {
 }
 
 func TestRemoveServiceIgnoresUnknownAndRemoved(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	mirror := newTestMirror(t, nil)
 	service := newFixtureService(testServiceID1, "books")
-	if err := mirror.ApplySnapshot(snapshotAt(t, service, signer)); err != nil {
+	if err := mirror.ApplySnapshot(snapshotAt(t, service)); err != nil {
 		t.Fatalf("apply snapshot: %v", err)
 	}
 	version := mirror.Version()
@@ -997,28 +972,27 @@ func TestRemoveServiceIgnoresUnknownAndRemoved(t *testing.T) {
 }
 
 func TestMirrorSnapshotConflictAndRename(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	mirror := newTestMirror(t, nil)
 	first := newFixtureService(testServiceID1, "books")
-	first.publish(t, signer, upsertAuthz(testServiceID1+"A1", "one", "grant read"))
-	if err := mirror.ApplySnapshot(snapshotAt(t, first, signer)); err != nil {
+	first.publish(t, upsertAuthz(testServiceID1+"A1", "one", "grant read"))
+	if err := mirror.ApplySnapshot(snapshotAt(t, first)); err != nil {
 		t.Fatalf("apply first snapshot: %v", err)
 	}
 	second := newFixtureService(testServiceID1, "books")
-	second.publish(t, signer, upsertAuthz(testServiceID1+"B1", "two", "grant read"))
-	if err := mirror.ApplySnapshot(snapshotAt(t, second, signer)); !errors.Is(err, adsync.ErrIntegrity) {
+	second.publish(t, upsertAuthz(testServiceID1+"B1", "two", "grant read"))
+	if err := mirror.ApplySnapshot(snapshotAt(t, second)); !errors.Is(err, adsync.ErrIntegrity) {
 		t.Errorf("same revision, different state hash: %v, want ErrIntegrity", err)
 	}
 
-	renamed := newTestMirror(t, signer.publicKeys(t), nil)
+	renamed := newTestMirror(t, nil)
 	base := newFixtureService(testServiceID1, "books")
-	if err := renamed.ApplySnapshot(snapshotAt(t, base, signer)); err != nil {
+	if err := renamed.ApplySnapshot(snapshotAt(t, base)); err != nil {
 		t.Fatalf("apply base snapshot: %v", err)
 	}
 	version := renamed.Version()
 	updated := newFixtureService(testServiceID1, "books")
-	updated.publish(t, signer, renameService(testServiceID1, "books-v2"))
-	if err := renamed.ApplySnapshot(snapshotAt(t, updated, signer)); err != nil {
+	updated.publish(t, renameService(testServiceID1, "books-v2"))
+	if err := renamed.ApplySnapshot(snapshotAt(t, updated)); err != nil {
 		t.Fatalf("apply renamed snapshot: %v", err)
 	}
 	services := renamed.Services()
@@ -1031,8 +1005,7 @@ func TestMirrorSnapshotConflictAndRename(t *testing.T) {
 }
 
 func TestServerInvalidChainEntry(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	mirror := newTestMirror(t, nil)
 	credentials, err := NewCredentialSet([]Credential{{DownstreamID: "edge", Token: "token", Services: []string{"*"}}})
 	if err != nil {
 		t.Fatalf("credentials: %v", err)
@@ -1058,10 +1031,9 @@ func TestWriteChannelJSONBounds(t *testing.T) {
 }
 
 func TestChainValidationAcceptsUnrelatedChains(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, _, _ := newPopulatedMirror(t, signer)
+	mirror, _, _ := newPopulatedMirror(t)
 	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+	server := newTestServer(t, mirror, nil, testCredential{
 		downstreamID: testDownstreamID,
 		token:        token,
 	})
@@ -1077,10 +1049,9 @@ func TestChainValidationAcceptsUnrelatedChains(t *testing.T) {
 }
 
 func TestPollRejectsTrailingJSON(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, _, _ := newPopulatedMirror(t, signer)
+	mirror, _, _ := newPopulatedMirror(t)
 	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+	server := newTestServer(t, mirror, nil, testCredential{
 		downstreamID: testDownstreamID,
 		token:        token,
 	})
@@ -1092,14 +1063,13 @@ func TestPollRejectsTrailingJSON(t *testing.T) {
 }
 
 func TestPollOnClosedHub(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, _, _ := newPopulatedMirror(t, signer)
+	mirror, _, _ := newPopulatedMirror(t)
 	token := testToken(testDownstreamID, 1)
 	hub, err := NewHub(0, 0)
 	if err != nil {
 		t.Fatalf("new hub: %v", err)
 	}
-	server := newTestServer(t, mirror, signer.publicKeys(t), &testServerOptions{hub: hub}, testCredential{
+	server := newTestServer(t, mirror, &testServerOptions{hub: hub}, testCredential{
 		downstreamID: testDownstreamID,
 		token:        token,
 	})
@@ -1112,10 +1082,9 @@ func TestPollOnClosedHub(t *testing.T) {
 }
 
 func TestChannelRequiresUpgrade(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, _, _ := newPopulatedMirror(t, signer)
+	mirror, _, _ := newPopulatedMirror(t)
 	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+	server := newTestServer(t, mirror, nil, testCredential{
 		downstreamID: testDownstreamID,
 		token:        token,
 	})
@@ -1131,13 +1100,12 @@ func TestChannelRequiresUpgrade(t *testing.T) {
 }
 
 func TestMirrorOversizedCommitOverflows(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	mirror := newTestMirror(t, nil)
 	service := newFixtureService(testServiceID1, "books")
-	if err := mirror.ApplySnapshot(snapshotAt(t, service, signer)); err != nil {
+	if err := mirror.ApplySnapshot(snapshotAt(t, service)); err != nil {
 		t.Fatalf("apply snapshot: %v", err)
 	}
-	service.publish(t, signer, upsertAuthz(testServiceID1+"A1", "policy", strings.Repeat("x", 1200<<10)))
+	service.publish(t, upsertAuthz(testServiceID1+"A1", "policy", strings.Repeat("x", 1200<<10)))
 	if err := mirror.ApplyChanges(pageFor(t, service, 1, 100)); err != nil {
 		t.Fatalf("apply oversized commit: %v", err)
 	}
@@ -1150,10 +1118,9 @@ func TestMirrorOversizedCommitOverflows(t *testing.T) {
 }
 
 func TestMirrorRejectsCommitThatCannotApply(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	mirror := newTestMirror(t, nil)
 	service := newFixtureService(testServiceID1, "books")
-	if err := mirror.ApplySnapshot(snapshotAt(t, service, signer)); err != nil {
+	if err := mirror.ApplySnapshot(snapshotAt(t, service)); err != nil {
 		t.Fatalf("apply snapshot: %v", err)
 	}
 	changes := []adsync.Change{{Op: "upsert", Kind: "service", ID: testServiceID1}}
@@ -1168,7 +1135,6 @@ func TestMirrorRejectsCommitThatCannotApply(t *testing.T) {
 		At:       1762500000000,
 		Changes:  changes,
 	}
-	commit.Signature = signer.sign(adsync.CommitSignedBytes(service.ID, service.Epoch, commit.Revision, hash))
 	page := &adsync.ChangesResponse{
 		ServiceID: service.ID,
 		SourceID:  service.ID,
@@ -1184,14 +1150,13 @@ func TestMirrorRejectsCommitThatCannotApply(t *testing.T) {
 }
 
 func TestMirrorDelayedSnapshotCannotReviveASignedDelete(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	mirror := newTestMirror(t, nil)
 	service := newFixtureService(testServiceID1, "books")
-	if err := mirror.ApplySnapshot(snapshotAt(t, service, signer)); err != nil {
+	if err := mirror.ApplySnapshot(snapshotAt(t, service)); err != nil {
 		t.Fatalf("apply snapshot: %v", err)
 	}
-	before := snapshotAt(t, service, signer)
-	service.publish(t, signer, deleteChange("service", testServiceID1))
+	before := snapshotAt(t, service)
+	service.publish(t, deleteChange("service", testServiceID1))
 	if err := mirror.ApplyChanges(pageFor(t, service, 1, 100)); !errors.Is(err, adsync.ErrSourceGone) {
 		t.Fatalf("signed delete: %v, want ErrSourceGone", err)
 	}
@@ -1209,8 +1174,8 @@ func TestMirrorDelayedSnapshotCannotReviveASignedDelete(t *testing.T) {
 	}
 
 	// Newer source state does revive it: a later revision is past the delete.
-	service.publish(t, signer, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
-	if err := mirror.ApplySnapshot(snapshotAt(t, service, signer)); err != nil {
+	service.publish(t, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
+	if err := mirror.ApplySnapshot(snapshotAt(t, service)); err != nil {
 		t.Fatalf("newer snapshot: %v", err)
 	}
 	if services := mirror.Services(); len(services) != 1 || services[0].Revision != service.Revision {
@@ -1219,13 +1184,12 @@ func TestMirrorDelayedSnapshotCannotReviveASignedDelete(t *testing.T) {
 }
 
 func TestMirrorDelayedSnapshotCannotReviveAnAdministrativeRemoval(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	mirror := newTestMirror(t, nil)
 	service := newFixtureService(testServiceID1, "books")
-	if err := mirror.ApplySnapshot(snapshotAt(t, service, signer)); err != nil {
+	if err := mirror.ApplySnapshot(snapshotAt(t, service)); err != nil {
 		t.Fatalf("apply snapshot: %v", err)
 	}
-	before := snapshotAt(t, service, signer)
+	before := snapshotAt(t, service)
 	mirror.RemoveService(testServiceID1)
 	if err := mirror.ApplySnapshot(before); err != nil {
 		t.Fatalf("delayed snapshot: %v", err)
@@ -1234,8 +1198,8 @@ func TestMirrorDelayedSnapshotCannotReviveAnAdministrativeRemoval(t *testing.T) 
 		t.Errorf("availability after delayed snapshot = %v, want ServiceRemoved", availability)
 	}
 
-	service.publish(t, signer, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
-	if err := mirror.ApplySnapshot(snapshotAt(t, service, signer)); err != nil {
+	service.publish(t, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
+	if err := mirror.ApplySnapshot(snapshotAt(t, service)); err != nil {
 		t.Fatalf("newer snapshot: %v", err)
 	}
 	if services := mirror.Services(); len(services) != 1 {
@@ -1244,14 +1208,13 @@ func TestMirrorDelayedSnapshotCannotReviveAnAdministrativeRemoval(t *testing.T) 
 }
 
 func TestMirrorServiceChurnDoesNotExhaustCapacity(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	mirror := newTestMirror(t, nil)
 	ids := make([]string, 0, MaxServices)
 	for index := 0; index < MaxServices; index++ {
 		id := fmt.Sprintf("01HF7YAT%018d", 100+index)
 		ids = append(ids, id)
 		service := newFixtureService(id, fmt.Sprintf("service-%d", index))
-		if err := mirror.ApplySnapshot(snapshotAt(t, service, signer)); err != nil {
+		if err := mirror.ApplySnapshot(snapshotAt(t, service)); err != nil {
 			t.Fatalf("service %d: %v", index, err)
 		}
 	}
@@ -1267,7 +1230,7 @@ func TestMirrorServiceChurnDoesNotExhaustCapacity(t *testing.T) {
 	for index := 0; index < MaxServices; index++ {
 		id := fmt.Sprintf("01HF7YAT%018d", 200+index)
 		service := newFixtureService(id, fmt.Sprintf("fresh-%d", index))
-		if err := mirror.ApplySnapshot(snapshotAt(t, service, signer)); err != nil {
+		if err := mirror.ApplySnapshot(snapshotAt(t, service)); err != nil {
 			t.Fatalf("fresh service %d: %v", index, err)
 		}
 	}
@@ -1278,16 +1241,15 @@ func TestMirrorServiceChurnDoesNotExhaustCapacity(t *testing.T) {
 	// A removed service no longer counts, but a full active set still bounds
 	// the mirror.
 	extra := newFixtureService("01HF7YAT000000000000000999", "extra")
-	if err := mirror.ApplySnapshot(snapshotAt(t, extra, signer)); !errors.Is(err, ErrTooManyServices) {
+	if err := mirror.ApplySnapshot(snapshotAt(t, extra)); !errors.Is(err, ErrTooManyServices) {
 		t.Errorf("eleventh active service: %v, want ErrTooManyServices", err)
 	}
 }
 
 func TestChannelFirstFrameIsAckEvenWithPendingNotification(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, books, _ := newPopulatedMirror(t, signer)
+	mirror, books, _ := newPopulatedMirror(t)
 	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, signer.publicKeys(t), &testServerOptions{
+	server := newTestServer(t, mirror, &testServerOptions{
 		coalesceWindow: time.Millisecond,
 	}, testCredential{
 		downstreamID: testDownstreamID,
@@ -1307,7 +1269,7 @@ func TestChannelFirstFrameIsAckEvenWithPendingNotification(t *testing.T) {
 	})
 	// A head advance lands while the channel starts. Its coalesced
 	// notification must not overtake the initial ack.
-	books.publish(t, signer, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
+	books.publish(t, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
 	if err := mirror.ApplyChanges(pageFor(t, books, 1, 100)); err != nil {
 		t.Fatalf("apply changes: %v", err)
 	}
@@ -1322,16 +1284,15 @@ func TestChannelFirstFrameIsAckEvenWithPendingNotification(t *testing.T) {
 }
 
 func TestServersShareAHubWithoutStealingItsLifetime(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, _, _ := newPopulatedMirror(t, signer)
+	mirror, _, _ := newPopulatedMirror(t)
 	token := testToken(testDownstreamID, 1)
 	hub, err := NewHub(0, time.Millisecond)
 	if err != nil {
 		t.Fatalf("new hub: %v", err)
 	}
 	credential := testCredential{downstreamID: testDownstreamID, token: token}
-	first := newTestServer(t, mirror, signer.publicKeys(t), &testServerOptions{hub: hub}, credential)
-	second := newTestServer(t, mirror, signer.publicKeys(t), &testServerOptions{hub: hub}, credential)
+	first := newTestServer(t, mirror, &testServerOptions{hub: hub}, credential)
+	second := newTestServer(t, mirror, &testServerOptions{hub: hub}, credential)
 
 	first.server.Close()
 	response, body := second.post(adsync.APIPrefix+"/channel/poll?wait=0", token,
@@ -1347,18 +1308,17 @@ func TestServersShareAHubWithoutStealingItsLifetime(t *testing.T) {
 }
 
 func TestMirrorIgnoresSnapshotsFromRetiredIdentities(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	mirror := newTestMirror(t, nil)
 	retired := newFixtureServiceWithEpoch(testServiceID1, "01HF7YAT000000000000000201", "books")
-	retired.publish(t, signer, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
-	retiredSnapshot := snapshotAt(t, retired, signer)
+	retired.publish(t, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
+	retiredSnapshot := snapshotAt(t, retired)
 	if err := mirror.ApplySnapshot(retiredSnapshot); err != nil {
 		t.Fatalf("apply first identity: %v", err)
 	}
 
 	current := newFixtureServiceWithEpoch(testServiceID1, "01HF7YAT000000000000000202", "books")
-	current.publish(t, signer, upsertAuthz(testServiceID1+"B1", "read", "grant read"))
-	if err := mirror.ApplySnapshot(snapshotAt(t, current, signer)); err != nil {
+	current.publish(t, upsertAuthz(testServiceID1+"B1", "read", "grant read"))
+	if err := mirror.ApplySnapshot(snapshotAt(t, current)); err != nil {
 		t.Fatalf("apply second identity: %v", err)
 	}
 
@@ -1382,8 +1342,8 @@ func TestMirrorIgnoresSnapshotsFromRetiredIdentities(t *testing.T) {
 	if _, availability := mirror.Lookup(testServiceID1); availability != ServiceRemoved {
 		t.Errorf("retired identity revived a removed service: availability %v", availability)
 	}
-	current.publish(t, signer, upsertAuthz(testServiceID1+"B2", "read", "grant read"))
-	if err := mirror.ApplySnapshot(snapshotAt(t, current, signer)); err != nil {
+	current.publish(t, upsertAuthz(testServiceID1+"B2", "read", "grant read"))
+	if err := mirror.ApplySnapshot(snapshotAt(t, current)); err != nil {
 		t.Fatalf("revive current identity: %v", err)
 	}
 	if services := mirror.Services(); len(services) != 1 || services[0].Epoch != current.Epoch {
@@ -1424,10 +1384,9 @@ func TestHubPerCredentialConnectionLimit(t *testing.T) {
 }
 
 func TestServerPerCredentialConnectionLimit(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, _, _ := newPopulatedMirror(t, signer)
+	mirror, _, _ := newPopulatedMirror(t)
 	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+	server := newTestServer(t, mirror, nil, testCredential{
 		downstreamID: testDownstreamID,
 		token:        token,
 	})
@@ -1469,10 +1428,9 @@ func TestServerPerCredentialConnectionLimit(t *testing.T) {
 }
 
 func TestChannelReservesASlotBeforeHello(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, _, _ := newPopulatedMirror(t, signer)
+	mirror, _, _ := newPopulatedMirror(t)
 	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, signer.publicKeys(t), &testServerOptions{
+	server := newTestServer(t, mirror, &testServerOptions{
 		maxConnections: 1,
 	}, testCredential{
 		downstreamID: testDownstreamID,
@@ -1520,8 +1478,7 @@ func TestChannelReservesASlotBeforeHello(t *testing.T) {
 }
 
 func TestMirrorKeepsTombstonesAtTheBound(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	mirror := newTestMirror(t, nil)
 	var (
 		firstID       string
 		firstSnapshot *adsync.SnapshotResponse
@@ -1529,7 +1486,7 @@ func TestMirrorKeepsTombstonesAtTheBound(t *testing.T) {
 	for index := 0; index < maxTombstones; index++ {
 		id := fmt.Sprintf("01HF7YAT%018d", 2000+index)
 		service := newFixtureService(id, "books")
-		snapshot := snapshotAt(t, service, signer)
+		snapshot := snapshotAt(t, service)
 		if index == 0 {
 			firstID, firstSnapshot = id, snapshot
 		}
@@ -1541,7 +1498,7 @@ func TestMirrorKeepsTombstonesAtTheBound(t *testing.T) {
 	for index := 0; index < MaxServices; index++ {
 		id := fmt.Sprintf("01HF7YAT%018d", 4000+index)
 		service := newFixtureService(id, "books")
-		if err := mirror.ApplySnapshot(snapshotAt(t, service, signer)); err != nil {
+		if err := mirror.ApplySnapshot(snapshotAt(t, service)); err != nil {
 			t.Fatalf("active service %d: %v", index, err)
 		}
 	}
@@ -1550,7 +1507,7 @@ func TestMirrorKeepsTombstonesAtTheBound(t *testing.T) {
 	// policy. The new service is refused instead.
 	mirror.RemoveService(fmt.Sprintf("01HF7YAT%018d", 4000))
 	extra := newFixtureService(fmt.Sprintf("01HF7YAT%018d", 5000), "extra")
-	if err := mirror.ApplySnapshot(snapshotAt(t, extra, signer)); !errors.Is(err, ErrTooManyServices) {
+	if err := mirror.ApplySnapshot(snapshotAt(t, extra)); !errors.Is(err, ErrTooManyServices) {
 		t.Errorf("new service with a full tombstone store: %v, want ErrTooManyServices", err)
 	}
 
@@ -1564,14 +1521,13 @@ func TestMirrorKeepsTombstonesAtTheBound(t *testing.T) {
 }
 
 func TestMirrorRejectsReplaysFromRetiredIdentities(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	mirror := newTestMirror(t, nil)
 	var first *adsync.SnapshotResponse
 	for index := 0; index < 12; index++ {
 		epoch := fmt.Sprintf("01HF7YAT%018d", 6000+index)
 		service := newFixtureServiceWithEpoch(testServiceID1, epoch, "books")
-		service.publish(t, signer, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
-		snapshot := snapshotAt(t, service, signer)
+		service.publish(t, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
+		snapshot := snapshotAt(t, service)
 		if index == 0 {
 			first = snapshot
 		}
@@ -1594,19 +1550,15 @@ func TestMirrorRejectsReplaysFromRetiredIdentities(t *testing.T) {
 }
 
 func TestMirrorRejectsConflictingCommitHashAtOneRevision(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	mirror := newTestMirror(t, nil)
 	service := newFixtureService(testServiceID1, "books")
-	original := snapshotAt(t, service, signer)
+	original := snapshotAt(t, service)
 	if err := mirror.ApplySnapshot(original); err != nil {
 		t.Fatalf("apply snapshot: %v", err)
 	}
 
-	conflicting := snapshotAt(t, service, signer)
+	conflicting := snapshotAt(t, service)
 	conflicting.CommitHash = adsync.StateHash(adsync.Snapshot{Name: "other history"})
-	conflicting.Signature = signer.sign(adsync.SnapshotSignedBytes(
-		conflicting.SourceID, conflicting.Epoch, conflicting.Revision,
-		conflicting.StateHash, conflicting.CommitHash))
 	if err := mirror.ApplySnapshot(conflicting); !errors.Is(err, adsync.ErrIntegrity) {
 		t.Errorf("conflicting commit hash: %v, want ErrIntegrity", err)
 	}
@@ -1623,10 +1575,9 @@ func TestMirrorRejectsConflictingCommitHashAtOneRevision(t *testing.T) {
 }
 
 func TestCloseEndsHeldPolls(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, _, _ := newPopulatedMirror(t, signer)
+	mirror, _, _ := newPopulatedMirror(t)
 	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+	server := newTestServer(t, mirror, nil, testCredential{
 		downstreamID: testDownstreamID,
 		token:        token,
 	})
@@ -1653,11 +1604,10 @@ func TestCloseEndsHeldPolls(t *testing.T) {
 }
 
 func TestHeldPollAnswersDistributionPaused(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, books, _ := newPopulatedMirror(t, signer)
+	mirror, books, _ := newPopulatedMirror(t)
 	token := testToken(testDownstreamID, 1)
 	var paused atomic.Bool
-	server := newTestServer(t, mirror, signer.publicKeys(t), &testServerOptions{
+	server := newTestServer(t, mirror, &testServerOptions{
 		paused: paused.Load,
 	}, testCredential{
 		downstreamID: testDownstreamID,
@@ -1676,7 +1626,7 @@ func TestHeldPollAnswersDistributionPaused(t *testing.T) {
 	time.Sleep(50 * time.Millisecond)
 	paused.Store(true)
 	// A head advance releases the held wait, so the paused state is rechecked.
-	books.publish(t, signer, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
+	books.publish(t, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
 	if err := mirror.ApplyChanges(pageFor(t, books, 1, 100)); err != nil {
 		t.Fatalf("apply changes: %v", err)
 	}
@@ -1691,11 +1641,10 @@ func TestHeldPollAnswersDistributionPaused(t *testing.T) {
 }
 
 func TestChannelInitialAckRespectsPause(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, _, _ := newPopulatedMirror(t, signer)
+	mirror, _, _ := newPopulatedMirror(t)
 	token := testToken(testDownstreamID, 1)
 	var paused atomic.Bool
-	server := newTestServer(t, mirror, signer.publicKeys(t), &testServerOptions{
+	server := newTestServer(t, mirror, &testServerOptions{
 		paused: paused.Load,
 	}, testCredential{
 		downstreamID: testDownstreamID,
@@ -1723,10 +1672,9 @@ func TestChannelInitialAckRespectsPause(t *testing.T) {
 }
 
 func TestCredentialSetPinsRequestsAcrossReload(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, _, _ := newPopulatedMirror(t, signer)
+	mirror, _, _ := newPopulatedMirror(t)
 	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+	server := newTestServer(t, mirror, nil, testCredential{
 		downstreamID: testDownstreamID,
 		token:        token,
 	})
@@ -1807,10 +1755,9 @@ func (w *blockingResponseWriter) Write(payload []byte) (int, error) {
 }
 
 func TestHeldPollPinsItsGrantAcrossTheAck(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, _, _ := newPopulatedMirror(t, signer)
+	mirror, _, _ := newPopulatedMirror(t)
 	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+	server := newTestServer(t, mirror, nil, testCredential{
 		downstreamID: testDownstreamID,
 		token:        token,
 	})
@@ -1876,10 +1823,9 @@ func TestHeldPollPinsItsGrantAcrossTheAck(t *testing.T) {
 }
 
 func TestChannelAckRefusesAReplacedGrant(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, _, _ := newPopulatedMirror(t, signer)
+	mirror, _, _ := newPopulatedMirror(t)
 	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+	server := newTestServer(t, mirror, nil, testCredential{
 		downstreamID: testDownstreamID,
 		token:        token,
 	})
@@ -1929,17 +1875,16 @@ func TestChannelAckRefusesAReplacedGrant(t *testing.T) {
 }
 
 func TestMirrorBoundsIdentityChurn(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror := newTestMirror(t, signer.publicKeys(t), nil)
+	mirror := newTestMirror(t, nil)
 	current := newFixtureServiceWithEpoch(testServiceID1, fmt.Sprintf("01HF7YAT%018d", 7000), "books")
-	current.publish(t, signer, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
-	if err := mirror.ApplySnapshot(snapshotAt(t, current, signer)); err != nil {
+	current.publish(t, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
+	if err := mirror.ApplySnapshot(snapshotAt(t, current)); err != nil {
 		t.Fatalf("first identity: %v", err)
 	}
 	for index := 1; index <= maxRetiredIdentities; index++ {
 		next := newFixtureServiceWithEpoch(testServiceID1, fmt.Sprintf("01HF7YAT%018d", 7000+index), "books")
-		next.publish(t, signer, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
-		if err := mirror.ApplySnapshot(snapshotAt(t, next, signer)); err != nil {
+		next.publish(t, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
+		if err := mirror.ApplySnapshot(snapshotAt(t, next)); err != nil {
 			t.Fatalf("identity %d: %v", index, err)
 		}
 		current = next
@@ -1948,8 +1893,8 @@ func TestMirrorBoundsIdentityChurn(t *testing.T) {
 	// One more identity replacement is refused, and the copy stops being
 	// advertised rather than keeping replay state without bound.
 	excess := newFixtureServiceWithEpoch(testServiceID1, fmt.Sprintf("01HF7YAT%018d", 7000+maxRetiredIdentities+1), "books")
-	excess.publish(t, signer, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
-	if err := mirror.ApplySnapshot(snapshotAt(t, excess, signer)); !errors.Is(err, ErrIdentityChurn) {
+	excess.publish(t, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
+	if err := mirror.ApplySnapshot(snapshotAt(t, excess)); !errors.Is(err, ErrIdentityChurn) {
 		t.Fatalf("identity churn: %v, want ErrIdentityChurn", err)
 	}
 	if services := mirror.Services(); len(services) != 0 {
@@ -1960,8 +1905,8 @@ func TestMirrorBoundsIdentityChurn(t *testing.T) {
 	}
 
 	// The current identity can still be refreshed.
-	current.publish(t, signer, upsertAuthz(testServiceID1+"A2", "read", "grant read"))
-	if err := mirror.ApplySnapshot(snapshotAt(t, current, signer)); err != nil {
+	current.publish(t, upsertAuthz(testServiceID1+"A2", "read", "grant read"))
+	if err := mirror.ApplySnapshot(snapshotAt(t, current)); err != nil {
 		t.Fatalf("refresh current identity: %v", err)
 	}
 	services := mirror.Services()
@@ -1971,10 +1916,9 @@ func TestMirrorBoundsIdentityChurn(t *testing.T) {
 }
 
 func TestChannelNotificationRefusesAReplacedGrant(t *testing.T) {
-	signer := newTestSigner(t)
-	mirror, _, _ := newPopulatedMirror(t, signer)
+	mirror, _, _ := newPopulatedMirror(t)
 	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, signer.publicKeys(t), nil, testCredential{
+	server := newTestServer(t, mirror, nil, testCredential{
 		downstreamID: testDownstreamID,
 		token:        token,
 	})

@@ -33,6 +33,10 @@ type Source struct {
 	fallbackErr       error
 	forwarded         []Forwarded
 
+	// staleUntrusted models a store whose stale instance never evaluates
+	// locally.
+	staleUntrusted bool
+
 	// pendingRemovals holds service names whose old copies are still installed
 	// in the evaluator after a removal or rename.
 	pendingRemovals map[string]struct{}
@@ -94,6 +98,21 @@ func (s *Source) SetServiceState(name string, state adsync.SyncState) {
 	service := s.serviceLocked(name)
 	service.State = state
 	s.mu.Unlock()
+}
+
+// SetStaleIsUntrusted makes a stale instance of the source forward or deny
+// every request, like the policy-source store.
+func (s *Source) SetStaleIsUntrusted(untrusted bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.staleUntrusted = untrusted
+}
+
+// StaleIsUntrusted implements the stale routing hook.
+func (s *Source) StaleIsUntrusted() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.staleUntrusted
 }
 
 // SetFallbackAvailable controls whether a syncing service may be forwarded.
@@ -166,11 +185,13 @@ func (s *Source) ForwardFallback(_ context.Context, operation adsync.FallbackOpe
 	if header == nil {
 		header = http.Header{"Content-Type": []string{"application/json"}}
 	}
-	return &adsync.FallbackResponse{
-		StatusCode: status,
-		Header:     header.Clone(),
-		Body:       append([]byte(nil), s.fallbackBody...),
-	}, nil
+	response := &adsync.FallbackResponse{
+		StatusCode:     status,
+		Header:         header.Clone(),
+		Body:           append([]byte(nil), s.fallbackBody...),
+		DecisionSource: adsync.DecisionSourceUpstream,
+	}
+	return response, nil
 }
 
 // FallbackAvailable implements adsync.RequestGate.

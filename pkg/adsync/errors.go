@@ -14,10 +14,10 @@ import (
 // Errors returned by this package. They are sentinels so callers can classify
 // a failure without inspecting a response body.
 var (
-	// ErrUnauthorized means the instance credential is missing, malformed,
-	// unknown or revoked (HTTP 401).
+	// ErrUnauthorized means the API key is missing, malformed, unknown or
+	// revoked, or the instance belongs to another account (HTTP 401).
 	ErrUnauthorized = errors.New("adsync: unauthorized")
-	// ErrForbidden means the credential cannot use this endpoint (HTTP 403).
+	// ErrForbidden means the key cannot use this endpoint (HTTP 403).
 	ErrForbidden = errors.New("adsync: forbidden")
 	// ErrServiceNotFound means the service does not exist, belongs to another
 	// account or is outside the instance's service set (HTTP 404). All three
@@ -27,7 +27,7 @@ var (
 	// (HTTP 410). Reload the snapshot.
 	ErrSnapshotRequired = errors.New("adsync: snapshot required")
 	// ErrSourceGone means the service or the whole source no longer exists.
-	// It is also returned for a signed service-delete change. Delete the local
+	// It is also returned for a service-delete change. Delete the local
 	// copy instead of retrying.
 	ErrSourceGone = errors.New("adsync: policy source is gone")
 	// ErrRateLimited means the source asked the client to back off (HTTP 429).
@@ -38,8 +38,8 @@ var (
 	// ErrProtocol means the response did not match the wire contract: an
 	// unknown field, a gap in revisions, a malformed page and so on.
 	ErrProtocol = errors.New("adsync: protocol violation")
-	// ErrIntegrity means a canonical hash or an Ed25519 signature did not
-	// verify. The data must not be used.
+	// ErrIntegrity means a canonical hash did not verify or a copy does not
+	// match the acknowledged head. The data must not be used.
 	ErrIntegrity = errors.New("adsync: integrity check failed")
 	// ErrCacheCorrupt means a cache file failed its checksum or its content
 	// no longer matches its stored identity.
@@ -47,6 +47,9 @@ var (
 	// ErrUnsafeCache means a cache file is not a regular 0600 file or the
 	// cache directory is writable by another user.
 	ErrUnsafeCache = errors.New("adsync: cache permissions are unsafe")
+	// ErrFrameTooLarge means the source refused a channel frame the ADS sent
+	// as too large. The ADS sets no frame size limit of its own.
+	ErrFrameTooLarge = errors.New("adsync: channel frame rejected as too large")
 	// ErrNotModified is returned by Snapshot when If-None-Match matched.
 	ErrNotModified = errors.New("adsync: not modified")
 )
@@ -74,7 +77,6 @@ const (
 	snapshotReasonHistoryUnavailable = "history_unavailable"
 	snapshotReasonEpochMismatch      = "epoch_mismatch"
 	snapshotReasonSourceGone         = "source_gone"
-	snapshotReasonSignatureRequired  = "signature_required"
 )
 
 // statusError is the typed HTTP failure shared by every request. Unwrap

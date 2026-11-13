@@ -23,7 +23,7 @@ var (
 	// ErrHistoryUnavailable means the requested revision can no longer be
 	// resumed from the proxy's log; the downstream must reload the snapshot.
 	ErrHistoryUnavailable = errors.New("adsproxy: history unavailable")
-	// ErrSnapshotRequired means the mirror needs a fresh signed snapshot before
+	// ErrSnapshotRequired means the mirror needs a fresh snapshot before
 	// it can serve the service again.
 	ErrSnapshotRequired = errors.New("adsproxy: fresh snapshot required")
 	// ErrIdentityChanged means a change page belongs to a different sourceId or

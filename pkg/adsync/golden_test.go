@@ -3,8 +3,6 @@
 package adsync
 
 import (
-	"crypto/ed25519"
-	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -14,16 +12,12 @@ import (
 
 // goldenVectors mirrors testdata/golden-vectors.json. Only the parts the
 // Engine consumes are declared; the file is shared verbatim with Speedle Cloud
-// and must never be rewritten here.
+// and must never be rewritten here. The file still carries signature vectors
+// from an earlier protocol draft; the Engine no longer verifies signatures, so
+// those parts are not declared.
 type goldenVectors struct {
-	Format  string `json:"format"`
-	Purpose string `json:"purpose"`
-	TestKey struct {
-		KeyID                string `json:"keyId"`
-		SeedText             string `json:"seedText"`
-		PrivateKeySeedBase64 string `json:"privateKeySeedBase64"`
-		PublicKeyBase64      string `json:"publicKeyBase64"`
-	} `json:"testKey"`
+	Format           string `json:"format"`
+	Purpose          string `json:"purpose"`
 	StateHashVectors []struct {
 		Description       string   `json:"description"`
 		Snapshot          Snapshot `json:"snapshot"`
@@ -42,26 +36,15 @@ type goldenVectors struct {
 		HeadStateHash     string         `json:"headStateHash"`
 		HeadCommitHash    string         `json:"headCommitHash"`
 	} `json:"chainVector"`
-	SnapshotSignatureVectors []struct {
-		SourceID       string    `json:"sourceId"`
-		Epoch          string    `json:"epoch"`
-		Revision       uint64    `json:"revision"`
-		StateHash      string    `json:"stateHash"`
-		CommitHash     string    `json:"commitHash"`
-		SignedBytesHex string    `json:"signedBytesHex"`
-		Signature      Signature `json:"signature"`
-	} `json:"snapshotSignatureVectors"`
 }
 
 type goldenCommit struct {
-	Revision          uint64    `json:"revision"`
-	PrevHash          string    `json:"prevHash"`
-	Hash              string    `json:"hash"`
-	At                int64     `json:"at"`
-	Changes           []Change  `json:"changes"`
-	CanonicalBytesHex string    `json:"canonicalBytesHex"`
-	SignedBytesHex    string    `json:"signedBytesHex"`
-	Signature         Signature `json:"signature"`
+	Revision          uint64   `json:"revision"`
+	PrevHash          string   `json:"prevHash"`
+	Hash              string   `json:"hash"`
+	At                int64    `json:"at"`
+	Changes           []Change `json:"changes"`
+	CanonicalBytesHex string   `json:"canonicalBytesHex"`
 }
 
 func loadGolden(t *testing.T) *goldenVectors {
@@ -78,41 +61,6 @@ func loadGolden(t *testing.T) *goldenVectors {
 		t.Fatalf("unexpected golden vector format %q", vectors.Format)
 	}
 	return &vectors
-}
-
-func goldenPrivateKey(t *testing.T, vectors *goldenVectors) ed25519.PrivateKey {
-	t.Helper()
-	seed, err := base64.StdEncoding.DecodeString(vectors.TestKey.PrivateKeySeedBase64)
-	if err != nil {
-		t.Fatalf("decode golden private key: %v", err)
-	}
-	if len(seed) != ed25519.SeedSize {
-		t.Fatalf("golden private seed is %d bytes, want %d", len(seed), ed25519.SeedSize)
-	}
-	private := ed25519.NewKeyFromSeed(seed)
-	expected, err := base64.StdEncoding.DecodeString(vectors.TestKey.PublicKeyBase64)
-	if err != nil {
-		t.Fatalf("decode golden public key: %v", err)
-	}
-	if !private.Public().(ed25519.PublicKey).Equal(ed25519.PublicKey(expected)) {
-		t.Fatal("golden private seed does not match its public key")
-	}
-	return private
-}
-
-func goldenPublicKeys(t *testing.T, vectors *goldenVectors) *PublicKeySet {
-	t.Helper()
-	raw, err := base64.StdEncoding.DecodeString(vectors.TestKey.PublicKeyBase64)
-	if err != nil {
-		t.Fatalf("decode golden public key: %v", err)
-	}
-	keys, err := NewPublicKeySet(map[string]ed25519.PublicKey{
-		vectors.TestKey.KeyID: ed25519.PublicKey(raw),
-	})
-	if err != nil {
-		t.Fatalf("build public key set: %v", err)
-	}
-	return keys
 }
 
 func mustHash(t *testing.T, value string) Hash {
@@ -142,7 +90,6 @@ func TestGoldenStateHashVectors(t *testing.T) {
 
 func TestGoldenChainVector(t *testing.T) {
 	vectors := loadGolden(t)
-	keys := goldenPublicKeys(t, vectors)
 	chain := vectors.ChainVector
 
 	if got, want := StateHash(chain.InitialState), mustHash(t, chain.InitialStateHash); got != want {
@@ -170,13 +117,6 @@ func TestGoldenChainVector(t *testing.T) {
 			if got, want := hash.String(), commit.Hash; got != want {
 				t.Errorf("commit hash = %s, want %s", got, want)
 			}
-			signed := CommitSignedBytes(chain.SourceID, chain.Epoch, commit.Revision, hash)
-			if got := hex.EncodeToString(signed); got != commit.SignedBytesHex {
-				t.Errorf("signed bytes mismatch\n got %s\nwant %s", got, commit.SignedBytesHex)
-			}
-			if err := keys.Verify(commit.Signature, signed); err != nil {
-				t.Errorf("verify golden commit signature: %v", err)
-			}
 			anchor = hash
 		})
 	}
@@ -186,28 +126,5 @@ func TestGoldenChainVector(t *testing.T) {
 	}
 	if got, want := anchor.String(), chain.HeadCommitHash; got != want {
 		t.Errorf("head commit hash = %s, want %s", got, want)
-	}
-}
-
-func TestGoldenSnapshotSignatureVectors(t *testing.T) {
-	vectors := loadGolden(t)
-	keys := goldenPublicKeys(t, vectors)
-	for _, vector := range vectors.SnapshotSignatureVectors {
-		vector := vector
-		t.Run(vector.StateHash, func(t *testing.T) {
-			signed := SnapshotSignedBytes(
-				vector.SourceID,
-				vector.Epoch,
-				vector.Revision,
-				mustHash(t, vector.StateHash),
-				mustHash(t, vector.CommitHash),
-			)
-			if got := hex.EncodeToString(signed); got != vector.SignedBytesHex {
-				t.Errorf("signed bytes mismatch\n got %s\nwant %s", got, vector.SignedBytesHex)
-			}
-			if err := keys.Verify(vector.Signature, signed); err != nil {
-				t.Errorf("verify golden snapshot signature: %v", err)
-			}
-		})
 	}
 }
