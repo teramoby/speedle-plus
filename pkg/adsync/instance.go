@@ -160,7 +160,7 @@ func writeInstanceID(path, id string, link func(string, string) error) error {
 		return err
 	}
 	if err := link(temporary.Name(), path); err != nil {
-		if !errors.Is(err, syscall.EPERM) && !errors.Is(err, syscall.EACCES) &&
+		if !errors.Is(err, fs.ErrPermission) &&
 			!errors.Is(err, syscall.ENOTSUP) && !errors.Is(err, syscall.ENOSYS) {
 			return err
 		}

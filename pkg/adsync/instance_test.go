@@ -13,7 +13,7 @@ import (
 )
 
 func TestInstanceIDLinkFallback(t *testing.T) {
-	for _, errno := range []syscall.Errno{syscall.EPERM, syscall.EACCES, syscall.ENOTSUP, syscall.ENOSYS} {
+	for _, errno := range []error{os.ErrPermission, syscall.EPERM, syscall.EACCES, syscall.ENOTSUP, syscall.ENOSYS} {
 		t.Run(errno.Error(), func(t *testing.T) {
 			dir := t.TempDir()
 			link := func(old, new string) error {
