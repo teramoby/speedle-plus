@@ -9,5 +9,5 @@ grant user bill role employee
 
 [service.service2]
 [policy]
-grant group customer role other
+grant group customer read catalog
 

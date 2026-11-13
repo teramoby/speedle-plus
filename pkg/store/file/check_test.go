@@ -191,7 +191,6 @@ func TestSPDLLiteralBackslashAndEscapedConditionComments(t *testing.T) {
 	for _, line := range []string{
 		`grant user 'a\' read 'book#1' # comment`,
 		`grant user "a'b" read 'book#1' if x == 'a\' # b' # comment`,
-		`grant user if read 'book#1' # comment`,
 	} {
 		ps, errs := CheckSPDL(strings.NewReader("[service.app]\n[policy]\n"+line+"\n"), "quotes.spdl")
 		if len(errs) > 0 {
@@ -200,5 +199,10 @@ func TestSPDLLiteralBackslashAndEscapedConditionComments(t *testing.T) {
 		if ps.Services[0].Policies[0].Permissions[0].Resource != "book#1" {
 			t.Fatal("resource truncated")
 		}
+	}
+	// Keywords are reserved (#368): "if" is never a principal name.
+	_, errs := CheckSPDL(strings.NewReader("[service.app]\n[policy]\ngrant user if read 'book#1' # comment\n"), "quotes.spdl")
+	if len(errs) != 1 || !strings.HasPrefix(errs[0].Error(), `quotes.spdl:3: "if" is a reserved SPDL keyword and cannot be used as a principal name`) {
+		t.Fatalf("errors %v", errs)
 	}
 }

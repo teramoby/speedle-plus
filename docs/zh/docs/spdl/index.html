@@ -209,7 +209,7 @@
 
 <h3 id="保留关键字">保留关键字</h3>
 
-<p><code>grant</code>、<code>deny</code>、<code>user</code>、<code>group</code>、<code>entity</code>、<code>role</code>、<code>from</code>、<code>on</code>、<code>if</code>、<code>in</code> 在各自语法位置有特定含义。策略语句的关键字不区分大小写；条件中的成员运算使用 <code>in</code> 或 <code>IN</code>，函数名则区分大小写。主体、操作和资源名称也区分大小写。当前解析器在部分名称位置接受类似关键字的名称，不要据此认定所有位置都禁止关键字。为便于审查和客户端互通，建议避免使用这类名称。</p>
+<p><code>grant</code>、<code>deny</code>、<code>user</code>、<code>group</code>、<code>entity</code>、<code>role</code>、<code>from</code>、<code>on</code>、<code>if</code>、<code>in</code> 是保留关键字。无论大小写、是否加引号，都不能用作主体名、身份域、角色、操作、资源，也不能用作条件中的属性名或函数名；解析器会拒绝这样的语句，并指出是哪个关键字、在什么位置。条件中的 <code>in</code> 和 <code>IN</code> 是成员运算符，函数名区分大小写。主体、操作和资源名称也区分大小写。</p>
 
 <h3 id="命名规范">命名规范</h3>
 

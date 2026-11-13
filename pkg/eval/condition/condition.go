@@ -110,6 +110,88 @@ func calledNames(condition string) []string {
 	return names
 }
 
+// Name is an identifier in a condition: an attribute (plain or escaped as
+// [name]) or a function name.
+type Name struct {
+	Name string
+	// Position is where the name starts, in characters from the start of the
+	// condition (at "[" for an escaped name).
+	Position int
+	// Operator is true for a bare word the parser reads as an operator or a
+	// value (in, IN, true, false) rather than a name.
+	Operator bool
+}
+
+// Names returns the identifiers in condition, outside string literals, in
+// order. Escaped [names] are returned without their brackets or escapes.
+func Names(condition string) []Name {
+	var names []Name
+	runes := []rune(condition)
+	for i := 0; i < len(runes); {
+		switch r := runes[i]; {
+		case r == '\'' || r == '"':
+			for i++; i < len(runes) && runes[i] != '\'' && runes[i] != '"'; i++ {
+				if runes[i] == '\\' {
+					i++
+				}
+			}
+			i++
+		case r == '[':
+			start := i
+			var b strings.Builder
+			for i++; i < len(runes) && runes[i] != ']'; i++ {
+				if runes[i] == '\\' && i+1 < len(runes) {
+					i++
+				}
+				b.WriteRune(runes[i])
+			}
+			i++
+			names = append(names, Name{Name: b.String(), Position: start})
+		case unicode.IsLetter(r):
+			// Like the parser: a name starts with a letter and continues
+			// with letters, digits, "_" and "."; a backslash adds the next
+			// character to the name, whatever it is.
+			start := i
+			var name string
+			name, i = readToken(runes, i, isNameRune)
+			names = append(names, Name{Name: name, Position: start, Operator: keywords[name]})
+		case unicode.IsDigit(r) || r == '.':
+			// A number is not a name; the parser reads it the same way.
+			_, i = readToken(runes, i, isNumberRune)
+		default:
+			i++
+		}
+	}
+	return names
+}
+
+func isNameRune(r rune) bool {
+	return unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_' || r == '.'
+}
+
+func isNumberRune(r rune) bool {
+	return unicode.IsDigit(r) || r == '.'
+}
+
+// readToken reads runes from i while ok holds, as the parser does: a
+// backslash adds the character after it to the token.
+func readToken(runes []rune, i int, ok func(rune) bool) (string, int) {
+	var b strings.Builder
+	for i < len(runes) {
+		if runes[i] == '\\' && i+1 < len(runes) {
+			b.WriteRune(runes[i+1])
+			i += 2
+			continue
+		}
+		if !ok(runes[i]) {
+			break
+		}
+		b.WriteRune(runes[i])
+		i++
+	}
+	return b.String(), i
+}
+
 func anyFunction(args ...interface{}) (interface{}, error) {
 	return true, nil
 }
