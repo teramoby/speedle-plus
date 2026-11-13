@@ -3,9 +3,11 @@
 package adsync
 
 import (
+	"bytes"
 	"context"
 	"crypto/x509"
 	"encoding/json"
+	"errors"
 	"math/big"
 	"net/http"
 	"os"
@@ -15,6 +17,80 @@ import (
 	"testing"
 	"time"
 )
+
+type crlCommitContext struct {
+	context.Context
+	check func() error
+}
+
+func (c crlCommitContext) Err() error { return c.check() }
+
+func TestCascadeCRLUnpublishedGenerationDoesNotAdvanceFloor(t *testing.T) {
+	for _, failure := range []string{"cancellation", "expiry"} {
+		t.Run(failure, func(t *testing.T) {
+			pki := newCascadePKI(t)
+			now := time.Now().Truncate(time.Second)
+			config := cascadeConfig(t, pki, "https://relay.example")
+			original := pki.crl(t, 0, 1, now.Add(-time.Minute), now.Add(time.Hour), false)
+			path := writeTestFile(t, t.TempDir(), "relay.crl", original, 0600)
+			config.CRLFiles = []string{path}
+			client := mustCascadeClient(t, config)
+			manager := client.tlsMaterial
+			old := manager.material
+			floorsPath := filepath.Join(config.InstanceIDDir, crlWatermarksFile)
+			retained, err := os.ReadFile(floorsPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			expires := time.Now().Truncate(time.Second).Add(2 * time.Second)
+			writeTestFile(t, filepath.Dir(path), "relay.crl", pki.crl(t, 2, 2, now, expires, false), 0600)
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			staged := false
+			// Force the failure after the new floor has been flushed to a
+			// temporary file, but before either publication or its rename.
+			commitContext := crlCommitContext{Context: ctx, check: func() error {
+				files, err := filepath.Glob(filepath.Join(config.InstanceIDDir, ".adsync-cache-*"))
+				if err != nil {
+					t.Fatal(err)
+				}
+				if len(files) > 0 {
+					staged = true
+					if failure == "cancellation" {
+						cancel()
+					} else {
+						time.Sleep(time.Until(expires))
+					}
+				}
+				return ctx.Err()
+			}}
+			err = manager.reload(commitContext)
+			if failure == "cancellation" && !errors.Is(err, context.Canceled) {
+				t.Fatalf("expected cancellation at commit: %v", err)
+			}
+			if failure == "expiry" && (err == nil || !strings.Contains(err.Error(), "validity window")) {
+				t.Fatalf("expected expiry at commit: %v", err)
+			}
+			if !staged || manager.material != old {
+				t.Fatal("did not retain the exact generation after staged failure")
+			}
+			actual, err := os.ReadFile(floorsPath)
+			if err != nil || !bytes.Equal(actual, retained) {
+				t.Fatalf("unpublished generation advanced the durable floor: %v", err)
+			}
+			files, err := filepath.Glob(filepath.Join(config.InstanceIDDir, ".adsync-cache-*"))
+			if err != nil || len(files) != 0 {
+				t.Fatalf("staged watermark leaked: %v, %v", files, err)
+			}
+			writeTestFile(t, filepath.Dir(path), "relay.crl", original, 0600)
+			if err := client.ReloadTLS(); err != nil {
+				t.Fatalf("unpublished generation advanced the in-memory floor: %v", err)
+			}
+			client.Close()
+			mustCascadeClient(t, config)
+		})
+	}
+}
 
 func TestCascadeCRLRollbackRejectedAfterRestart(t *testing.T) {
 	pki := newCascadePKI(t)

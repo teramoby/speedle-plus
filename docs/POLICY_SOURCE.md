@@ -75,16 +75,16 @@ upstream-count or chain-depth setting is introduced.
 PEM files may contain multiple CRLs; every block is checked. Invalid later
 blocks reject the replacement as a whole. Per-issuer CRL number/time
 watermarks, bound to the signed DER hash, persist in `CacheDir` as an atomic,
-checksummed `0600` file before
-a new TLS generation is published. Restarting with an older, still-valid CRL
+checksummed `0600` file as part of TLS generation publication.
+Restarting with an older, still-valid CRL
 is rejected. Corrupt retained watermarks fail startup; a failed write keeps
 the previous generation. Preserve this directory to retain rollback protection,
 and use a separate directory for each running instance. Two CRLs with equal
 number/time but different contents retain separate floors; dropping either
-requires a newer CRL that covers its floor. A verified observation may advance
-the durable floor even if cancellation or expiry then prevents TLS publication.
-Recovery must supply an equal or newer CRL; restoring an older source does not
-undo that observation.
+requires a newer CRL that covers its floor. Cancellation and expiry are checked
+after staging the watermark file, before publication and its atomic rename.
+A rejected generation leaves both the retained floor and active generation
+unchanged; a failed rename also restores the previous generation.
 
 `DownstreamCredentialsFile`, `Services`, `MaxDownstream`, `MaxChainDepth` and
 `MaxConnectionsPerDownstream` are removed store properties. They fail startup,

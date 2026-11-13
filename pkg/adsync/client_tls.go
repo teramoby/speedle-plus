@@ -278,23 +278,30 @@ func (m *clientTLS) reload(ctx context.Context) error {
 	if err := next.validateAt(time.Now(), m.configFiles.CRLMaxAge); err != nil {
 		return err
 	}
-	if err := m.persistCRLFloors(next); err != nil {
-		return err
-	}
-	if err := ctx.Err(); err != nil {
-		return err
-	}
-	if err := next.validateAt(time.Now(), m.configFiles.CRLMaxAge); err != nil {
+	old := m.material
+	// Stage and flush before the final validity/cancellation checks. Install
+	// the generation before advancing its floor; mu hides it until the rename
+	// commits both. A failed rename restores the old generation before unlock.
+	if err := m.persistCRLFloors(next, func() error {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		if err := next.validateAt(time.Now(), m.configFiles.CRLMaxAge); err != nil {
+			return err
+		}
+		m.material = next
+		return nil
+	}); err != nil {
+		m.material = old
 		return err
 	}
 
-	if m.material != nil {
-		old := m.material
+	if old != nil {
 		if sameTLSMaterial(old, next) {
+			m.material = old
 			return nil
 		}
 	}
-	m.material = next
 	for connection := range m.connections {
 		connection.Conn.Close()
 		if connection.timer != nil {

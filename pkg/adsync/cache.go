@@ -210,6 +210,12 @@ func cacheFileName(serviceID string) string {
 }
 
 func writeFileAtomic(path string, data []byte) error {
+	return writeFileAtomicChecked(path, data, nil)
+}
+
+// beforeCommit runs after staging and flushing, immediately before the rename.
+// Its caller must keep any tentative in-memory state private until success.
+func writeFileAtomicChecked(path string, data []byte, beforeCommit func() error) error {
 	directory := filepath.Dir(path)
 	temporary, err := os.CreateTemp(directory, ".adsync-cache-*")
 	if err != nil {
@@ -227,6 +233,11 @@ func writeFileAtomic(path string, data []byte) error {
 	}
 	if err := temporary.Close(); err != nil {
 		return err
+	}
+	if beforeCommit != nil {
+		if err := beforeCommit(); err != nil {
+			return err
+		}
 	}
 	if err := os.Rename(temporaryName, path); err != nil {
 		return err

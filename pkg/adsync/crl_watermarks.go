@@ -79,9 +79,9 @@ func (m *clientTLS) loadCRLFloors() error {
 	return nil
 }
 
-func (m *clientTLS) persistCRLFloors(next *clientTLSGeneration) error {
+func (m *clientTLS) persistCRLFloors(next *clientTLSGeneration, publish func() error) error {
 	if len(next.crls) == 0 {
-		return nil
+		return publish()
 	}
 	candidates := make([]crlWatermark, 0, len(next.crls))
 	for _, crl := range next.crls {
@@ -122,13 +122,13 @@ func (m *clientTLS) persistCRLFloors(next *clientTLSGeneration) error {
 		return fmt.Errorf("adsync: encode CRL watermarks: %w", err)
 	}
 	if bytes.Equal(payload, m.floorPayload) {
-		return nil
+		return publish()
 	}
 	data, err := json.Marshal(cacheEnvelope{Format: crlWatermarksFormat, Checksum: hashOf(payload), Payload: payload})
 	if err != nil {
 		return err
 	}
-	if err := writeFileAtomic(filepath.Join(m.configFiles.InstanceIDDir, crlWatermarksFile), data); err != nil {
+	if err := writeFileAtomicChecked(filepath.Join(m.configFiles.InstanceIDDir, crlWatermarksFile), data, publish); err != nil {
 		return fmt.Errorf("adsync: persist CRL watermarks: %w", err)
 	}
 	m.crlFloors, m.floorPayload = floors, payload
