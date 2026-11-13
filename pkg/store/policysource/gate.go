@@ -42,7 +42,7 @@ func (s *Store) ForwardFallback(ctx context.Context, operation adsync.FallbackOp
 	}
 	response, err := s.client.ForwardFallback(ctx, operation, body)
 	if err != nil && (stderrors.Is(err, adsync.ErrUnauthorized) || stderrors.Is(err, adsync.ErrForbidden)) {
-		s.machine.Stop(adsync.ReasonRevoked)
+		s.changeDistribution(func() { s.machine.Stop(adsync.ReasonRevoked) })
 	}
 	return response, err
 }

@@ -211,6 +211,24 @@ var errDistributionStopped = errors.New("adsproxy: distribution stopped")
 func (s *Server) refreshAvailability() {
 	s.availabilityMu.Lock()
 	defer s.availabilityMu.Unlock()
+	s.refreshAvailabilityLocked()
+}
+
+// DistributionChange runs change while no confirming response can be in
+// flight, then re-evaluates the distribution state before returning. The
+// caller uses it around a state transition it performs elsewhere, such as a
+// pause, stop or revocation, so a response written from a check made before
+// the transition cannot land after it.
+func (s *Server) DistributionChange(change func()) {
+	s.availabilityMu.Lock()
+	defer s.availabilityMu.Unlock()
+	change()
+	s.refreshAvailabilityLocked()
+}
+
+// refreshAvailabilityLocked applies the current distribution state. The
+// caller holds the availability write lock.
+func (s *Server) refreshAvailabilityLocked() {
 	unavailable := s.distributionUnavailable()
 	s.mu.Lock()
 	if s.closed || unavailable == s.unavailable {

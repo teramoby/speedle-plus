@@ -256,7 +256,7 @@ func (s *Store) Sync(ctx context.Context) error {
 		discovery, err := s.syncer.Services(ctx)
 		if err != nil {
 			if stderrors.Is(err, adsync.ErrUnauthorized) || stderrors.Is(err, adsync.ErrForbidden) {
-				s.machine.Stop(adsync.ReasonRevoked)
+				s.changeDistribution(func() { s.machine.Stop(adsync.ReasonRevoked) })
 			}
 			return err
 		}
@@ -508,6 +508,17 @@ func (s *Store) downstreamMirrorMatches(state *adsync.ServiceState) bool {
 	return found && info.SourceID == state.SourceID && info.Epoch == state.Epoch &&
 		info.Revision == state.Revision && info.StateHash == state.StateHash &&
 		info.CommitHash == state.CommitHash
+}
+
+// changeDistribution runs a state-machine transition while no confirming
+// downstream response can be in flight, so a pause, stop or revocation takes
+// effect before any ack or held-poll answer written from an earlier check.
+func (s *Store) changeDistribution(change func()) {
+	if s.downstream != nil {
+		s.downstream.server.DistributionChange(change)
+		return
+	}
+	change()
 }
 
 // withholdDownstream stops serving one service to downstream instances while

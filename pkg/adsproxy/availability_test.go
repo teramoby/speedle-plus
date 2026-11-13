@@ -142,3 +142,41 @@ func TestAvailabilityFlipStopsDistribution(t *testing.T) {
 		t.Fatalf("first frame after recovery = %q", kind)
 	}
 }
+
+// TestDistributionChangeSerializesWithAConfirmingWrite proves a caller's
+// state change runs while no confirming response is in flight: the change
+// waits for the write's availability read lock and flips the distribution
+// state before it returns.
+func TestDistributionChangeSerializesWithAConfirmingWrite(t *testing.T) {
+	mirror, _, _ := newPopulatedMirror(t)
+	var paused atomic.Bool
+	server := newTestServer(t, mirror, &testServerOptions{paused: paused.Load})
+	server.server.availabilityMu.RLock()
+	changed := make(chan struct{})
+	applied := make(chan struct{})
+	go func() {
+		server.server.DistributionChange(func() {
+			close(applied)
+			paused.Store(true)
+		})
+		close(changed)
+	}()
+	select {
+	case <-applied:
+		server.server.availabilityMu.RUnlock()
+		t.Fatal("the state change ran while a confirming write was in flight")
+	case <-time.After(50 * time.Millisecond):
+	}
+	server.server.availabilityMu.RUnlock()
+	select {
+	case <-changed:
+	case <-time.After(5 * time.Second):
+		t.Fatal("the state change did not complete")
+	}
+	server.server.mu.Lock()
+	unavailable := server.server.unavailable
+	server.server.mu.Unlock()
+	if !unavailable {
+		t.Fatal("distribution did not flip with the state change")
+	}
+}

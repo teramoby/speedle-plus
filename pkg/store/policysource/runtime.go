@@ -368,17 +368,17 @@ func (s *Store) handleRuntimeCommand(command adsync.Command) *adsync.CommandResu
 
 	switch command.Action {
 	case "pause":
-		s.machine.Pause()
+		s.changeDistribution(s.machine.Pause)
 		return &adsync.CommandResult{Status: "acked"}
 	case "resume":
-		s.machine.Resume()
+		s.changeDistribution(s.machine.Resume)
 		s.triggerSync()
 		return &adsync.CommandResult{Status: "acked"}
 	case "resync":
 		s.resync(command.ServiceID)
 		return &adsync.CommandResult{Status: "acked"}
 	case "stop":
-		s.machine.Stop(adsync.ReasonStoppedByCommand)
+		s.changeDistribution(func() { s.machine.Stop(adsync.ReasonStoppedByCommand) })
 		return &adsync.CommandResult{Status: "acked"}
 	default:
 		return &adsync.CommandResult{Status: "rejected", Result: "unknown action"}
