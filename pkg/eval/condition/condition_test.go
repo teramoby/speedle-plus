@@ -6,6 +6,7 @@ package condition
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -126,4 +127,24 @@ func FuzzConditionCheck(f *testing.F) {
 			}
 		}
 	})
+}
+
+func TestNamesFollowTheParser(t *testing.T) {
+	got := Names(`a.b == 'x\'role' && [us\]er] in (1.5, x) && ro\le > 2 && user\-name == "q" && IN && f(1) && 3.2`)
+	want := []Name{
+		{Name: "a.b", Position: 0},
+		{Name: "us]er", Position: 20},
+		{Name: "in", Position: 29, Operator: true},
+		{Name: "x", Position: 38},
+		{Name: "role", Position: 44},
+		{Name: "user-name", Position: 57},
+		{Name: "IN", Position: 78, Operator: true},
+		{Name: "f", Position: 84},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("Names:\n got %+v\nwant %+v", got, want)
+	}
+	if got := Names(""); got != nil {
+		t.Fatalf("Names of empty: %+v", got)
+	}
 }

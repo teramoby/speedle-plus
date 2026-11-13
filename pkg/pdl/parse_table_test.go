@@ -122,6 +122,7 @@ func TestGetService(t *testing.T) {
 		{" in app rest", "app", false},
 		{"in ", "", true},
 		{"other", "", false},
+		{"in Role", "", true},
 	}
 	for _, c := range cases {
 		got, _, err := getService(c.cmd, 0)

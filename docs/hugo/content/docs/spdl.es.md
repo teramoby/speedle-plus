@@ -29,7 +29,7 @@ SPDL es el lenguaje para escribir políticas y políticas de roles de Speedle. E
 
 ### Palabras clave
 
-`grant`, `deny`, `user`, `group`, `entity`, `role`, `from`, `on`, `if` e `in` tienen un significado especial en su posición sintáctica. Las palabras clave de las sentencias no distinguen mayúsculas. En las condiciones, use `in` o `IN`; los nombres de función distinguen mayúsculas. Los nombres de principal, acción y recurso también distinguen mayúsculas. El analizador actual acepta nombres parecidos a palabras clave en algunas posiciones de nombre, así que una prohibición general no es una regla de validación. Prefiera nombres inequívocos para la revisión y la interoperabilidad de los clientes.
+`grant`, `deny`, `user`, `group`, `entity`, `role`, `from`, `on`, `if` e `in` son palabras clave reservadas. Ninguna puede usarse como nombre de principal, dominio de identidad, rol, acción, recurso, ni como nombre de atributo o función en una condición, sin importar mayúsculas o minúsculas ni si va entre comillas; el analizador rechaza la sentencia e indica la palabra clave y su posición. En las condiciones, `in` e `IN` son el operador de pertenencia; los nombres de función distinguen mayúsculas. Los nombres de principal, acción y recurso también distinguen mayúsculas.
 
 ### Convención de nombres
 

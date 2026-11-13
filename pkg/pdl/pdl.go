@@ -26,6 +26,36 @@ const (
 	resExprPrefix = "expr:"
 )
 
+// reservedWords are the SPDL keywords. They are reserved in every position:
+// none of them, in any letter case and quoted or not, is a valid principal
+// name, identity domain, role, action, resource or condition attribute.
+var reservedWords = []string{"grant", "deny", "user", "group", "entity", "role", "from", "on", "if", "in"}
+
+// IsReserved reports whether name is an SPDL keyword (case-insensitive).
+func IsReserved(name string) bool {
+	for _, w := range reservedWords {
+		if strings.EqualFold(name, w) {
+			return true
+		}
+	}
+	return false
+}
+
+// reservedError reports a keyword used as a name; pos is where the name starts.
+func reservedError(name, what, cmd string, pos int) error {
+	return getError(fmt.Sprintf("%q is a reserved SPDL keyword and cannot be used as %s", name, what), cmd, pos)
+}
+
+// getName reads one name token and rejects a reserved keyword.
+func getName(cmd string, i int, what string) (string, int, error) {
+	start := skipSpaces(cmd, i)
+	t, end := getToken(cmd, start)
+	if t != "" && IsReserved(t) {
+		return "", -1, reservedError(t, what, cmd, start)
+	}
+	return t, end, nil
+}
+
 // ParsePolicy parses a line to a policy object
 func ParsePolicy(cmd, name string) (*pms.Policy, io.Reader, error) {
 	if !utf8.ValidString(cmd) {
@@ -284,7 +314,11 @@ func getPrincipal(cmd string, i int) (string, int, error) {
 		return "", -1, getError("Not found principal type (user|group|role|entity)", cmd, i)
 	}
 
-	principal.Name, i = getToken(cmd, i)
+	var err error
+	principal.Name, i, err = getName(cmd, i, "a principal name")
+	if err != nil {
+		return "", -1, err
+	}
 	if principal.Name == "" {
 		return "", -1, getError("Not found principal name", cmd, i)
 	}
@@ -294,7 +328,10 @@ func getPrincipal(cmd string, i int) (string, int, error) {
 		// principal has idd with key word "from"
 		i = end
 		i = skipSpaces(cmd, i)
-		principal.IDD, i = getToken(cmd, i)
+		principal.IDD, i, err = getName(cmd, i, "an identity domain")
+		if err != nil {
+			return "", -1, err
+		}
 		if len(principal.IDD) == 0 {
 			// no IDD found
 			return "", -1, getError("No idd found after key word \"from\"", cmd, i)
@@ -304,11 +341,20 @@ func getPrincipal(cmd string, i int) (string, int, error) {
 	return subjectutils.EncodePrincipal(&principal), i, nil
 }
 
+// getRole reads one role name, after the optional (unquoted) "role" prefix.
+func getRole(cmd string, i int) (string, int, error) {
+	i = skipSpaces(cmd, i)
+	if end, ok := keyword(cmd, i, "role"); ok {
+		i = end
+	}
+	return getName(cmd, i, "a role name")
+}
+
 func getRoles(cmd string, i int) ([]string, int, error) {
 	tokens := []string{}
-	t, i := getToken(cmd, i)
-	if strings.EqualFold("role", t) {
-		t, i = getToken(cmd, i)
+	t, i, err := getRole(cmd, i)
+	if err != nil {
+		return nil, -1, err
 	}
 	if t == "" {
 		return tokens, i, nil
@@ -317,9 +363,9 @@ func getRoles(cmd string, i int) ([]string, int, error) {
 	tokens = append(tokens, t)
 	i = skipSpaces(cmd, i)
 	for i < len(cmd) && cmd[i] == ',' {
-		t, i = getToken(cmd, i+1)
-		if strings.EqualFold("role", t) {
-			t, i = getToken(cmd, i)
+		t, i, err = getRole(cmd, i+1)
+		if err != nil {
+			return nil, -1, err
 		}
 		if t == "" {
 			return nil, -1, getError("Not found role", cmd, i)
@@ -363,7 +409,10 @@ func getPermission(cmd string, i int) (*pms.Permission, int, error) {
 	if len(acts) == 0 {
 		return nil, i, getError("Not found permission", cmd, i)
 	}
-	res, i := getToken(cmd, i)
+	res, i, err := getName(cmd, i, "a resource")
+	if err != nil {
+		return nil, i, err
+	}
 	if res == "" {
 		return nil, i, getError("Not found permission", cmd, i)
 	}
@@ -412,7 +461,11 @@ func getService(cmd string, i int) (string, int, error) {
 	if end, ok := keyword(cmd, i, "in"); ok {
 		i = end
 		var serv string
-		serv, i = getToken(cmd, i)
+		var err error
+		serv, i, err = getName(cmd, i, "a service name")
+		if err != nil {
+			return "", -1, err
+		}
 		if serv == "" {
 			return "", -1, getError("Not found service", cmd, i)
 		}
@@ -442,6 +495,13 @@ func getCondition(cmd string, i int) (string, int, error) {
 			}
 			return "", -1, err
 		}
+		for _, name := range condition.Names(ret) {
+			if name.Operator || !IsReserved(name.Name) {
+				continue
+			}
+			pos := i + len(string([]rune(ret)[:name.Position]))
+			return "", -1, reservedError(name.Name, "a condition attribute or function name", cmd, pos)
+		}
 		i = len(cmd)
 		return ret, i, nil
 	}
@@ -450,14 +510,24 @@ func getCondition(cmd string, i int) (string, int, error) {
 
 func getTokens(cmd string, i int, e string) ([]string, int, error) {
 	tokens := []string{}
-	t, i := getToken(cmd, i)
+	what := "an " + e
+	if e == "resource" {
+		what = "a resource"
+	}
+	t, i, err := getName(cmd, i, what)
+	if err != nil {
+		return nil, -1, err
+	}
 	if t == "" {
 		return tokens, i, nil
 	}
 	tokens = append(tokens, t)
 	i = skipSpaces(cmd, i)
 	for i < len(cmd) && cmd[i] == ',' {
-		t, i = getToken(cmd, i+1)
+		t, i, err = getName(cmd, i+1, what)
+		if err != nil {
+			return nil, -1, err
+		}
 		if t == "" {
 			return nil, -1, getError(fmt.Sprintf("Not found %s", e), cmd, i)
 		}
