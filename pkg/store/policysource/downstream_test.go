@@ -574,3 +574,25 @@ func decodeServices(t *testing.T, body []byte) []adsync.Service {
 	}
 	return response.Services
 }
+
+// TestServeDownstreamChannelRevocationStopsServing covers the owned channel's
+// 401/403 path, which calls Machine.Stop directly: the installed stop hook
+// must still stop downstream serving.
+func TestServeDownstreamChannelRevocationStopsServing(t *testing.T) {
+	fixture := newTestFixture(t, booksService())
+	store := fixture.open(func(options *Options) { options.ServeDownstream = true })
+	defer store.Close()
+	handler := store.DownstreamHandler()
+	if response := downstreamRequest(handler, adsync.APIPrefix+"/services"); response.Code != http.StatusOK {
+		t.Fatalf("services before the revocation: status %d", response.Code)
+	}
+	store.machine.Stop(adsync.ReasonRevoked)
+	for _, path := range []string{
+		adsync.APIPrefix + "/services",
+		adsync.APIPrefix + "/services/" + testServiceID1 + "/snapshot",
+	} {
+		if response := downstreamRequest(handler, path); response.Code != http.StatusServiceUnavailable {
+			t.Errorf("%s after the channel revocation: status %d", path, response.Code)
+		}
+	}
+}

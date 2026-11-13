@@ -206,3 +206,48 @@ func TestCloseWaitsForAnInFlightWrite(t *testing.T) {
 		t.Fatal("Close did not complete")
 	}
 }
+
+// TestStopTransitionWaitsForAConfirmingWrite covers the store's wiring: an
+// explicit machine stop runs through the downstream availability lock via the
+// stop hook, so no confirming write from a pre-stop check can be in flight.
+func TestStopTransitionWaitsForAConfirmingWrite(t *testing.T) {
+	machine, err := adsync.NewMachine(adsync.MachineOptions{})
+	if err != nil {
+		t.Fatalf("new machine: %v", err)
+	}
+	mirror, _, _ := newPopulatedMirror(t)
+	server, err := NewServer(Config{
+		InstanceID: testProxyID,
+		Mirror:     mirror,
+		Paused: func() bool {
+			instance := machine.Instance()
+			return instance.Paused || instance.Liveness != adsync.LivenessLive
+		},
+	})
+	if err != nil {
+		t.Fatalf("new server: %v", err)
+	}
+	defer server.Close()
+	machine.SetStopHook(func(apply func()) { server.DistributionChange(apply) })
+	server.availabilityMu.RLock()
+	stopped := make(chan struct{})
+	go func() {
+		machine.Stop(adsync.ReasonRevoked)
+		close(stopped)
+	}()
+	select {
+	case <-stopped:
+		server.availabilityMu.RUnlock()
+		t.Fatal("the stop did not wait for the in-flight write")
+	case <-time.After(50 * time.Millisecond):
+	}
+	server.availabilityMu.RUnlock()
+	select {
+	case <-stopped:
+	case <-time.After(5 * time.Second):
+		t.Fatal("the stop did not complete")
+	}
+	if instance := machine.Instance(); instance.Liveness != adsync.LivenessStopped {
+		t.Fatalf("machine liveness after the stop = %v", instance.Liveness)
+	}
+}

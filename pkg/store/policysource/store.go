@@ -177,6 +177,10 @@ func Open(ctx context.Context, options Options) (_ *Store, err error) {
 		pendingRemoved: make(map[string]string),
 		integrity:      make(map[string]integrityRetry),
 	}
+	// A stop can be driven by the owned channel (an upstream 401 or 403
+	// revokes the instance) as well as by the store, so route every explicit
+	// stop through the downstream availability lock.
+	machine.SetStopHook(func(apply func()) { store.changeDistribution(apply) })
 	for _, service := range syncer.CachedServices() {
 		if err := machine.Track(service.ID, service.Name); err != nil {
 			log.Warnf("policy-source store ignores cached service %q: %v", service.ID, err)
@@ -256,7 +260,7 @@ func (s *Store) Sync(ctx context.Context) error {
 		discovery, err := s.syncer.Services(ctx)
 		if err != nil {
 			if stderrors.Is(err, adsync.ErrUnauthorized) || stderrors.Is(err, adsync.ErrForbidden) {
-				s.changeDistribution(func() { s.machine.Stop(adsync.ReasonRevoked) })
+				s.machine.Stop(adsync.ReasonRevoked)
 			}
 			return err
 		}
