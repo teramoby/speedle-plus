@@ -199,6 +199,32 @@ func TestNewListenerRejectsUnusableCRLs(t *testing.T) {
 			return writeFile(t, directory, "delta.crl",
 				pem.EncodeToMemory(&pem.Block{Type: "X509 CRL", Bytes: der}))
 		},
+		"CRL scoped to CA certificates": func() string {
+			// A CA-only CRL says nothing about client leaf certificates, so it
+			// must not count as fresh revocation coverage for their issuer.
+			der, err := x509.CreateRevocationList(rand.Reader, &x509.RevocationList{
+				Number: big.NewInt(13), ThisUpdate: now.Add(-time.Hour), NextUpdate: now.Add(time.Hour),
+				ExtraExtensions: []pkix.Extension{issuingDistributionPoint()},
+			}, pki.root, pki.rootKey)
+			if err != nil {
+				t.Fatalf("create scoped CRL: %v", err)
+			}
+			return writeFile(t, directory, "scoped.crl",
+				pem.EncodeToMemory(&pem.Block{Type: "X509 CRL", Bytes: der}))
+		},
+		"CRL with an unsupported critical extension": func() string {
+			der, err := x509.CreateRevocationList(rand.Reader, &x509.RevocationList{
+				Number: big.NewInt(14), ThisUpdate: now.Add(-time.Hour), NextUpdate: now.Add(time.Hour),
+				ExtraExtensions: []pkix.Extension{{
+					Id: asn1.ObjectIdentifier{1, 2, 3, 4, 5}, Critical: true, Value: []byte{0x05, 0x00},
+				}},
+			}, pki.root, pki.rootKey)
+			if err != nil {
+				t.Fatalf("create annotated CRL: %v", err)
+			}
+			return writeFile(t, directory, "annotated.crl",
+				pem.EncodeToMemory(&pem.Block{Type: "X509 CRL", Bytes: der}))
+		},
 		"CRL from the future": func() string {
 			der, err := x509.CreateRevocationList(rand.Reader, &x509.RevocationList{
 				Number: big.NewInt(12), ThisUpdate: now.Add(time.Hour), NextUpdate: now.Add(2 * time.Hour),
@@ -923,6 +949,19 @@ func TestParseCRLLowLevel(t *testing.T) {
 	if _, err := parseCRLs(nil, "empty", now, caCerts); !errors.Is(err, ErrCRL) {
 		t.Errorf("empty CRL: %v", err)
 	}
+	// An unknown non-critical extension does not restrict the CRL's scope, so
+	// it stays usable.
+	annotatedDER, err := x509.CreateRevocationList(rand.Reader, &x509.RevocationList{
+		Number: big.NewInt(21), ThisUpdate: now.Add(-time.Hour), NextUpdate: now.Add(time.Hour),
+		ExtraExtensions: []pkix.Extension{{Id: asn1.ObjectIdentifier{1, 2, 3, 4, 6}}},
+	}, pki.root, pki.rootKey)
+	if err != nil {
+		t.Fatalf("create annotated CRL: %v", err)
+	}
+	entries, err = parseCRLs(annotatedDER, "annotated", now, caCerts)
+	if err != nil || len(entries) != 1 {
+		t.Fatalf("CRL with a non-critical extension: %v %d", err, len(entries))
+	}
 	if got := subjectName(pki.root); !strings.Contains(got, "adsproxy test CA") {
 		t.Errorf("subjectName = %q", got)
 	}
@@ -1025,6 +1064,15 @@ func mustRead(t *testing.T, path string) []byte {
 func deltaIndicator() pkix.Extension {
 	der, _ := asn1.Marshal(big.NewInt(1))
 	return pkix.Extension{Id: asn1.ObjectIdentifier{2, 5, 29, 27}, Critical: true, Value: der}
+}
+
+// issuingDistributionPoint builds the CRL scope extension with
+// onlyContainsCACerts set, so the CRL does not cover client leaf certificates.
+func issuingDistributionPoint() pkix.Extension {
+	der, _ := asn1.Marshal(struct {
+		OnlyContainsCACerts bool `asn1:"optional,tag:1"`
+	}{OnlyContainsCACerts: true})
+	return pkix.Extension{Id: asn1.ObjectIdentifier{2, 5, 29, 28}, Critical: true, Value: der}
 }
 
 // crlWithNumber returns a CRL signed by the test CA.

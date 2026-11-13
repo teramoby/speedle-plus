@@ -7,6 +7,8 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/asn1"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -39,8 +41,18 @@ const (
 // It is a variable only so tests can shorten it.
 var crlStallTimeout = 10 * time.Second
 
-// deltaCRLOID is the delta CRL indicator extension.
-const deltaCRLOID = "2.5.29.27"
+var (
+	// deltaCRLIndicatorOID marks a delta CRL. The loader keeps only full
+	// CRLs, so applying one would treat a partial update as the complete
+	// revocation state of the issuer.
+	deltaCRLIndicatorOID = asn1.ObjectIdentifier{2, 5, 29, 27}
+	// issuingDistributionPointOID scopes a CRL to part of an issuer's
+	// certificates: CA certificates only, user certificates only, some
+	// revocation reasons, or one distribution point. Scope matching is not
+	// implemented, so such a CRL must not count as fresh coverage for every
+	// certificate the issuer signed.
+	issuingDistributionPointOID = asn1.ObjectIdentifier{2, 5, 29, 28}
+)
 
 // errRedirect is returned for any redirect during a CRL fetch: the configured
 // URL is the only permitted location.
@@ -922,11 +934,30 @@ func parseCRLs(data []byte, source string, now time.Time, caCerts []*x509.Certif
 	return entries, nil
 }
 
-func buildCRLEntry(crl *x509.RevocationList, source string, now time.Time, caCerts []*x509.Certificate) (*crlEntry, error) {
-	for _, extension := range crl.Extensions {
-		if extension.Id.String() == deltaCRLOID {
-			return nil, fmt.Errorf("%w: %s contains a delta CRL", ErrCRL, source)
+// checkCRLExtensions rejects a CRL whose extensions would change how its
+// revoked serials apply. Go's CRL parser reports critical extensions but does
+// not fail on them, so an unsupported one could silently restrict the CRL's
+// scope while verifyClient still counts it as full coverage for the issuer.
+func checkCRLExtensions(extensions []pkix.Extension, source string) error {
+	for _, extension := range extensions {
+		switch {
+		case extension.Id.Equal(deltaCRLIndicatorOID):
+			return fmt.Errorf("%w: %s contains a delta CRL", ErrCRL, source)
+		case extension.Id.Equal(issuingDistributionPointOID):
+			return fmt.Errorf("%w: %s has an issuing distribution point", ErrCRL, source)
+		case extension.Critical:
+			// The extensions this loader understands are never required to be
+			// critical, so anything marked critical is unsupported.
+			return fmt.Errorf("%w: %s has an unsupported critical extension %s",
+				ErrCRL, source, extension.Id)
 		}
+	}
+	return nil
+}
+
+func buildCRLEntry(crl *x509.RevocationList, source string, now time.Time, caCerts []*x509.Certificate) (*crlEntry, error) {
+	if err := checkCRLExtensions(crl.Extensions, source); err != nil {
+		return nil, err
 	}
 	if crl.ThisUpdate.After(now.Add(crlClockSkew)) {
 		return nil, fmt.Errorf("%w: %s has a ThisUpdate in the future", ErrCRL, source)
