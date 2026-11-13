@@ -241,7 +241,7 @@ func NewClientContext(ctx context.Context, config Config) (*Client, error) {
 	if base.Scheme != "https" {
 		return nil, fmt.Errorf("adsync: BaseURL must use https")
 	}
-	if base.Host == "" {
+	if base.Hostname() == "" {
 		return nil, fmt.Errorf("adsync: BaseURL has no host")
 	}
 	if base.User != nil {

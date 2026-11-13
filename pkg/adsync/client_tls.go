@@ -127,7 +127,7 @@ func (m *clientTLS) load(ctx context.Context) (*clientTLSGeneration, error) {
 			return nil, fmt.Errorf("adsync: CRLURLs must contain HTTPS URLs without credentials, query or fragment")
 		}
 
-		data, err := fetchRelayCRL(ctx, address, caPEM)
+		data, err := fetchRelayCRL(ctx, address, generation.roots)
 		if err != nil {
 			return nil, err
 		}
@@ -219,6 +219,22 @@ func (m *clientTLS) reload(ctx context.Context) error {
 	defer m.mu.Unlock()
 	if m.closed {
 		return net.ErrClosed
+	}
+
+	// Network progress has no total-duration cap. Recheck validity at the
+	// publication point: material may have expired while a CRL was downloading.
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	now := time.Now()
+	leaf := next.certificate.Leaf
+	if now.Before(leaf.NotBefore) || !now.Before(leaf.NotAfter) {
+		return fmt.Errorf("adsync: ClientCertFile is outside its validity window at TLS publication")
+	}
+	for _, crl := range next.crls {
+		if err := freshCRL(crl, now, m.configFiles.CRLMaxAge); err != nil {
+			return err
+		}
 	}
 
 	if m.material != nil {
@@ -448,7 +464,10 @@ func (c *Client) Close() error {
 }
 
 // fetchRelayCRL has a stall deadline, no response-size or total-transfer cap.
-func fetchRelayCRL(parent context.Context, address string, caPEM []byte) ([]byte, error) {
+func fetchRelayCRL(parent context.Context, address string, roots *x509.CertPool) ([]byte, error) {
+	if roots == nil {
+		return nil, fmt.Errorf("adsync: CRL fetch requires explicit CAFile roots")
+	}
 	ctx, cancel := context.WithCancel(parent)
 	defer cancel()
 	watch := newStallWatch(defaultRequestTimeout, cancel)
@@ -457,11 +476,6 @@ func fetchRelayCRL(parent context.Context, address string, caPEM []byte) ([]byte
 	if err != nil {
 		return nil, fmt.Errorf("adsync: invalid CRLURLs request")
 	}
-	roots, err := x509.SystemCertPool()
-	if err != nil || roots == nil {
-		roots = x509.NewCertPool()
-	}
-	roots.AppendCertsFromPEM(caPEM)
 	transport := &http.Transport{
 		Proxy:                 http.ProxyFromEnvironment,
 		TLSClientConfig:       &tls.Config{MinVersion: tls.VersionTLS12, RootCAs: roots},

@@ -154,6 +154,7 @@ func TestCascadeCredentialValidation(t *testing.T) {
 		name   string
 		change func(*Config)
 	}{
+		{"empty host", func(c *Config) { c.BaseURL = "https://:443" }},
 		{"missing cert", func(c *Config) { c.ClientCertFile = "" }}, {"missing key", func(c *Config) { c.ClientKeyFile = "" }}, {"missing CA", func(c *Config) { c.CAFile = "" }}, {"missing CacheDir", func(c *Config) { c.InstanceIDDir = "" }},
 		{"configured ID", func(c *Config) { c.InstanceID = testInstanceID }}, {"custom transport", func(c *Config) { c.HTTPClient = &http.Client{} }}, {"custom dialer", func(c *Config) { c.Dialer = &websocket.Dialer{} }},
 		{"negative reload", func(c *Config) { c.TLSReloadInterval = -time.Second }}, {"unreadable cert", func(c *Config) { c.ClientCertFile += ".absent" }}, {"unreadable CA", func(c *Config) { c.CAFile += ".absent" }},

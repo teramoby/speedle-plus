@@ -52,7 +52,9 @@ Optional `CRLFiles` and `CRLURLs` contain local full X.509 CRLs and HTTPS CRL
 addresses for relay certificate revocation checks. When either property is
 present, at least one source is required; omit both properties to disable
 optional revocation checking. For CRL verification,
-`CAFile` must contain each CRL issuer's CA certificate. Configured CRLs must have
+`CAFile` must contain each CRL issuer's CA certificate and the trust roots
+for HTTPS CRL hosts. CRL HTTPS fetches use this explicit bundle, matching
+the relay connection trust policy. Configured CRLs must have
 trusted signatures and current validity windows. Revoked relay certificates
 and chains without fresh issuer coverage fail verification. `CRLMaxAge`
 defaults to 24 hours for CRLs without `NextUpdate`. The TLS poll and SIGHUP also

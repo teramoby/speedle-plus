@@ -340,3 +340,103 @@ func TestCascadeStartupHonorsCancellationWhileCRLProgresses(t *testing.T) {
 		t.Fatal("startup ignored cancellation")
 	}
 }
+
+func TestCascadeReloadRechecksValidityAfterCRLDownload(t *testing.T) {
+	for _, material := range []string{"certificate", "CRL"} {
+		t.Run(material, func(t *testing.T) {
+			pki := newCascadePKI(t)
+			now := time.Now()
+			var data atomic.Value
+			data.Store(pki.crl(t, 0, 1, now.Add(-time.Minute), now.Add(time.Hour), false))
+			var delay atomic.Bool
+			started := make(chan struct{}, 1)
+			release := make(chan struct{})
+			publisher := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if delay.Load() {
+					select {
+					case started <- struct{}{}:
+					default:
+					}
+					ticker := time.NewTicker(20 * time.Millisecond)
+					defer ticker.Stop()
+				wait:
+					for {
+						select {
+						case <-r.Context().Done():
+							return
+						case <-release:
+							break wait
+						case <-ticker.C:
+							w.Write([]byte("\n"))
+							w.(http.Flusher).Flush()
+						}
+					}
+				}
+				w.Write(data.Load().([]byte))
+			}))
+			serverCert, _, _ := pki.issue(t, 2, x509.ExtKeyUsageServerAuth, "127.0.0.1", now.Add(time.Hour))
+			publisher.TLS = &tls.Config{Certificates: []tls.Certificate{serverCert}, MinVersion: tls.VersionTLS12}
+			publisher.StartTLS()
+			defer publisher.Close()
+			config := cascadeConfig(t, pki, "https://relay.example")
+			config.CRLURLs = []string{publisher.URL}
+			client := mustCascadeClient(t, config)
+			old := client.tlsMaterial.material
+			expires := time.Now().Add(2 * time.Second).Truncate(time.Second)
+			if material == "certificate" {
+				_, cert, key := pki.issue(t, 4, x509.ExtKeyUsageClientAuth, "", expires)
+				writeTestFile(t, filepath.Dir(config.ClientCertFile), "client.pem", cert, 0600)
+				writeTestFile(t, filepath.Dir(config.ClientKeyFile), "client.key", key, 0600)
+			} else {
+				data.Store(pki.crl(t, 0, 2, now.Add(-time.Minute), expires, false))
+			}
+			delay.Store(true)
+			done := make(chan error, 1)
+			go func() { done <- client.ReloadTLS() }()
+			select {
+			case <-started:
+			case <-time.After(time.Second):
+				close(release)
+				t.Fatal("reload did not start before replacement expiry")
+			}
+			time.Sleep(time.Until(expires) + 50*time.Millisecond)
+			close(release)
+			select {
+			case err := <-done:
+				if err == nil {
+					t.Fatal("replacement expired during download but was installed")
+				}
+			case <-time.After(time.Second):
+				t.Fatal("reload did not finish")
+			}
+			client.tlsMaterial.mu.Lock()
+			retained := client.tlsMaterial.material == old
+			client.tlsMaterial.mu.Unlock()
+			if !retained {
+				t.Fatal("expired replacement displaced the last valid generation")
+			}
+		})
+	}
+}
+
+func TestCascadeCRLFetchRequiresExplicitTrust(t *testing.T) {
+	pki := newCascadePKI(t)
+	now := time.Now()
+	data := pki.crl(t, 0, 1, now.Add(-time.Minute), now.Add(time.Hour), false)
+	publisher := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write(data) }))
+	cert, _, _ := pki.issue(t, 2, x509.ExtKeyUsageServerAuth, "127.0.0.1", now.Add(time.Hour))
+	publisher.TLS = &tls.Config{Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS12}
+	publisher.StartTLS()
+	defer publisher.Close()
+	roots := x509.NewCertPool()
+	roots.AddCert(pki.ca)
+	if _, err := fetchRelayCRL(context.Background(), publisher.URL, roots); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := fetchRelayCRL(context.Background(), publisher.URL, x509.NewCertPool()); err == nil {
+		t.Fatal("empty explicit trust fell back to system roots")
+	}
+	if _, err := fetchRelayCRL(context.Background(), publisher.URL, nil); err == nil {
+		t.Fatal("missing explicit trust accepted")
+	}
+}
