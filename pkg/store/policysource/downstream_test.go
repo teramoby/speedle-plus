@@ -308,6 +308,45 @@ func TestServeDownstreamNeverExposesAnUnconfirmedCandidate(t *testing.T) {
 	}
 }
 
+// TestServeDownstreamWithholdsForANotifiedHead covers a notification that
+// announces a head newer than the last ack. The synchronizer catches up from
+// the acknowledged revision and applies change pages the mirror must not serve
+// until the whole pass verifies the notified head.
+func TestServeDownstreamWithholdsForANotifiedHead(t *testing.T) {
+	fixture := newTestFixture(t, booksService())
+	store := fixture.open(func(options *Options) { options.ServeDownstream = true })
+	defer store.Close()
+	books, known := fixture.source.service("books")
+	if !known {
+		t.Fatal("the fixture source has no books service")
+	}
+	notified := books.Revision + 2
+	if err := store.machine.ObserveHead(adsync.Head{
+		ID: testServiceID1, Epoch: books.Epoch, Revision: notified,
+	}); err != nil {
+		t.Fatalf("observe head: %v", err)
+	}
+	fixture.source.holdChanges(testServiceID1)
+	before := fixture.source.requestCount()
+	syncDone := make(chan error, 1)
+	go func() { syncDone <- store.Sync(context.Background()) }()
+	// The discovery request and the held change-page request both reach the
+	// source; the catch-up is in flight once the second one arrived.
+	waitForCondition(t, 5*time.Second, "the catch-up to be in flight", func() bool {
+		return fixture.source.requestCount() >= before+2
+	})
+	if _, availability := store.downstream.mirror.Lookup(testServiceID1); availability == adsproxy.ServiceAvailable {
+		t.Fatal("the mirror kept serving the acknowledged revision while a notified head was being caught up")
+	}
+	fixture.source.releaseChanges(testServiceID1)
+	if err := <-syncDone; err == nil {
+		t.Fatal("a missing change log did not fail the pass")
+	}
+	if _, availability := store.downstream.mirror.Lookup(testServiceID1); availability == adsproxy.ServiceAvailable {
+		t.Fatal("the mirror recovered without a verified pass")
+	}
+}
+
 // waitForCondition polls a condition until it holds or the timeout expires.
 func waitForCondition(t *testing.T, timeout time.Duration, description string, condition func() bool) {
 	t.Helper()

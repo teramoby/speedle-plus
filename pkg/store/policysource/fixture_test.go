@@ -108,6 +108,7 @@ type testSource struct {
 
 	corruptSnapshotHash bool
 	snapshotHolds       map[string]chan struct{}
+	changesHolds        map[string]chan struct{}
 	// lagSnapshots makes the source serve the previous revision's snapshot
 	// while discovery advertises the current one, so a catch-up starts below
 	// the discovered head.
@@ -151,7 +152,7 @@ func (f *testSource) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		case strings.HasSuffix(rest, "/snapshot"):
 			f.serveSnapshot(w, r, strings.TrimSuffix(rest, "/snapshot"))
 		case strings.HasSuffix(rest, "/changes"):
-			writeJSONError(w, http.StatusGone, "snapshot_required", "history_unavailable")
+			f.serveChanges(w, r, strings.TrimSuffix(rest, "/changes"))
 		default:
 			writeJSONError(w, http.StatusNotFound, "service_not_found", "")
 		}
@@ -257,6 +258,22 @@ func (f *testSource) serveSnapshot(w http.ResponseWriter, r *http.Request, servi
 	writeJSON(w, http.StatusOK, response)
 }
 
+// serveChanges reports that the source's change log is unavailable, after any
+// hold a test installed, so every update is fetched as a fresh snapshot.
+func (f *testSource) serveChanges(w http.ResponseWriter, r *http.Request, serviceID string) {
+	f.mu.Lock()
+	hold := f.changesHolds[serviceID]
+	f.mu.Unlock()
+	if hold != nil {
+		select {
+		case <-hold:
+		case <-r.Context().Done():
+			return
+		}
+	}
+	writeJSONError(w, http.StatusGone, "snapshot_required", "history_unavailable")
+}
+
 // mutate applies a change to the source under its lock.
 func (f *testSource) mutate(update func(*testSource)) {
 	f.mu.Lock()
@@ -320,6 +337,26 @@ func (f *testSource) serveLaggingSnapshot(lagging bool) {
 // a revoked API key would.
 func (f *testSource) rejectCredential() {
 	f.mutate(func(source *testSource) { source.credential = "revoked-credential" })
+}
+
+// holdChanges blocks the source's change-page response for one service until
+// the test releases it.
+func (f *testSource) holdChanges(serviceID string) {
+	f.mutate(func(source *testSource) {
+		if source.changesHolds == nil {
+			source.changesHolds = make(map[string]chan struct{})
+		}
+		source.changesHolds[serviceID] = make(chan struct{})
+	})
+}
+
+func (f *testSource) releaseChanges(serviceID string) {
+	f.mutate(func(source *testSource) {
+		if hold := source.changesHolds[serviceID]; hold != nil {
+			close(hold)
+			delete(source.changesHolds, serviceID)
+		}
+	})
 }
 
 func (f *testSource) holdSnapshots(serviceID string) {

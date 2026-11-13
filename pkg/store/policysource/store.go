@@ -364,12 +364,12 @@ func (s *Store) syncService(ctx context.Context, service adsync.Service) error {
 	if status, known := s.machineService(service.ID); known {
 		minRevision = status.Head
 	}
-	// Withhold the mirror before the fetch unless it already serves exactly
-	// the advertised head. A snapshot or change page the synchronizer observes
-	// while the fetch runs is then invisible to downstream instances until
-	// publishDownstream confirms the advertised head after the whole
-	// attempt succeeded.
-	s.withholdDownstreamUnlessCurrent(service)
+	// Withhold the mirror before the fetch unless it already serves the
+	// effective head, which may be a notified revision newer than the last
+	// ack. A snapshot or change page the synchronizer observes while the fetch
+	// runs is then invisible to downstream instances until publishDownstream
+	// confirms the head after the whole attempt succeeded.
+	s.withholdDownstreamUnlessCurrent(service, minRevision)
 	state, err := s.syncer.SyncAtLeast(ctx, service, minRevision)
 	if err != nil {
 		s.withholdDownstream(service.ID)
@@ -489,17 +489,20 @@ func (s *Store) withholdDownstream(serviceID string) {
 }
 
 // withholdDownstreamUnlessCurrent withholds a service from downstream serving
-// before a synchronization attempt, unless the mirror already serves exactly
-// the advertised head. Applying a candidate revision while it is withheld does
-// not publish it; publishDownstream makes the service servable again only
-// after the attempt reached and verified the advertised head.
-func (s *Store) withholdDownstreamUnlessCurrent(service adsync.Service) {
+// before a synchronization attempt, unless the mirror already serves the
+// effective head. minRevision is the newer of the acknowledged and a notified
+// head, so a catch-up triggered only by a notification is withheld too: the
+// change pages it applies must not be visible before the pass verifies the
+// notified head. Applying a candidate revision while it is withheld does not
+// publish it; publishDownstream makes the service servable again only after
+// the attempt reached and verified the head.
+func (s *Store) withholdDownstreamUnlessCurrent(service adsync.Service, minRevision uint64) {
 	if s.downstream == nil {
 		return
 	}
 	if info, found := s.downstream.mirror.CurrentInfo(service.ID); found &&
-		info.Epoch == service.Epoch && info.Revision == service.Revision &&
-		info.StateHash == service.HeadStateHash {
+		info.Epoch == service.Epoch && info.Revision >= minRevision &&
+		(info.Revision != service.Revision || info.StateHash == service.HeadStateHash) {
 		return
 	}
 	s.downstream.mirror.MarkUnavailable(service.ID)
