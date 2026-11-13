@@ -2,7 +2,11 @@
 
 package adsync
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/teramoby/speedle-plus/pkg/cfg"
+)
 
 // maxAPIKeyBytes bounds an API key. Keys are opaque to the Engine; only their
 // shape is checked so a broken configuration fails at startup.
@@ -12,7 +16,7 @@ const maxAPIKeyBytes = 1024
 // 1024 printable ASCII characters without spaces, excluding the redaction
 // placeholder. It never echoes the value in the returned error.
 func ValidateAPIKey(value string) error {
-	if value == "[REDACTED]" {
+	if value == cfg.RedactedSecret {
 		return fmt.Errorf("%w: invalid APIKey: replace the redacted placeholder with an API key", ErrProtocol)
 	}
 	if value == "" || len(value) > maxAPIKeyBytes {

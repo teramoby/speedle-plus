@@ -7,13 +7,16 @@ import (
 	"fmt"
 )
 
+// RedactedSecret is the diagnostic placeholder for a configuration credential.
+const RedactedSecret = "[REDACTED]"
+
 // Secret retains configuration-only credentials while redacting diagnostic
 // formatting and JSON dumps. Convert explicitly to string only at the point
 // where the credential is consumed.
 type Secret string
 
-func (Secret) Format(state fmt.State, _ rune) { _, _ = state.Write([]byte("[REDACTED]")) }
-func (Secret) MarshalJSON() ([]byte, error)   { return json.Marshal("[REDACTED]") }
+func (Secret) Format(state fmt.State, _ rune) { _, _ = state.Write([]byte(RedactedSecret)) }
+func (Secret) MarshalJSON() ([]byte, error)   { return json.Marshal(RedactedSecret) }
 
 // UnmarshalJSON keeps APIKey out of ordinary map formatting after loading a
 // policy-source configuration (including a type selected later by flags).

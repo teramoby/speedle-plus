@@ -224,7 +224,12 @@ func newChannelMTLSServer(t *testing.T, source *channelSource, pki *testPKI, ver
 	server.Config.ErrorLog = log.New(io.Discard, "", 0)
 	server.Config.ConnState = func(conn net.Conn, state http.ConnState) {
 		if state == http.StateActive {
-			if got := conn.(*tls.Conn).ConnectionState().Version; got != version {
+			tlsConn, ok := conn.(*tls.Conn)
+			if !ok {
+				t.Errorf("authenticated connection has type %T; want *tls.Conn", conn)
+				return
+			}
+			if got := tlsConn.ConnectionState().Version; got != version {
 				t.Errorf("negotiated TLS version = %#x; want %#x", got, version)
 			}
 		}

@@ -19,6 +19,8 @@ import (
 	"syscall"
 	"testing"
 	"time"
+
+	"github.com/teramoby/speedle-plus/pkg/cfg"
 )
 
 func TestInstanceIDIsAPersistedUUIDv7(t *testing.T) {
@@ -155,7 +157,7 @@ func TestValidateAPIKey(t *testing.T) {
 	if err := ValidateAPIKey(testAPIKey); err != nil {
 		t.Fatalf("valid key rejected: %v", err)
 	}
-	for _, bad := range []string{"", "has space", "tab\tkey", strings.Repeat("k", maxAPIKeyBytes+1), "ключ", "[REDACTED]"} {
+	for _, bad := range []string{"", "has space", "tab\tkey", strings.Repeat("k", maxAPIKeyBytes+1), "ключ", cfg.RedactedSecret} {
 		err := ValidateAPIKey(bad)
 		if err == nil {
 			t.Fatalf("key %q accepted", bad)

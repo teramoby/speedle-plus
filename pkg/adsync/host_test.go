@@ -3,9 +3,12 @@
 package adsync
 
 import (
+	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 )
 
@@ -16,6 +19,9 @@ func TestOSVersionDoesNotExecuteFromPATH(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", dir)
+	if got := osVersion(); got == "untrusted" {
+		t.Fatal("production osVersion used uname from PATH")
+	}
 	readFile := func(path string) ([]byte, error) {
 		if path == "/proc/sys/kernel/osrelease" {
 			return []byte("6.1.0-test\n"), nil
@@ -31,6 +37,24 @@ func TestOSVersionDoesNotExecuteFromPATH(t *testing.T) {
 	}
 	if _, err := os.Stat(marker); !os.IsNotExist(err) {
 		t.Fatalf("uname from PATH executed: %v", err)
+	}
+}
+
+func TestHostFileReadIsBounded(t *testing.T) {
+	dir := t.TempDir()
+	for _, size := range []int{32, maxHostFileBytes, maxHostFileBytes + 1} {
+		path := writeTestFile(t, dir, "os-release", []byte(strings.Repeat("x", size)), 0o600)
+		data, err := readHostFile(path)
+		if size > maxHostFileBytes {
+			if !errors.Is(err, io.ErrShortBuffer) || data != nil {
+				t.Fatalf("oversized host file = %d bytes, %v", len(data), err)
+			}
+		} else if err != nil || len(data) != size {
+			t.Fatalf("host file = %d bytes, %v; want %d", len(data), err, size)
+		}
+	}
+	if _, err := readHostFile(filepath.Join(dir, "missing")); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("missing host file error = %v", err)
 	}
 }
 

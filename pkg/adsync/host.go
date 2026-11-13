@@ -3,6 +3,7 @@
 package adsync
 
 import (
+	"io"
 	"net"
 	"os"
 	"runtime"
@@ -17,6 +18,7 @@ const (
 	maxHostnameBytes     = 255
 	maxHostVersionBytes  = 64
 	maxHostPlatformBytes = 32
+	maxHostFileBytes     = 4 << 10
 )
 
 // HostInfo describes the machine an instance runs on. It is sent in the hello
@@ -92,7 +94,20 @@ func boundedText(value string, limit int) string {
 // osVersion reads PRETTY_NAME from /etc/os-release, falling back to the
 // kernel release without executing a program from PATH.
 func osVersion() string {
-	return osVersionFrom(os.ReadFile)
+	return osVersionFrom(readHostFile)
+}
+
+func readHostFile(path string) ([]byte, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	data, err := io.ReadAll(io.LimitReader(file, maxHostFileBytes+1))
+	if len(data) > maxHostFileBytes {
+		return nil, io.ErrShortBuffer
+	}
+	return data, err
 }
 
 func osVersionFrom(readFile func(string) ([]byte, error)) string {

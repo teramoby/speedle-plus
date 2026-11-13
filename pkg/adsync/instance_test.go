@@ -66,6 +66,60 @@ func TestInstanceIDFallbackConflictReloadsWinner(t *testing.T) {
 	}
 }
 
+func TestInstanceIDRetriesDisappearingPublication(t *testing.T) {
+	for _, failures := range []int{1, 3} {
+		t.Run(map[int]string{1: "recover", 3: "bounded"}[failures], func(t *testing.T) {
+			dir := t.TempDir()
+			attempts := 0
+			link := func(_, path string) error {
+				attempts++
+				if attempts <= failures {
+					// A competing fallback creator removed its failed publication
+					// after our exclusive link/open had already observed EEXIST.
+					if err := os.WriteFile(path, nil, 0o600); err != nil {
+						t.Fatal(err)
+					}
+					if err := os.Remove(path); err != nil {
+						t.Fatal(err)
+					}
+					return os.ErrExist
+				}
+				return syscall.ENOTSUP
+			}
+			id, created, err := loadOrCreateInstanceID(dir, link)
+			if failures == 3 {
+				if attempts != 3 || !errors.Is(err, os.ErrNotExist) || created || id != "" {
+					t.Fatalf("unbounded/unsafe retry: %d attempts, %q, %v, %v", attempts, id, created, err)
+				}
+				return
+			}
+			if err != nil || !created || !ValidInstanceID(id) || attempts != 2 {
+				t.Fatalf("retry = %q, %v, %v (%d attempts)", id, created, err, attempts)
+			}
+			persisted, _, err := LoadOrCreateInstanceID(dir)
+			if err != nil || persisted != id {
+				t.Fatalf("retried identity not persisted: %q, %v", persisted, err)
+			}
+		})
+	}
+}
+
+func TestInstanceIDWaitsForPartialPublication(t *testing.T) {
+	dir := t.TempDir()
+	path := writeTestFile(t, dir, InstanceIDFile, []byte(testInstanceID[:10]), 0o600)
+	done := make(chan error, 1)
+	time.AfterFunc(20*time.Millisecond, func() {
+		done <- os.WriteFile(path, []byte(testInstanceID+"\n"), 0o600)
+	})
+	id, created, err := LoadOrCreateInstanceID(dir)
+	if writeErr := <-done; writeErr != nil {
+		t.Fatal(writeErr)
+	}
+	if err != nil || created || id != testInstanceID {
+		t.Fatalf("partial publication = %q, %v, %v", id, created, err)
+	}
+}
+
 func TestInstanceIDLinkFailure(t *testing.T) {
 	dir := t.TempDir()
 	_, _, err := loadOrCreateInstanceID(dir, func(string, string) error { return syscall.EIO })

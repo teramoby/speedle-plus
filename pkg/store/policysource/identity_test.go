@@ -115,7 +115,7 @@ func TestRedactedConfigDumpRejectedAtStartup(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(data), `"APIKey":"[REDACTED]"`) {
+	if !strings.Contains(string(data), `"APIKey":`+strconv.Quote(cfg.RedactedSecret)) {
 		t.Fatal("dump does not contain the expected redaction placeholder")
 	}
 	var reloaded cfg.StoreConfig
@@ -126,7 +126,7 @@ func TestRedactedConfigDumpRejectedAtStartup(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "invalid APIKey") || !strings.Contains(err.Error(), "redacted placeholder") {
 		t.Fatalf("startup did not reject the dumped key clearly: %v", err)
 	}
-	if strings.Contains(err.Error(), "[REDACTED]") || strings.Contains(err.Error(), "private-key-for-config-roundtrip") {
+	if strings.Contains(err.Error(), cfg.RedactedSecret) || strings.Contains(err.Error(), "private-key-for-config-roundtrip") {
 		t.Fatal("startup error echoes the API key value")
 	}
 }
