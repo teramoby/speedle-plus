@@ -15,7 +15,7 @@ import (
 )
 
 const crlWatermarksFile = "crl-watermarks.json"
-const crlWatermarksFormat = "speedle-adsync-crl-watermarks-v1"
+const crlWatermarksFormat = "speedle-adsync-crl-watermarks-v2"
 
 // Preserve incomparable number/time pairs instead of inventing a combined
 // watermark which no real CRL covers. Dominated pairs are discarded.
@@ -24,6 +24,7 @@ type crlWatermark struct {
 	PublicKey  []byte    `json:"publicKey"`
 	ThisUpdate time.Time `json:"thisUpdate"`
 	Number     *big.Int  `json:"number,omitempty"`
+	RawHash    Hash      `json:"rawHash"`
 }
 
 func (w crlWatermark) issuer() crlIssuer {
@@ -31,8 +32,12 @@ func (w crlWatermark) issuer() crlIssuer {
 }
 
 func (w crlWatermark) covers(old crlWatermark) bool {
-	return w.issuer() == old.issuer() && !w.ThisUpdate.Before(old.ThisUpdate) &&
-		(old.Number == nil || (w.Number != nil && w.Number.Cmp(old.Number) >= 0))
+	if w.issuer() != old.issuer() || w.ThisUpdate.Before(old.ThisUpdate) ||
+		(old.Number != nil && (w.Number == nil || w.Number.Cmp(old.Number) < 0)) {
+		return false
+	}
+	newer := w.ThisUpdate.After(old.ThisUpdate) || (w.Number != nil && old.Number != nil && w.Number.Cmp(old.Number) > 0)
+	return newer || w.RawHash == old.RawHash
 }
 
 func (m *clientTLS) loadCRLFloors() error {
@@ -66,7 +71,7 @@ func (m *clientTLS) loadCRLFloors() error {
 		return fmt.Errorf("%w: empty CRL watermarks", ErrCacheCorrupt)
 	}
 	for _, floor := range floors {
-		if len(floor.Subject) == 0 || len(floor.PublicKey) == 0 || floor.ThisUpdate.IsZero() || (floor.Number != nil && floor.Number.Sign() < 0) {
+		if len(floor.Subject) == 0 || len(floor.PublicKey) == 0 || floor.ThisUpdate.IsZero() || floor.RawHash.IsZero() || (floor.Number != nil && floor.Number.Sign() < 0) {
 			return fmt.Errorf("%w: invalid CRL watermark", ErrCacheCorrupt)
 		}
 	}
@@ -81,7 +86,7 @@ func (m *clientTLS) persistCRLFloors(next *clientTLSGeneration) error {
 	candidates := make([]crlWatermark, 0, len(next.crls))
 	for _, crl := range next.crls {
 		issuer := next.crlIssuers[crl]
-		candidates = append(candidates, crlWatermark{Subject: []byte(issuer.subject), PublicKey: []byte(issuer.publicKey), ThisUpdate: crl.ThisUpdate, Number: crl.Number})
+		candidates = append(candidates, crlWatermark{Subject: []byte(issuer.subject), PublicKey: []byte(issuer.publicKey), ThisUpdate: crl.ThisUpdate, Number: crl.Number, RawHash: hashOf(crl.Raw)})
 	}
 	for _, old := range m.crlFloors {
 		sameIssuer, covered := false, false
@@ -92,7 +97,7 @@ func (m *clientTLS) persistCRLFloors(next *clientTLSGeneration) error {
 			}
 		}
 		if sameIssuer && !covered {
-			return fmt.Errorf("adsync: refusing an older relay CRL")
+			return fmt.Errorf("adsync: refusing an older relay CRL or conflicting retained contents")
 		}
 	}
 	floors := append([]crlWatermark(nil), m.crlFloors...)

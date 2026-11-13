@@ -114,6 +114,16 @@ func TestCascadeCRLPEMBundleLoadsEveryBlock(t *testing.T) {
 	if _, err := client.Services(context.Background()); err == nil {
 		t.Fatal("revocation in second PEM block ignored")
 	}
+	client.Close()
+	writeTestFile(t, filepath.Dir(path), "bundle.pem", good, 0600)
+	if replay, err := NewClient(config); err == nil || !strings.Contains(err.Error(), "older relay CRL") {
+		if replay != nil {
+			replay.Close()
+		}
+		t.Fatalf("equal-watermark non-revoking CRL accepted after restart: %v", err)
+	}
+	writeTestFile(t, filepath.Dir(path), "bundle.pem", bundle, 0600)
+	mustCascadeClient(t, config)
 	for _, invalid := range [][]byte{append(append([]byte(nil), good...), []byte("garbage")...), append(append([]byte(nil), good...), pki.crl(t, 0, 2, now.Add(-2*time.Hour), now.Add(-time.Hour), false)...)} {
 		writeTestFile(t, filepath.Dir(path), "bundle.pem", invalid, 0600)
 		if _, err := NewClient(config); err == nil {
@@ -124,7 +134,7 @@ func TestCascadeCRLPEMBundleLoadsEveryBlock(t *testing.T) {
 
 func TestCRLWatermarkRetention(t *testing.T) {
 	now := time.Now().UTC().Truncate(time.Second)
-	one := crlWatermark{Subject: []byte("issuer"), PublicKey: []byte("key"), ThisUpdate: now, Number: big.NewInt(1)}
+	one := crlWatermark{Subject: []byte("issuer"), PublicKey: []byte("key"), ThisUpdate: now, Number: big.NewInt(1), RawHash: hashOf([]byte("one"))}
 	two := one
 	two.Number = big.NewInt(2)
 	if !two.covers(one) || one.covers(two) {
@@ -134,6 +144,14 @@ func TestCRLWatermarkRetention(t *testing.T) {
 	withoutNumber.Number = nil
 	if !one.covers(withoutNumber) || withoutNumber.covers(one) {
 		t.Fatal("absent-number ordering lost")
+	}
+	equivocated := one
+	equivocated.RawHash = hashOf([]byte("different CRL"))
+	if equivocated.covers(one) || one.covers(equivocated) {
+		t.Fatal("equal position hid different signed CRL contents")
+	}
+	if equivocated.covers(withoutNumber) {
+		t.Fatal("adding a number without advancing time hid changed contents")
 	}
 	for _, floors := range [][]crlWatermark{nil, {{Subject: []byte("issuer")}}, {{Subject: []byte("issuer"), PublicKey: []byte("key"), ThisUpdate: now, Number: big.NewInt(-1)}}} {
 		payload, err := json.Marshal(floors)
