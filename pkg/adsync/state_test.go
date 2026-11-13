@@ -1035,13 +1035,13 @@ func TestMachineOptionsValidation(t *testing.T) {
 func TestTracksServicesWithoutCountLimit(t *testing.T) {
 	machine, _ := newTestMachine(t)
 	const batches = 15
+	services := make([]Service, 0, batches*101)
 	for batch := 0; batch < batches; batch++ {
-		services := make([]Service, 101)
-		for index := range services {
+		for index := 0; index < 101; index++ {
 			number := batch*101 + index + 1
 			id := fmt.Sprintf("%026d", number)
 			name := fmt.Sprintf("service-%d", number)
-			services[index] = testAckService(id, name, 1)
+			services = append(services, testAckService(id, name, 1))
 		}
 		mustAck(t, machine, ackWith(services...))
 	}
@@ -1049,34 +1049,114 @@ func TestTracksServicesWithoutCountLimit(t *testing.T) {
 	if tracked := len(machine.Services()); tracked != batches*101 {
 		t.Fatalf("tracked services = %d, want %d", tracked, batches*101)
 	}
-	// The live set and removed-service records are retained.
-	for index := 0; index < 101; index++ {
-		number := (batches-1)*101 + index + 1
+	// Every live service is retained, even beyond the tombstone history size.
+	for number := 1; number <= batches*101; number++ {
 		requireServiceState(t, machine, fmt.Sprintf("service-%d", number), SyncStateSyncing, SyncReasonBootstrap)
 	}
 }
 
+func TestRemovedServiceHistoryIsBoundedUnderChurn(t *testing.T) {
+	for _, removal := range []string{"ack", "discovery", "sync failure before first ack"} {
+		t.Run(removal, func(t *testing.T) {
+			machine, _ := newTestMachine(t)
+			live := testAckService(testServiceID1, "books", 1)
+			mustApply(t, machine, testServiceState(live.ID, live.Name, 1))
+			for index := 1; index <= 5000; index++ {
+				id := fmt.Sprintf("%026d", index)
+				service := testAckService(id, "temporary", 1)
+				switch removal {
+				case "ack":
+					mustAck(t, machine, ackWith(live, service))
+					mustAck(t, machine, ackWith(live))
+				case "discovery":
+					if err := machine.Discover([]Service{live, service}); err != nil {
+						t.Fatal(err)
+					}
+					if err := machine.Discover([]Service{live}); err != nil {
+						t.Fatal(err)
+					}
+				default:
+					mustApply(t, machine, testServiceState(id, "temporary", 1))
+					machine.SyncFailed(id, ErrServiceNotFound)
+				}
+				// Ack traverses records: bounding this set makes its cost depend
+				// on live services plus fixed history, not lifetime churn.
+				if tracked := len(machine.records); tracked > 1+1024 {
+					t.Fatalf("cycle %d: tracked %d records, want at most 1025", index, tracked)
+				}
+			}
+			if tracked := len(machine.records); tracked != 1+1024 {
+				t.Fatalf("tracked %d records, want 1025", tracked)
+			}
+			for index := 1; index <= 5000; index++ {
+				record := machine.records[fmt.Sprintf("%026d", index)]
+				if wantRetained := index > 5000-1024; (record != nil) != wantRetained {
+					t.Fatalf("service %d retained = %v, want %v", index, record != nil, wantRetained)
+				}
+			}
+			mustAck(t, machine, ackWith(live))
+			requireServiceState(t, machine, "books", SyncStateInSync, "")
+		})
+	}
+}
+
+func TestEvictedServiceAttemptsCannotServeReaddedService(t *testing.T) {
+	machine, _ := newTestMachine(t)
+	books := testAckService(testServiceID1, "books", 1)
+	mustAck(t, machine, ackWith(books))
+	inFlight := machine.BeginSync(books.ID)
+	mustAck(t, machine, ackWith())
+	whileRemoved := machine.BeginSync(books.ID)
+	for index := 1; index <= 1024; index++ {
+		mustAck(t, machine, ackWith(testAckService(fmt.Sprintf("%026d", index), "temporary", 1)))
+		mustAck(t, machine, ackWith())
+	}
+	if machine.records[books.ID] != nil {
+		t.Fatal("oldest tombstone was not evicted")
+	}
+	for _, attempt := range []SyncAttempt{inFlight, whileRemoved} {
+		if machine.AttemptCurrent(attempt) {
+			t.Fatal("eviction made an old attempt current")
+		}
+	}
+	mustAck(t, machine, ackWith(books))
+	for _, attempt := range []SyncAttempt{inFlight, whileRemoved} {
+		if machine.AttemptCurrent(attempt) {
+			t.Fatal("re-add reused an evicted record's generation")
+		}
+		if err := machine.ApplyAttempt(attempt, testServiceState(books.ID, books.Name, 1)); err != nil {
+			t.Fatal(err)
+		}
+		requireServiceState(t, machine, books.Name, SyncStateSyncing, SyncReasonBootstrap)
+	}
+	mustApply(t, machine, testServiceState(books.ID, books.Name, 1))
+	requireServiceState(t, machine, books.Name, SyncStateInSync, "")
+}
+
 func TestAppliedBeforeTheFirstAckHasNoCountLimit(t *testing.T) {
 	machine, _ := newTestMachine(t)
-	for index := 0; index < 101; index++ {
+	const initialServices = 1500
+	for index := 0; index < initialServices; index++ {
 		number := index + 1
 		state := testServiceState(fmt.Sprintf("%026d", number), fmt.Sprintf("service-%d", number), 1)
 		mustApply(t, machine, state)
 	}
 
 	extra := testServiceState(
-		fmt.Sprintf("%026d", 101+1),
-		fmt.Sprintf("service-%d", 101+1),
+		fmt.Sprintf("%026d", initialServices+1),
+		fmt.Sprintf("service-%d", initialServices+1),
 		1,
 	)
 	mustApply(t, machine, extra)
-	if tracked := len(machine.Services()); tracked != 102 {
-		t.Fatalf("tracked services = %d, want 102", tracked)
+	if tracked := len(machine.Services()); tracked != initialServices+1 {
+		t.Fatalf("tracked services = %d, want %d", tracked, initialServices+1)
 	}
 
-	// The first ack establishes the authoritative set and removes the rest.
+	// The first ack establishes the authoritative set and bounds only the
+	// removed history; all copies were retained before that ack.
 	mustAck(t, machine, ackWith(testAckService(fmt.Sprintf("%026d", 1), "service-1", 1)))
-	if tracked := len(machine.Services()); tracked != 102 {
-		t.Fatalf("tracked services after ack = %d, want %d", tracked, 102)
+	if tracked := len(machine.Services()); tracked != 1+1024 {
+		t.Fatalf("tracked services after ack = %d, want 1025", tracked)
 	}
+	requireServiceState(t, machine, "service-1", SyncStateInSync, "")
 }

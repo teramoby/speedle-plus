@@ -21,6 +21,8 @@
 // RequestTimeout bounds stalls (time without response bytes), not the total
 // download duration. JSON responses are decoded from their streams. Channel
 // frames retain the 64 KiB limit, and error bodies remain bounded.
+// Removed-service tombstones retain only the latest 1,024 entries; live
+// services are never evicted to meet that history bound.
 //
 // Machine owns the liveness and per-service sync state described in step E2. It
 // is driven by confirmed acks and sync results and does not talk to the network

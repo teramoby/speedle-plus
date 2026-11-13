@@ -19,6 +19,9 @@ const (
 	maxHeartbeatInterval = 5 * time.Minute
 	minStopAfter         = 60 * time.Second
 	maxStopAfter         = 15 * time.Minute
+
+	// Only removed-service history is bounded. Live services have no count limit.
+	maxRemovedServiceHistory = 1024
 )
 
 // Clock supplies the current time. The state machine never reads the wall
@@ -308,6 +311,7 @@ type serviceRecord struct {
 
 	pendingResync     bool
 	verifiedSinceStop bool
+	removedSeq        uint64
 
 	// aheadOfAck is set by an ack whose head is behind the
 	// verified copy. failed is set by FailService and holds until an ack
@@ -605,6 +609,7 @@ func (m *Machine) SyncFailed(serviceID string, err error) {
 		return
 	}
 	m.removeRecordLocked(record)
+	m.evictRemovedLocked()
 }
 
 // FailService fails one service closed after a reconciliation
@@ -852,6 +857,7 @@ func (m *Machine) applySetLocked(services []Service, confirmed bool) {
 	for _, record := range m.records {
 		m.recomputeRecordLocked(record)
 	}
+	m.evictRemovedLocked()
 }
 
 func (m *Machine) newRecordLocked(id, name string) *serviceRecord {
@@ -907,6 +913,7 @@ func (m *Machine) recomputeRecordLocked(record *serviceRecord) {
 func (m *Machine) removeRecordLocked(record *serviceRecord) {
 	if record.state != SyncStateRemoved {
 		m.nextSeq++
+		record.removedSeq = m.nextSeq
 		m.invalidateAttemptsLocked(record)
 	}
 	record.state = SyncStateRemoved
@@ -926,6 +933,31 @@ func (m *Machine) removeRecordLocked(record *serviceRecord) {
 	record.aheadOfAck = false
 	record.failed = false
 	record.failedHead = Head{}
+}
+
+// evictRemovedLocked keeps only the most recently removed records. It never
+// evicts live services, including copies loaded before the first ack. The
+// machine-wide attempt sequence survives eviction, so recreating a record
+// cannot make an older fetch current again.
+func (m *Machine) evictRemovedLocked() {
+	if len(m.records) <= maxRemovedServiceHistory {
+		return
+	}
+	var removed []*serviceRecord
+	for _, record := range m.records {
+		if record.state == SyncStateRemoved {
+			removed = append(removed, record)
+		}
+	}
+	if len(removed) <= maxRemovedServiceHistory {
+		return
+	}
+	sort.Slice(removed, func(left, right int) bool {
+		return removed[left].removedSeq < removed[right].removedSeq
+	})
+	for _, record := range removed[:len(removed)-maxRemovedServiceHistory] {
+		delete(m.records, record.id)
+	}
 }
 
 // updateHead advances the known head. Within one epoch a lower revision never

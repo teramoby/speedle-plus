@@ -253,7 +253,7 @@ func optionsFromConfig(config map[string]interface{}) (options Options, err erro
 	switch options.Transport {
 	case "", adsync.TransportAuto, adsync.TransportWebSocket, adsync.TransportLongPoll:
 	default:
-		return options, errors.Errorf(errors.ConfigError, "unknown policy source Transport %q", transport)
+		return options, errors.New(errors.ConfigError, "unknown policy source Transport; use auto, websocket or longpoll")
 	}
 
 	serveDownstream, _, err := boolProperty(config, ServeDownstreamKey)
@@ -389,7 +389,7 @@ func durationProperty(config map[string]interface{}, key string) (time.Duration,
 	}
 	value, err := time.ParseDuration(strings.TrimSpace(text))
 	if err != nil {
-		return 0, errors.Wrapf(err, errors.ConfigError, "configure item %s is not a duration", key)
+		return 0, errors.Errorf(errors.ConfigError, "configure item %s is not a duration", key)
 	}
 	if value < 0 {
 		return 0, errors.Errorf(errors.ConfigError, "configure item %s must not be negative", key)
@@ -460,8 +460,18 @@ func rejectRemovedConfig(config map[string]interface{}) error {
 // redactConfigError also covers credentials accidentally repeated in another
 // invalid property (for example a duration or file path).
 func redactConfigError(err error, key cfg.Secret) error {
-	if err == nil || key == "" || !strings.Contains(err.Error(), string(key)) {
+	if err == nil || key == "" {
 		return err
 	}
-	return errors.New(errors.Code(err), strings.ReplaceAll(err.Error(), string(key), "[REDACTED]"))
+	text := err.Error()
+	// Go error messages commonly use %q. Replace its escaped spelling before
+	// the raw spelling, including when it appears inside a larger quoted path.
+	quoted := strconv.Quote(string(key))
+	for _, spelling := range []string{quoted[1 : len(quoted)-1], string(key)} {
+		text = strings.ReplaceAll(text, spelling, "[REDACTED]")
+	}
+	if text == err.Error() {
+		return err
+	}
+	return errors.New(errors.Code(err), text)
 }
