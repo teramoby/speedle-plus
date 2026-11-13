@@ -50,8 +50,8 @@ results=${RESULTS_DIR:-test-results}
 # package, whose STORE_TYPE-aware fixtures (testutil/storetest) then use etcd.
 store_dependent=(./pkg/eval ./cmd/spctl/command)
 # Supported Go releases besides the CI default (see the quick start).
-other_toolchains=(go1.27.3)
-all_toolchains=(go1.26.10 go1.27.3)
+other_toolchains=(go1.27.4)
+all_toolchains=(go1.26.11 go1.27.4)
 
 packages() {
   # MongoDB runs in the nightly hosted job; generated protobuf packages,

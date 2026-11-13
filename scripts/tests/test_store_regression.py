@@ -91,7 +91,7 @@ class StoreRegressionTests(unittest.TestCase):
         for command, environment in self.command_environments:
             if '-fuzz' in command:
                 campaigns += 1
-                self.assertEqual(environment['GOTOOLCHAIN'], 'go1.27.3')
+                self.assertEqual(environment['GOTOOLCHAIN'], 'go1.27.4')
                 self.assertIn('-fuzztime=5s', command)
                 self.assertIn('-parallel=2', command)
             else:
