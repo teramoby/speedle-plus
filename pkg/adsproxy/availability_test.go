@@ -35,6 +35,13 @@ func TestAvailabilityFlipWaitsForAConfirmingWrite(t *testing.T) {
 	server := newTestServer(t, mirror, &testServerOptions{paused: paused.Load})
 	server.server.availabilityMu.RLock()
 	paused.Store(true)
+	// A write that is already in flight delays the flip and the channel
+	// close, but it must not keep the relay distributing: new data requests
+	// read the authority directly and are refused immediately.
+	response, body := server.get(server.defaultClient(), adsync.APIPrefix+"/services", nil)
+	if response.StatusCode != http.StatusServiceUnavailable || string(body) != `{"error":"distribution_paused"}` {
+		t.Fatalf("data request during an in-flight write: status %d body %s", response.StatusCode, body)
+	}
 	flipped := make(chan struct{})
 	go func() {
 		server.server.refreshAvailability()

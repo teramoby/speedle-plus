@@ -443,6 +443,9 @@ func (s *Server) handlePoll(w http.ResponseWriter, r *http.Request) {
 	closed := s.isClosed()
 	stopped := s.distributionUnavailable()
 	if !closed && !stopped {
+		// The availability read lock is held across the write so a flip waits
+		// for it; bound the write so a stalled client cannot hold the flip up.
+		_ = http.NewResponseController(w).SetWriteDeadline(time.Now().Add(channelWriteTimeout))
 		writeJSON(w, http.StatusOK, s.ack())
 	}
 	s.availabilityMu.RUnlock()
