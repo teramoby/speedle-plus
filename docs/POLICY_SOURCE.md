@@ -85,7 +85,8 @@ keeps the last valid generation, and startup fails closed until a CRL at or
 above the floor is loaded. A floor whose issuer is no longer listed in
 `CAFile` is retained for a possible CA rollback, and a relay chain that still
 uses that issuer, including an intermediate supplied by the relay, still
-requires fresh CRL coverage. Corrupt retained watermarks fail startup; a failed write keeps
+requires fresh CRL coverage. Because a CRL signer must be in `CAFile`, restore
+both that issuer and a covering CRL to recover. Corrupt retained watermarks fail startup; a failed write keeps
 the previous generation. Preserve this directory to retain rollback protection,
 and use a separate directory for each running instance. Two CRLs with equal
 number/time but different contents retain separate floors; dropping either
