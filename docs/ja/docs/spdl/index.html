@@ -209,7 +209,7 @@
 
 <h3 id="キーワード">キーワード</h3>
 
-<p><code>grant</code>、<code>deny</code>、<code>user</code>、<code>group</code>、<code>entity</code>、<code>role</code>、<code>from</code>、<code>on</code>、<code>if</code>、<code>in</code> はそれぞれの構文上の位置で特別な意味を持ちます。ステートメントのキーワードは大文字と小文字を区別しません。条件内では <code>in</code> または <code>IN</code> を使用し、関数名は大文字と小文字を区別します。プリンシパル、アクション、およびリソース名も大文字と小文字を区別します。現在のパーサーは一部の名前の位置でキーワードに類似した名前を受け入れますが、一律の禁止を検証ルールとして前提にしないでください。レビューとクライアント間の相互運用性を高めるため、曖昧さのない名前を推奨します。</p>
+<p><code>grant</code>、<code>deny</code>、<code>user</code>、<code>group</code>、<code>entity</code>、<code>role</code>、<code>from</code>、<code>on</code>、<code>if</code>、<code>in</code> は予約キーワードです。大文字・小文字の違いや引用符の有無にかかわらず、プリンシパル名、ID ドメイン、ロール、アクション、リソース、および条件内の属性名・関数名として使用できません。パーサーはこのようなステートメントを拒否し、キーワードとその位置を示します。条件内では <code>in</code> と <code>IN</code> がメンバーシップ演算子で、関数名は大文字と小文字を区別します。プリンシパル、アクション、およびリソース名も大文字と小文字を区別します。</p>
 
 <h3 id="命名規則">命名規則</h3>
 

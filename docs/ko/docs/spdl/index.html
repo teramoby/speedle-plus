@@ -209,7 +209,7 @@
 
 <h3 id="키워드">키워드</h3>
 
-<p><code>grant</code>, <code>deny</code>, <code>user</code>, <code>group</code>, <code>entity</code>, <code>role</code>, <code>from</code>, <code>on</code>, <code>if</code>, <code>in</code>은 각각의 구문 위치에서 특별한 의미를 가집니다. 정책 문의 키워드는 대소문자를 구분하지 않습니다. 조건 내에서는 <code>in</code> 또는 <code>IN</code>을 사용하고 함수 이름은 대소문자를 구분합니다. 주체, 작업 및 리소스 이름도 대소문자를 구분합니다. 현재 파서는 일부 이름 위치에서 키워드와 유사한 이름을 허용하지만 일률적인 금지를 검증 규칙으로 전제하지 마십시오. 검토와 클라이언트 간 상호 운용성을 높이기 위해 모호하지 않은 이름을 권장합니다.</p>
+<p><code>grant</code>, <code>deny</code>, <code>user</code>, <code>group</code>, <code>entity</code>, <code>role</code>, <code>from</code>, <code>on</code>, <code>if</code>, <code>in</code>은 예약 키워드입니다. 대소문자나 따옴표 사용 여부와 관계없이 주체 이름, ID 도메인, 역할, 작업, 리소스, 조건의 속성 이름이나 함수 이름으로 사용할 수 없습니다. 파서는 이러한 문을 거부하고 해당 키워드와 위치를 알려 줍니다. 조건에서 <code>in</code>과 <code>IN</code>은 포함 연산자이며 함수 이름은 대소문자를 구분합니다. 주체, 작업 및 리소스 이름도 대소문자를 구분합니다.</p>
 
 <h3 id="명명-규칙">명명 규칙</h3>
 

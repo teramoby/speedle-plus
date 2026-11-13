@@ -110,6 +110,62 @@ func calledNames(condition string) []string {
 	return names
 }
 
+// Name is an identifier in a condition: an attribute (plain or escaped as
+// [name]) or a function name.
+type Name struct {
+	Name string
+	// Position is where the name starts, in characters from the start of the
+	// condition (at "[" for an escaped name).
+	Position int
+	// Operator is true for a bare word the parser reads as an operator or a
+	// value (in, IN, true, false) rather than a name.
+	Operator bool
+}
+
+// Names returns the identifiers in condition, outside string literals, in
+// order. Escaped [names] are returned without their brackets or escapes.
+func Names(condition string) []Name {
+	var names []Name
+	runes := []rune(condition)
+	for i := 0; i < len(runes); {
+		switch r := runes[i]; {
+		case r == '\'' || r == '"':
+			for i++; i < len(runes) && runes[i] != '\'' && runes[i] != '"'; i++ {
+				if runes[i] == '\\' {
+					i++
+				}
+			}
+			i++
+		case r == '[':
+			start := i
+			var b strings.Builder
+			for i++; i < len(runes) && runes[i] != ']'; i++ {
+				if runes[i] == '\\' && i+1 < len(runes) {
+					i++
+				}
+				b.WriteRune(runes[i])
+			}
+			i++
+			names = append(names, Name{Name: b.String(), Position: start})
+		case unicode.IsLetter(r) || r == '_':
+			start := i
+			for i < len(runes) && (unicode.IsLetter(runes[i]) || unicode.IsDigit(runes[i]) || runes[i] == '_' || runes[i] == '.') {
+				i++
+			}
+			name := string(runes[start:i])
+			names = append(names, Name{Name: name, Position: start, Operator: keywords[name]})
+		case unicode.IsDigit(r):
+			// A number, including forms such as 1e5, is not a name.
+			for i < len(runes) && (unicode.IsLetter(runes[i]) || unicode.IsDigit(runes[i]) || runes[i] == '.' || runes[i] == '_') {
+				i++
+			}
+		default:
+			i++
+		}
+	}
+	return names
+}
+
 func anyFunction(args ...interface{}) (interface{}, error) {
 	return true, nil
 }

@@ -253,8 +253,8 @@ func determineType(lc *lineCtx) error {
 			quote = c
 		} else if !inCondition && i+2 <= len(lc.origin) && strings.EqualFold(lc.origin[i:i+2], "if") && (i == 0 || nameBoundary(lc.origin[:i])) && (i+2 == len(lc.origin) || startsSpace(lc.origin[i+2:])) {
 			// Name quotes keep backslashes literal. Expression strings use
-			// escaping. A valid statement prefix distinguishes the condition
-			// keyword from principals/resources whose name happens to be if.
+			// escaping. "if" is reserved and never a name; the prefix check
+			// keeps a malformed statement from treating the rest as a condition.
 			_, _, policyErr := pdl.ParsePolicy(lc.origin[:i], "")
 			_, _, roleErr := pdl.ParseRolePolicy(lc.origin[:i], "")
 			inCondition = policyErr == nil || roleErr == nil
