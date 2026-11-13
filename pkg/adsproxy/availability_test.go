@@ -3,11 +3,17 @@
 package adsproxy
 
 import (
+	"bufio"
+	"crypto/sha1"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/base64"
 	"errors"
+	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -189,6 +195,108 @@ func TestAckIsRefusedOnceDistributionStops(t *testing.T) {
 	paused.Store(true)
 	if err := server.server.writeChannelAck(nil); !errors.Is(err, errDistributionStopped) {
 		t.Fatalf("ack after the stop = %v, want errDistributionStopped", err)
+	}
+}
+
+// silentPipeWebsocket returns a websocket whose peer completes the handshake
+// and then never reads another byte. net.Pipe is unbuffered, so a frame the
+// relay writes blocks until the peer reads or the write deadline expires:
+// it behaves like a downstream that stopped reading its socket.
+func silentPipeWebsocket(t *testing.T) *websocket.Conn {
+	t.Helper()
+	peer, local := net.Pipe()
+	t.Cleanup(func() {
+		_ = local.Close()
+		_ = peer.Close()
+	})
+	handshaken := make(chan error, 1)
+	go func() {
+		request, err := http.ReadRequest(bufio.NewReader(peer))
+		if err != nil {
+			handshaken <- err
+			return
+		}
+		accept := sha1.Sum([]byte(request.Header.Get("Sec-WebSocket-Key") +
+			"258EAFA5-E914-47DA-95CA-C5AB0DC85B11"))
+		_, err = io.WriteString(peer, "HTTP/1.1 101 Switching Protocols\r\n"+
+			"Upgrade: websocket\r\nConnection: Upgrade\r\n"+
+			"Sec-WebSocket-Accept: "+base64.StdEncoding.EncodeToString(accept[:])+"\r\n\r\n")
+		handshaken <- err
+	}()
+	conn, _, err := websocket.NewClient(local,
+		&url.URL{Scheme: "ws", Host: "relay.test", Path: adsync.APIPrefix + "/channel"}, nil, 0, 0)
+	if err != nil {
+		t.Fatalf("open silent pipe websocket: %v", err)
+	}
+	if err := <-handshaken; err != nil {
+		t.Fatalf("silent pipe websocket handshake: %v", err)
+	}
+	return conn
+}
+
+// TestAvailabilityFlipDoesNotWaitForASlowPeer proves the close frames of a
+// pause or stop are written outside the availability write lock. A downstream
+// that never reads must not delay the flip, and requests must keep being
+// answered while its pending close frame blocks.
+func TestAvailabilityFlipDoesNotWaitForASlowPeer(t *testing.T) {
+	transitions := []string{"watcher", "distribution change"}
+	for _, transition := range transitions {
+		t.Run(transition, func(t *testing.T) {
+			mirror, _, _ := newPopulatedMirror(t)
+			var paused atomic.Bool
+			server, err := NewServer(Config{InstanceID: testProxyID, Mirror: mirror, Paused: paused.Load})
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer server.Close()
+			slow := silentPipeWebsocket(t)
+			identity := sessionIdentity{fingerprint: "slow-peer", uuid: testClientInstanceB}
+			server.mu.Lock()
+			server.channels[identity] = slow
+			server.sessions[identity] = 1
+			server.mu.Unlock()
+
+			paused.Store(true)
+			finished := make(chan struct{})
+			go func() {
+				if transition == "watcher" {
+					server.refreshAvailability()
+				} else {
+					server.DistributionChange(func() {})
+				}
+				close(finished)
+			}()
+			select {
+			case <-finished:
+			case <-time.After(2 * time.Second):
+				t.Fatal("the availability flip waited for a peer that never reads")
+			}
+
+			// The pending close frame must not hold the availability lock, so
+			// a data request is answered while its write is still blocked.
+			request := httptest.NewRequest(http.MethodGet, adsync.APIPrefix+"/services", nil)
+			cert := &x509.Certificate{Raw: []byte("client")}
+			request.TLS = &tls.ConnectionState{
+				PeerCertificates: []*x509.Certificate{cert},
+				VerifiedChains:   [][]*x509.Certificate{{cert}},
+			}
+			recorder := httptest.NewRecorder()
+			answered := make(chan struct{})
+			go func() {
+				server.ServeHTTP(recorder, request)
+				close(answered)
+			}()
+			select {
+			case <-answered:
+			case <-time.After(2 * time.Second):
+				t.Fatal("a data response waited for a peer that never reads")
+			}
+			if recorder.Code != http.StatusServiceUnavailable ||
+				recorder.Body.String() != `{"error":"distribution_paused"}` {
+				t.Fatalf("data response while the close frame is blocked = %d %s",
+					recorder.Code, recorder.Body.String())
+			}
+		})
 	}
 }
 

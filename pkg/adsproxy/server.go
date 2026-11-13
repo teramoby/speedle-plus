@@ -208,11 +208,12 @@ var errDistributionStopped = errors.New("adsproxy: distribution stopped")
 // stops confirming stale policy instead of waiting for the next heartbeat. It
 // takes the availability write lock, so a flip waits for an in-flight ack or
 // poll response to finish and cannot land between that response's check and
-// its write.
+// its write; the sockets are closed after the lock is released.
 func (s *Server) refreshAvailability() {
 	s.availabilityMu.Lock()
-	defer s.availabilityMu.Unlock()
-	s.refreshAvailabilityLocked()
+	connections := s.applyAvailabilityLocked()
+	s.availabilityMu.Unlock()
+	closeDistributedChannels(connections)
 }
 
 // DistributionChange runs change while no confirming response can be in
@@ -221,20 +222,29 @@ func (s *Server) refreshAvailability() {
 // pause, stop or revocation, so a response written from a check made before
 // the transition cannot land after it.
 func (s *Server) DistributionChange(change func()) {
+	closeDistributedChannels(s.changeDistribution(change))
+}
+
+// changeDistribution runs change and the availability flip under the
+// availability write lock and returns the channels to close once it is
+// released.
+func (s *Server) changeDistribution(change func()) []*websocket.Conn {
 	s.availabilityMu.Lock()
 	defer s.availabilityMu.Unlock()
 	change()
-	s.refreshAvailabilityLocked()
+	return s.applyAvailabilityLocked()
 }
 
-// refreshAvailabilityLocked applies the current distribution state. The
-// caller holds the availability write lock.
-func (s *Server) refreshAvailabilityLocked() {
+// applyAvailabilityLocked applies the current distribution state and returns
+// the channels that must be closed once the availability write lock is
+// released. The caller holds that write lock, so the flip waits for an
+// in-flight confirming response and later writes observe it.
+func (s *Server) applyAvailabilityLocked() []*websocket.Conn {
 	unavailable := s.distributionUnavailable()
 	s.mu.Lock()
 	if s.closed || unavailable == s.unavailable {
 		s.mu.Unlock()
-		return
+		return nil
 	}
 	s.unavailable = unavailable
 	var connections []*websocket.Conn
@@ -248,9 +258,21 @@ func (s *Server) refreshAvailabilityLocked() {
 		s.unavailableCh = make(chan struct{})
 	}
 	s.mu.Unlock()
+	return connections
+}
+
+// closeDistributedChannels writes a best-effort close frame and closes each
+// channel, one goroutine per connection and outside the availability lock:
+// the state flip alone is what stops confirming responses, and a peer that
+// stopped reading must not delay a pause, stop, Close or any other response
+// while its socket drains. Each write is bounded by channelWriteTimeout, and
+// Close closes the socket, which unblocks a pending write immediately.
+func closeDistributedChannels(connections []*websocket.Conn) {
 	for _, conn := range connections {
-		closeWithReason(conn, websocket.ClosePolicyViolation, "distribution_paused")
-		_ = conn.Close()
+		go func(conn *websocket.Conn) {
+			closeWithReason(conn, websocket.ClosePolicyViolation, "distribution_paused")
+			_ = conn.Close()
+		}(conn)
 	}
 }
 
