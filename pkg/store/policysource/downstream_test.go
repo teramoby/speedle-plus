@@ -75,6 +75,15 @@ func TestServeDownstreamMirrorsVerifiedCopies(t *testing.T) {
 	if err := adsync.ApplyChanges(&next, changes); err != nil {
 		t.Fatalf("apply changes: %v", err)
 	}
+	observed := &adsync.ServiceState{
+		ServiceID:  testServiceID1,
+		SourceID:   verified.SourceID,
+		Epoch:      verified.Epoch,
+		Revision:   verified.Revision + 1,
+		StateHash:  adsync.StateHash(next),
+		CommitHash: commitHash,
+		Snapshot:   next,
+	}
 	store.observeDownstreamChanges(&adsync.ChangesResponse{
 		ServiceID:     testServiceID1,
 		SourceID:      verified.SourceID,
@@ -82,7 +91,7 @@ func TestServeDownstreamMirrorsVerifiedCopies(t *testing.T) {
 		From:          verified.Revision + 1,
 		To:            verified.Revision + 1,
 		Head:          verified.Revision + 1,
-		HeadStateHash: adsync.StateHash(next),
+		HeadStateHash: observed.StateHash,
 		Commits: []adsync.Commit{{
 			Revision: verified.Revision + 1,
 			PrevHash: verified.CommitHash,
@@ -92,6 +101,12 @@ func TestServeDownstreamMirrorsVerifiedCopies(t *testing.T) {
 		}},
 		NextSince: verified.Revision + 2,
 	})
+	// An observed page is not servable until the pass that fetched it
+	// publishes the verified state.
+	if _, availability := store.downstream.mirror.Lookup(testServiceID1); availability != adsproxy.ServiceNeedsSnapshot {
+		t.Errorf("availability after an observed page = %v, want ServiceNeedsSnapshot", availability)
+	}
+	store.publishDownstream(observed)
 	page, err := store.downstream.mirror.Changes(testServiceID1, verified.Revision, 10)
 	if err != nil {
 		t.Fatalf("mirror changes: %v", err)
@@ -106,7 +121,14 @@ func TestServeDownstreamMirrorsVerifiedCopies(t *testing.T) {
 	if _, availability := store.downstream.mirror.Lookup(testServiceID1); availability != adsproxy.ServiceNeedsSnapshot {
 		t.Errorf("withheld availability = %v", availability)
 	}
+	// Publishing an older verified state does not clear the withhold: the
+	// mirror ignores the stale snapshot, so the pass did not confirm the copy
+	// that would be served.
 	store.publishDownstream(verified)
+	if _, availability := store.downstream.mirror.Lookup(testServiceID1); availability != adsproxy.ServiceNeedsSnapshot {
+		t.Errorf("availability after a stale publish = %v, want ServiceNeedsSnapshot", availability)
+	}
+	store.publishDownstream(observed)
 	if _, availability := store.downstream.mirror.Lookup(testServiceID1); availability != adsproxy.ServiceAvailable {
 		t.Errorf("recovered availability = %v", availability)
 	}
@@ -344,6 +366,98 @@ func TestServeDownstreamWithholdsForANotifiedHead(t *testing.T) {
 	}
 	if _, availability := store.downstream.mirror.Lookup(testServiceID1); availability == adsproxy.ServiceAvailable {
 		t.Fatal("the mirror recovered without a verified pass")
+	}
+}
+
+// TestServeDownstreamWithholdsAnObservedCopyThatFailsCompilation covers a
+// fetch that starts while the mirror already serves the acknowledged head: the
+// source advances during the fetch, the observer applies the candidate, and
+// the pass then rejects it. The unconfirmed candidate must never be served.
+func TestServeDownstreamWithholdsAnObservedCopyThatFailsCompilation(t *testing.T) {
+	fixture := newTestFixture(t, booksService())
+	store := fixture.open(func(options *Options) { options.ServeDownstream = true })
+	defer store.Close()
+	books, known := fixture.source.service("books")
+	if !known {
+		t.Fatal("the fixture source has no books service")
+	}
+	ackService := adsync.Service{
+		ID:            testServiceID1,
+		Name:          "books",
+		Revision:      books.Revision,
+		Epoch:         books.Epoch,
+		HeadStateHash: books.StateHash,
+	}
+	fixture.source.publishService("books", func(snapshot *adsync.Snapshot) {
+		snapshot.Policies = append(snapshot.Policies,
+			adsync.Policy{ID: "p-invalid", Name: "invalid", SPDL: "this is not a policy"})
+	})
+	// Dropping the local copy forces a fetch even though the mirror already
+	// matches the acknowledged head, which is the window this test covers.
+	if err := store.syncer.Forget(testServiceID1); err != nil {
+		t.Fatalf("forget local copy: %v", err)
+	}
+	if err := store.syncService(context.Background(), ackService); err == nil {
+		t.Fatal("a copy that fails compilation did not fail the sync")
+	}
+	// The observer did apply the candidate internally; only the withhold keeps
+	// it away from downstream instances.
+	candidate, current := store.downstream.mirror.CurrentInfo(testServiceID1)
+	if !current || candidate.Revision != ackService.Revision+1 {
+		t.Fatalf("the observed candidate = %+v %v, want revision %d", candidate, current, ackService.Revision+1)
+	}
+	if _, availability := store.downstream.mirror.Lookup(testServiceID1); availability == adsproxy.ServiceAvailable {
+		t.Fatal("the rejected candidate is served downstream")
+	}
+}
+
+// TestObservedCandidatesStayWithheldUntilPublished covers the window inside a
+// pass: a snapshot or change page the synchronizer observes must not be
+// servable before the pass publishes the verified state, even though the
+// mirror served the previous head when the fetch started.
+func TestObservedCandidatesStayWithheldUntilPublished(t *testing.T) {
+	fixture := newTestFixture(t, booksService())
+	store := fixture.open(func(options *Options) { options.ServeDownstream = true })
+	defer store.Close()
+	verified, found := store.syncer.State(testServiceID1)
+	if !found {
+		t.Fatal("the store has no verified state")
+	}
+	next := adsync.Snapshot{
+		Name:         verified.Snapshot.Name,
+		Policies:     append([]adsync.Policy(nil), verified.Snapshot.Policies...),
+		RolePolicies: append([]adsync.Policy(nil), verified.Snapshot.RolePolicies...),
+	}
+	next.Policies = append(next.Policies, policy("p-audit", "audit", "grant user auditor read books"))
+	nextHash := adsync.StateHash(next)
+	store.observeDownstreamSnapshot(&adsync.SnapshotResponse{
+		ServiceID:  testServiceID1,
+		SourceID:   verified.SourceID,
+		Epoch:      verified.Epoch,
+		Revision:   verified.Revision + 1,
+		StateHash:  nextHash,
+		CommitHash: nextHash,
+		Snapshot:   next,
+	})
+	if _, availability := store.downstream.mirror.Lookup(testServiceID1); availability != adsproxy.ServiceNeedsSnapshot {
+		t.Fatalf("observed candidate availability = %v, want ServiceNeedsSnapshot", availability)
+	}
+	candidate, current := store.downstream.mirror.CurrentInfo(testServiceID1)
+	if !current || candidate.Revision != verified.Revision+1 {
+		t.Fatalf("observed candidate = %+v %v", candidate, current)
+	}
+	store.publishDownstream(&adsync.ServiceState{
+		ServiceID:  testServiceID1,
+		SourceID:   verified.SourceID,
+		Epoch:      verified.Epoch,
+		Revision:   verified.Revision + 1,
+		StateHash:  nextHash,
+		CommitHash: nextHash,
+		Snapshot:   next,
+	})
+	info, availability := store.downstream.mirror.Lookup(testServiceID1)
+	if availability != adsproxy.ServiceAvailable || info.Revision != verified.Revision+1 {
+		t.Fatalf("published candidate = %+v, availability %v", info, availability)
 	}
 }
 

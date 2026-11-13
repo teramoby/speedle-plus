@@ -396,6 +396,9 @@ func (s *Store) installFetched(service adsync.Service, state *adsync.ServiceStat
 	}
 	compiled, err := compileService(state)
 	if err != nil {
+		// The fetched copy may already have reached the mirror; it was never
+		// confirmed here, so it must not be served.
+		s.withholdDownstream(service.ID)
 		return fmt.Errorf("service %q: %w", service.Name, err)
 	}
 	compiled.attempt = attempt
@@ -404,6 +407,7 @@ func (s *Store) installFetched(service adsync.Service, state *adsync.ServiceStat
 	// drops it, or invalidates the attempt before the copy is stored.
 	if !s.machine.AttemptCurrent(attempt) {
 		s.mu.Unlock()
+		s.withholdDownstream(service.ID)
 		return nil
 	}
 	// Defense in depth: a rename may have landed while the fetch was in
@@ -411,6 +415,7 @@ func (s *Store) installFetched(service adsync.Service, state *adsync.ServiceStat
 	// the renamed one, even if its attempt was taken after the rename.
 	if status, known := s.machineService(service.ID); !known || status.Name != compiled.service.Name {
 		s.mu.Unlock()
+		s.withholdDownstream(service.ID)
 		return nil
 	}
 	s.copies[service.ID] = compiled
@@ -427,11 +432,17 @@ func (s *Store) installFetched(service adsync.Service, state *adsync.ServiceStat
 }
 
 // observeDownstreamSnapshot feeds an accepted snapshot to the downstream
-// mirror, so the mirror is anchored to the exact bytes the source served.
+// mirror, so the mirror is anchored to the exact bytes the source served. The
+// service is withheld from serving before the snapshot is applied: the pass
+// that fetched it has not verified or published it yet, so a copy that
+// advances the mirror must not become servable even when the mirror served
+// the previous head when the fetch started. publishDownstream restores
+// availability after the pass confirms the verified state.
 func (s *Store) observeDownstreamSnapshot(response *adsync.SnapshotResponse) {
 	if s.downstream == nil || response == nil {
 		return
 	}
+	s.downstream.mirror.MarkUnavailable(response.ServiceID)
 	if err := s.downstream.mirror.ApplySnapshot(response); err != nil {
 		log.Warnf("policy-source could not mirror service %q for downstream instances: %v", response.ServiceID, err)
 		s.downstream.mirror.MarkUnavailable(response.ServiceID)
@@ -439,11 +450,14 @@ func (s *Store) observeDownstreamSnapshot(response *adsync.SnapshotResponse) {
 }
 
 // observeDownstreamChanges feeds an accepted change page to the downstream
-// mirror, so downstream instances can resume incrementally.
+// mirror, so downstream instances can resume incrementally. As with a
+// snapshot, the service is withheld before the page is applied, so no
+// intermediate revision is served before the pass verifies the head.
 func (s *Store) observeDownstreamChanges(page *adsync.ChangesResponse) {
 	if s.downstream == nil || page == nil {
 		return
 	}
+	s.downstream.mirror.MarkUnavailable(page.ServiceID)
 	if err := s.downstream.mirror.ApplyChanges(page); err != nil {
 		log.Warnf("policy-source could not mirror changes for service %q: %v", page.ServiceID, err)
 		s.downstream.mirror.MarkUnavailable(page.ServiceID)
@@ -452,14 +466,15 @@ func (s *Store) observeDownstreamChanges(page *adsync.ChangesResponse) {
 
 // publishDownstream mirrors one verified copy for downstream instances. When
 // the observer already fed the mirror to this exact revision, the existing
-// change log is kept instead of replacing it with a snapshot. A copy the mirror
-// refuses is withheld from downstream serving rather than served stale.
+// change log is kept instead of replacing it with a snapshot. The service is
+// made servable only when the mirror ends at exactly the verified identity: a
+// snapshot the mirror ignores (stale or from a retired identity) must not
+// clear a withhold for a copy the pass did not confirm.
 func (s *Store) publishDownstream(state *adsync.ServiceState) {
 	if s.downstream == nil || state == nil {
 		return
 	}
-	if info, found := s.downstream.mirror.CurrentInfo(state.ServiceID); found &&
-		info.Epoch == state.Epoch && info.Revision == state.Revision && info.StateHash == state.StateHash {
+	if s.downstreamMirrorMatches(state) {
 		s.downstream.mirror.MarkAvailable(state.ServiceID)
 		return
 	}
@@ -477,7 +492,19 @@ func (s *Store) publishDownstream(state *adsync.ServiceState) {
 		s.downstream.mirror.MarkUnavailable(state.ServiceID)
 		return
 	}
+	if !s.downstreamMirrorMatches(state) {
+		s.downstream.mirror.MarkUnavailable(state.ServiceID)
+		return
+	}
 	s.downstream.mirror.MarkAvailable(state.ServiceID)
+}
+
+// downstreamMirrorMatches reports whether the mirror holds exactly the identity
+// and revision of one verified state.
+func (s *Store) downstreamMirrorMatches(state *adsync.ServiceState) bool {
+	info, found := s.downstream.mirror.CurrentInfo(state.ServiceID)
+	return found && info.Epoch == state.Epoch && info.Revision == state.Revision &&
+		info.StateHash == state.StateHash
 }
 
 // withholdDownstream stops serving one service to downstream instances while
