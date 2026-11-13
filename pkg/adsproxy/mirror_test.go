@@ -270,6 +270,24 @@ func TestMirrorWithholdsCopyCreatedAfterTheWithhold(t *testing.T) {
 	}
 }
 
+// TestMirrorClearsAWithholdWhenTheServiceDisappears covers a withhold recorded
+// for a service that never produced a copy: when the service leaves the
+// authoritative set before its first snapshot, the removal drops the pending
+// withhold, so a later re-add is not hidden behind stale state.
+func TestMirrorClearsAWithholdWhenTheServiceDisappears(t *testing.T) {
+	mirror := newTestMirror(t, nil)
+	service := newFixtureService(testServiceID1, "books")
+	mirror.MarkUnavailable(service.ID)
+	mirror.RemoveService(service.ID)
+	if err := mirror.ApplySnapshot(service.snapshotResponse(t)); err != nil {
+		t.Fatalf("apply snapshot: %v", err)
+	}
+	info, availability := mirror.Lookup(service.ID)
+	if availability != ServiceAvailable || info.Revision != service.Revision {
+		t.Fatalf("copy after the removal = %+v, availability %v", info, availability)
+	}
+}
+
 func TestMirrorRejectsPageGap(t *testing.T) {
 	mirror := newTestMirror(t, nil)
 	service := newFixtureService(testServiceID1, "books")
