@@ -34,16 +34,15 @@ func TestEtcdUnavailableEndpointRejectsEvaluatorStartup(t *testing.T) {
 		_ = listener.Close()
 		<-done
 	})
-	engine, err := eval.NewFromConfig(&cfg.Config{
-		EnableWatch: true,
-		StoreConfig: &cfg.StoreConfig{
-			StoreType: etcd.StoreType,
-			StoreProps: map[string]interface{}{
-				etcd.EtcdEndpointKey:  "http://" + listener.Addr().String(),
-				etcd.EtcdKeyPrefixKey: "/startup-test/",
-			},
-		},
+	manager, err := (etcd.Etcd3StoreBuilder{}).NewStore(map[string]interface{}{
+		etcd.EtcdEndpointKey:  "http://" + listener.Addr().String(),
+		etcd.EtcdKeyPrefixKey: "/startup-test/",
 	})
+	if err != nil {
+		t.Fatalf("client construction failed before the initial snapshot read: %v", err)
+	}
+	t.Cleanup(func() { _ = manager.(io.Closer).Close() })
+	engine, err := eval.NewWithStore(&cfg.Config{EnableWatch: true}, manager)
 	if engine != nil {
 		if closer, ok := engine.(io.Closer); ok {
 			_ = closer.Close()
