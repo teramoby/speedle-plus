@@ -32,3 +32,8 @@
   `store.Register`/`eval.NewWithStore` hooks for its store. See
   [Extending the decision service](docs/hugo/content/docs/extending-decision-service.md).
   `(*flags.Parameters).GRPCServerOptions` remains available.
+  The retained `adsrest.NewRESTService`, `adsrest.NewRESTServiceWithEvaluator`,
+  `adsrest.NewRouter` and `adsgrpc.NewGRPCService` constructors now accept
+  variadic `...Option` arguments. Existing direct calls still compile. Code
+  assigning a constructor to a function value with its old signature must wrap
+  the call in a function with that signature and omit the optional arguments.
