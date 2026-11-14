@@ -5,6 +5,9 @@ gitCommit := $(shell git rev-parse --short HEAD)
 # go version output is "go version go1.11.2 linux/amd64"
 goVersion := $(word 3,$(shell go version))
 productVersion := $(shell awk '/^appVersion:/ { gsub(/"/, "", $$2); print $$2; exit }' deployment/helm/speedle/Chart.yaml)
+ifeq ($(strip $(productVersion)),)
+$(error unable to read appVersion from deployment/helm/speedle/Chart.yaml)
+endif
 goLDFlags := -ldflags "-X main.gitCommit=${gitCommit} -X main.productVersion=${productVersion} -X main.goVersion=${goVersion}"
 
 pmsImageRepo := speedle-pms

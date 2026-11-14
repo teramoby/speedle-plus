@@ -9,6 +9,8 @@ trap 'rm -rf "${work}"' EXIT
 
 app=$(awk '/^appVersion:/ { gsub(/"/, "", $2); print $2; exit }' "${chart}/Chart.yaml")
 
+[[ -n "${app}" ]] || { echo "appVersion missing from ${chart}/Chart.yaml" >&2; exit 1; }
+
 helm lint "${chart}"
 
 render() {

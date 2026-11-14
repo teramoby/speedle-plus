@@ -51,8 +51,8 @@ jobs:
           smoke = os.environ['ALWAYS_SMOKE'] == 'true'
           if not smoke:
               changed = subprocess.check_output(['git', 'diff', '--name-only', '-z', os.environ['PR_BASE'], os.environ['GITHUB_SHA'], '--']).decode().split('\0')
-              smoke = any(p.startswith(('deployment/container/', 'deployment/helm/', 'cmd/')) or p in (
-                  '.github/workflows/release.yml', '.github/workflows/image-smoke.yml', 'scripts/release-smoke.sh'
+              smoke = any(p.startswith(('deployment/container/', 'cmd/')) or p in (
+                  'deployment/helm/speedle/Chart.yaml', '.github/workflows/release.yml', '.github/workflows/image-smoke.yml', 'scripts/release-smoke.sh'
               ) for p in changed)
           with Path(os.environ['GITHUB_OUTPUT']).open('a') as output:
               output.write('smoke=' + str(smoke).lower() + '\n')

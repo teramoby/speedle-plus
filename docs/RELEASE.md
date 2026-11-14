@@ -55,7 +55,7 @@ containers.
 The Release workflow builds `linux/amd64` and `linux/arm64`, loads the image
 for the job's architecture, and runs that script before it creates a tag.
 
-A pull request that changes `deployment/container/`, `deployment/helm/`, `cmd/`,
+A pull request that changes `deployment/container/`, `deployment/helm/speedle/Chart.yaml`, `cmd/`,
 `.github/workflows/release.yml`, `.github/workflows/image-smoke.yml` or
 `scripts/release-smoke.sh` builds the image for `linux/amd64` and
 `linux/arm64`, loads the job's architecture and runs the same script. It
@@ -125,8 +125,9 @@ helm install speedle oci://ghcr.io/teramoby/charts/speedle --version X.Y.Z
 The first release whose commit contains the chart is the first chart
 package. Re-running an older commit does not publish a chart.
 
-Pull requests that change the chart, the chart workflow or this release
-workflow run `helm lint`, `helm template` for the file, etcd and MongoDB
+Pull requests that change the chart, its Helm/kind installer scripts, the
+chart or release workflow, or the candidate image inputs (`deployment/container/`,
+`cmd/`, `pkg/`, `api/`, `3rdparty/`, `go.mod` and `go.sum`) run `helm lint`, `helm template` for the file, etcd and MongoDB
 stores, and an install on a throwaway kind cluster. CI builds the candidate
 commit with the release Dockerfile and loads it into kind under the chart
 appVersion, so preparation does not require an already-published image.

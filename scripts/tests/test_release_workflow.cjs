@@ -443,5 +443,39 @@ test('Makefile binaries and development images follow the chart version at the n
       for (const service of ['pms', 'ads']) assert.ok(result.stdout.includes(`speedle-${service}:v${version}`));
       assert.ok(!result.stdout.includes('main.productVersion=0.1'));
     }
+    for (const contents of [null, 'name: speedle\n', 'appVersion: ""\n']) {
+      if (contents === null) fs.unlinkSync(chart);
+      else fs.writeFileSync(chart, contents);
+      const result = spawnSync('make', ['-f', path.join(repo, 'Makefile'), '-n', 'build', 'image'], {
+        cwd: directory, encoding: 'utf8', env: {...process.env, PATH: directory + path.delimiter + process.env.PATH},
+      });
+      assert.notEqual(result.status, 0, 'missing version must reject binary/image builds');
+      assert.match(result.stderr, /unable to read appVersion/);
+      assert.ok(!result.stdout.includes('go build'));
+      assert.ok(!result.stdout.includes('docker build'));
+    }
+  } finally { fs.rmSync(directory, {recursive: true, force: true}); }
+});
+
+test('Helm render check rejects missing and empty appVersion before calling Helm', () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-chart-version-'));
+  try {
+    const helmDir = path.join(directory, 'deployment/helm');
+    fs.mkdirSync(path.join(helmDir, 'speedle'), {recursive: true});
+    const check = path.join(helmDir, 'render-check.sh');
+    fs.copyFileSync(path.resolve(__dirname, '../../deployment/helm/render-check.sh'), check);
+    const marker = path.join(directory, 'helm-called');
+    const helm = path.join(directory, 'helm');
+    fs.writeFileSync(helm, '#!/bin/sh\ntouch "$FIXTURE_HELM_MARKER"\nexit 0\n');
+    fs.chmodSync(helm, 0o755);
+    for (const contents of ['name: speedle\n', 'appVersion: ""\n', '  appVersion: "1.8.0"\n']) {
+      fs.writeFileSync(path.join(helmDir, 'speedle/Chart.yaml'), contents);
+      const result = spawnSync('bash', [check], {encoding: 'utf8', env: {
+        ...process.env, PATH: directory + path.delimiter + process.env.PATH, FIXTURE_HELM_MARKER: marker,
+      }});
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /appVersion missing/);
+      assert.ok(!fs.existsSync(marker), 'invalid appVersion must fail before Helm runs');
+    }
   } finally { fs.rmSync(directory, {recursive: true, force: true}); }
 });
