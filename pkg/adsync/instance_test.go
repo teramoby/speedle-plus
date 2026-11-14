@@ -3,8 +3,11 @@
 package adsync
 
 import (
+	"bytes"
 	"errors"
+	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -137,7 +140,7 @@ func TestInstanceIDRepairsPartialFile(t *testing.T) {
 	for _, partial := range []string{"", testInstanceID[:10], testInstanceID[:35]} {
 		t.Run(partial, func(t *testing.T) {
 			dir := t.TempDir()
-			writeTestFile(t, dir, InstanceIDFile, []byte(partial), 0o600)
+			writeStaleInstanceID(t, dir, partial)
 			id, created, err := loadOrCreateInstanceID(dir, func(string, string) error { return syscall.ENOTSUP })
 			if err != nil || !created || !ValidInstanceID(id) {
 				t.Fatalf("repair = %q, %v, %v", id, created, err)
@@ -204,7 +207,7 @@ func TestConcurrentInstanceIDRepair(t *testing.T) {
 	for _, partial := range []string{"", testInstanceID[:10]} {
 		t.Run(partial, func(t *testing.T) {
 			dir := t.TempDir()
-			writeTestFile(t, dir, InstanceIDFile, []byte(partial), 0o600)
+			writeStaleInstanceID(t, dir, partial)
 			type result struct {
 				id      string
 				created bool
@@ -226,6 +229,249 @@ func TestConcurrentInstanceIDRepair(t *testing.T) {
 			}
 		})
 	}
+}
+
+func writeStaleInstanceID(t *testing.T, dir, partial string) string {
+	t.Helper()
+	path := writeTestFile(t, dir, InstanceIDFile, []byte(partial), 0o600)
+	old := time.Now().Add(-2 * time.Hour)
+	if err := os.Chtimes(path, old, old); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+func TestInstanceIDWhitespaceCorruption(t *testing.T) {
+	for _, value := range []string{" ", "\n\t", " " + testInstanceID[:10], testInstanceID[:10] + "\n"} {
+		t.Run(fmt.Sprintf("%q", value), func(t *testing.T) {
+			dir := t.TempDir()
+			path := writeStaleInstanceID(t, dir, value)
+			id, created, err := LoadOrCreateInstanceID(dir)
+			if !errors.Is(err, ErrCacheCorrupt) || errors.Is(err, errPartialInstanceID) || created || id != "" {
+				t.Fatalf("whitespace corruption = %q, %v, %v", id, created, err)
+			}
+			data, err := os.ReadFile(path)
+			if err != nil || string(data) != value {
+				t.Fatalf("corrupt file changed: %q, %v", data, err)
+			}
+		})
+	}
+	dir := t.TempDir()
+	writeTestFile(t, dir, InstanceIDFile, []byte(" \t"+testInstanceID+"\n"), 0o600)
+	if id, created, err := LoadOrCreateInstanceID(dir); err != nil || created || id != testInstanceID {
+		t.Fatalf("compatible complete ID = %q, %v, %v", id, created, err)
+	}
+}
+
+func TestInstanceIDWithoutFilesystemLock(t *testing.T) {
+	unsupported := func(*os.File) error { return errInstanceIDLockUnsupported }
+	for _, partial := range []bool{false, true} {
+		t.Run(fmt.Sprint(partial), func(t *testing.T) {
+			dir := t.TempDir()
+			if partial {
+				writeStaleInstanceID(t, dir, testInstanceID[:10])
+			}
+			id, created, err := loadOrCreateInstanceIDWithLock(dir, func(string, string) error { return syscall.ENOTSUP }, unsupported)
+			if partial {
+				if !errors.Is(err, ErrCacheCorrupt) || created || id != "" {
+					t.Fatalf("unlocked repair = %q, %v, %v", id, created, err)
+				}
+				data, err := os.ReadFile(filepath.Join(dir, InstanceIDFile))
+				if err != nil || string(data) != testInstanceID[:10] {
+					t.Fatalf("unlocked partial changed: %q, %v", data, err)
+				}
+			} else if err != nil || !created || !ValidInstanceID(id) {
+				t.Fatalf("unlocked creation = %q, %v, %v", id, created, err)
+			}
+		})
+	}
+	if _, _, err := loadOrCreateInstanceIDWithLock(t.TempDir(), os.Link, func(*os.File) error { return syscall.EIO }); !errors.Is(err, syscall.EIO) {
+		t.Fatalf("unexpected lock error swallowed: %v", err)
+	}
+}
+
+func TestInstanceIDPreservesPausedLegacyWriter(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, InstanceIDFile)
+	// Simulate an old fallback writer which does not acquire the new lock.
+	writer, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer writer.Close()
+	before, err := writer.Stat()
+	if err != nil {
+		t.Fatal(err)
+	}
+	id, created, err := LoadOrCreateInstanceID(dir)
+	if !errors.Is(err, ErrCacheCorrupt) || created || id != "" {
+		t.Fatalf("paused legacy publication = %q, %v, %v", id, created, err)
+	}
+	after, err := os.Stat(path)
+	if err != nil || !os.SameFile(before, after) || after.Size() != 0 {
+		t.Fatalf("paused legacy publication replaced: %v, %v", after, err)
+	}
+	if _, err := writer.WriteString(testInstanceID + "\n"); err != nil {
+		t.Fatal(err)
+	}
+	if err := writer.Sync(); err != nil {
+		t.Fatal(err)
+	}
+	id, created, err = LoadOrCreateInstanceID(dir)
+	if err != nil || created || id != testInstanceID {
+		t.Fatalf("resumed legacy publication = %q, %v, %v", id, created, err)
+	}
+}
+
+func TestInstanceIDRechecksBeforeRepair(t *testing.T) {
+	for _, change := range []string{"inode", "size", "mtime", "mode", "remove", "unchanged"} {
+		t.Run(change, func(t *testing.T) {
+			if change == "mode" && runtime.GOOS == "windows" {
+				t.Skip("Unix permissions")
+			}
+			dir := t.TempDir()
+			path := writeStaleInstanceID(t, dir, "")
+			partial, err := os.Stat(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			switch change {
+			case "inode":
+				// Keep the old inode alive so it cannot be reused.
+				err = os.Rename(path, path+".old")
+				if err == nil {
+					writeStaleInstanceID(t, dir, "")
+				}
+			case "size":
+				err = os.WriteFile(path, []byte(testInstanceID[:10]), 0o600)
+			case "mtime":
+				err = os.Chtimes(path, time.Now(), time.Now())
+			case "mode":
+				err = os.Chmod(path, 0o644)
+			case "remove":
+				err = os.Remove(path)
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = checkPartialInstanceID(path, partial)
+			switch change {
+			case "unchanged":
+				if err != nil {
+					t.Fatal(err)
+				}
+			case "remove":
+				if !errors.Is(err, os.ErrNotExist) {
+					t.Fatalf("removed publication = %v", err)
+				}
+			default:
+				if !errors.Is(err, ErrCacheCorrupt) {
+					t.Fatalf("changed publication = %v", err)
+				}
+			}
+		})
+	}
+}
+
+func TestInstanceIDLockWait(t *testing.T) {
+	for _, outcome := range []string{"success", "unsupported", "timeout"} {
+		t.Run(outcome, func(t *testing.T) {
+			calls := 0
+			err := waitInstanceIDLock(nil, func(*os.File) error {
+				calls++
+				if outcome == "unsupported" {
+					return errInstanceIDLockUnsupported
+				}
+				if outcome == "success" && calls == 2 {
+					return nil
+				}
+				return errInstanceIDLockBusy
+			}, 20*time.Millisecond)
+			switch outcome {
+			case "success":
+				if err != nil || calls != 2 {
+					t.Fatalf("lock retry = %d, %v", calls, err)
+				}
+			case "unsupported":
+				if !errors.Is(err, errInstanceIDLockUnsupported) || calls != 1 {
+					t.Fatalf("unsupported lock = %d, %v", calls, err)
+				}
+			case "timeout":
+				if !errors.Is(err, os.ErrDeadlineExceeded) {
+					t.Fatalf("lock deadline = %v", err)
+				}
+			}
+		})
+	}
+}
+
+func TestInstanceIDLockContention(t *testing.T) {
+	path := filepath.Join(t.TempDir(), instanceIDLockFile)
+	first, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0o600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer first.Close()
+	if err := lockInstanceID(first); errors.Is(err, errInstanceIDLockUnsupported) {
+		t.Skip("filesystem locks unsupported")
+	} else if err != nil {
+		t.Fatal(err)
+	}
+	defer unlockInstanceID(first)
+	second, err := os.OpenFile(path, os.O_RDWR, 0o600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer second.Close()
+	if err := waitInstanceIDLock(second, tryLockInstanceID, 20*time.Millisecond); !errors.Is(err, os.ErrDeadlineExceeded) {
+		t.Fatalf("contended filesystem lock = %v", err)
+	}
+	unlockInstanceID(first)
+	if err := lockInstanceID(second); err != nil {
+		t.Fatalf("released filesystem lock = %v", err)
+	}
+	unlockInstanceID(second)
+}
+
+func TestInstanceIDRepairAcrossProcesses(t *testing.T) {
+	dir := t.TempDir()
+	writeStaleInstanceID(t, dir, testInstanceID[:10])
+	var output [2]bytes.Buffer
+	var commands [2]*exec.Cmd
+	for i := range commands {
+		commands[i] = exec.Command(os.Args[0], "-test.run=^TestInstanceIDRepairProcessHelper$")
+		commands[i].Env = append(os.Environ(), "SPEEDLE_INSTANCE_ID_TEST_DIR="+dir)
+		commands[i].Stdout = &output[i]
+		commands[i].Stderr = &output[i]
+		if err := commands[i].Start(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for i, command := range commands {
+		if err := command.Wait(); err != nil {
+			t.Fatalf("repair process: %v\n%s", err, &output[i])
+		}
+	}
+	first, second := strings.Fields(output[0].String()), strings.Fields(output[1].String())
+	if len(first) < 2 || len(second) < 2 || !ValidInstanceID(first[0]) || first[0] != second[0] ||
+		!((first[1] == "true" && second[1] == "false") || (first[1] == "false" && second[1] == "true")) {
+		t.Fatalf("process repair: %q, %q", &output[0], &output[1])
+	}
+	if id, created, err := LoadOrCreateInstanceID(dir); err != nil || created || id != first[0] {
+		t.Fatalf("process repair persistence = %q, %v, %v", id, created, err)
+	}
+}
+
+func TestInstanceIDRepairProcessHelper(t *testing.T) {
+	dir := os.Getenv("SPEEDLE_INSTANCE_ID_TEST_DIR")
+	if dir == "" {
+		return
+	}
+	id, created, err := loadOrCreateInstanceID(dir, func(string, string) error { return syscall.ENOTSUP })
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Printf("%s %t\n", id, created)
 }
 
 func TestInstanceIDStartupCleansOnlyStaleTemps(t *testing.T) {

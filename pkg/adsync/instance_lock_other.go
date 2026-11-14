@@ -4,13 +4,10 @@
 
 package adsync
 
-import (
-	"fmt"
-	"os"
-)
+import "os"
 
-func lockInstanceID(*os.File) error {
-	return fmt.Errorf("exclusive instance id creation locks are unsupported on this platform")
+func tryLockInstanceID(*os.File) error {
+	return errInstanceIDLockUnsupported
 }
 
 func unlockInstanceID(*os.File) {}

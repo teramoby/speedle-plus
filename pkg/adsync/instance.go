@@ -52,13 +52,19 @@ func ValidInstanceID(value string) bool {
 // LoadOrCreateInstanceID returns the instance ID stored in dir, creating and
 // exclusively persisting a new one (mode 0600) when none exists yet. The
 // boolean reports whether the ID was created by this call. Empty files and
-// truncated UUIDv7 publications are repaired under the exclusive creation lock.
-// Other corrupt or unsafe files remain errors.
+// truncated UUIDv7 publications older than an hour are repaired under the
+// exclusive creation lock. Recent partial publications, other corrupt files,
+// and unsafe files remain errors. Without filesystem locking, creation still
+// works, but partial files cannot be repaired safely.
 func LoadOrCreateInstanceID(dir string) (string, bool, error) {
 	return loadOrCreateInstanceID(dir, os.Link)
 }
 
 func loadOrCreateInstanceID(dir string, link func(string, string) error) (string, bool, error) {
+	return loadOrCreateInstanceIDWithLock(dir, link, lockInstanceID)
+}
+
+func loadOrCreateInstanceIDWithLock(dir string, link func(string, string) error, acquire func(*os.File) error) (string, bool, error) {
 	if dir == "" {
 		return "", false, fmt.Errorf("adsync: instance id directory is empty")
 	}
@@ -79,19 +85,30 @@ func loadOrCreateInstanceID(dir string, link func(string, string) error) (string
 		return "", false, fmt.Errorf("adsync: open instance id create lock: %w", err)
 	}
 	defer lock.Close()
-	if err := lockInstanceID(lock); err != nil {
+	err = acquire(lock)
+	locked := err == nil
+	if err != nil && !errors.Is(err, errInstanceIDLockUnsupported) {
 		return "", false, fmt.Errorf("adsync: lock instance id creation: %w", err)
 	}
-	defer unlockInstanceID(lock)
+	if locked {
+		defer unlockInstanceID(lock)
+	}
 	cleanupInstanceIDTemps(dir)
 	for range 3 {
-		id, err := loadInstanceID(path)
+		id, partial, err := loadInstanceIDState(path)
 		if err == nil {
 			return id, false, nil
 		}
 		if errors.Is(err, errPartialInstanceID) {
-			// Revalidated while holding the same lock as every creator. A
-			// concurrent repair winner is loaded above, never overwritten.
+			// Older releases do not take the lock. Leave recent publications
+			// alone, even after the bounded read wait, so a paused old writer
+			// can finish. Never repair without exclusive filesystem locking.
+			if !locked || !partial.ModTime().Before(time.Now().Add(-time.Hour)) {
+				return "", false, err
+			}
+			if err := checkPartialInstanceID(path, partial); err != nil {
+				return "", false, err
+			}
 			if err := os.Remove(path); err != nil && !errors.Is(err, fs.ErrNotExist) {
 				return "", false, fmt.Errorf("adsync: remove partial instance id: %w", err)
 			}
@@ -119,48 +136,69 @@ func loadOrCreateInstanceID(dir string, link func(string, string) error) (string
 }
 
 func loadInstanceID(path string) (string, error) {
+	id, _, err := loadInstanceIDState(path)
+	return id, err
+}
+
+func loadInstanceIDState(path string) (string, fs.FileInfo, error) {
 	deadline := time.Now().Add(time.Second)
 	for {
 		info, err := os.Lstat(path)
 		if err != nil {
-			return "", fmt.Errorf("adsync: stat instance id: %w", err)
+			return "", nil, fmt.Errorf("adsync: stat instance id: %w", err)
 		}
 		if !info.Mode().IsRegular() {
-			return "", fmt.Errorf("%w: instance id file is not a regular file", ErrUnsafeCache)
+			return "", nil, fmt.Errorf("%w: instance id file is not a regular file", ErrUnsafeCache)
 		}
 		if runtime.GOOS != "windows" && info.Mode().Perm()&0o077 != 0 {
-			return "", fmt.Errorf("%w: instance id file must be 0600", ErrUnsafeCache)
+			return "", nil, fmt.Errorf("%w: instance id file must be 0600", ErrUnsafeCache)
 		}
 		if info.Size() > 128 {
-			return "", fmt.Errorf("%w: instance id file is too large", ErrCacheCorrupt)
+			return "", nil, fmt.Errorf("%w: instance id file is too large", ErrCacheCorrupt)
 		}
 		file, err := os.Open(path)
 		if err != nil {
-			return "", fmt.Errorf("adsync: read instance id: %w", err)
+			return "", nil, fmt.Errorf("adsync: read instance id: %w", err)
 		}
 		data, err := io.ReadAll(io.LimitReader(file, 129))
 		file.Close()
 		if err != nil {
-			return "", fmt.Errorf("adsync: read instance id: %w", err)
+			return "", nil, fmt.Errorf("adsync: read instance id: %w", err)
 		}
 		if len(data) > 128 {
-			return "", fmt.Errorf("%w: instance id file is too large", ErrCacheCorrupt)
+			return "", nil, fmt.Errorf("%w: instance id file is too large", ErrCacheCorrupt)
 		}
 		id := strings.TrimSpace(string(data))
 		if ValidInstanceID(id) {
-			return id, nil
+			return id, nil, nil
 		}
 		// Only a canonical UUIDv7 prefix can be a partial publication.
+		// Classify raw bytes: whitespace cannot be a prefix of our writes.
+		prefix := string(data)
 		const template = "00000000-0000-7000-8000-000000000000"
-		if len(id) >= len(template) || !ValidInstanceID(id+template[len(id):]) {
-			return "", fmt.Errorf("%w: instance id file does not hold a UUIDv7", ErrCacheCorrupt)
+		if len(prefix) >= len(template) || !ValidInstanceID(prefix+template[len(prefix):]) {
+			return "", nil, fmt.Errorf("%w: instance id file does not hold a UUIDv7", ErrCacheCorrupt)
 		}
 		// Keep checking size and mode while a fallback writer finishes.
 		if !time.Now().Before(deadline) {
-			return "", errPartialInstanceID
+			return "", info, errPartialInstanceID
 		}
 		time.Sleep(time.Millisecond)
 	}
+}
+
+// Re-stat immediately before removal: a writer that made progress or replaced
+// the inode since the last read must not have its publication removed.
+func checkPartialInstanceID(path string, partial fs.FileInfo) error {
+	current, err := os.Lstat(path)
+	if err != nil {
+		return fmt.Errorf("adsync: re-stat partial instance id: %w", err)
+	}
+	if !os.SameFile(partial, current) || current.Size() != partial.Size() ||
+		current.Mode() != partial.Mode() || !current.ModTime().Equal(partial.ModTime()) {
+		return fmt.Errorf("%w: partial instance id changed before repair", ErrCacheCorrupt)
+	}
+	return nil
 }
 
 // cleanupInstanceIDTemps removes only old regular publication files. Recent
