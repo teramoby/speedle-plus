@@ -182,13 +182,11 @@ func (c *Client) ForwardFallback(ctx context.Context, operation FallbackOperatio
 	}
 	for attempt := 0; ; attempt++ {
 		started := c.fallbackRetrySequence()
-		response, err := c.forwardOnce(ctx, operation, body)
+		response, err := c.forwardOnce(ctx, operation, body, started)
 		if err == nil {
-			c.recordFallbackOutcome(nil, started)
 			response.DecisionSource = DecisionSourceUpstream
 			return response, nil
 		}
-		c.recordFallbackOutcome(err, started)
 		if attempt == 0 && ctx.Err() == nil && isConnectionEstablishmentFailure(err) {
 			continue
 		}
@@ -196,7 +194,7 @@ func (c *Client) ForwardFallback(ctx context.Context, operation FallbackOperatio
 	}
 }
 
-func (c *Client) forwardOnce(ctx context.Context, operation FallbackOperation, body []byte) (result *FallbackResponse, resultErr error) {
+func (c *Client) forwardOnce(ctx context.Context, operation FallbackOperation, body []byte, started uint64) (result *FallbackResponse, resultErr error) {
 	c.upstreamMu.Lock()
 	if !c.selectionReady() {
 		c.upstreamMu.Unlock()
@@ -206,6 +204,7 @@ func (c *Client) forwardOnce(ctx context.Context, operation FallbackOperation, b
 	generation := c.upstreamGeneration
 	c.upstreamMu.Unlock()
 	defer func() {
+		c.recordSelectedFallbackOutcome(resultErr, started, generation)
 		if isUpstreamFailure(resultErr) && ctx.Err() == nil {
 			c.failUpstreamGeneration(generation)
 		}
@@ -396,4 +395,15 @@ func isUpstreamFailure(err error) bool {
 		return status.status >= 500 || status.status == 408 || status.status == 425 || status.status == 429 || status.status == 401 || status.status == 403
 	}
 	return false
+}
+
+// A response from an obsolete endpoint cannot suppress or clear a current
+// endpoint's retry hint. Hold selection while applying the per-generation hint.
+func (c *Client) recordSelectedFallbackOutcome(err error, started, generation uint64) {
+	c.upstreamMu.Lock()
+	defer c.upstreamMu.Unlock()
+	if c.cascade() && generation != c.upstreamGeneration {
+		return
+	}
+	c.recordFallbackOutcome(err, started)
 }

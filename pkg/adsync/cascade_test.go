@@ -382,6 +382,9 @@ func TestCascadeOldForwardFailureCannotCancelNewSelection(t *testing.T) {
 	if oldCanceled.Load() || newCanceled.Load() {
 		t.Fatal("old request canceled a replacement attempt")
 	}
+	if !client.FallbackAvailable() {
+		t.Fatal("old Retry-After disabled the healthy replacement")
+	}
 	if _, err := client.ForwardFallback(context.Background(), FallbackIsAllowed, []byte(`{}`)); err == nil {
 		t.Fatal("current failure accepted")
 	}
@@ -500,5 +503,23 @@ func TestCascadeServiceErrorsDoNotTriggerFailover(t *testing.T) {
 	}
 	if !canceled.Load() {
 		t.Fatal("node-level failure did not trigger failover")
+	}
+}
+
+func TestCascadeExpiredAckCannotCommitTopology(t *testing.T) {
+	pki := newCascadePKI(t)
+	client := mustCascadeClient(t, cascadeConfig(t, pki, "https://relay.example"))
+	var topologyCalls int
+	channel := newTestChannel(t, client, newChannelMachine(t), ChannelOptions{OnChain: func([]string) error { topologyCalls++; return nil }})
+	ack := cascadeAck(t, nil)
+	channel.recordSent(*ack.AckSeq)
+	channel.mu.Lock()
+	channel.sentAt[*ack.AckSeq] = time.Now().Add(-time.Minute)
+	channel.mu.Unlock()
+	if err := channel.applyAck(&ack, nil, nil); !errors.Is(err, ErrUnavailable) {
+		t.Fatalf("expired ack: %v", err)
+	}
+	if topologyCalls != 0 {
+		t.Fatal("expired live ack committed topology")
 	}
 }

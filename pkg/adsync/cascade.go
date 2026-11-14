@@ -198,6 +198,9 @@ func (c *Channel) applyCascadeMetadata(ack *channelAck) error {
 			}
 		}
 	}
+	if ack.UpstreamState == "live" && !time.Now().Before(deadline) {
+		return fmt.Errorf("%w: upstream_stale", ErrUnavailable)
+	}
 	if c.onChain != nil {
 		if err := c.onChain(append(append([]string(nil), ack.Chain...), self)); err != nil {
 			return err
@@ -315,6 +318,10 @@ func (c *Client) selectEndpoint(base *url.URL, cancel context.CancelFunc) {
 	c.candidateBase.Store(base)
 	c.dataReady.Store(false)
 	c.upstreamGeneration++
+	c.fallbackMu.Lock()
+	c.fallbackRetryAt = time.Time{}
+	c.fallbackRetrySeq++
+	c.fallbackMu.Unlock()
 	c.upstreamCancel = cancel
 }
 
