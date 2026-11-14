@@ -6,3 +6,5 @@
   The Engine continues to provide policy decisions, local policy stores,
   management and decision APIs, spctl and SDK integration. Configurations that
   select the removed store type fail at startup with a v1.8.0 migration error.
+  Remove obsolete distribution command-line flags before using an old
+  configuration; removed flags are rejected as unknown options during parsing.
