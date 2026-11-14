@@ -36,6 +36,8 @@ func WithHTTPServer(configure func(*http.Server)) Option {
 }
 
 // WithGRPCOptions appends options to the standard TLS/server configuration.
+// Use grpc.ChainUnaryInterceptor for extra interceptors: the standard server
+// already installs a unary panic recovery interceptor.
 func WithGRPCOptions(options ...grpc.ServerOption) Option {
 	return func(s *settings) { s.grpcOptions = append(s.grpcOptions, options...) }
 }

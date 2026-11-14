@@ -68,7 +68,7 @@ func TestRunServesUntilStopped(t *testing.T) {
 	conf.AuditLogConfig = &logging.LogConfig{Formatter: "xml"}
 	stop := make(chan os.Signal, 1)
 	done := make(chan error, 1)
-	go func() { done <- run(insecureParams(address, grpcAddress), conf, stop) }()
+	go func() { done <- run(insecureParams(address, grpcAddress), conf, stop, WithGate(nil)) }()
 
 	waitFor(t, func() bool {
 		resp, err := http.Post("http://"+address+"/authz-check/v1/is-allowed", "application/json", strings.NewReader(`{}`))
@@ -194,7 +194,7 @@ func TestRunRejectsRemovedPolicySource(t *testing.T) {
 	}
 }
 
-func run(params *flags.Parameters, conf *cfg.Config, stop <-chan os.Signal) error {
+func run(params *flags.Parameters, conf *cfg.Config, stop <-chan os.Signal, options ...Option) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	if stop != nil {
@@ -206,5 +206,5 @@ func run(params *flags.Parameters, conf *cfg.Config, stop <-chan os.Signal) erro
 			}
 		}()
 	}
-	return Run(ctx, params, conf)
+	return Run(ctx, params, conf, options...)
 }
