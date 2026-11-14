@@ -317,6 +317,10 @@ test('Fiona CI trial runs the worker and ReviewBot commands without touching CI 
   assert.match(trial, /test\) bash scripts\/ci\/run-go-tests.sh gate ;;/);
   assert.match(trial, /regression\) bash scripts\/ci\/run-go-tests.sh regression ;;/);
   assert.match(trial, /weekly\) bash scripts\/ci\/run-go-tests.sh weekly ;;/);
-  assert.match(trial, /node --test scripts\/tests\/test_reviewbot_commands.cjs/);
+  // Suite order can change when the trial gains another regression suite.
+  const nodeCommand = trial.match(/^[ \t]*node --test ([^\n]+)$/m);
+  assert.ok(nodeCommand, 'Fiona ReviewBot trial must run Node regression suites');
+  assert.ok(nodeCommand[1].trim().split(/\s+/).includes('scripts/tests/test_reviewbot_commands.cjs'),
+    'Fiona ReviewBot trial must include the command regression suite');
   assert.doesNotMatch(trial, /secrets\.|ARK_API_KEY|Authorization/);
 });
