@@ -525,6 +525,59 @@ func TestCascadeExpiredAckCannotCommitTopology(t *testing.T) {
 	}
 }
 
+func TestCascadeRejectedFreshnessInvalidatesPreviousLease(t *testing.T) {
+	for _, mode := range []string{"expired-live", "stale", "expired-syncing", "topology-rejected"} {
+		t.Run(mode, func(t *testing.T) {
+			pki := newCascadePKI(t)
+			client := mustCascadeClient(t, cascadeConfig(t, pki, "https://relay.example"))
+			machine := newChannelMachine(t)
+			channel := newTestChannel(t, client, machine, ChannelOptions{})
+			ack := cascadeAck(t, nil)
+			ack.Services = []channelAckService{}
+			channel.recordSent(*ack.AckSeq)
+			if err := channel.applyAck(&ack, nil, nil); err != nil {
+				t.Fatal(err)
+			}
+			if got := machine.Upstream(); got.State != "live" || got.FreshFor <= 0 {
+				t.Fatalf("initial lease: %+v", got)
+			}
+			confirmed := machine.Instance().LastConfirmedAckAt
+			// Simulate SetChainUntil rejecting an expired deadline or any other
+			// topology installation failure, without committing a replacement.
+			var topologyCalls int
+			channel.onChain = func([]string, time.Time) error {
+				topologyCalls++
+				return ErrUnavailable
+			}
+			seq := uint64(2)
+			ack.AckSeq = &seq
+			if mode == "stale" {
+				ack.UpstreamState = "stale"
+			} else if mode == "expired-syncing" {
+				ack.UpstreamState = "syncing"
+			}
+			channel.recordSent(seq)
+			if mode != "topology-rejected" {
+				channel.mu.Lock()
+				channel.sentAt[seq] = time.Now().Add(-2 * time.Minute)
+				channel.mu.Unlock()
+			}
+			if err := channel.applyAck(&ack, nil, nil); !errors.Is(err, ErrUnavailable) {
+				t.Fatalf("rejected freshness: %v", err)
+			}
+			if got := machine.Upstream(); got.State != "stale" || got.FreshFor != 0 {
+				t.Fatalf("rejected update retained previous lease: %+v", got)
+			}
+			if !machine.Instance().LastConfirmedAckAt.Equal(confirmed) {
+				t.Fatal("rejected update confirmed liveness")
+			}
+			if mode == "expired-live" && topologyCalls != 0 {
+				t.Fatal("expired live ACK reached topology installation")
+			}
+		})
+	}
+}
+
 func TestCascadeRetryAfterSurvivesReturnToSameUpstream(t *testing.T) {
 	pki := newCascadePKI(t)
 	cert, _, _ := pki.issue(t, 71, x509.ExtKeyUsageServerAuth, "127.0.0.1", time.Now().Add(time.Hour))

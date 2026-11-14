@@ -209,10 +209,14 @@ func (c *Channel) applyCascadeMetadata(ack *channelAck) error {
 		}
 	}
 	if ack.UpstreamState == "live" && !time.Now().Before(deadline) {
+		c.machine.observeUpstreamUntil("stale", deadline)
 		return fmt.Errorf("%w: upstream_stale", ErrUnavailable)
 	}
 	if c.onChain != nil {
 		if err := c.onChain(append(append([]string(nil), ack.Chain...), self), deadline); err != nil {
+			// A rejected topology/freshness update cannot leave the previous
+			// lease serving descendants until its old deadline expires.
+			c.machine.observeUpstreamUntil("stale", time.Now())
 			return err
 		}
 	}
