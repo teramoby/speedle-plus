@@ -56,6 +56,10 @@ func ValidInstanceID(value string) bool {
 // exclusive creation lock. Recent partial publications, other corrupt files,
 // and unsafe files remain errors. Without filesystem locking, creation still
 // works, but partial files cannot be repaired safely.
+//
+// Concurrent writers sharing dir must all use this creation-lock protocol.
+// Stop older releases using dir before upgrading: file age cannot prove that
+// an older writer, which does not acquire the lock, has exited.
 func LoadOrCreateInstanceID(dir string) (string, bool, error) {
 	return loadOrCreateInstanceID(dir, os.Link)
 }
@@ -72,9 +76,13 @@ func loadOrCreateInstanceIDWithLock(dir string, link func(string, string) error,
 		return "", false, fmt.Errorf("adsync: create instance id directory: %w", err)
 	}
 	path := filepath.Join(dir, InstanceIDFile)
-	if id, err := loadInstanceID(path); err == nil {
+	if id, partial, err := loadInstanceIDState(path); err == nil {
 		cleanupInstanceIDTemps(dir)
 		return id, false, nil
+	} else if errors.Is(err, errPartialInstanceID) && !partial.ModTime().Before(time.Now().Add(-time.Hour)) {
+		// A recent partial cannot be repaired, so do not make callers wait
+		// for the creation lock and repeat the publication wait under it.
+		return "", false, err
 	} else if !errors.Is(err, fs.ErrNotExist) && !errors.Is(err, errPartialInstanceID) {
 		return "", false, err
 	}

@@ -324,6 +324,9 @@ func TestInstanceIDPreservesPausedLegacyWriter(t *testing.T) {
 	if !errors.Is(err, ErrCacheCorrupt) || created || id != "" {
 		t.Fatalf("paused legacy publication = %q, %v, %v", id, created, err)
 	}
+	if _, err := os.Lstat(filepath.Join(dir, instanceIDLockFile)); !errors.Is(err, os.ErrNotExist) {
+		t.Fatalf("recent partial unnecessarily acquired a creation lock: %v", err)
+	}
 	after, err := os.Stat(path)
 	if err != nil || !os.SameFile(before, after) || after.Size() != 0 {
 		t.Fatalf("paused legacy publication replaced: %v, %v", after, err)
