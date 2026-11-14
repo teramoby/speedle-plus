@@ -84,34 +84,33 @@ func loadOrCreateInstanceIDWithLock(dir string, link func(string, string) error,
 		return "", false, fmt.Errorf("adsync: create instance id directory: %w", err)
 	}
 	path := filepath.Join(dir, InstanceIDFile)
+	repairAnnounced := false
 	if id, partial, err := loadInstanceIDState(path); err == nil {
 		cleanupInstanceIDTemps(dir)
 		return id, false, nil
-	} else if errors.Is(err, errPartialInstanceID) && !partial.ModTime().Before(time.Now().Add(-time.Hour)) {
-		// A recent partial cannot be repaired, so do not make callers wait
-		// for the creation lock and repeat the publication wait under it.
-		return "", false, err
-	} else if !errors.Is(err, fs.ErrNotExist) && !errors.Is(err, errPartialInstanceID) {
+	} else if errors.Is(err, errPartialInstanceID) {
+		if !partial.ModTime().Before(time.Now().Add(-time.Hour)) {
+			// Recent partials cannot be repaired. Avoid a second publication
+			// wait and contention on the creation lock.
+			return "", false, err
+		}
+		// Warn before any mutation, without holding the creation lock. A
+		// slow logger must not delay publication after removal or hold a lock.
+		log.WithField("directory", dir).Warn("adsync: stale partial instance id needs repair; stop older releases using this directory before upgrading")
+		repairAnnounced = true
+	} else if !errors.Is(err, fs.ErrNotExist) {
 		return "", false, err
 	}
 	// The lock file is stable and never unlinked: waiters must lock the same
 	// inode. The OS releases the lock on exit, including a creator's crash.
-	lock, err := os.OpenFile(filepath.Join(dir, instanceIDLockFile), os.O_CREATE|os.O_RDWR, 0o600)
+	lock, err := openInstanceIDCreateLock(filepath.Join(dir, instanceIDLockFile))
 	locked := false
 	if err == nil {
 		defer lock.Close()
 		err = acquire(lock)
 		locked = err == nil
 	}
-	repaired := false
 	if locked {
-		// Log only after publication and unlocking. A slow log sink must
-		// not extend the gap between removing a partial and publishing an ID.
-		defer func() {
-			if repaired {
-				log.WithField("directory", dir).Warn("adsync: removed stale partial instance id for repair; stop older releases using this directory before upgrading")
-			}
-		}()
 		defer unlockInstanceID(lock)
 	} else {
 		instanceIDLockWarning.Do(func() {
@@ -128,7 +127,9 @@ func loadOrCreateInstanceIDWithLock(dir string, link func(string, string) error,
 			// Older releases do not take the lock. Leave recent publications
 			// alone, even after the bounded read wait, so a paused old writer
 			// can finish. Never repair without exclusive filesystem locking.
-			if !locked || !partial.ModTime().Before(time.Now().Add(-time.Hour)) {
+			// A partial which first appeared under the lock was not announced
+			// outside it. Leave it for a subsequent call to inspect and warn.
+			if !locked || !repairAnnounced || !partial.ModTime().Before(time.Now().Add(-time.Hour)) {
 				return "", false, err
 			}
 			if err := checkPartialInstanceID(path, partial); err != nil {
@@ -137,7 +138,6 @@ func loadOrCreateInstanceIDWithLock(dir string, link func(string, string) error,
 			if err := os.Remove(path); err != nil && !errors.Is(err, fs.ErrNotExist) {
 				return "", false, fmt.Errorf("adsync: remove partial instance id: %w", err)
 			}
-			repaired = true
 		} else if !errors.Is(err, fs.ErrNotExist) {
 			return "", false, err
 		}

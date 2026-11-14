@@ -6,6 +6,10 @@ package adsync
 
 import "os"
 
+func openInstanceIDLockFile(path string) (*os.File, error) {
+	return os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0o600)
+}
+
 func tryLockInstanceID(*os.File) error {
 	return errInstanceIDLockUnsupported
 }

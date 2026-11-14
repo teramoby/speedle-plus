@@ -426,6 +426,78 @@ func TestInstanceIDLockPathDirectory(t *testing.T) {
 	}
 }
 
+func TestInstanceIDUnsafeLock(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Unix mode and symlink creation privileges")
+	}
+	for _, kind := range []string{"symlink", "dangling symlink", "mode"} {
+		for _, partial := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s/partial=%t", kind, partial), func(t *testing.T) {
+				dir := t.TempDir()
+				path := filepath.Join(dir, instanceIDLockFile)
+				target := filepath.Join(t.TempDir(), "target")
+				if kind == "mode" {
+					writeTestFile(t, dir, instanceIDLockFile, nil, 0o666)
+				} else {
+					if kind == "symlink" {
+						if err := os.WriteFile(target, []byte("unchanged"), 0o600); err != nil {
+							t.Fatal(err)
+						}
+					}
+					if err := os.Symlink(target, path); err != nil {
+						t.Fatal(err)
+					}
+				}
+				if partial {
+					writeStaleInstanceID(t, dir, testInstanceID[:10])
+				}
+				id, created, err := loadOrCreateInstanceIDWithLock(dir, os.Link, func(*os.File) error {
+					t.Fatal("unsafe lock was passed to acquisition")
+					return nil
+				})
+				if partial {
+					if !errors.Is(err, ErrCacheCorrupt) || created || id != "" {
+						t.Fatalf("unsafe-lock repair = %q, %v, %v", id, created, err)
+					}
+					data, err := os.ReadFile(filepath.Join(dir, InstanceIDFile))
+					if err != nil || string(data) != testInstanceID[:10] {
+						t.Fatalf("unsafe lock enabled repair: %q, %v", data, err)
+					}
+				} else if err != nil || !created || !ValidInstanceID(id) {
+					t.Fatalf("unsafe-lock creation = %q, %v, %v", id, created, err)
+				}
+				if kind == "symlink" {
+					if data, err := os.ReadFile(target); err != nil || string(data) != "unchanged" {
+						t.Fatalf("lock target changed: %q, %v", data, err)
+					}
+				} else if kind == "dangling symlink" {
+					if _, err := os.Lstat(target); !errors.Is(err, os.ErrNotExist) {
+						t.Fatalf("dangling lock target was created: %v", err)
+					}
+				}
+			})
+		}
+	}
+}
+
+func TestInstanceIDDoesNotRepairUnannouncedPartial(t *testing.T) {
+	requireInstanceIDRepairLock(t)
+	dir := t.TempDir()
+	id, created, err := loadOrCreateInstanceIDWithLock(dir, os.Link, func(file *os.File) error {
+		writeStaleInstanceID(t, dir, "")
+		return lockInstanceID(file)
+	})
+	if !errors.Is(err, ErrCacheCorrupt) || created || id != "" {
+		t.Fatalf("unannounced repair = %q, %v, %v", id, created, err)
+	}
+	if data, err := os.ReadFile(filepath.Join(dir, InstanceIDFile)); err != nil || len(data) != 0 {
+		t.Fatalf("unannounced partial changed: %q, %v", data, err)
+	}
+	if id, created, err := LoadOrCreateInstanceID(dir); err != nil || !created || !ValidInstanceID(id) {
+		t.Fatalf("announced repair = %q, %v, %v", id, created, err)
+	}
+}
+
 func TestInstanceIDLockWarningOnce(t *testing.T) {
 	if os.Getenv("SPEEDLE_INSTANCE_ID_WARNING_TEST") == "" {
 		command := exec.Command(os.Args[0], "-test.run=^TestInstanceIDLockWarningOnce$")
@@ -495,7 +567,7 @@ func TestInstanceIDRepairWarning(t *testing.T) {
 
 	t.Run("blocked log sink", func(t *testing.T) {
 		dir := t.TempDir()
-		writeStaleInstanceID(t, dir, "")
+		path := writeStaleInstanceID(t, dir, "")
 		sink := &instanceIDBlockingLogWriter{entered: make(chan struct{}, 1), release: make(chan struct{})}
 		log.SetOutput(sink)
 		done := make(chan error, 1)
@@ -513,21 +585,24 @@ func TestInstanceIDRepairWarning(t *testing.T) {
 			case <-time.After(10 * time.Second):
 				t.Fatal("repair did not reach the log sink")
 			}
-			if id, err := loadInstanceID(filepath.Join(dir, InstanceIDFile)); err != nil || !ValidInstanceID(id) {
-				t.Fatalf("repair not published before logging: %q, %v", id, err)
+			if data, err := os.ReadFile(path); err != nil || len(data) != 0 {
+				t.Fatalf("partial removed or changed before warning completed: %q, %v", data, err)
 			}
-			lock, err := os.OpenFile(filepath.Join(dir, instanceIDLockFile), os.O_RDWR, 0o600)
+			lock, err := os.OpenFile(filepath.Join(dir, instanceIDLockFile), os.O_CREATE|os.O_RDWR, 0o600)
 			if err != nil {
 				t.Fatal(err)
 			}
 			defer lock.Close()
 			if err := waitInstanceIDLock(lock, tryLockInstanceID, 20*time.Millisecond); err != nil {
-				t.Fatalf("repair lock still held during logging: %v", err)
+				t.Fatalf("repair lock held during warning: %v", err)
 			}
 			unlockInstanceID(lock)
 		}()
 		if err := <-done; err != nil {
 			t.Fatal(err)
+		}
+		if id, err := loadInstanceID(path); err != nil || !ValidInstanceID(id) {
+			t.Fatalf("repair not published after warning: %q, %v", id, err)
 		}
 	})
 }

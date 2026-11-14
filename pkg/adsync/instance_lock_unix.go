@@ -11,6 +11,10 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+func openInstanceIDLockFile(path string) (*os.File, error) {
+	return os.OpenFile(path, os.O_CREATE|os.O_RDWR|unix.O_NOFOLLOW|unix.O_NONBLOCK, 0o600)
+}
+
 func tryLockInstanceID(file *os.File) error {
 	err := unix.Flock(int(file.Fd()), unix.LOCK_EX|unix.LOCK_NB)
 	switch {
