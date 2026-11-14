@@ -64,15 +64,16 @@ jobs:
             push) base="${PUSH_BEFORE}" ;;
             *) base="" ;;
           esac
-          go=true website=true docs=true
+          go=true website=true docs=true ci=true
           if [[ -n "${base}" && "${base}" != 0000000000000000000000000000000000000000 ]] && git cat-file -e "${base}^{commit}" 2>/dev/null; then
             changed=$(git diff --name-only "${base}" "${GITHUB_SHA}")
-            go=false website=false docs=false
+            go=false website=false docs=false ci=false
             while IFS= read -r file; do
               case "${file}" in
                 '') ;;
                 docs/*) docs=true ;;
                 website/*) website=true ;;
+                .github/workflows/*|scripts/*) go=true ci=true ;;
                 */*) go=true ;;
                 *.md) ;;
                 *) go=true ;;
@@ -83,8 +84,20 @@ jobs:
             echo "go=${go}"
             echo "website=${website}"
             echo "docs=${docs}"
+            echo "ci=${ci}"
           } >> "${GITHUB_OUTPUT}"
           echo "Go: ${go}; website tooling: ${website}; docs: ${docs}"
+
+      - name: Setup Node for workflow routing tests
+        if: steps.scope.outputs.ci == 'true'
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+          package-manager-cache: false
+
+      - name: Test workflow routing
+        if: steps.scope.outputs.ci == 'true'
+        run: node --test scripts/tests/test_ci_scope.cjs scripts/tests/test_go_ci_worker.cjs
 
   lint:
     name: lint

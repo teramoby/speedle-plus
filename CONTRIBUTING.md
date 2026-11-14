@@ -99,6 +99,8 @@ Maintainers merge in this order:
 
 Before changing routing, run `actionlint` on the modified workflows and
 `node --test scripts/tests/test_ci_scope.cjs scripts/tests/test_go_ci_worker.cjs`.
+Workflow and script changes also run these routing tests in the hosted
+`changes` job on both the quick and full routes.
 
 The nightly suite runs the same full regression, every Go package plus the
 tagged ADS authorization/cache tests against native PMS/ADS, once each with the
