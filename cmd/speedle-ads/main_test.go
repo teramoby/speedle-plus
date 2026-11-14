@@ -196,21 +196,21 @@ func (s *cascadeReloadFixture) UpstreamTLSReloadEnabled() bool { return s.enable
 func (s *cascadeReloadFixture) RequestTLSReload()              { s.requests <- struct{}{} }
 
 func TestCascadeCommandRoutesReloadSignal(t *testing.T) {
-	if credentialReloadAction(nil) != nil {
+	if upstreamTLSReloadAction(nil) != nil {
 		t.Fatal("non-distribution store registered reload")
 	}
-	if credentialReloadAction(&cascadeReloadFixture{}) != nil {
+	if upstreamTLSReloadAction(&cascadeReloadFixture{}) != nil {
 		t.Fatal("direct mode registered reload")
 	}
 	store := &cascadeReloadFixture{enabled: true, requests: make(chan struct{}, 1)}
-	reload := credentialReloadAction(store)
+	reload := upstreamTLSReloadAction(store)
 	if reload == nil {
 		t.Fatal("cascade reload not registered")
 	}
 	signals := make(chan os.Signal, 1)
 	stop := make(chan struct{})
 	done := make(chan struct{})
-	go func() { defer close(done); runCredentialReload(signals, stop, reload) }()
+	go func() { defer close(done); runTLSReload(signals, stop, reload) }()
 	signals <- syscall.SIGHUP
 	select {
 	case <-store.requests:

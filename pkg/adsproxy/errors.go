@@ -4,44 +4,41 @@ package adsproxy
 
 import "errors"
 
-// Errors returned by this package. They are sentinels so callers can classify a
-// failure without inspecting a response body.
 var (
-	// ErrConfig means the mirror or the server was configured with values it
-	// cannot serve with.
+	// ErrConfig means the proxy is misconfigured.
 	ErrConfig = errors.New("adsproxy: invalid configuration")
-	// ErrCredentialFile means the downstream credential file is unreadable,
-	// unsafe or malformed.
-	ErrCredentialFile = errors.New("adsproxy: invalid downstream credential file")
-	// ErrUnauthorized means a downstream credential is missing, malformed or
-	// unknown.
-	ErrUnauthorized = errors.New("adsproxy: unauthorized")
-	// ErrUnknownService means the proxy does not hold a copy of the service.
+	// ErrUnknownService means the mirror never held the requested service.
 	ErrUnknownService = errors.New("adsproxy: unknown service")
-	// ErrServiceRemoved means the service was served before and is gone now.
+	// ErrServiceRemoved means the mirror held the service and it was removed.
 	ErrServiceRemoved = errors.New("adsproxy: service removed")
-	// ErrHistoryUnavailable means the requested revision can no longer be
-	// resumed from the proxy's log; the downstream must reload the snapshot.
+	// ErrHistoryUnavailable means the mirror cannot produce the requested
+	// change page and the downstream must fetch a fresh snapshot.
 	ErrHistoryUnavailable = errors.New("adsproxy: history unavailable")
-	// ErrSnapshotRequired means the mirror needs a fresh snapshot before
-	// it can serve the service again.
+	// ErrSnapshotRequired means the mirror needs a fresh snapshot before it
+	// can serve the service again.
 	ErrSnapshotRequired = errors.New("adsproxy: fresh snapshot required")
-	// ErrIdentityChanged means a change page belongs to a different sourceId or
-	// epoch than the copy the mirror holds.
+	// ErrIdentityChanged means a snapshot or change page belongs to a
+	// different source identity than the copy.
 	ErrIdentityChanged = errors.New("adsproxy: source identity changed")
-	// ErrTooManyServices means a snapshot would add more services than the
-	// protocol carries.
+	// ErrTooManyServices means the mirror's replay-protection tombstones are
+	// full, so it refuses another service rather than forget a deletion guard.
 	ErrTooManyServices = errors.New("adsproxy: too many services")
 	// ErrIdentityChurn means a service changed source identity more often than
-	// the proxy keeps replay protection for. The copy stops being advertised.
+	// the mirror keeps replay protection for.
 	ErrIdentityChurn = errors.New("adsproxy: source identity churn exceeded")
-	// ErrFanoutLimit means the proxy already serves the configured number of
-	// downstream instances.
-	ErrFanoutLimit = errors.New("adsproxy: downstream limit reached")
-	// ErrChainTooDeep means the downstream is more than MaxChainDepth proxy
-	// hops away from Cloud.
-	ErrChainTooDeep = errors.New("adsproxy: chain too deep")
-	// ErrChainLoop means the downstream chain repeats an instance or places
-	// this proxy in an impossible position.
-	ErrChainLoop = errors.New("adsproxy: chain loop")
+
+	// ErrTLSMaterial means the downstream listener's certificate, key or
+	// client CA is missing or unusable.
+	ErrTLSMaterial = errors.New("adsproxy: invalid downstream TLS material")
+	// ErrCRL means a configured CRL is malformed, untrusted or outside its
+	// validity window.
+	ErrCRL = errors.New("adsproxy: invalid downstream CRL")
+	// ErrRevoked means a client certificate is listed in a fresh CRL.
+	ErrRevoked = errors.New("adsproxy: downstream certificate is revoked")
+	// ErrNoFreshCRL means no fresh CRL covers one issuer in a client
+	// certificate chain.
+	ErrNoFreshCRL = errors.New("adsproxy: no fresh CRL covers the client issuer")
+	// ErrStaleTLSGeneration means a handshake used material that a reload
+	// replaced before the connection was admitted.
+	ErrStaleTLSGeneration = errors.New("adsproxy: TLS material changed during the handshake")
 )

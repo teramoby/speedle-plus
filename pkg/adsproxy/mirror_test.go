@@ -239,6 +239,95 @@ func TestMirrorWithheldCopyStaysUnavailableAcrossPartialCatchUp(t *testing.T) {
 	mirror.MarkAvailable(testUnknownID)
 }
 
+// TestMirrorWithholdsCopyCreatedAfterTheWithhold covers a service the mirror
+// does not hold yet: the runtime withholds it before the fetch that creates
+// its first copy, so a candidate snapshot applied during the fetch is neither
+// advertised nor served until the runtime confirms it.
+func TestMirrorWithholdsCopyCreatedAfterTheWithhold(t *testing.T) {
+	mirror := newTestMirror(t, nil)
+	service := newFixtureService(testServiceID1, "books")
+	mirror.MarkUnavailable(service.ID)
+	if err := mirror.ApplySnapshot(service.snapshotResponse(t)); err != nil {
+		t.Fatalf("apply snapshot: %v", err)
+	}
+	if _, availability := mirror.Lookup(service.ID); availability != ServiceNeedsSnapshot {
+		t.Fatalf("availability after the first snapshot = %v, want ServiceNeedsSnapshot", availability)
+	}
+	if services := mirror.Services(); len(services) != 0 {
+		t.Fatalf("advertised services = %+v", services)
+	}
+	if _, found := mirror.Snapshot(service.ID); found {
+		t.Fatal("a withheld first copy answered a snapshot request")
+	}
+	if info, current := mirror.CurrentInfo(service.ID); !current || info.Revision != service.Revision {
+		t.Fatalf("the verified candidate must stay readable internally: %+v, %v", info, current)
+	}
+
+	mirror.MarkAvailable(service.ID)
+	info, availability := mirror.Lookup(service.ID)
+	if availability != ServiceAvailable || info.Revision != service.Revision {
+		t.Fatalf("confirmed copy = %+v, availability %v", info, availability)
+	}
+}
+
+// TestMirrorAppliesAnObservedSnapshotAsAWithheldUnit covers the atomic
+// withhold-and-apply used while a fetch is in flight: the first copy is not
+// advertised until the runtime confirms it in the same step.
+func TestMirrorAppliesAnObservedSnapshotAsAWithheldUnit(t *testing.T) {
+	mirror := newTestMirror(t, nil)
+	service := newFixtureService(testServiceID1, "books")
+	if err := mirror.ApplySnapshotWithheld(service.snapshotResponse(t)); err != nil {
+		t.Fatalf("apply withheld snapshot: %v", err)
+	}
+	if _, availability := mirror.Lookup(service.ID); availability != ServiceNeedsSnapshot {
+		t.Fatalf("availability = %v, want ServiceNeedsSnapshot", availability)
+	}
+	if services := mirror.Services(); len(services) != 0 {
+		t.Fatalf("advertised services = %+v", services)
+	}
+	mirror.MarkAvailable(service.ID)
+	if _, availability := mirror.Lookup(service.ID); availability != ServiceAvailable {
+		t.Fatalf("availability after confirmation = %v, want ServiceAvailable", availability)
+	}
+}
+
+// TestObservedFirstSnapshotStaysWithheldAcrossARemoval covers a removal that
+// lands after the observer starts a first snapshot: the apply itself
+// withholds, so clearing the pending withhold cannot advertise the copy.
+func TestObservedFirstSnapshotStaysWithheldAcrossARemoval(t *testing.T) {
+	mirror := newTestMirror(t, nil)
+	service := newFixtureService(testServiceID1, "books")
+	mirror.MarkUnavailable(service.ID)
+	mirror.RemoveService(service.ID)
+	if err := mirror.ApplySnapshotWithheld(service.snapshotResponse(t)); err != nil {
+		t.Fatalf("apply withheld snapshot: %v", err)
+	}
+	if _, availability := mirror.Lookup(service.ID); availability == ServiceAvailable {
+		t.Fatal("a first snapshot observed across a removal is served")
+	}
+	if services := mirror.Services(); len(services) != 0 {
+		t.Fatalf("advertised services = %+v", services)
+	}
+}
+
+// TestMirrorClearsAWithholdWhenTheServiceDisappears covers a withhold recorded
+// for a service that never produced a copy: when the service leaves the
+// authoritative set before its first snapshot, the removal drops the pending
+// withhold, so a later re-add is not hidden behind stale state.
+func TestMirrorClearsAWithholdWhenTheServiceDisappears(t *testing.T) {
+	mirror := newTestMirror(t, nil)
+	service := newFixtureService(testServiceID1, "books")
+	mirror.MarkUnavailable(service.ID)
+	mirror.RemoveService(service.ID)
+	if err := mirror.ApplySnapshot(service.snapshotResponse(t)); err != nil {
+		t.Fatalf("apply snapshot: %v", err)
+	}
+	info, availability := mirror.Lookup(service.ID)
+	if availability != ServiceAvailable || info.Revision != service.Revision {
+		t.Fatalf("copy after the removal = %+v, availability %v", info, availability)
+	}
+}
+
 func TestMirrorRejectsPageGap(t *testing.T) {
 	mirror := newTestMirror(t, nil)
 	service := newFixtureService(testServiceID1, "books")
@@ -398,18 +487,17 @@ func TestMirrorAppliesRename(t *testing.T) {
 	}
 }
 
-func TestMirrorBoundsServices(t *testing.T) {
+func TestMirrorHasNoServiceCap(t *testing.T) {
 	mirror := newTestMirror(t, nil)
-	for index := 0; index < MaxServices; index++ {
+	for index := 0; index < 25; index++ {
 		id := fmt.Sprintf("01HF7YAT00000000000000%02X00", index)
 		service := newFixtureService(id, "books")
 		if err := mirror.ApplySnapshot(service.snapshotResponse(t)); err != nil {
 			t.Fatalf("apply snapshot %d: %v", index, err)
 		}
 	}
-	extra := newFixtureService("01HF7YAT000000000000000199", "extra")
-	if err := mirror.ApplySnapshot(extra.snapshotResponse(t)); !errors.Is(err, ErrTooManyServices) {
-		t.Errorf("extra service: %v, want ErrTooManyServices", err)
+	if services := mirror.Services(); len(services) != 25 {
+		t.Errorf("advertised services = %d, want 25", len(services))
 	}
 }
 

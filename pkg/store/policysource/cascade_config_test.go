@@ -112,7 +112,10 @@ func TestCascadeUpstreamConfiguration(t *testing.T) {
 }
 
 func TestCascadeRemovedConfiguration(t *testing.T) {
-	for _, key := range []string{DownstreamCredentialsKey, ServicesKey} {
+	for key, settings := range map[string][]string{
+		DownstreamCredentialsKey: {"DownstreamCredentialsFile", ClientCertFileKey, ClientKeyFileKey, CAFileKey, "downstreamClientCAPath"},
+		ServicesKey:              {"Services", "Cloud console"},
+	} {
 		for _, value := range []interface{}{nil, "", "obsolete", []string{"books"}} {
 			properties := cascadeProperties()
 			properties[key] = value
@@ -120,7 +123,7 @@ func TestCascadeRemovedConfiguration(t *testing.T) {
 			if err == nil {
 				t.Fatalf("accepted removed %s", key)
 			}
-			for _, setting := range []string{key, ClientCertFileKey, ClientKeyFileKey, CAFileKey, "downstreamClientCAPath"} {
+			for _, setting := range settings {
 				if !strings.Contains(err.Error(), setting) {
 					t.Fatalf("migration error lacks %s: %v", setting, err)
 				}

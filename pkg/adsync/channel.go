@@ -137,8 +137,10 @@ type ChannelOptions struct {
 
 	// Fallback reports the fallback state for heartbeats. Nil reports inactive.
 	Fallback func() FallbackState
-	// DownstreamCount is an optional heartbeat field.
-	DownstreamCount *uint64
+	// DownstreamCount reports the direct downstream session count, which is
+	// read for every heartbeat so reconnects are reflected immediately. Nil
+	// omits the field.
+	DownstreamCount func() uint64
 
 	// OnNotify is called after a head notification was applied to the machine,
 	// and also when a confirming ack shows a service's head advanced or its
@@ -226,7 +228,7 @@ type Channel struct {
 	backoff           Backoff
 	dialer            *websocket.Dialer
 
-	downstreamCount    *uint64
+	downstreamCount    func() uint64
 	fallback           func() FallbackState
 	onNotify           func(Notify)
 	onServiceSetChange func(ServiceSetChange)
@@ -827,7 +829,7 @@ func (c *Channel) heartbeatMessage(transport Transport) channelHeartbeat {
 		message.Host = &host
 	}
 	if c.downstreamCount != nil {
-		count := *c.downstreamCount
+		count := c.downstreamCount()
 		message.DownstreamCount = &count
 	}
 	return message

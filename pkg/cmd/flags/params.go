@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/teramoby/speedle-plus/pkg/adsproxy"
 	"github.com/teramoby/speedle-plus/pkg/assertion"
 	"github.com/teramoby/speedle-plus/pkg/cfg"
 	"github.com/teramoby/speedle-plus/pkg/errors"
@@ -51,6 +52,17 @@ type Parameters struct {
 	CertPath        StrParamDetail
 	ClientCertPath  StrParamDetail
 	ForceClientCert StrParamDetail
+	// Downstream listener of a relay. It is a separate mutual-TLS listener,
+	// enabled by the policy-source store property ServeDownstream.
+	DownstreamEndpoint           StrParamDetail
+	DownstreamCert               StrParamDetail
+	DownstreamKey                StrParamDetail
+	DownstreamClientCA           StrParamDetail
+	DownstreamCRLFiles           StrParamDetail
+	DownstreamCRLURLs            StrParamDetail
+	DownstreamCRLRefreshInterval StrParamDetail
+	DownstreamCRLMaxAge          StrParamDetail
+	DownstreamReloadInterval     StrParamDetail
 	/////////Store config////////////////
 	StoreType               StrParamDetail
 	StoreWatchEnabled       StrParamDetail
@@ -169,6 +181,75 @@ func (k *Parameters) IsInsecure() bool {
 	return insecure
 }
 
+// DownstreamListenerConfig returns the dedicated downstream mTLS listener
+// settings. The caller uses it only when the policy-source store serves
+// downstream instances.
+func (k *Parameters) DownstreamListenerConfig() (adsproxy.ListenerConfig, error) {
+	files, err := listValue(k.DownstreamCRLFiles.Value, k.DownstreamCRLFiles.Name)
+	if err != nil {
+		return adsproxy.ListenerConfig{}, err
+	}
+	urls, err := listValue(k.DownstreamCRLURLs.Value, k.DownstreamCRLURLs.Name)
+	if err != nil {
+		return adsproxy.ListenerConfig{}, err
+	}
+	refreshInterval, err := durationValue(k.DownstreamCRLRefreshInterval.Value, k.DownstreamCRLRefreshInterval.Name)
+	if err != nil {
+		return adsproxy.ListenerConfig{}, err
+	}
+	maxAge, err := durationValue(k.DownstreamCRLMaxAge.Value, k.DownstreamCRLMaxAge.Name)
+	if err != nil {
+		return adsproxy.ListenerConfig{}, err
+	}
+	reloadInterval, err := durationValue(k.DownstreamReloadInterval.Value, k.DownstreamReloadInterval.Name)
+	if err != nil {
+		return adsproxy.ListenerConfig{}, err
+	}
+	return adsproxy.ListenerConfig{
+		Endpoint:           k.DownstreamEndpoint.Value,
+		CertPath:           k.DownstreamCert.Value,
+		KeyPath:            k.DownstreamKey.Value,
+		ClientCAPath:       k.DownstreamClientCA.Value,
+		CRLFiles:           files,
+		CRLURLs:            urls,
+		CRLRefreshInterval: refreshInterval,
+		CRLMaxAge:          maxAge,
+		ReloadInterval:     reloadInterval,
+	}, nil
+}
+
+// listValue parses a comma-separated flag value. An empty value is an empty
+// list; an empty entry is a configuration error rather than a silently
+// dropped source.
+func listValue(text, name string) ([]string, error) {
+	text = strings.TrimSpace(text)
+	if text == "" {
+		return nil, nil
+	}
+	parts := strings.Split(text, ",")
+	values := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			return nil, errors.Errorf(errors.ConfigError, "%s contains an empty entry", name)
+		}
+		values = append(values, part)
+	}
+	return values, nil
+}
+
+func durationValue(text, name string) (time.Duration, error) {
+	text = strings.TrimSpace(text)
+	if text == "" {
+		return 0, nil
+	}
+	value, err := time.ParseDuration(text)
+	if err != nil || value < 0 {
+		return 0, errors.Errorf(errors.ConfigError, "%s must be a nonnegative duration", name)
+	}
+	return value, nil
+}
+
 // GRPCServerOptions returns the gRPC server's options: panic recovery, and the
 // same TLS settings as the REST server unless insecure is true.
 func (k *Parameters) GRPCServerOptions() ([]grpc.ServerOption, error) {
@@ -263,6 +344,25 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 	params = append(params, &k.ClientCertPath)
 	k.ForceClientCert = StrParamDetail{Name: "force-client-cert", ShortName: "f", Usage: "Server config: Force Client certification."}
 	params = append(params, &k.ForceClientCert)
+
+	k.DownstreamEndpoint = StrParamDetail{Name: "downstream-endpoint", Usage: "Server config: endpoint of the dedicated downstream mTLS listener, for example 0.0.0.0:7443."}
+	params = append(params, &k.DownstreamEndpoint)
+	k.DownstreamCert = StrParamDetail{Name: "downstream-cert", Usage: "Server config: server certificate of the downstream mTLS listener."}
+	params = append(params, &k.DownstreamCert)
+	k.DownstreamKey = StrParamDetail{Name: "downstream-key", Usage: "Server config: server key of the downstream mTLS listener."}
+	params = append(params, &k.DownstreamKey)
+	k.DownstreamClientCA = StrParamDetail{Name: "downstream-client-ca", Usage: "Server config: PEM bundle of CAs trusted to issue downstream client certificates."}
+	params = append(params, &k.DownstreamClientCA)
+	k.DownstreamCRLFiles = StrParamDetail{Name: "downstream-crl-files", Usage: "Server config: comma-separated PEM or DER CRL files for downstream revocation."}
+	params = append(params, &k.DownstreamCRLFiles)
+	k.DownstreamCRLURLs = StrParamDetail{Name: "downstream-crl-urls", Usage: "Server config: comma-separated HTTPS CRL URLs for downstream revocation."}
+	params = append(params, &k.DownstreamCRLURLs)
+	k.DownstreamCRLRefreshInterval = StrParamDetail{Name: "downstream-crl-refresh-interval", Usage: "Server config: how often HTTPS CRLs are refreshed, for example 1h."}
+	params = append(params, &k.DownstreamCRLRefreshInterval)
+	k.DownstreamCRLMaxAge = StrParamDetail{Name: "downstream-crl-max-age", Usage: "Server config: validity bound for a CRL without NextUpdate, for example 24h."}
+	params = append(params, &k.DownstreamCRLMaxAge)
+	k.DownstreamReloadInterval = StrParamDetail{Name: "downstream-reload-interval", Usage: "Server config: how often downstream TLS files are re-read, for example 30s."}
+	params = append(params, &k.DownstreamReloadInterval)
 
 	k.StoreType = StrParamDetail{Name: "store-type", DefaultValue: DefaultStoreType, Usage: "Store config: policy store type (file, etcd, mongodb, mysql)."}
 	params = append(params, &k.StoreType)
@@ -398,6 +498,42 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 				case k.ClientCertPath.Name:
 					if conf != nil && conf.ServerConfig != nil && len(conf.ServerConfig.ClientCertPath) != 0 {
 						f.Value.Set(conf.ServerConfig.ClientCertPath)
+					}
+				case k.DownstreamEndpoint.Name:
+					if conf != nil && conf.ServerConfig != nil && len(conf.ServerConfig.DownstreamEndpoint) != 0 {
+						f.Value.Set(conf.ServerConfig.DownstreamEndpoint)
+					}
+				case k.DownstreamCert.Name:
+					if conf != nil && conf.ServerConfig != nil && len(conf.ServerConfig.DownstreamCertPath) != 0 {
+						f.Value.Set(conf.ServerConfig.DownstreamCertPath)
+					}
+				case k.DownstreamKey.Name:
+					if conf != nil && conf.ServerConfig != nil && len(conf.ServerConfig.DownstreamKeyPath) != 0 {
+						f.Value.Set(conf.ServerConfig.DownstreamKeyPath)
+					}
+				case k.DownstreamClientCA.Name:
+					if conf != nil && conf.ServerConfig != nil && len(conf.ServerConfig.DownstreamClientCAPath) != 0 {
+						f.Value.Set(conf.ServerConfig.DownstreamClientCAPath)
+					}
+				case k.DownstreamCRLFiles.Name:
+					if conf != nil && conf.ServerConfig != nil {
+						joinStringValues(f, conf.ServerConfig.DownstreamCRLFiles)
+					}
+				case k.DownstreamCRLURLs.Name:
+					if conf != nil && conf.ServerConfig != nil {
+						joinStringValues(f, conf.ServerConfig.DownstreamCRLURLs)
+					}
+				case k.DownstreamCRLRefreshInterval.Name:
+					if conf != nil && conf.ServerConfig != nil && len(conf.ServerConfig.DownstreamCRLRefreshInterval) != 0 {
+						f.Value.Set(conf.ServerConfig.DownstreamCRLRefreshInterval)
+					}
+				case k.DownstreamCRLMaxAge.Name:
+					if conf != nil && conf.ServerConfig != nil && len(conf.ServerConfig.DownstreamCRLMaxAge) != 0 {
+						f.Value.Set(conf.ServerConfig.DownstreamCRLMaxAge)
+					}
+				case k.DownstreamReloadInterval.Name:
+					if conf != nil && conf.ServerConfig != nil && len(conf.ServerConfig.DownstreamReloadInterval) != 0 {
+						f.Value.Set(conf.ServerConfig.DownstreamReloadInterval)
 					}
 				case k.StoreType.Name:
 					if conf != nil && conf.StoreConfig != nil && len(conf.StoreConfig.StoreType) != 0 {

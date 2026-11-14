@@ -72,9 +72,10 @@ func TestCascadeStoreRequiresCompleteCredentialsAndCache(t *testing.T) {
 	if err != nil || !adsync.ValidInstanceID(id) {
 		t.Fatalf("generated ID: %s, %v", id, err)
 	}
-	if err := first.ReloadDownstreamCredentials(); err != nil {
-		t.Fatal(err)
+	if !first.UpstreamTLSReloadEnabled() {
+		t.Fatal("a cascade store must accept SIGHUP reloads")
 	}
+	first.RequestTLSReload()
 	first.Close()
 	first.Close()
 	second, err := Open(context.Background(), valid)

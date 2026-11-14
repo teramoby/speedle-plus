@@ -43,15 +43,56 @@ func cloneSnapshot(snapshot Snapshot) Snapshot {
 	return cloned
 }
 
+// SyncObserver receives the verified source responses a Syncer fetches, in the
+// order it applies them. A relay serving the same copies downstream uses it to
+// keep its mirror anchored to the exact source bytes. The callbacks run on the
+// sync goroutine and must not block.
+type SyncObserver struct {
+	// OnSnapshot is called for an accepted snapshot, before any change page
+	// fetched from it.
+	OnSnapshot func(*SnapshotResponse)
+	// OnChanges is called for an accepted change page.
+	OnChanges func(*ChangesResponse)
+}
+
 // Syncer owns the per-service resume position and the optional disk cache. It
 // does not track liveness or evaluate policy.
 type Syncer struct {
 	client *Client
 	cache  *Cache
 
+	observerMu sync.Mutex
+	observer   SyncObserver
+
 	mu     sync.Mutex
 	states map[string]*ServiceState
 	locks  [syncLockStripes]sync.Mutex
+}
+
+// SetObserver installs the observer for subsequent verified responses. An
+// empty observer disables reporting.
+func (s *Syncer) SetObserver(observer SyncObserver) {
+	s.observerMu.Lock()
+	s.observer = observer
+	s.observerMu.Unlock()
+}
+
+func (s *Syncer) observeSnapshot(response *SnapshotResponse) {
+	s.observerMu.Lock()
+	observer := s.observer.OnSnapshot
+	s.observerMu.Unlock()
+	if observer != nil && response != nil {
+		observer(response)
+	}
+}
+
+func (s *Syncer) observeChanges(page *ChangesResponse) {
+	s.observerMu.Lock()
+	observer := s.observer.OnChanges
+	s.observerMu.Unlock()
+	if observer != nil && page != nil {
+		observer(page)
+	}
 }
 
 // NewSyncer returns a Syncer. cacheDir may be empty to keep copies in memory
@@ -274,6 +315,7 @@ func (s *Syncer) loadSnapshot(ctx context.Context, service Service, local *Servi
 				ErrProtocol, response.Revision, local.Revision)
 		}
 	}
+	s.observeSnapshot(response)
 	state := &ServiceState{
 		ServiceID:  response.ServiceID,
 		SourceID:   response.SourceID,
@@ -342,11 +384,13 @@ func (s *Syncer) catchUp(ctx context.Context, local *ServiceState, service Servi
 				return nil, fmt.Errorf("%w: state hash does not match the source head at revision %d", ErrIntegrity, page.Head)
 			}
 			working.StateHash = page.HeadStateHash
+			s.observeChanges(page)
 			break
 		}
 		if page.NextSince != revision+1 {
 			return nil, fmt.Errorf("%w: next page does not follow revision %d", ErrProtocol, revision)
 		}
+		s.observeChanges(page)
 		// "since" is exclusive: the next request resumes at the last applied
 		// revision, which is also nextSince-1.
 	}

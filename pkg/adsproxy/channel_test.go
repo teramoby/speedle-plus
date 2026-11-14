@@ -3,9 +3,10 @@
 package adsproxy
 
 import (
+	"bytes"
 	"encoding/json"
-	"errors"
 	"net/http"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -13,78 +14,13 @@ import (
 	"github.com/teramoby/speedle-plus/pkg/adsync"
 )
 
-func heartbeatFrame(chain []string) []byte {
-	payload, err := json.Marshal(heartbeatMessage{
-		Type:     "heartbeat",
-		Seq:      1,
-		Services: []heartbeatService{},
-		Liveness: "live",
-		Chain:    chain,
-		Fallback: fallbackMessage{Services: []string{}},
-	})
+func pollBody(t *testing.T, instanceID string) []byte {
+	t.Helper()
+	payload, err := json.Marshal(heartbeatFrame(instanceID))
 	if err != nil {
-		panic(err)
+		t.Fatalf("encode heartbeat: %v", err)
 	}
 	return payload
-}
-
-func TestChannelChainValidationLongPoll(t *testing.T) {
-	mirror, _, _ := newPopulatedMirror(t)
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, &testServerOptions{
-		chain: []string{testUpstreamID, testProxyID},
-	}, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
-	path := adsync.APIPrefix + "/channel/poll?wait=0"
-
-	response, body := server.post(path, token, heartbeatFrame([]string{testProxyID, testDownstreamID}))
-	if response.StatusCode != http.StatusOK {
-		t.Fatalf("valid chain: status %d body %s", response.StatusCode, body)
-	}
-	ack := decodeBody[ackMessage](t, body)
-	if ack.Type != "ack" || len(ack.Services) != 2 || ack.ServicesVersion <= 0 {
-		t.Errorf("ack = %+v", ack)
-	}
-	if ack.HeartbeatInterval != "30s" || ack.StaleAfter != "60s" || ack.StopAfter != "120s" {
-		t.Errorf("thresholds = %s/%s/%s", ack.HeartbeatInterval, ack.StaleAfter, ack.StopAfter)
-	}
-	if ack.Commands == nil || len(ack.Commands) != 0 {
-		t.Errorf("commands = %+v", ack.Commands)
-	}
-	for _, service := range ack.Services {
-		if service.Head != service.OriginHead || service.HeadStateHash.IsZero() {
-			t.Errorf("ack service = %+v", service)
-		}
-	}
-
-	response, body = server.post(path, token, heartbeatFrame([]string{testProxyID, testDownstreamID, testProxyID}))
-	if response.StatusCode != http.StatusForbidden || string(body) != `{"error":"chain_loop"}` {
-		t.Errorf("repeated instance: status %d body %s", response.StatusCode, body)
-	}
-
-	// The sender is one of this proxy's own upstream instances: a cycle.
-	response, body = server.post(path, token, heartbeatFrame([]string{testProxyID, testUpstreamID}))
-	if response.StatusCode != http.StatusForbidden || string(body) != `{"error":"chain_loop"}` {
-		t.Errorf("ancestor cycle: status %d body %s", response.StatusCode, body)
-	}
-
-	response, body = server.post(path, token, heartbeatFrame(
-		[]string{testProxyID, testDownstreamID, testDownstreamB, testUpstreamID, testUnknownID}))
-	if response.StatusCode != http.StatusForbidden || string(body) != `{"error":"chain_too_deep"}` {
-		t.Errorf("depth: status %d body %s", response.StatusCode, body)
-	}
-
-	response, body = server.post(path, token, heartbeatFrame([]string{"not-a-ulid"}))
-	if response.StatusCode != http.StatusForbidden {
-		t.Errorf("malformed chain: status %d body %s", response.StatusCode, body)
-	}
-
-	response, body = server.post(path, token, []byte(`{"type":"heartbeat","bogus":true}`))
-	if response.StatusCode != http.StatusBadRequest {
-		t.Errorf("unknown field: status %d body %s", response.StatusCode, body)
-	}
 }
 
 func TestChannelWebSocketHelloAndHeartbeat(t *testing.T) {
@@ -93,23 +29,13 @@ func TestChannelWebSocketHelloAndHeartbeat(t *testing.T) {
 	if err := mirror.ApplyChanges(pageFor(t, books, 1, 100)); err != nil {
 		t.Fatalf("apply changes: %v", err)
 	}
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, nil, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
-	conn, response, err := server.dial(token)
+	server := newTestServer(t, mirror, nil)
+	conn, response, err := server.dial(server.pki.clientCertFile, server.pki.clientKeyFile)
 	if err != nil {
 		t.Fatalf("dial channel: %v (response %v)", err, response)
 	}
 	defer conn.Close()
-	writeJSONFrame(t, conn, helloMessage{
-		Type:         "hello",
-		InstanceID:   testDownstreamID,
-		Services:     []helloService{},
-		Chain:        []string{testProxyID, testDownstreamID},
-		AgentVersion: "test",
-	})
+	writeJSONFrame(t, conn, helloFrame(testClientInstanceID))
 	kind, payload := readChannelFrame(t, conn)
 	if kind != "ack" {
 		t.Fatalf("first frame = %q", kind)
@@ -123,143 +49,224 @@ func TestChannelWebSocketHelloAndHeartbeat(t *testing.T) {
 			t.Errorf("books head = %d, want 2", service.Head)
 		}
 	}
+	if ack.HeartbeatInterval != "30s" || ack.StaleAfter != "60s" || ack.StopAfter != "120s" {
+		t.Errorf("thresholds = %s/%s/%s", ack.HeartbeatInterval, ack.StaleAfter, ack.StopAfter)
+	}
+	if ack.Commands == nil || len(ack.Commands) != 0 {
+		t.Errorf("commands = %+v", ack.Commands)
+	}
+	for _, service := range ack.Services {
+		if service.Head != service.OriginHead || service.HeadStateHash.IsZero() {
+			t.Errorf("ack service = %+v", service)
+		}
+	}
 
-	writeJSONFrame(t, conn, heartbeatMessage{
-		Type:     "heartbeat",
-		Seq:      1,
-		Services: []heartbeatService{},
-		Liveness: "live",
-		Chain:    []string{testProxyID, testDownstreamID},
-		Fallback: fallbackMessage{Services: []string{}},
-	})
+	writeJSONFrame(t, conn, heartbeatFrame(testClientInstanceID))
 	kind, _ = readChannelFrame(t, conn)
 	if kind != "ack" {
 		t.Fatalf("heartbeat response = %q", kind)
 	}
 }
 
-func TestChannelWebSocketChainRejections(t *testing.T) {
-	mirror, _, orders := newPopulatedMirror(t)
-	token := testToken(testDownstreamID, 1)
+// TestChannelRefusesChainLoops proves a relay refuses a downstream that
+// reports the relay's own instance id (an upstream URL aimed at the relay's
+// own downstream endpoint) or one of the relay's upstream ancestors (a
+// two-node cycle), over both transports. A legitimate child is still served.
+func TestChannelRefusesChainLoops(t *testing.T) {
+	mirror, _, _ := newPopulatedMirror(t)
 	server := newTestServer(t, mirror, &testServerOptions{
 		chain: []string{testUpstreamID, testProxyID},
-	}, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-		services:     []string{testServiceID1},
 	})
-	_ = orders
-
-	// The sender is one of this proxy's own ancestors: a loop.
-	conn, _, err := server.dial(token)
-	if err != nil {
-		t.Fatalf("dial: %v", err)
+	cases := []struct {
+		name       string
+		instanceID string
+	}{
+		{name: "own instance", instanceID: testProxyID},
+		{name: "upstream ancestor", instanceID: testUpstreamID},
 	}
-	writeJSONFrame(t, conn, helloMessage{
-		Type:         "hello",
-		InstanceID:   testUpstreamID,
-		Services:     []helloService{},
-		Chain:        []string{testProxyID, testUpstreamID},
-		AgentVersion: "test",
-	})
-	code, reason := readClose(t, conn)
-	conn.Close()
-	if code != websocket.ClosePolicyViolation || reason != "chain_loop" {
-		t.Errorf("ancestor loop: close %d %q", code, reason)
-	}
-
-	// A chain deeper than the protocol allows.
-	conn, _, err = server.dial(token)
-	if err != nil {
-		t.Fatalf("dial: %v", err)
-	}
-	writeJSONFrame(t, conn, helloMessage{
-		Type:         "hello",
-		InstanceID:   testDownstreamID,
-		Services:     []helloService{},
-		Chain:        []string{testProxyID, testDownstreamID, testDownstreamB, testUpstreamID, testUnknownID},
-		AgentVersion: "test",
-	})
-	code, reason = readClose(t, conn)
-	conn.Close()
-	if code != websocket.ClosePolicyViolation || reason != "chain_too_deep" {
-		t.Errorf("depth: close %d %q", code, reason)
+	for _, testCase := range cases {
+		t.Run("websocket "+testCase.name, func(t *testing.T) {
+			conn, _, err := server.dial(server.pki.clientCertFile, server.pki.clientKeyFile)
+			if err != nil {
+				t.Fatalf("dial: %v", err)
+			}
+			defer conn.Close()
+			writeJSONFrame(t, conn, helloFrame(testCase.instanceID))
+			code, reason := readClose(t, conn)
+			if code != websocket.ClosePolicyViolation || reason != "chain_loop" {
+				t.Fatalf("close = %d %q", code, reason)
+			}
+		})
+		t.Run("poll "+testCase.name, func(t *testing.T) {
+			response, body := server.post(server.defaultClient(),
+				adsync.APIPrefix+"/channel/poll?wait=0", pollBody(t, testCase.instanceID))
+			if response.StatusCode != http.StatusForbidden || string(body) != `{"error":"chain_loop"}` {
+				t.Fatalf("poll = status %d body %s", response.StatusCode, body)
+			}
+			if count := server.server.DownstreamCount(); count != 0 {
+				t.Fatalf("refused polls counted %d sessions", count)
+			}
+		})
 	}
 
-	// The hello subscribes to a service outside the credential's subset.
-	conn, _, err = server.dial(token)
-	if err != nil {
-		t.Fatalf("dial: %v", err)
-	}
-	writeJSONFrame(t, conn, helloMessage{
-		Type:         "hello",
-		InstanceID:   testDownstreamID,
-		Services:     []helloService{{ID: testServiceID2, Name: "orders"}},
-		Chain:        []string{testProxyID, testDownstreamID},
-		AgentVersion: "test",
+	t.Run("legitimate child", func(t *testing.T) {
+		conn, _, err := server.dial(server.pki.clientCertFile, server.pki.clientKeyFile)
+		if err != nil {
+			t.Fatalf("dial: %v", err)
+		}
+		defer conn.Close()
+		writeJSONFrame(t, conn, helloFrame(testClientInstanceID))
+		if kind, _ := readChannelFrame(t, conn); kind != "ack" {
+			t.Fatalf("first frame = %q", kind)
+		}
 	})
-	code, reason = readClose(t, conn)
-	conn.Close()
-	if code != websocket.ClosePolicyViolation || reason != "forbidden" {
-		t.Errorf("subset: close %d %q", code, reason)
-	}
-
-	// A downstream claiming this proxy's own instance id.
-	conn, _, err = server.dial(token)
-	if err != nil {
-		t.Fatalf("dial: %v", err)
-	}
-	writeJSONFrame(t, conn, helloMessage{
-		Type:         "hello",
-		InstanceID:   testProxyID,
-		Services:     []helloService{},
-		Chain:        []string{testProxyID},
-		AgentVersion: "test",
-	})
-	code, reason = readClose(t, conn)
-	conn.Close()
-	if code != websocket.ClosePolicyViolation || reason != "chain_loop" {
-		t.Errorf("self claim: close %d %q", code, reason)
-	}
 }
 
-func TestChannelWebSocketAuthentication(t *testing.T) {
+func TestChannelWebSocketFrameValidation(t *testing.T) {
 	mirror, _, _ := newPopulatedMirror(t)
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, nil, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
+	server := newTestServer(t, mirror, nil)
+
+	cases := []struct {
+		name  string
+		frame any
+	}{
+		{name: "invalid hello type", frame: map[string]any{"type": "heartbeat", "instanceId": testClientInstanceID}},
+		{name: "invalid instance id", frame: helloFrame("not-a-uuid")},
+		{name: "duplicate service", frame: map[string]any{
+			"type": "hello", "instanceId": testClientInstanceID, "agentVersion": "test",
+			"services": []map[string]any{
+				{"id": testServiceID1, "name": "books", "revision": 1, "state": "in_sync"},
+				{"id": testServiceID1, "name": "books", "revision": 1, "state": "in_sync"},
+			},
+		}},
+		{name: "unknown field", frame: map[string]any{
+			"type": "hello", "instanceId": testClientInstanceID, "bogus": true,
+		}},
+	}
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			conn, _, err := server.dial(server.pki.clientCertFile, server.pki.clientKeyFile)
+			if err != nil {
+				t.Fatalf("dial: %v", err)
+			}
+			defer conn.Close()
+			writeJSONFrame(t, conn, testCase.frame)
+			code, _ := readClose(t, conn)
+			if code != websocket.CloseProtocolError {
+				t.Fatalf("close code = %d", code)
+			}
+		})
+	}
+
+	t.Run("heartbeat instance change", func(t *testing.T) {
+		conn, _, err := server.dial(server.pki.clientCertFile, server.pki.clientKeyFile)
+		if err != nil {
+			t.Fatalf("dial: %v", err)
+		}
+		defer conn.Close()
+		writeJSONFrame(t, conn, helloFrame(testClientInstanceID))
+		if kind, _ := readChannelFrame(t, conn); kind != "ack" {
+			t.Fatalf("first frame = %q", kind)
+		}
+		writeJSONFrame(t, conn, heartbeatFrame(testClientInstanceB))
+		code, reason := readClose(t, conn)
+		if code != websocket.CloseProtocolError || reason != "instance_changed" {
+			t.Fatalf("close = %d %q", code, reason)
+		}
 	})
-	for _, credential := range []string{"", testToken(testDownstreamB, 7)} {
-		conn, response, err := server.dial(credential)
-		if err == nil {
-			conn.Close()
-			t.Fatal("unauthenticated channel was accepted")
+
+	t.Run("duplicate hello", func(t *testing.T) {
+		conn, _, err := server.dial(server.pki.clientCertFile, server.pki.clientKeyFile)
+		if err != nil {
+			t.Fatalf("dial: %v", err)
 		}
-		if !errors.Is(err, websocket.ErrBadHandshake) {
-			t.Fatalf("dial error = %v", err)
+		defer conn.Close()
+		writeJSONFrame(t, conn, helloFrame(testClientInstanceID))
+		if kind, _ := readChannelFrame(t, conn); kind != "ack" {
+			t.Fatalf("first frame = %q", kind)
 		}
-		if response == nil || response.StatusCode != http.StatusUnauthorized {
-			t.Errorf("status = %v", response)
+		writeJSONFrame(t, conn, helloFrame(testClientInstanceID))
+		code, _ := readClose(t, conn)
+		if code != websocket.CloseProtocolError {
+			t.Fatalf("close code = %d", code)
+		}
+	})
+
+	t.Run("unknown frame", func(t *testing.T) {
+		conn, _, err := server.dial(server.pki.clientCertFile, server.pki.clientKeyFile)
+		if err != nil {
+			t.Fatalf("dial: %v", err)
+		}
+		defer conn.Close()
+		writeJSONFrame(t, conn, helloFrame(testClientInstanceID))
+		if kind, _ := readChannelFrame(t, conn); kind != "ack" {
+			t.Fatalf("first frame = %q", kind)
+		}
+		writeJSONFrame(t, conn, map[string]any{"type": "nonsense"})
+		code, _ := readClose(t, conn)
+		if code != websocket.CloseProtocolError {
+			t.Fatalf("close code = %d", code)
+		}
+	})
+}
+
+func TestChannelAuthenticationFailsWithoutTrustedCertificate(t *testing.T) {
+	mirror, _, _ := newPopulatedMirror(t)
+	server := newTestServer(t, mirror, nil)
+
+	cases := []struct {
+		name string
+		dial func() (*websocket.Conn, *http.Response, error)
+	}{
+		{name: "missing certificate", dial: server.dialAnonymous},
+		{name: "expired certificate", dial: func() (*websocket.Conn, *http.Response, error) {
+			return server.dial(server.pki.expiredCertFile, server.pki.expiredKeyFile)
+		}},
+		{name: "untrusted certificate", dial: func() (*websocket.Conn, *http.Response, error) {
+			return server.dial(server.pki.untrustedCertFile, server.pki.untrustedKeyFile)
+		}},
+		{name: "revoked certificate", dial: func() (*websocket.Conn, *http.Response, error) {
+			return server.dial(server.pki.revokedCertFile, server.pki.revokedKeyFile)
+		}},
+		{name: "serverAuth-only certificate", dial: func() (*websocket.Conn, *http.Response, error) {
+			return server.dial(server.pki.serverOnlyCertFile, server.pki.serverOnlyKeyFile)
+		}},
+	}
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			conn, _, err := testCase.dial()
+			if err == nil {
+				conn.Close()
+				t.Fatal("channel was accepted without a usable certificate")
+			}
+		})
+	}
+
+	// The same failures hit ordinary data requests.
+	for _, files := range [][2]string{
+		{server.pki.expiredCertFile, server.pki.expiredKeyFile},
+		{server.pki.untrustedCertFile, server.pki.untrustedKeyFile},
+	} {
+		client := server.client(files[0], files[1])
+		if _, err := client.Get(server.address + adsync.APIPrefix + "/services"); err == nil {
+			t.Fatalf("%s: data request was accepted", files[0])
 		}
 	}
 }
 
 func TestHubCoalescesNotifications(t *testing.T) {
-	hub, err := NewHub(10, 50*time.Millisecond)
+	hub, err := NewHub(50 * time.Millisecond)
 	if err != nil {
 		t.Fatalf("new hub: %v", err)
 	}
 	defer hub.Close()
-	all, err := hub.Subscribe("edge-1", nil)
+	first, err := hub.Subscribe()
 	if err != nil {
-		t.Fatalf("subscribe all: %v", err)
+		t.Fatalf("subscribe: %v", err)
 	}
-	onlyOrders, err := hub.Subscribe("edge-2", func(serviceID string) bool {
-		return serviceID == testServiceID2
-	})
+	second, err := hub.Subscribe()
 	if err != nil {
-		t.Fatalf("subscribe orders: %v", err)
+		t.Fatalf("subscribe: %v", err)
 	}
 
 	hub.Publish(testServiceID1, 2)
@@ -268,18 +275,23 @@ func TestHubCoalescesNotifications(t *testing.T) {
 	hub.Publish(testServiceID2, 1)
 	hub.Publish(testServiceID2, 2)
 
-	received := collectNotifications(t, all.C(), 2, 2*time.Second)
+	received := collectNotifications(t, first.C(), 2, 2*time.Second)
 	if received[testServiceID1] != 4 || received[testServiceID2] != 2 {
 		t.Errorf("coalesced heads = %v", received)
 	}
-	filtered := collectNotifications(t, onlyOrders.C(), 1, 2*time.Second)
-	if len(filtered) != 1 || filtered[testServiceID2] != 2 {
-		t.Errorf("filtered notifications = %v", filtered)
+	secondReceived := collectNotifications(t, second.C(), 2, 2*time.Second)
+	if secondReceived[testServiceID1] != 4 || secondReceived[testServiceID2] != 2 {
+		t.Errorf("second subscriber heads = %v", secondReceived)
 	}
 	select {
-	case extra := <-all.C():
+	case extra := <-first.C():
 		t.Errorf("unexpected notification %+v", extra)
 	case <-time.After(200 * time.Millisecond):
+	}
+	hub.Unsubscribe(first)
+	hub.Unsubscribe(first)
+	if hub.Subscribers() != 1 {
+		t.Errorf("subscribers = %d", hub.Subscribers())
 	}
 }
 
@@ -298,151 +310,32 @@ func collectNotifications(t *testing.T, incoming <-chan Notify, want int, timeou
 	return received
 }
 
-func TestHubFanoutLimit(t *testing.T) {
-	hub, err := NewHub(50, time.Millisecond)
+func TestHubHasNoSubscriberLimit(t *testing.T) {
+	hub, err := NewHub(time.Millisecond)
 	if err != nil {
 		t.Fatalf("new hub: %v", err)
 	}
 	defer hub.Close()
-	for index := 0; index < 50; index++ {
-		if _, err := hub.Subscribe("edge-"+string(rune('A'+index)), nil); err != nil {
+	subscribers := make([]*Subscriber, 0, 200)
+	for index := 0; index < 200; index++ {
+		subscriber, err := hub.Subscribe()
+		if err != nil {
 			t.Fatalf("subscribe %d: %v", index, err)
 		}
+		subscribers = append(subscribers, subscriber)
 	}
-	if _, err := hub.Subscribe("edge-overflow", nil); !errors.Is(err, ErrFanoutLimit) {
-		t.Fatalf("51st downstream: %v, want ErrFanoutLimit", err)
+	if got := hub.Subscribers(); got != 200 {
+		t.Errorf("subscribers = %d, want 200", got)
 	}
-	if err := hub.Allow("edge-overflow"); !errors.Is(err, ErrFanoutLimit) {
-		t.Fatalf("Allow: %v, want ErrFanoutLimit", err)
+	for _, subscriber := range subscribers {
+		hub.Unsubscribe(subscriber)
 	}
-	if got := hub.Downstreams(); got != 50 {
-		t.Errorf("downstreams = %d", got)
+	if hub.Subscribers() != 0 {
+		t.Errorf("subscribers after unsubscribe = %d", hub.Subscribers())
 	}
-
-	// A second registration from an existing downstream keeps its slot.
-	second, err := hub.Subscribe("edge-A", nil)
-	if err != nil {
-		t.Fatalf("second registration: %v", err)
-	}
-	if got := hub.Downstreams(); got != 50 {
-		t.Errorf("downstreams after reconnect = %d", got)
-	}
-	hub.Unsubscribe(second)
-}
-
-func TestServerFanoutLimit(t *testing.T) {
-	mirror, _, _ := newPopulatedMirror(t)
-	hub, err := NewHub(1, 10*time.Millisecond)
-	if err != nil {
-		t.Fatalf("new hub: %v", err)
-	}
-	if _, err := hub.Subscribe(testDownstreamB, nil); err != nil {
-		t.Fatalf("reserve downstream: %v", err)
-	}
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, &testServerOptions{hub: hub}, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
-
-	conn, response, err := server.dial(token)
-	if err == nil {
-		conn.Close()
-		t.Fatal("channel beyond the fan-out limit was accepted")
-	}
-	if response == nil || response.StatusCode != http.StatusServiceUnavailable {
-		t.Fatalf("channel status = %v", response)
-	}
-	if response.Header.Get("Retry-After") != "30" {
-		t.Errorf("Retry-After = %q", response.Header.Get("Retry-After"))
-	}
-	response, body := server.post(adsync.APIPrefix+"/channel/poll?wait=0", token, heartbeatFrame([]string{testProxyID}))
-	if response.StatusCode != http.StatusServiceUnavailable || string(body) != `{"error":"fanout_limit"}` {
-		t.Errorf("poll beyond the limit: status %d body %s", response.StatusCode, body)
-	}
-	// Data endpoints are not part of the fan-out limit.
-	response, _ = server.get(adsync.APIPrefix+"/services", token, nil)
-	if response.StatusCode != http.StatusOK {
-		t.Errorf("services beyond the limit: status %d", response.StatusCode)
-	}
-}
-
-func TestCredentialReloadClosesChannelsWhoseGrantsChanged(t *testing.T) {
-	for _, testCase := range []struct {
-		name   string
-		subset string
-	}{
-		{name: "removed", subset: ""},
-		{name: "narrowed", subset: testServiceID1},
-	} {
-		t.Run(testCase.name, func(t *testing.T) {
-			mirror, _, _ := newPopulatedMirror(t)
-			token := testToken(testDownstreamID, 1)
-			server := newTestServer(t, mirror, nil, testCredential{
-				downstreamID: testDownstreamID,
-				token:        token,
-			})
-			conn, _, err := server.dial(token)
-			if err != nil {
-				t.Fatalf("dial: %v", err)
-			}
-			defer conn.Close()
-			writeJSONFrame(t, conn, helloMessage{
-				Type:         "hello",
-				InstanceID:   testDownstreamID,
-				Services:     []helloService{},
-				Chain:        []string{testProxyID, testDownstreamID},
-				AgentVersion: "test",
-			})
-			if kind, _ := readChannelFrame(t, conn); kind != "ack" {
-				t.Fatal("channel did not receive its initial ack")
-			}
-
-			line := testDownstreamB + ":" + hashToken(testToken(testDownstreamB, 2)) + ":*"
-			if testCase.subset != "" {
-				line = testDownstreamID + ":" + hashToken(token) + ":" + testCase.subset
-			}
-			server.writeCredentialFile(line)
-			if err := server.server.ReloadCredentials(); err != nil {
-				t.Fatalf("ReloadCredentials: %v", err)
-			}
-			code, reason := readClose(t, conn)
-			if code != websocket.CloseTryAgainLater || reason != "credentials_reloaded" {
-				t.Fatalf("close = %d %q", code, reason)
-			}
-
-			if testCase.name == "removed" {
-				response, _ := server.get(adsync.APIPrefix+"/services", token, nil)
-				if response.StatusCode != http.StatusUnauthorized {
-					t.Fatalf("removed token HTTP status = %d", response.StatusCode)
-				}
-				return
-			}
-			response, _ := server.get(adsync.APIPrefix+"/services/"+testServiceID2+"/snapshot", token, nil)
-			if response.StatusCode != http.StatusNotFound {
-				t.Fatalf("narrowed service status = %d", response.StatusCode)
-			}
-			reconnected, _, err := server.dial(token)
-			if err != nil {
-				t.Fatalf("reconnect with narrowed grant: %v", err)
-			}
-			defer reconnected.Close()
-			writeJSONFrame(t, reconnected, helloMessage{
-				Type:         "hello",
-				InstanceID:   testDownstreamID,
-				Services:     []helloService{},
-				Chain:        []string{testProxyID, testDownstreamID},
-				AgentVersion: "test",
-			})
-			kind, payload := readChannelFrame(t, reconnected)
-			if kind != "ack" {
-				t.Fatalf("reconnected frame = %q", kind)
-			}
-			ack := decodeBody[ackMessage](t, payload)
-			if len(ack.Services) != 1 || ack.Services[0].ID != testServiceID1 {
-				t.Fatalf("reconnected service set = %+v", ack.Services)
-			}
-		})
+	hub.Close()
+	if _, err := hub.Subscribe(); err == nil {
+		t.Error("closed hub accepted a subscriber")
 	}
 }
 
@@ -471,138 +364,183 @@ func TestPollWaitBounds(t *testing.T) {
 	}
 }
 
-func TestPollRejectsOverflowingWait(t *testing.T) {
+func TestPollReturnsAck(t *testing.T) {
 	mirror, _, _ := newPopulatedMirror(t)
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, nil, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
+	server := newTestServer(t, mirror, nil)
+	response, body := server.post(server.defaultClient(),
+		adsync.APIPrefix+"/channel/poll?wait=0", pollBody(t, testClientInstanceID))
+	if response.StatusCode != http.StatusOK {
+		t.Fatalf("poll: status %d body %s", response.StatusCode, body)
+	}
+	ack := decodeBody[ackMessage](t, body)
+	if ack.Type != "ack" || len(ack.Services) != 2 || ack.ServicesVersion <= 0 {
+		t.Errorf("ack = %+v", ack)
+	}
+}
+
+func TestPollRejectsInvalidRequests(t *testing.T) {
+	mirror, _, _ := newPopulatedMirror(t)
+	server := newTestServer(t, mirror, nil)
+	client := server.defaultClient()
 	for _, wait := range []string{"31", "01", "9223372036854775807", "9223372037"} {
 		path := adsync.APIPrefix + "/channel/poll?wait=" + wait
-		response, body := server.post(path, token, heartbeatFrame([]string{testProxyID, testDownstreamID}))
+		response, body := server.post(client, path, pollBody(t, testClientInstanceID))
 		if response.StatusCode != http.StatusBadRequest {
 			t.Errorf("wait=%s: status %d body %s", wait, response.StatusCode, body)
 		}
+	}
+	for _, body := range [][]byte{
+		[]byte(`not json`),
+		[]byte(`{"type":"heartbeat"}`),
+		[]byte(`{"type":"heartbeat","instanceId":"not-a-uuid"}`),
+		[]byte(`{"type":"heartbeat","instanceId":"` + testClientInstanceID + `","bogus":true}`),
+		[]byte(`{"type":"hello","instanceId":"` + testClientInstanceID + `"}`),
+	} {
+		response, payload := server.post(client, adsync.APIPrefix+"/channel/poll?wait=0", body)
+		if response.StatusCode != http.StatusBadRequest {
+			t.Errorf("body %s: status %d payload %s", body, response.StatusCode, payload)
+		}
+	}
+	oversized := make([]byte, maxChannelFrameBytes+1)
+	oversized[0] = '{'
+	response, _ := server.post(client, adsync.APIPrefix+"/channel/poll?wait=0", oversized)
+	if response.StatusCode != http.StatusRequestEntityTooLarge {
+		t.Errorf("oversized body: status %d", response.StatusCode)
+	}
+}
+
+func TestPollWaitsForANotification(t *testing.T) {
+	mirror, books, _ := newPopulatedMirror(t)
+	server := newTestServer(t, mirror, nil)
+	result := make(chan *http.Response, 1)
+	go func() {
+		// The hold is shorter than the wait, so a returned ack proves the
+		// notification woke the poll.
+		response, _ := server.post(server.defaultClient(),
+			adsync.APIPrefix+"/channel/poll?wait=30", pollBody(t, testClientInstanceID))
+		result <- response
+	}()
+	waitFor(t, 2*time.Second, "the poll to be held", func() bool {
+		return server.server.DownstreamCount() == 1
+	})
+	books.publish(t, upsertAuthz(testServiceID1+"A1", "read", "grant read"))
+	if err := mirror.ApplyChanges(pageFor(t, books, 1, 100)); err != nil {
+		t.Fatalf("apply changes: %v", err)
+	}
+	select {
+	case response := <-result:
+		if response.StatusCode != http.StatusOK {
+			t.Fatalf("poll status = %d", response.StatusCode)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("the poll was not woken by the notification")
 	}
 }
 
 func TestChannelRejectsNonCanonicalQuery(t *testing.T) {
 	mirror, _, _ := newPopulatedMirror(t)
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, nil, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
+	server := newTestServer(t, mirror, nil)
+	client := server.defaultClient()
 	for _, path := range []string{
 		adsync.APIPrefix + "/services?unknown=1",
 		adsync.APIPrefix + "/services/" + testServiceID1 + "/state?x=1&x=2",
 		adsync.APIPrefix + "/services/" + testServiceID1 + "/snapshot?unknown=1",
 		adsync.APIPrefix + "/channel?unknown=1",
 	} {
-		response, body := server.get(path, token, nil)
+		response, body := server.get(client, path, nil)
 		if response.StatusCode != http.StatusBadRequest {
 			t.Errorf("GET %s: status %d body %s", path, response.StatusCode, body)
 		}
 	}
 	for _, query := range []string{"wait=01", "wait=1&wait=2", "wait=", "unknown=1"} {
 		path := adsync.APIPrefix + "/channel/poll?" + query
-		response, body := server.post(path, token, heartbeatFrame([]string{testProxyID, testDownstreamID}))
+		response, body := server.post(client, path, pollBody(t, testClientInstanceID))
 		if response.StatusCode != http.StatusBadRequest {
 			t.Errorf("POST %s: status %d body %s", path, response.StatusCode, body)
 		}
 	}
 }
 
-func TestHeartbeatAncestorChainWithoutThisProxy(t *testing.T) {
+func TestChannelRejectsNonTextFrames(t *testing.T) {
 	mirror, _, _ := newPopulatedMirror(t)
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, &testServerOptions{
-		chain: []string{testUpstreamID, testProxyID},
-	}, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
-	path := adsync.APIPrefix + "/channel/poll?wait=0"
-
-	// The chain lists only an ancestor and omits this proxy. The last entry
-	// still names the sender, so the ancestor check must reject it: allowing it
-	// would let a cycle form if the ancestor synchronizes from this proxy.
-	response, body := server.post(path, token, heartbeatFrame([]string{testUpstreamID}))
-	if response.StatusCode != http.StatusForbidden || string(body) != `{"error":"chain_loop"}` {
-		t.Errorf("ancestor without this proxy: status %d body %s", response.StatusCode, body)
-	}
-
-	// An unrelated nonempty chain and the documented empty chain stay
-	// legitimate: this proxy has no position in them to check.
-	for _, chain := range [][]string{{testDownstreamB}, {}, {testUnknownID}} {
-		response, body := server.post(path, token, heartbeatFrame(chain))
-		if response.StatusCode != http.StatusOK {
-			t.Errorf("chain %v: status %d body %s", chain, response.StatusCode, body)
-		}
-	}
-}
-
-func TestWebSocketHeartbeatAncestorChainWithoutThisProxy(t *testing.T) {
-	mirror, _, _ := newPopulatedMirror(t)
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, &testServerOptions{
-		chain: []string{testUpstreamID, testProxyID},
-	}, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
-	conn, _, err := server.dial(token)
+	server := newTestServer(t, mirror, nil)
+	conn, _, err := server.dial(server.pki.clientCertFile, server.pki.clientKeyFile)
 	if err != nil {
 		t.Fatalf("dial: %v", err)
 	}
 	defer conn.Close()
-	writeJSONFrame(t, conn, helloMessage{
-		Type:         "hello",
-		InstanceID:   testDownstreamID,
-		Services:     []helloService{},
-		Chain:        []string{testProxyID, testDownstreamID},
-		AgentVersion: "test",
-	})
-	if kind, _ := readChannelFrame(t, conn); kind != "ack" {
-		t.Fatalf("frame = %q", kind)
+	if err := conn.WriteMessage(websocket.BinaryMessage, []byte{1, 2, 3}); err != nil {
+		t.Fatalf("write binary frame: %v", err)
 	}
-	writeJSONFrame(t, conn, heartbeatMessage{
-		Type:     "heartbeat",
-		Services: []heartbeatService{},
-		Liveness: "live",
-		Chain:    []string{testUpstreamID},
-		Fallback: fallbackMessage{Services: []string{}},
-	})
-	code, reason := readClose(t, conn)
-	if code != websocket.ClosePolicyViolation || reason != "chain_loop" {
-		t.Fatalf("close = %d %q", code, reason)
+	code, _ := readClose(t, conn)
+	if code != websocket.CloseProtocolError {
+		t.Fatalf("close code = %d", code)
 	}
 }
 
-func TestWebSocketHelloFromAnAncestor(t *testing.T) {
+func TestChannelRejectsTrailingJSON(t *testing.T) {
 	mirror, _, _ := newPopulatedMirror(t)
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, &testServerOptions{
-		chain: []string{testUpstreamID, testProxyID},
-	}, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
-	conn, _, err := server.dial(token)
+	server := newTestServer(t, mirror, nil)
+	conn, _, err := server.dial(server.pki.clientCertFile, server.pki.clientKeyFile)
 	if err != nil {
 		t.Fatalf("dial: %v", err)
 	}
 	defer conn.Close()
-	writeJSONFrame(t, conn, helloMessage{
-		Type:         "hello",
-		InstanceID:   testUpstreamID,
-		Services:     []helloService{},
-		Chain:        []string{testUpstreamID},
-		AgentVersion: "test",
-	})
+	payload, err := json.Marshal(helloFrame(testClientInstanceID))
+	if err != nil {
+		t.Fatalf("encode hello: %v", err)
+	}
+	payload = append(payload, []byte(`{"type":"hello"}`)...)
+	if err := conn.WriteMessage(websocket.TextMessage, payload); err != nil {
+		t.Fatalf("write frame: %v", err)
+	}
+	code, _ := readClose(t, conn)
+	if code != websocket.CloseProtocolError {
+		t.Fatalf("close code = %d", code)
+	}
+}
+
+func TestChannelRequiresUpgrade(t *testing.T) {
+	mirror, _, _ := newPopulatedMirror(t)
+	server := newTestServer(t, mirror, nil)
+	request, err := http.NewRequest(http.MethodGet, server.address+adsync.APIPrefix+"/channel", nil)
+	if err != nil {
+		t.Fatalf("build request: %v", err)
+	}
+	response, err := server.defaultClient().Do(request)
+	if err != nil {
+		t.Fatalf("request: %v", err)
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusBadRequest {
+		t.Fatalf("status = %d", response.StatusCode)
+	}
+}
+
+func TestChannelInitialAckRespectsPause(t *testing.T) {
+	mirror, _, _ := newPopulatedMirror(t)
+	var paused atomic.Bool
+	server := newTestServer(t, mirror, &testServerOptions{paused: paused.Load})
+	conn, _, err := server.dial(server.pki.clientCertFile, server.pki.clientKeyFile)
+	if err != nil {
+		t.Fatalf("dial: %v", err)
+	}
+	defer conn.Close()
+	paused.Store(true)
+	writeJSONFrame(t, conn, helloFrame(testClientInstanceID))
 	code, reason := readClose(t, conn)
-	if code != websocket.ClosePolicyViolation || reason != "chain_loop" {
+	if code != websocket.ClosePolicyViolation || reason != "distribution_paused" {
 		t.Fatalf("close = %d %q", code, reason)
+	}
+}
+
+func TestPollBodyIsStrictlyDecoded(t *testing.T) {
+	mirror, _, _ := newPopulatedMirror(t)
+	server := newTestServer(t, mirror, nil)
+	body := pollBody(t, testClientInstanceID)
+	body = bytes.Replace(body, []byte(`"seq":1`), []byte(`"seq":1,"unknown":"x"`), 1)
+	response, payload := server.post(server.defaultClient(), adsync.APIPrefix+"/channel/poll?wait=0", body)
+	if response.StatusCode != http.StatusBadRequest {
+		t.Fatalf("status %d body %s", response.StatusCode, payload)
 	}
 }

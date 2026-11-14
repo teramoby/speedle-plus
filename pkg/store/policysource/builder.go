@@ -56,17 +56,20 @@ const (
 
 	// Command line flag names. Each flag feeds the property key above through
 	// the shared GetStoreParams mechanism.
-	CacheDirFlag              = "policy-source-cache-dir"
-	RequestTimeoutFlag        = "policy-source-request-timeout"
-	CAFileFlag                = "policy-source-ca"
-	ClientCertFileFlag        = "policy-source-client-cert"
-	ClientKeyFileFlag         = "policy-source-client-key"
-	HeartbeatIntervalFlag     = "policy-source-heartbeat-interval"
-	StaleAfterFlag            = "policy-source-stale-after"
-	StopAfterFlag             = "policy-source-stop-after"
-	FallbackWhileSyncingFlag  = "policy-source-fallback-while-syncing"
-	TransportFlag             = "policy-source-transport"
-	ServeDownstreamFlag       = "policy-source-serve-downstream"
+	CacheDirFlag             = "policy-source-cache-dir"
+	RequestTimeoutFlag       = "policy-source-request-timeout"
+	CAFileFlag               = "policy-source-ca"
+	ClientCertFileFlag       = "policy-source-client-cert"
+	ClientKeyFileFlag        = "policy-source-client-key"
+	HeartbeatIntervalFlag    = "policy-source-heartbeat-interval"
+	StaleAfterFlag           = "policy-source-stale-after"
+	StopAfterFlag            = "policy-source-stop-after"
+	FallbackWhileSyncingFlag = "policy-source-fallback-while-syncing"
+	TransportFlag            = "policy-source-transport"
+	ServeDownstreamFlag      = "policy-source-serve-downstream"
+	// Removed distribution flags stay registered so an explicit use through a
+	// flag or environment variable reaches the store's migration error instead
+	// of being silently ignored. Their empty defaults are never injected.
 	DownstreamCredentialsFlag = "policy-source-downstream-credentials-file"
 	MaxDownstreamFlag         = "policy-source-max-downstream"
 	MaxChainDepthFlag         = "policy-source-max-chain-depth"
@@ -131,7 +134,9 @@ type Options struct {
 	// acks trigger immediate passes; zero uses a one-minute safety cadence.
 	ReconcilePeriod time.Duration
 
-	// ServeDownstream enables the proxy protocol from verified mirror copies.
+	// ServeDownstream enables the downstream mTLS listener from verified
+	// mirror copies. The listener's endpoint, certificate, key, client CA and
+	// CRL sources are server configuration, not store properties.
 	ServeDownstream bool
 }
 
@@ -141,17 +146,18 @@ type Builder struct{}
 // GetStoreParams maps flag names to store property keys.
 func (Builder) GetStoreParams() map[string]string {
 	return map[string]string{
-		CacheDirFlag:              CacheDirKey,
-		RequestTimeoutFlag:        RequestTimeoutKey,
-		CAFileFlag:                CAFileKey,
-		ClientCertFileFlag:        ClientCertFileKey,
-		ClientKeyFileFlag:         ClientKeyFileKey,
-		HeartbeatIntervalFlag:     HeartbeatIntervalKey,
-		StaleAfterFlag:            StaleAfterKey,
-		StopAfterFlag:             StopAfterKey,
-		FallbackWhileSyncingFlag:  FallbackWhileSyncingKey,
-		TransportFlag:             TransportKey,
-		ServeDownstreamFlag:       ServeDownstreamKey,
+		CacheDirFlag:             CacheDirKey,
+		RequestTimeoutFlag:       RequestTimeoutKey,
+		CAFileFlag:               CAFileKey,
+		ClientCertFileFlag:       ClientCertFileKey,
+		ClientKeyFileFlag:        ClientKeyFileKey,
+		HeartbeatIntervalFlag:    HeartbeatIntervalKey,
+		StaleAfterFlag:           StaleAfterKey,
+		StopAfterFlag:            StopAfterKey,
+		FallbackWhileSyncingFlag: FallbackWhileSyncingKey,
+		TransportFlag:            TransportKey,
+		ServeDownstreamFlag:      ServeDownstreamKey,
+
 		DownstreamCredentialsFlag: DownstreamCredentialsKey,
 		MaxDownstreamFlag:         MaxDownstreamKey,
 		MaxChainDepthFlag:         MaxChainDepthKey,
@@ -275,9 +281,6 @@ func optionsFromConfig(config map[string]interface{}) (options Options, err erro
 		return options, err
 	}
 	options.ServeDownstream = serveDownstream
-	if serveDownstream {
-		return options, errors.New(errors.ConfigError, "ServeDownstream is not supported yet")
-	}
 	for _, property := range []struct {
 		key    string
 		target *[]string
@@ -370,7 +373,7 @@ func init() {
 	pflag.String(StopAfterFlag, "", "Store config: threshold after which an instance stops serving, for example 120s.")
 	pflag.String(FallbackWhileSyncingFlag, "true", "Store config: route authorization requests for a syncing service to Speedle Cloud.")
 	pflag.String(TransportFlag, "auto", "Store config: notification transport: auto, websocket or longpoll.")
-	pflag.String(ServeDownstreamFlag, "false", "Store config: serve the policy-source protocol to downstream ADS instances.")
+	pflag.String(ServeDownstreamFlag, "false", "Store config: serve the policy-source protocol to downstream ADS instances on the downstream mTLS listener.")
 	pflag.String(DownstreamCredentialsFlag, "", "Removed: configure ClientCertFile, ClientKeyFile, CAFile and relay downstreamClientCAPath.")
 	pflag.String(MaxDownstreamFlag, "", "Removed: downstream connection limits are not supported.")
 	pflag.String(MaxChainDepthFlag, "", "Removed: chain depth limits are not supported.")
@@ -475,15 +478,15 @@ func rejectRemovedConfig(config map[string]interface{}) error {
 		{PolicySourceURLKey, "use UpstreamURL"},
 		{CredentialFileKey, "use APIKey in the configuration file"},
 		{PublicKeysKey, "signatures are no longer verified"},
-		{ServicesKey, "use ClientCertFile, ClientKeyFile, CAFile and relay downstreamClientCAPath; downstreams receive all relay services"},
-		{DownstreamCredentialsKey, "use ClientCertFile, ClientKeyFile, CAFile and relay downstreamClientCAPath"},
-		{MaxDownstreamKey, "connection limits are not supported"},
-		{MaxChainDepthKey, "depth limits are not supported"},
-		{MaxConnectionsKey, "connection limits are not supported"},
-		{"InstanceID", "the ADS generates its persisted UUIDv7 in CacheDir"},
+		{ServicesKey, "select services in the Cloud console"},
 		{CloudFallbackURLKey, "use UpstreamURL"},
 		{CloudCredentialFileKey, "use APIKey in the configuration file"},
 		{"InstanceName", "the ADS manages its persisted instance ID"},
+		{"InstanceID", "the ADS generates its persisted UUIDv7 in CacheDir"},
+		{DownstreamCredentialsKey, "downstream clients authenticate with mTLS; configure ClientCertFile, ClientKeyFile and CAFile on the downstream and serverConfig downstreamClientCAPath on the relay"},
+		{MaxDownstreamKey, "there is no downstream fan-out limit"},
+		{MaxChainDepthKey, "there is no chain depth limit"},
+		{MaxConnectionsKey, "there is no downstream connection limit"},
 	} {
 		if _, exists := config[property.key]; exists {
 			return errors.Errorf(errors.ConfigError, "%s has been removed; %s", property.key, property.replacement)

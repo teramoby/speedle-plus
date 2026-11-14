@@ -22,8 +22,6 @@ const (
 	// memory. One page is at most 1 MiB and a commit at most 200 changes, so
 	// the byte bound usually wins for large policies.
 	DefaultMaxLogBytes = 16 << 20
-	// MaxServices is the protocol bound on the services one instance serves.
-	MaxServices = 10
 	// maxRetiredIdentities bounds the source identities one service copy
 	// keeps replay protection for. Once a copy has moved away from this many
 	// identities, it refuses further identity replacement and stops being
@@ -116,6 +114,11 @@ type Mirror struct {
 	version   int64
 	observers map[uint64]func(HeadEvent)
 	nextID    uint64
+	// withheld holds service IDs that must not be served even before their
+	// first copy exists. The runtime withholds a service before it fetches a
+	// revision it cannot confirm, so a snapshot or change page applied while
+	// the fetch runs stays invisible until MarkAvailable.
+	withheld map[string]struct{}
 }
 
 // serviceCopy is one verified service: the snapshot it is anchored to,
@@ -203,6 +206,7 @@ func NewMirror(options MirrorOptions) (*Mirror, error) {
 		services:      make(map[string]*serviceCopy),
 		version:       1,
 		observers:     make(map[uint64]func(HeadEvent)),
+		withheld:      make(map[string]struct{}),
 	}, nil
 }
 
@@ -235,6 +239,18 @@ func (m *Mirror) AddObserver(observer func(HeadEvent)) func() {
 // The snapshot must then match both its id and epoch; sourceId is always bound
 // to the requested service id, never to a different service's dataset.
 func (m *Mirror) ApplySnapshot(response *adsync.SnapshotResponse, expected ...adsync.Service) error {
+	return m.applySnapshotResponse(response, false, expected...)
+}
+
+// ApplySnapshotWithheld records a snapshot and withholds the service from
+// serving in the same step. A runtime that observes a snapshot it has not
+// verified yet uses it so a removal cannot interleave between a separate
+// withhold and the apply and leave the first copy advertised.
+func (m *Mirror) ApplySnapshotWithheld(response *adsync.SnapshotResponse) error {
+	return m.applySnapshotResponse(response, true)
+}
+
+func (m *Mirror) applySnapshotResponse(response *adsync.SnapshotResponse, withhold bool, expected ...adsync.Service) error {
 	if response == nil {
 		return fmt.Errorf("%w: nil snapshot", ErrConfig)
 	}
@@ -255,7 +271,7 @@ func (m *Mirror) ApplySnapshot(response *adsync.SnapshotResponse, expected ...ad
 	if err := m.verifySnapshot(&copied); err != nil {
 		return err
 	}
-	event, notify, err := m.applySnapshot(&copied)
+	event, notify, err := m.applySnapshot(&copied, withhold)
 	if err != nil {
 		return err
 	}
@@ -265,7 +281,7 @@ func (m *Mirror) ApplySnapshot(response *adsync.SnapshotResponse, expected ...ad
 	return nil
 }
 
-func (m *Mirror) applySnapshot(response *adsync.SnapshotResponse) (HeadEvent, bool, error) {
+func (m *Mirror) applySnapshot(response *adsync.SnapshotResponse, withhold bool) (HeadEvent, bool, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -349,6 +365,12 @@ func (m *Mirror) applySnapshot(response *adsync.SnapshotResponse) (HeadEvent, bo
 	existing.overflow = false
 	existing.removed = false
 	existing.tombstoneRevision = 0
+	// A withhold recorded before the copy existed or was revived, or requested
+	// by this apply, keeps the candidate invisible until the runtime confirms
+	// the advertised head.
+	if _, held := m.withheld[response.ServiceID]; held || withhold {
+		existing.unavailable = true
+	}
 
 	// A snapshot can make a service visible again (revival after removal or
 	// overflow) or remove it from the advertised set. Downstreams compare the
@@ -525,6 +547,7 @@ func (m *Mirror) applyChanges(page *adsync.ChangesResponse) (HeadEvent, bool, er
 func (m *Mirror) RemoveService(serviceID string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	delete(m.withheld, serviceID)
 	service := m.services[serviceID]
 	if service == nil || service.removed {
 		return
@@ -543,17 +566,25 @@ func (m *Mirror) RemoveService(serviceID string) {
 }
 
 // MarkUnavailable stops advertising and serving one service while keeping its
-// verified copy. The runtime calls it when the source advertises a head for the
-// service that the mirror cannot fetch: serving the older copy would let
-// downstream instances keep evaluating policy the source has already replaced.
-// Snapshots and change pages applied while the flag is set stay withheld; the
-// runtime restores availability with MarkAvailable after it has verified that
-// the copy reached the advertised identity and revision.
+// verified copy. The runtime calls it before fetching a revision the mirror
+// does not already serve, and when the source advertises a head the mirror
+// cannot fetch: serving the older copy would let downstream instances keep
+// evaluating policy the source has already replaced. Snapshots and change
+// pages applied while the flag is set stay withheld, including the first copy
+// of a service that did not exist yet; the runtime restores availability with
+// MarkAvailable after it has verified that the copy reached the advertised
+// identity and revision.
 func (m *Mirror) MarkUnavailable(serviceID string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	service := m.services[serviceID]
-	if service == nil || service.removed || service.unavailable {
+	if service == nil || service.removed {
+		// Record the withhold anyway: the snapshot that creates or revives the
+		// copy may still be applied while the runtime is fetching it.
+		m.withheld[serviceID] = struct{}{}
+		return
+	}
+	if service.unavailable {
 		return
 	}
 	wasAvailable := m.availableLocked(service)
@@ -570,6 +601,7 @@ func (m *Mirror) MarkUnavailable(serviceID string) {
 func (m *Mirror) MarkAvailable(serviceID string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	delete(m.withheld, serviceID)
 	service := m.services[serviceID]
 	if service == nil || service.removed || !service.unavailable {
 		return
@@ -580,21 +612,15 @@ func (m *Mirror) MarkAvailable(serviceID string) {
 	}
 }
 
-// reserveServiceLocked makes room for one new service. Removed services are
-// tombstones, not active copies, so they do not count against MaxServices. A
-// tombstone is a deletion guard and is never evicted; if the combined store is
-// full, the new service is refused instead.
+// reserveServiceLocked makes room for one new service. Active copies and
+// removed-service tombstones share the replay-protection store, bounded by
+// maxTombstones. A tombstone is a deletion guard and is never evicted, so once
+// the store is full the new service is refused rather than forgetting a guard.
+// The shared bound also keeps one channel ack encodable (see
+// maxChannelFrameBytes); service counts themselves are a Cloud product
+// concern, not an engine one.
 func (m *Mirror) reserveServiceLocked() error {
-	active := 0
-	for _, service := range m.services {
-		if !service.removed {
-			active++
-		}
-	}
-	if active >= MaxServices {
-		return fmt.Errorf("%w: %d services", ErrTooManyServices, active)
-	}
-	if len(m.services) >= MaxServices+maxTombstones {
+	if len(m.services) >= maxTombstones {
 		return fmt.Errorf("%w: %d services and tombstones", ErrTooManyServices, len(m.services))
 	}
 	return nil

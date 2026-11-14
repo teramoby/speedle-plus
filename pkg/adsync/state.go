@@ -274,6 +274,9 @@ type Machine struct {
 
 	paused    bool
 	reconcile bool
+	// stopHook wraps explicit Stop transitions so a caller can serialize
+	// them with work it confirms. It runs without the machine lock held.
+	stopHook func(apply func())
 
 	stopped      bool
 	stopReason   Reason
@@ -702,8 +705,33 @@ func (m *Machine) Resync(serviceID string) {
 
 // Stop moves the instance to stopped with the given reason. A non-terminal
 // stop is cleared by a confirming ack followed by a verified copy of every
-// service; a terminal stop is final for the lifetime of the machine.
+// service; a terminal stop is final for the lifetime of the machine. When a
+// stop hook is installed it wraps the transition, so a caller can serialize
+// the stop with the responses it confirms.
 func (m *Machine) Stop(reason Reason) {
+	m.mu.Lock()
+	hook := m.stopHook
+	m.mu.Unlock()
+	if hook != nil {
+		hook(func() { m.stop(reason) })
+		return
+	}
+	m.stop(reason)
+}
+
+// SetStopHook installs a wrapper around every Stop transition. The hook
+// receives a function that performs the transition and must call it; it may
+// hold external locks for the duration. The hook runs without the machine lock
+// held, so it must not call Stop again. A nil hook removes the wrapper.
+func (m *Machine) SetStopHook(hook func(apply func())) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.stopHook = hook
+}
+
+// stop applies one stop transition. The hook is intentionally not consulted
+// here: the caller already wrapped it.
+func (m *Machine) stop(reason Reason) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.advanceLocked(m.clock.Now())

@@ -27,10 +27,11 @@ the `CRL*` properties are cascade-only; direct mode rejects these settings.
 
 `UpstreamURL` also accepts a single string. Lists preserve preference order;
 empty lists, duplicate addresses, non-HTTPS addresses, user information,
-queries and fragments are rejected. The downstream client configuration step
-retains the candidates and connects to the first entry; priority failover and
-relay serving are separate implementation steps. `ServeDownstream` continues
-to fail startup until the relay listener is available.
+queries and fragments are rejected. The downstream client retains the
+candidates and connects to the first entry; priority failover is a separate
+implementation step. `ServeDownstream` enables relay serving: the process
+serves the policy-source protocol on the dedicated downstream mTLS listener
+configured by the `downstream-*` server settings.
 
 Cascade verifies the relay's certificate chain using only `CAFile`, including
 certificate validity, server authentication usage and the URL's hostname/IP

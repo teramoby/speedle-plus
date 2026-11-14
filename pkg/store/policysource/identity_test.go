@@ -33,7 +33,7 @@ func TestUpstreamConfiguration(t *testing.T) {
 func TestRemovedConfigurationRejected(t *testing.T) {
 	for key, guidance := range map[string]string{
 		"PolicySourceURL": "UpstreamURL", "CredentialFile": "APIKey", "PolicySourcePublicKeys": "removed",
-		"Services": "ClientCertFile", "CloudFallbackURL": "UpstreamURL", "CloudCredentialFile": "APIKey", "InstanceName": "instance ID",
+		"Services": "Cloud console", "CloudFallbackURL": "UpstreamURL", "CloudCredentialFile": "APIKey", "InstanceName": "instance ID",
 	} {
 		for _, value := range []any{nil, "", "old-value", 42} {
 			props := map[string]interface{}{UpstreamURLKey: "https://source.example", key: value}

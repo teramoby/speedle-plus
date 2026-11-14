@@ -4,17 +4,19 @@ package adsproxy
 
 import (
 	"context"
-	"crypto/sha256"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/hex"
+	"crypto/x509/pkix"
 	"encoding/json"
 	"encoding/pem"
 	"errors"
-	"fmt"
 	"io"
+	"math/big"
+	"net"
 	"net/http"
-	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -26,16 +28,15 @@ import (
 )
 
 const (
-	testProxyID      = "01HF7YAT0000000000000002A1"
-	testUpstreamID   = "01HF7YAT0000000000000002A2"
-	testDownstreamID = "01HF7YAT0000000000000002B1"
-	testDownstreamB  = "01HF7YAT0000000000000002B2"
-	testServiceID1   = "01HF7YAT000000000000000101"
-	testServiceID2   = "01HF7YAT000000000000000102"
-	testUnknownID    = "01HF7YAT0000000000000001FF"
-	// testClientInstanceID is the instance ID a downstream adsync client
-	// sends; the proxy identifies downstreams by their tokens.
+	testProxyID          = "0193a5c2-7d1e-7b3a-9f10-4c2d8e6a1b00"
+	testUpstreamID       = "0193a5c2-7d1e-7b3a-9f10-4c2d8e6a1b01"
 	testClientInstanceID = "0193a5c2-7d1e-7b3a-9f10-4c2d8e6a1b21"
+	testClientInstanceB  = "0193a5c2-7d1e-7b3a-9f10-4c2d8e6a1b22"
+	testServiceID1       = "01HF7YAT000000000000000101"
+	testServiceID2       = "01HF7YAT000000000000000102"
+	testUnknownID        = "01HF7YAT0000000000000001FF"
+
+	testRevokedSerial = 3003
 )
 
 // fixtureService is a source of consistent snapshots and change pages.
@@ -163,152 +164,391 @@ func renameService(id, name string) adsync.Change {
 	return adsync.Change{Op: "upsert", Kind: "service", ID: id, Name: &name}
 }
 
-// testCredential is one downstream's configuration.
-type testCredential struct {
-	downstreamID string
-	token        string
-	services     []string
+// testPKI is a generated certificate authority with server and client
+// certificates and one CRL. Tests rewrite the CRL and material files through
+// its paths.
+type testPKI struct {
+	root    *x509.Certificate
+	rootKey *ecdsa.PrivateKey
+	roots   *x509.CertPool
+
+	serverCertFile string
+	serverKeyFile  string
+	serverCertPEM  []byte
+
+	caFile string
+
+	clientCertFile string
+	clientKeyFile  string
+	clientCertPEM  []byte
+	clientKeyPEM   []byte
+
+	clientBCertFile string
+	clientBKeyFile  string
+	clientBInstance string
+
+	expiredCertFile string
+	expiredKeyFile  string
+	expiredPEM      []byte
+
+	revokedCertFile string
+	revokedKeyFile  string
+
+	untrustedCertFile string
+	untrustedKeyFile  string
+
+	serverOnlyCertFile string
+	serverOnlyKeyFile  string
+
+	crlFile   string
+	crlNumber int64
 }
 
-func testToken(instanceID string, number int) string {
-	// The wire form is adsi_<ULID>_<43 base62 characters>. Digits are base62.
-	return "adsi_" + instanceID + "_" + fmt.Sprintf("%043d", number)
+type certificateTemplate struct {
+	serial    int64
+	common    string
+	notBefore time.Time
+	notAfter  time.Time
+	client    bool
+	server    bool
 }
 
-func hashToken(token string) string {
-	digest := sha256.Sum256([]byte(token))
-	return hex.EncodeToString(digest[:])
-}
+func newTestPKI(t *testing.T) *testPKI {
+	t.Helper()
+	now := time.Now()
+	directory := t.TempDir()
+	root, rootKey := newTestCA(t, "adsproxy test CA", now)
+	rootPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: root.Raw})
 
-type testServer struct {
-	t              *testing.T
-	mirror         *Mirror
-	server         *Server
-	httpServer     *httptest.Server
-	caFile         string
-	credentialFile string
-	roots          *x509.CertPool
-	credentials    map[string]string // downstream id -> token
-}
+	serverCert, serverKey := issueTestCertificate(t, root, rootKey, certificateTemplate{
+		serial: 2001, common: "relay.test", notBefore: now.Add(-time.Hour),
+		notAfter: now.Add(24 * time.Hour), server: true,
+	})
+	clientCert, clientKey := issueTestCertificate(t, root, rootKey, certificateTemplate{
+		serial: 3001, common: "downstream-a", notBefore: now.Add(-time.Hour),
+		notAfter: now.Add(24 * time.Hour), client: true,
+	})
+	clientBCert, clientBKey := issueTestCertificate(t, root, rootKey, certificateTemplate{
+		serial: 3002, common: "downstream-b", notBefore: now.Add(-time.Hour),
+		notAfter: now.Add(24 * time.Hour), client: true,
+	})
+	expiredCert, expiredKey := issueTestCertificate(t, root, rootKey, certificateTemplate{
+		serial: 3004, common: "downstream-expired", notBefore: now.Add(-2 * time.Hour),
+		notAfter: now.Add(-time.Hour), client: true,
+	})
+	revokedCert, revokedKey := issueTestCertificate(t, root, rootKey, certificateTemplate{
+		serial: testRevokedSerial, common: "downstream-revoked", notBefore: now.Add(-time.Hour),
+		notAfter: now.Add(24 * time.Hour), client: true,
+	})
+	otherCA, otherKey := newTestCA(t, "untrusted test CA", now)
+	untrustedCert, untrustedKey := issueTestCertificate(t, otherCA, otherKey, certificateTemplate{
+		serial: 3005, common: "downstream-untrusted", notBefore: now.Add(-time.Hour),
+		notAfter: now.Add(24 * time.Hour), client: true,
+	})
+	serverOnlyCert, serverOnlyKey := issueTestCertificate(t, root, rootKey, certificateTemplate{
+		serial: 3006, common: "downstream-server-only", notBefore: now.Add(-time.Hour),
+		notAfter: now.Add(24 * time.Hour), server: true,
+	})
 
-// writeCredentialFile replaces the downstream credential file. Callers reload
-// the credentials afterwards.
-func (s *testServer) writeCredentialFile(lines ...string) {
-	s.t.Helper()
-	if err := os.WriteFile(s.credentialFile, []byte(strings.Join(lines, "\n")+"\n"), 0o600); err != nil {
-		s.t.Fatalf("rewrite credential file: %v", err)
+	pki := &testPKI{
+		root: root, rootKey: rootKey, roots: poolFor(rootPEM),
+		caFile:             writeFile(t, directory, "clients-ca.pem", rootPEM),
+		serverCertFile:     writeFile(t, directory, "server.pem", serverCert),
+		serverKeyFile:      writeFile(t, directory, "server-key.pem", serverKey),
+		serverCertPEM:      serverCert,
+		clientCertFile:     writeFile(t, directory, "client.pem", clientCert),
+		clientKeyFile:      writeFile(t, directory, "client-key.pem", clientKey),
+		clientCertPEM:      clientCert,
+		clientKeyPEM:       clientKey,
+		clientBCertFile:    writeFile(t, directory, "client-b.pem", clientBCert),
+		clientBKeyFile:     writeFile(t, directory, "client-b-key.pem", clientBKey),
+		clientBInstance:    testClientInstanceB,
+		expiredCertFile:    writeFile(t, directory, "expired.pem", expiredCert),
+		expiredKeyFile:     writeFile(t, directory, "expired-key.pem", expiredKey),
+		expiredPEM:         expiredCert,
+		revokedCertFile:    writeFile(t, directory, "revoked.pem", revokedCert),
+		revokedKeyFile:     writeFile(t, directory, "revoked-key.pem", revokedKey),
+		untrustedCertFile:  writeFile(t, directory, "untrusted.pem", untrustedCert),
+		untrustedKeyFile:   writeFile(t, directory, "untrusted-key.pem", untrustedKey),
+		serverOnlyCertFile: writeFile(t, directory, "server-only.pem", serverOnlyCert),
+		serverOnlyKeyFile:  writeFile(t, directory, "server-only-key.pem", serverOnlyKey),
+		crlFile:            filepath.Join(directory, "clients.crl.pem"),
 	}
+	pki.writeCRL(t, 1, now.Add(-time.Hour), now.Add(24*time.Hour), big.NewInt(testRevokedSerial))
+	return pki
+}
+
+func newTestCA(t *testing.T, common string, now time.Time) (*x509.Certificate, *ecdsa.PrivateKey) {
+	t.Helper()
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatalf("generate CA key: %v", err)
+	}
+	template := &x509.Certificate{
+		SerialNumber:          big.NewInt(1001),
+		Subject:               pkix.Name{CommonName: common},
+		NotBefore:             now.Add(-time.Hour),
+		NotAfter:              now.Add(7 * 24 * time.Hour),
+		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageCRLSign | x509.KeyUsageDigitalSignature,
+		BasicConstraintsValid: true,
+		IsCA:                  true,
+		MaxPathLen:            1,
+	}
+	der, err := x509.CreateCertificate(rand.Reader, template, template, &key.PublicKey, key)
+	if err != nil {
+		t.Fatalf("create CA certificate: %v", err)
+	}
+	certificate, err := x509.ParseCertificate(der)
+	if err != nil {
+		t.Fatalf("parse CA certificate: %v", err)
+	}
+	return certificate, key
+}
+
+// issueIntermediateCA creates a CA signed by parent. The returned PEM is the
+// intermediate certificate itself.
+func issueIntermediateCA(t *testing.T, parent *x509.Certificate, parentKey *ecdsa.PrivateKey, now time.Time) (*x509.Certificate, *ecdsa.PrivateKey, []byte) {
+	t.Helper()
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatalf("generate intermediate key: %v", err)
+	}
+	template := &x509.Certificate{
+		SerialNumber:          big.NewInt(1500),
+		Subject:               pkix.Name{CommonName: "adsproxy intermediate CA"},
+		NotBefore:             now.Add(-time.Hour),
+		NotAfter:              now.Add(6 * 24 * time.Hour),
+		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageCRLSign | x509.KeyUsageDigitalSignature,
+		BasicConstraintsValid: true,
+		IsCA:                  true,
+		MaxPathLen:            0,
+		MaxPathLenZero:        true,
+	}
+	der, err := x509.CreateCertificate(rand.Reader, template, parent, &key.PublicKey, parentKey)
+	if err != nil {
+		t.Fatalf("create intermediate certificate: %v", err)
+	}
+	certificate, err := x509.ParseCertificate(der)
+	if err != nil {
+		t.Fatalf("parse intermediate certificate: %v", err)
+	}
+	return certificate, key, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})
+}
+
+func issueTestCertificate(t *testing.T, ca *x509.Certificate, caKey *ecdsa.PrivateKey, template certificateTemplate) (certificatePEM, keyPEM []byte) {
+	t.Helper()
+	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatalf("generate certificate key: %v", err)
+	}
+	templateValue := &x509.Certificate{
+		SerialNumber: big.NewInt(template.serial),
+		Subject:      pkix.Name{CommonName: template.common},
+		NotBefore:    template.notBefore,
+		NotAfter:     template.notAfter,
+		KeyUsage:     x509.KeyUsageDigitalSignature,
+	}
+	if template.client {
+		templateValue.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageClientAuth}
+	}
+	if template.server {
+		templateValue.ExtKeyUsage = []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}
+		templateValue.IPAddresses = []net.IP{net.ParseIP("127.0.0.1"), net.ParseIP("::1")}
+		templateValue.DNSNames = []string{"localhost"}
+	}
+	der, err := x509.CreateCertificate(rand.Reader, templateValue, ca, &key.PublicKey, caKey)
+	if err != nil {
+		t.Fatalf("create certificate: %v", err)
+	}
+	keyDER, err := x509.MarshalPKCS8PrivateKey(key)
+	if err != nil {
+		t.Fatalf("marshal certificate key: %v", err)
+	}
+	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der}),
+		pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: keyDER})
+}
+
+func poolFor(pemBytes []byte) *x509.CertPool {
+	pool := x509.NewCertPool()
+	pool.AppendCertsFromPEM(pemBytes)
+	return pool
+}
+
+func writeFile(t *testing.T, directory, name string, data []byte) string {
+	t.Helper()
+	path := filepath.Join(directory, name)
+	if err := os.WriteFile(path, data, 0o600); err != nil {
+		t.Fatalf("write %s: %v", name, err)
+	}
+	return path
+}
+
+// writeCRL replaces the client CA's CRL file. Every call increments the CRL
+// number unless the caller supplies one.
+func (p *testPKI) writeCRL(t *testing.T, number int64, thisUpdate, nextUpdate time.Time, revoked ...*big.Int) {
+	t.Helper()
+	entries := make([]x509.RevocationListEntry, 0, len(revoked))
+	for _, serial := range revoked {
+		entries = append(entries, x509.RevocationListEntry{
+			SerialNumber:   serial,
+			RevocationTime: thisUpdate,
+		})
+	}
+	template := &x509.RevocationList{
+		Number:                    big.NewInt(number),
+		ThisUpdate:                thisUpdate,
+		NextUpdate:                nextUpdate,
+		RevokedCertificateEntries: entries,
+	}
+	der, err := x509.CreateRevocationList(rand.Reader, template, p.root, p.rootKey)
+	if err != nil {
+		t.Fatalf("create CRL: %v", err)
+	}
+	encoded := pem.EncodeToMemory(&pem.Block{Type: "X509 CRL", Bytes: der})
+	if err := os.WriteFile(p.crlFile, encoded, 0o600); err != nil {
+		t.Fatalf("write CRL: %v", err)
+	}
+	p.crlNumber = number
+}
+
+// testServer is one running downstream listener with its generated PKI.
+type testServer struct {
+	t        *testing.T
+	mirror   *Mirror
+	server   *Server
+	listener *Listener
+	pki      *testPKI
+	authz    *authzStub
+	handler  http.Handler
+	address  string
+	done     chan struct{}
 }
 
 type testServerOptions struct {
-	chain          []string
 	coalesceWindow time.Duration
 	hub            *Hub
-	maxDownstream  int
-	maxConnections int
-	maxChainDepth  int
 	paused         func() bool
+	chain          []string
 }
 
-func newTestServer(t *testing.T, mirror *Mirror, options *testServerOptions, credentials ...testCredential) *testServer {
+func newTestServer(t *testing.T, mirror *Mirror, options *testServerOptions) *testServer {
 	t.Helper()
 	if options == nil {
 		options = &testServerOptions{}
 	}
-	directory := t.TempDir()
-	credentialFile := filepath.Join(directory, "downstream-credentials")
-	lines := make([]string, 0, len(credentials))
-	tokens := make(map[string]string, len(credentials))
-	for _, credential := range credentials {
-		subset := "*"
-		if len(credential.services) > 0 {
-			subset = strings.Join(credential.services, ",")
-		}
-		lines = append(lines, credential.downstreamID+":"+hashToken(credential.token)+":"+subset)
-		tokens[credential.downstreamID] = credential.token
-	}
-	if err := os.WriteFile(credentialFile, []byte(strings.Join(lines, "\n")+"\n"), 0o600); err != nil {
-		t.Fatalf("write credential file: %v", err)
-	}
-
+	pki := newTestPKI(t)
 	server, err := NewServer(Config{
-		InstanceID:                  testProxyID,
-		Chain:                       options.chain,
-		Mirror:                      mirror,
-		CredentialFile:              credentialFile,
-		MaxDownstream:               options.maxDownstream,
-		MaxConnectionsPerDownstream: options.maxConnections,
-		MaxChainDepth:               options.maxChainDepth,
-		CoalesceWindow:              options.coalesceWindow,
-		Hub:                         options.hub,
-		Paused:                      options.paused,
+		InstanceID:     testProxyID,
+		Chain:          options.chain,
+		Mirror:         mirror,
+		CoalesceWindow: options.coalesceWindow,
+		Hub:            options.hub,
+		Paused:         options.paused,
 	})
 	if err != nil {
 		t.Fatalf("new server: %v", err)
 	}
-
-	httpServer := httptest.NewUnstartedServer(server)
-	httpServer.StartTLS()
+	authz := &authzStub{}
+	handler, err := DownstreamHandler(server, AuthzHandlers{
+		IsAllowed:             http.HandlerFunc(authz.isAllowed),
+		AllGrantedRoles:       http.HandlerFunc(authz.allGrantedRoles),
+		AllGrantedPermissions: http.HandlerFunc(authz.allGrantedPermissions),
+	})
+	if err != nil {
+		t.Fatalf("downstream handler: %v", err)
+	}
+	listener, err := NewListener(ListenerConfig{
+		Endpoint:     "127.0.0.1:0",
+		CertPath:     pki.serverCertFile,
+		KeyPath:      pki.serverKeyFile,
+		ClientCAPath: pki.caFile,
+		CRLFiles:     []string{pki.crlFile},
+	}, handler)
+	if err != nil {
+		t.Fatalf("new listener: %v", err)
+	}
+	rawListener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("listen: %v", err)
+	}
+	running := &testServer{
+		t:        t,
+		mirror:   mirror,
+		server:   server,
+		listener: listener,
+		pki:      pki,
+		authz:    authz,
+		handler:  handler,
+		address:  "https://" + rawListener.Addr().String(),
+		done:     make(chan struct{}),
+	}
+	go func() {
+		defer close(running.done)
+		if err := listener.Serve(rawListener); err != nil {
+			t.Logf("downstream listener stopped: %v", err)
+		}
+	}()
 	t.Cleanup(func() {
-		httpServer.Close()
+		_ = listener.Close()
+		select {
+		case <-running.done:
+		case <-time.After(5 * time.Second):
+			t.Log("downstream listener did not stop")
+		}
 		server.Close()
 	})
-
-	caFile := filepath.Join(directory, "ca.pem")
-	certificate := httpServer.Certificate()
-	if certificate == nil {
-		t.Fatal("test server has no certificate")
-	}
-	pemBytes := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certificate.Raw})
-	if err := os.WriteFile(caFile, pemBytes, 0o644); err != nil {
-		t.Fatalf("write CA file: %v", err)
-	}
-	roots := x509.NewCertPool()
-	if !roots.AppendCertsFromPEM(pemBytes) {
-		t.Fatal("append CA certificate")
-	}
-	return &testServer{
-		t:              t,
-		mirror:         mirror,
-		server:         server,
-		httpServer:     httpServer,
-		caFile:         caFile,
-		credentialFile: credentialFile,
-		roots:          roots,
-		credentials:    tokens,
-	}
+	running.waitReady()
+	return running
 }
 
-func (s *testServer) token(downstreamID string) string {
+func (s *testServer) waitReady() {
 	s.t.Helper()
-	token, found := s.credentials[downstreamID]
-	if !found {
-		s.t.Fatalf("no token for downstream %q", downstreamID)
+	client := s.client(s.pki.clientCertFile, s.pki.clientKeyFile)
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		response, err := client.Get(s.address + adsync.APIPrefix + "/services")
+		if err == nil {
+			_ = response.Body.Close()
+			if response.StatusCode == http.StatusOK {
+				return
+			}
+		}
+		time.Sleep(10 * time.Millisecond)
 	}
-	return token
+	s.t.Fatal("downstream listener did not become ready")
 }
 
-func (s *testServer) client() *http.Client {
+func (s *testServer) client(certFile, keyFile string) *http.Client {
+	s.t.Helper()
+	certificate, err := tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
+		s.t.Fatalf("load client certificate: %v", err)
+	}
 	return &http.Client{
-		Transport: &http.Transport{TLSClientConfig: &tls.Config{RootCAs: s.roots}},
+		Transport: &http.Transport{TLSClientConfig: &tls.Config{
+			RootCAs:      s.pki.roots,
+			Certificates: []tls.Certificate{certificate},
+		}},
+		Timeout: 10 * time.Second,
 	}
 }
 
-func (s *testServer) get(path, token string, header http.Header) (*http.Response, []byte) {
+func (s *testServer) defaultClient() *http.Client {
+	return s.client(s.pki.clientCertFile, s.pki.clientKeyFile)
+}
+
+func (s *testServer) get(client *http.Client, path string, header http.Header) (*http.Response, []byte) {
 	s.t.Helper()
-	request, err := http.NewRequest(http.MethodGet, s.httpServer.URL+path, nil)
+	request, err := http.NewRequest(http.MethodGet, s.address+path, nil)
 	if err != nil {
 		s.t.Fatalf("build request: %v", err)
-	}
-	if token != "" {
-		request.Header.Set("Authorization", "Bearer "+token)
 	}
 	for name, values := range header {
 		for _, value := range values {
 			request.Header.Add(name, value)
 		}
 	}
-	response, err := s.client().Do(request)
+	response, err := client.Do(request)
 	if err != nil {
 		s.t.Fatalf("GET %s: %v", path, err)
 	}
@@ -320,17 +560,14 @@ func (s *testServer) get(path, token string, header http.Header) (*http.Response
 	return response, body
 }
 
-func (s *testServer) post(path, token string, body []byte) (*http.Response, []byte) {
+func (s *testServer) post(client *http.Client, path string, body []byte) (*http.Response, []byte) {
 	s.t.Helper()
-	request, err := http.NewRequest(http.MethodPost, s.httpServer.URL+path, strings.NewReader(string(body)))
+	request, err := http.NewRequest(http.MethodPost, s.address+path, strings.NewReader(string(body)))
 	if err != nil {
 		s.t.Fatalf("build request: %v", err)
 	}
 	request.Header.Set("Content-Type", "application/json")
-	if token != "" {
-		request.Header.Set("Authorization", "Bearer "+token)
-	}
-	response, err := s.client().Do(request)
+	response, err := client.Do(request)
 	if err != nil {
 		s.t.Fatalf("POST %s: %v", path, err)
 	}
@@ -342,26 +579,46 @@ func (s *testServer) post(path, token string, body []byte) (*http.Response, []by
 	return response, payload
 }
 
-func (s *testServer) dial(token string) (*websocket.Conn, *http.Response, error) {
+// dialAnonymous opens a WebSocket channel without a client certificate.
+func (s *testServer) dialAnonymous() (*websocket.Conn, *http.Response, error) {
+	s.t.Helper()
 	dialer := websocket.Dialer{
-		TLSClientConfig:  &tls.Config{RootCAs: s.roots},
+		TLSClientConfig:  &tls.Config{RootCAs: s.pki.roots},
 		HandshakeTimeout: 5 * time.Second,
 	}
-	header := http.Header{}
-	if token != "" {
-		header.Set("Authorization", "Bearer "+token)
-	}
-	target := "wss" + strings.TrimPrefix(s.httpServer.URL, "https") + adsync.APIPrefix + "/channel"
-	return dialer.Dial(target, header)
+	target := "wss" + strings.TrimPrefix(s.address, "https") + adsync.APIPrefix + "/channel"
+	return dialer.Dial(target, http.Header{})
 }
 
-func (s *testServer) newClient(token string) *adsync.Client {
+// dial opens a WebSocket channel with one client certificate.
+func (s *testServer) dial(certFile, keyFile string) (*websocket.Conn, *http.Response, error) {
+	s.t.Helper()
+	certificate, err := tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
+		s.t.Fatalf("load client certificate: %v", err)
+	}
+	dialer := websocket.Dialer{
+		TLSClientConfig: &tls.Config{
+			RootCAs:      s.pki.roots,
+			Certificates: []tls.Certificate{certificate},
+		},
+		HandshakeTimeout: 5 * time.Second,
+	}
+	target := "wss" + strings.TrimPrefix(s.address, "https") + adsync.APIPrefix + "/channel"
+	return dialer.Dial(target, http.Header{})
+}
+
+// newClient returns a downstream adsync client that authenticates with the
+// generated client certificate.
+func (s *testServer) newClient(instanceID string) *adsync.Client {
 	s.t.Helper()
 	client, err := adsync.NewClient(adsync.Config{
-		BaseURL:         s.httpServer.URL,
-		APIKey:          token,
-		InstanceID:      testClientInstanceID,
-		CAFile:          s.caFile,
+		BaseURL:         s.address,
+		APIKey:          "test-downstream-key",
+		InstanceID:      instanceID,
+		CAFile:          s.pki.caFile,
+		ClientCertFile:  s.pki.clientCertFile,
+		ClientKeyFile:   s.pki.clientKeyFile,
 		RequestTimeout:  2 * time.Second,
 		SnapshotTimeout: 2 * time.Second,
 		Retry: adsync.RetryPolicy{
@@ -374,6 +631,28 @@ func (s *testServer) newClient(token string) *adsync.Client {
 		s.t.Fatalf("new downstream client: %v", err)
 	}
 	return client
+}
+
+// authzStub records the three authorization operations. Authz handlers run
+// after the listener's TLS authentication, so a request that reaches them
+// proves the route and the certificate.
+type authzStub struct {
+	calls int
+}
+
+func (a *authzStub) isAllowed(w http.ResponseWriter, r *http.Request) {
+	a.calls++
+	writeJSON(w, http.StatusOK, map[string]bool{"allowed": true})
+}
+
+func (a *authzStub) allGrantedRoles(w http.ResponseWriter, r *http.Request) {
+	a.calls++
+	writeJSON(w, http.StatusOK, []string{})
+}
+
+func (a *authzStub) allGrantedPermissions(w http.ResponseWriter, r *http.Request) {
+	a.calls++
+	writeJSON(w, http.StatusOK, []any{})
 }
 
 func syncToHead(t *testing.T, syncer *adsync.Syncer, service adsync.Service) *adsync.ServiceState {
@@ -453,5 +732,36 @@ func readClose(t *testing.T, conn *websocket.Conn) (int, string) {
 			// Ignore an ack that raced with the close.
 			continue
 		}
+	}
+}
+
+// helloFrame returns a valid hello frame for one instance.
+func helloFrame(instanceID string, services ...string) map[string]any {
+	entries := make([]map[string]any, 0, len(services))
+	for _, service := range services {
+		entries = append(entries, map[string]any{
+			"id": service, "name": "service", "revision": 1, "state": "in_sync",
+		})
+	}
+	return map[string]any{
+		"type":         "hello",
+		"instanceId":   instanceID,
+		"services":     entries,
+		"agentVersion": "test",
+		"host":         nil,
+	}
+}
+
+func heartbeatFrame(instanceID string) map[string]any {
+	return map[string]any{
+		"type":            "heartbeat",
+		"instanceId":      instanceID,
+		"seq":             1,
+		"services":        []any{},
+		"liveness":        "live",
+		"fallback":        map[string]any{"active": false, "services": []any{}, "since": nil, "routedCalls": 0},
+		"agentVersion":    "test",
+		"transport":       "websocket",
+		"downstreamCount": nil,
 	}
 }

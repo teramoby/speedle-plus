@@ -13,23 +13,38 @@
 // # Configuration
 //
 // UpstreamURL is one HTTPS root or an ordered list. Direct mode uses APIKey
-// and one upstream. Cascade mode omits APIKey and requires ClientCertFile,
-// ClientKeyFile, CAFile and CacheDir. Cascade sends no bearer header and
-// verifies the relay chain, serverAuth usage and URL host SAN against CAFile.
-// TLS files reload every 30 seconds (TLSReloadInterval) and on SIGHUP; valid
-// changes reconnect upstream channels and HTTP connections. Invalid changes
-// retain the last valid generation. Optional CRLFiles and CRLURLs check relay
-// revocation. See docs/POLICY_SOURCE.md for configuration and current scope.
+// and one upstream; the key is accepted only in the configuration file and
+// retained as a redacted secret in Options. Cascade mode omits APIKey and
+// requires ClientCertFile, ClientKeyFile, CAFile and CacheDir. Cascade sends
+// no bearer header and verifies the relay chain, serverAuth usage and URL host
+// SAN against CAFile. TLS files reload every 30 seconds (TLSReloadInterval)
+// and on SIGHUP; valid changes reconnect upstream channels and HTTP
+// connections. Invalid changes retain the last valid generation. Optional
+// CRLFiles and CRLURLs check relay revocation. See docs/POLICY_SOURCE.md for
+// configuration and current scope.
 //
 // Every instance generates a UUIDv7 and keeps it in CacheDir. Cascade requires
 // this directory, rejects corrupt retained state, and keeps its ID across
 // certificate rotation. Direct mode without CacheDir creates a new ID on each
-// start. ServeDownstream is not supported yet.
+// start. The upstream registers the instance on its first channel request and
+// assigns its services.
 //
-// Removed prototype settings, including DownstreamCredentialsFile and Services,
-// fail startup. The error names ClientCertFile, ClientKeyFile, CAFile and the
-// relay's downstreamClientCAPath. No service subset or connection/depth limit
-// is accepted. Engines using other store types are unaffected.
+// ServeDownstream enables the downstream mTLS listener: the store mirrors each
+// verified copy and exposes the policy-source protocol handler
+// (DownstreamHandler) for the process to serve on its dedicated listener. A
+// service is withheld from downstream serving while a copy is being fetched
+// and verified, after a failed pass, and while the instance is paused or no
+// longer live; it becomes servable again only at a confirmed head. The
+// listener's endpoint, certificate, key, client CA and CRL sources are server
+// configuration; the store has no fan-out, chain-depth or connection limits.
+//
+// PolicySourceURL, CredentialFile, SPEEDLE_ADS_CREDENTIAL,
+// PolicySourcePublicKeys, Services, CloudFallbackURL, CloudCredentialFile,
+// InstanceName, InstanceID, DownstreamCredentialsFile, MaxDownstream,
+// MaxChainDepth and MaxConnectionsPerDownstream are rejected. Configure
+// UpstreamURL and either APIKey or cascade mTLS material instead; select
+// services in the Cloud console. Engines using other store types are
+// unaffected.
 //
 // # Change notification
 //
