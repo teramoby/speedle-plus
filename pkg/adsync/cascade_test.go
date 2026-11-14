@@ -629,3 +629,32 @@ func TestCascadeDownstreamSyncingDoesNotChangeHealthyLocalService(t *testing.T) 
 		t.Fatalf("complete relay state: %+v", got)
 	}
 }
+
+func TestCascadeGETAddressAndGenerationAreOneSelection(t *testing.T) {
+	pki := newCascadePKI(t)
+	cert, _, _ := pki.issue(t, 91, x509.ExtKeyUsageServerAuth, "127.0.0.1", time.Now().Add(time.Hour))
+	old := cascadeServer(t, pki, cert, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(503) }))
+	replacement := cascadeServer(t, pki, cert, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(ServicesResponse{ServicesVersion: 1, Services: []Service{}})
+	}))
+	config := cascadeConfig(t, pki, old.URL)
+	config.UpstreamURLs = []string{old.URL, replacement.URL}
+	client := mustCascadeClient(t, config)
+	newTestChannel(t, client, newChannelMachine(t), ChannelOptions{})
+	client.selectEndpoint(client.upstreams[0], func() {})
+	client.approveCandidate()
+	endpoint := client.endpoint("services")
+	var replacementCanceled atomic.Bool
+	client.selectEndpoint(client.upstreams[1], func() { replacementCanceled.Store(true) })
+	client.approveCandidate()
+	var response ServicesResponse
+	if _, err := client.get(context.Background(), endpoint, nil, nil, false, &response); !errors.Is(err, ErrUnavailable) {
+		t.Fatalf("old GET: %v", err)
+	}
+	if replacementCanceled.Load() {
+		t.Fatal("old GET was attributed to the replacement generation")
+	}
+	if _, err := client.Services(context.Background()); err != nil {
+		t.Fatalf("replacement GET: %v", err)
+	}
+}

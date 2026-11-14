@@ -479,14 +479,22 @@ func loadCertPool(path string) (*x509.CertPool, error) {
 	return pool, nil
 }
 
-func (c *Client) endpoint(parts ...string) string {
+type dataEndpoint struct {
+	url        string
+	generation uint64
+	admitted   bool
+}
+
+func (c *Client) endpoint(parts ...string) dataEndpoint {
+	c.upstreamMu.Lock()
+	defer c.upstreamMu.Unlock()
 	target := *c.selectedBase()
 	path := target.Path + APIPrefix
 	for _, part := range parts {
 		path += "/" + url.PathEscape(part)
 	}
 	target.Path = path
-	return target.String()
+	return dataEndpoint{url: target.String(), generation: c.upstreamGeneration, admitted: c.selectionReady()}
 }
 
 // Services lists the services this instance may sync.
@@ -570,13 +578,11 @@ func (c *Client) Changes(ctx context.Context, serviceID, sourceID, epoch string,
 
 // get performs one idempotent GET, with retries for transport failures,
 // HTTP 408/429 and transient 5xx responses.
-func (c *Client) get(ctx context.Context, endpoint string, query url.Values, header http.Header, allowNotModified bool, dst any) (unchanged bool, getErr error) {
-	if !c.selectionReady() {
+func (c *Client) get(ctx context.Context, endpoint dataEndpoint, query url.Values, header http.Header, allowNotModified bool, dst any) (unchanged bool, getErr error) {
+	if !endpoint.admitted {
 		return false, ErrUnavailable
 	}
-	c.upstreamMu.Lock()
-	generation := c.upstreamGeneration
-	c.upstreamMu.Unlock()
+	generation := endpoint.generation
 	retryableFailure := false
 	defer func() {
 		if getErr != nil && ctx.Err() == nil && (retryableFailure || isUpstreamFailure(getErr)) {
@@ -586,7 +592,7 @@ func (c *Client) get(ctx context.Context, endpoint string, query url.Values, hea
 	var lastErr error
 	for attempt := 1; attempt <= c.retry.MaxAttempts; attempt++ {
 		reflect.ValueOf(dst).Elem().SetZero()
-		notModified, retryable, err := c.getOnce(ctx, endpoint, query, header, allowNotModified, dst)
+		notModified, retryable, err := c.getOnce(ctx, endpoint.url, query, header, allowNotModified, dst)
 		retryableFailure = retryable
 		if err == nil {
 			return notModified, nil
