@@ -1,4 +1,4 @@
-"""The release publisher recreates a retained Homebrew branch from master."""
+"""Exercise release branch retries and every discovered Quick Start locale."""
 
 import hashlib
 import importlib.util
@@ -17,6 +17,12 @@ UPDATER_SPEC = importlib.util.spec_from_file_location(
     "update_formulas", HOMEBREW / "update-formulas.py")
 update_formulas = importlib.util.module_from_spec(UPDATER_SPEC)
 UPDATER_SPEC.loader.exec_module(update_formulas)
+PIN_SPEC = importlib.util.spec_from_file_location(
+    "bump_pin", HOMEBREW / "bump-quick-start-pin.py")
+bump_pin = importlib.util.module_from_spec(PIN_SPEC)
+PIN_SPEC.loader.exec_module(bump_pin)
+# fr is deliberately not a shipped locale: no production fixed list may know it.
+EXTRA_LOCALES = ("es", "ja", "ko", "fr")
 
 
 def run(command, cwd, env):
@@ -45,6 +51,10 @@ class PublishTapRetryTest(unittest.TestCase):
             root = Path(temporary)
             self._run_case(root, open_pr=False, quick_start="v1.6.0")
 
+    def test_release_pr_repairs_generated_files_when_sources_are_current(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            self._run_case(Path(temporary), open_pr=False, quick_start="v1.6.0", current_sources=True)
+
     def test_stamp_writes_utc_in_the_form_hugo_prints(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -67,7 +77,191 @@ class PublishTapRetryTest(unittest.TestCase):
             index = (root / "docs/sitemap.xml").read_text()
             self.assertIn("<lastmod>2024-05-01T00:00:00+00:00</lastmod>", index)
 
-    def _run_case(self, root, open_pr, existing_tap_branch=False, quick_start=None):
+    def test_partial_release_update_and_retry_leave_no_stale_locale(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self._write_quick_start(root, "v1.7.1")
+            # Reproduce #424: English and Chinese are already up to date.
+            for rel in ("docs/hugo/content/quick-start.md", "docs/hugo/content/quick-start.zh.md",
+                        "docs/quick-start/index.html", "docs/zh/quick-start/index.html"):
+                path = root / rel
+                path.write_text(path.read_text().replace("v1.7.1", "v1.8.0"))
+            archive = root / "docs/archive/quick-start/index.html"
+            archive.parent.mkdir(parents=True)
+            archive.write_text("historical cmd/...@v1.7.1")
+            unrelated = root / "docs/hugo/content/embedded.fr.md"
+            unrelated.write_text("historical v1.7.1")
+            self.assertTrue(bump_pin.bump_tree(root, "v1.8.0"))
+            self.assertNotIn("v1.7.1", (root / "docs/zh/index.xml").read_text())
+            self.assertIn("cmd/...@v1.8.0", (root / "docs/zh/index.xml").read_text())
+            for locale in EXTRA_LOCALES:
+                for rel in (f"docs/hugo/content/quick-start.{locale}.md",
+                            f"docs/{locale}/quick-start/index.html", f"docs/{locale}/index.xml"):
+                    text = (root / rel).read_text()
+                    self.assertIn("cmd/...@v1.8.0", text)
+                    self.assertNotIn("v1.7.1", text)
+            before = {path: path.read_bytes() for path in root.rglob("*") if path.is_file()}
+            self.assertFalse(bump_pin.bump_tree(root, "v1.8.0"))
+            self.assertEqual(before, {path: path.read_bytes() for path in before})
+            self.assertEqual(archive.read_text(), "historical cmd/...@v1.7.1")
+            self.assertEqual(unrelated.read_text(), "historical v1.7.1")
+
+    def test_current_commands_do_not_hide_stale_release_descriptions(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self._write_quick_start(root, "v1.7.1")
+            # Reproduce a partially updated source, HTML or RSS item: command
+            # says v1.8.0, but its following release description says v1.7.1.
+            for path in root.rglob("*"):
+                if path.is_file():
+                    path.write_text(path.read_text().replace("cmd/...@v1.7.1", "cmd/...@v1.8.0"))
+            self.assertTrue(bump_pin.bump_tree(root, "v1.8.0"))
+            for path in root.rglob("*"):
+                if path.is_file():
+                    self.assertNotIn("v1.7.1", path.read_text(), str(path))
+            self.assertFalse(bump_pin.bump_tree(root, "v1.8.0"))
+
+    def test_rss_release_tags_allow_localized_suffixes_and_sentence_punctuation(self):
+        for suffix in ("은 최신 릴리스 태그입니다.", "是最新版本。", "。", "."):
+            with self.subTest(suffix=suffix):
+                text = "go install github.com/teramoby/speedle-plus/cmd/...@v1.8.0 GOBIN note: v1.7.1" + suffix
+                updated, changed = bump_pin.bump_text(text, "v1.8.0", plain=True, note="`GOBIN` note: `v1.8.0`" + suffix)
+                self.assertTrue(changed)
+                self.assertEqual(updated, text.replace("v1.7.1", "v1.8.0"))
+                self.assertFalse(bump_pin.bump_text(updated, "v1.8.0", plain=True, note="`GOBIN` note: `v1.8.0`" + suffix)[1])
+
+    def test_rss_entities_and_smart_punctuation_preserve_original_escaping(self):
+        note = "`GOBIN` keeps this directory's \"files\" & checks <limits> -- then `v1.8.0` is latest."
+        for rendered in (
+            "GOBIN keeps this directory&rsquo;s &quot;files&quot; &amp; checks &lt;limits&gt; &ndash; then v1.7.1 is latest.",
+            "GOBIN keeps this directory&amp;rsquo;s &amp;#34;files&amp;#34; &amp;amp; checks &amp;lt;limits&amp;gt; &amp;ndash; then v1.7.1 is latest.",
+        ):
+            with self.subTest(rendered=rendered):
+                text = "go install github.com/teramoby/speedle-plus/cmd/...@v1.8.0 " + rendered
+                updated, changed = bump_pin.bump_text(text, "v1.8.0", plain=True, note=note)
+                self.assertTrue(changed)
+                self.assertEqual(updated, text.replace("v1.7.1", "v1.8.0"))
+                self.assertFalse(bump_pin.bump_text(updated, "v1.8.0", plain=True, note=note)[1])
+
+    def test_moved_or_missing_current_release_note_aborts_tree_update(self):
+        for first_paragraph in ("### Route B", "Install complete."):
+            with self.subTest(first_paragraph=first_paragraph), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                self._write_quick_start(root, "v1.7.1")
+                guide = root / "docs/hugo/content/quick-start.md"
+                text = guide.read_text()
+                span = bump_pin.release_note(text)
+                guide.write_text(text[:span[0]] + first_paragraph + "\n\n" + text[span[0]:])
+                with self.assertRaisesRegex(SystemExit, "quick-start.md: current-release note must be"):
+                    bump_pin.bump_tree(root, "v1.8.0")
+
+    def test_unsupported_markup_or_truncated_rss_note_has_actionable_error(self):
+        for note in ("**GOBIN** latest: `v1.8.0`.", "GOBIN latest: `v1.8.0`. Extra sentence."):
+            text = "go install github.com/teramoby/speedle-plus/cmd/...@v1.8.0 GOBIN latest: v1.7.1."
+            with self.subTest(note=note), self.assertRaisesRegex(
+                    SystemExit, "check plain-text/code formatting and RSS summary truncation"):
+                bump_pin.bump_text(text, "v1.8.0", plain=True, note=note)
+
+    def test_real_quick_start_sources_and_generated_feeds_support_next_release(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            for rel in [*bump_pin.tracked_paths(ROOT), Path("docs/hugo/config.toml")]:
+                destination = root / rel
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(ROOT / rel, destination)
+            target = "v999.0.0"  # local copies only; no release/tag/registry operation
+            self.assertTrue(bump_pin.bump_tree(root, target))
+            for guide in bump_pin.guide_paths(root):
+                page, feed, _, _ = bump_pin.outputs(root, guide)
+                for path in (guide, page):
+                    text = path.read_text()
+                    self.assertEqual(bump_pin.INSTALL.search(text)[2], target)
+                    span = bump_pin.release_note(text)
+                    tag = bump_pin.CODE_TAG.search(text[span[0]:span[1]])
+                    self.assertEqual(tag[1] or tag[2], target)
+                if feed.is_file():
+                    for pin in bump_pin.INSTALL.finditer(feed.read_text()):
+                        self.assertEqual(pin[2], target)
+            before = {path: path.read_bytes() for path in root.rglob("*") if path.is_file()}
+            self.assertFalse(bump_pin.bump_tree(root, target))
+            self.assertEqual(before, {path: path.read_bytes() for path in before})
+
+    def test_missing_default_guide_is_rejected_by_every_discovery_consumer(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self._write_quick_start(root, "v1.7.1")
+            (root / "docs/hugo/content/quick-start.md").unlink()
+            for operation in (lambda: bump_pin.bump_tree(root, "v1.8.0"),
+                              lambda: bump_pin.stamp_tree(root, "2024-05-01T00:00:00Z"),
+                              lambda: bump_pin.tracked_paths(root)):
+                with self.assertRaisesRegex(SystemExit, "default Quick Start guide is required"):
+                    operation()
+
+    def test_configured_site_rejects_zero_guides_but_pre_site_tree_is_supported(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.assertFalse(bump_pin.bump_tree(root, "v1.8.0"))
+            self.assertFalse(bump_pin.stamp_tree(root, "2024-05-01T00:00:00Z"))
+            self.assertEqual(bump_pin.tracked_paths(root), [])
+            config = root / "docs/hugo/config.toml"
+            config.parent.mkdir(parents=True)
+            config.write_text('defaultContentLanguage = "en"\n[languages.en]\n')
+            for operation in (lambda: bump_pin.bump_tree(root, "v1.8.0"),
+                              lambda: bump_pin.stamp_tree(root, "2024-05-01T00:00:00Z"),
+                              lambda: bump_pin.tracked_paths(root)):
+                with self.assertRaisesRegex(SystemExit, "default Quick Start guide is required"):
+                    operation()
+
+    def test_missing_configured_locale_guide_is_rejected(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self._write_quick_start(root, "v1.7.1")
+            (root / "docs/hugo/config.toml").write_text(
+                'defaultContentLanguage = "en"\n[languages.en]\n[languages.ja]\n')
+            (root / "docs/hugo/content/quick-start.ja.md").unlink()
+            with self.assertRaisesRegex(SystemExit, "configured Quick Start locale is missing: quick-start.ja.md"):
+                bump_pin.bump_tree(root, "v1.8.0")
+
+    def test_only_install_block_and_its_immediate_note_are_rewritten(self):
+        for text in (
+            "```bash\ngo install github.com/teramoby/speedle-plus/cmd/...@v1.7.1\n```\n\n"
+            "`v1.7.1` is the latest.\n\nHistorical version `v0.9.0`.\n"
+            "go install github.com/teramoby/speedle-plus/cmd/...@v0.9.0\n",
+            "<pre>go install github.com/teramoby/speedle-plus/cmd/...@v1.7.1</pre>"
+            "<p><code>v1.7.1</code> is the latest.</p><p>Historical version <code>v0.9.0</code>.</p>"
+            "go install github.com/teramoby/speedle-plus/cmd/...@v0.9.0",
+        ):
+            updated, changed = bump_pin.bump_text(text, "v1.8.0")
+            self.assertTrue(changed)
+            self.assertNotIn("v1.7.1", updated)
+            self.assertEqual(updated.count("v0.9.0"), 2)
+        # No release version in the immediate paragraph: a later paragraph is
+        # unrelated, even if it contains a version-like token.
+        text = "```bash\ngo install github.com/teramoby/speedle-plus/cmd/...@v1.8.0\n```\n\nInstall done.\n\nHistorical `v0.9.0`."
+        self.assertEqual(bump_pin.bump_text(text, "v1.8.0"), (text, False))
+        # A heading between the first install block and a later legacy block
+        # must stop HTML note matching rather than finding the later </pre>.
+        text = "<pre>go install github.com/teramoby/speedle-plus/cmd/...@v1.8.0</pre>"
+        text += "<h2>Older release</h2><pre>cmd/...@v0.9.0</pre><p><code>v0.9.0</code> is older.</p>"
+        self.assertEqual(bump_pin.bump_text(text, "v1.8.0"), (text, False))
+        rss = "go install github.com/teramoby/speedle-plus/cmd/...@v1.8.0 Historical v0.9.0."
+        self.assertEqual(bump_pin.bump_text(rss, "v1.8.0", plain=True, note="Install done."), (rss, False))
+        with self.assertRaisesRegex(SystemExit, "RSS release note differs from source"):
+            bump_pin.bump_text(rss, "v1.8.0", plain=True, note="Latest: `v1.8.0`.")
+
+    def test_failed_path_discovery_aborts_before_source_branch_push(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            self._run_case(Path(temporary), open_pr=False, quick_start="v1.6.0", fail_paths=True)
+
+    def test_missing_generated_locale_page_fails(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self._write_quick_start(root, "v1.7.1")
+            (root / "docs/fr/quick-start/index.html").unlink()
+            with self.assertRaisesRegex(SystemExit, "missing generated Quick Start page.*fr/"):
+                bump_pin.bump_tree(root, "v1.8.0")
+
+    def _run_case(self, root, open_pr, existing_tap_branch=False, quick_start=None, current_sources=False, fail_paths=False):
         source_bare = root / "source.git"
         tap_bare = root / "tap.git"
         workspace = root / "workspace"
@@ -77,6 +271,11 @@ class PublishTapRetryTest(unittest.TestCase):
         gh_log = root / "gh.log"
         shutil.copytree(HOMEBREW, homebrew)
         self._write_checksums(homebrew)
+        if fail_paths:
+            helper = homebrew / "bump-quick-start-pin.py"
+            helper.write_text(helper.read_text().replace(
+                'if args[0] == "--paths":',
+                'if args[0] == "--paths":\n        raise SystemExit("fixture path discovery failed")'))
         self._git("init", "--bare", "-b", "master", source_bare)
         self._git("init", "--bare", "-b", "main", tap_bare)
         self._git("clone", source_bare, workspace)
@@ -84,6 +283,9 @@ class PublishTapRetryTest(unittest.TestCase):
         shutil.copytree(homebrew, homebrew_dest)
         if quick_start:
             self._write_quick_start(workspace, quick_start)
+            if current_sources:
+                for guide in (workspace / "docs/hugo/content").glob("quick-start*.md"):
+                    guide.write_text(guide.read_text().replace(quick_start, "v1.7.0"))
         self._git("add", "deployment", cwd=workspace)
         if quick_start:
             self._git("add", "docs", cwd=workspace)
@@ -164,6 +366,15 @@ class PublishTapRetryTest(unittest.TestCase):
         combined = completed.stdout + completed.stderr
         self.assertNotIn("fixture-token", combined)
         self.assertNotIn("fixture-source-token", combined)
+        if fail_paths:
+            self.assertNotEqual(completed.returncode, 0)
+            self.assertIn("fixture path discovery failed", combined)
+            self.assertNotIn("Pushed homebrew-v1.7.0 to teramoby/speedle-plus", combined)
+            listed = subprocess.check_output(
+                ["git", "ls-remote", "--heads", str(source_bare), "homebrew-v1.7.0"], text=True)
+            self.assertEqual(listed.strip(), "")
+            self.assertNotIn("pr create --repo teramoby/speedle-plus", gh_log.read_text())
+            return
         self.assertEqual(completed.returncode, 0, combined)
         listed = subprocess.run(
             ["git", "ls-remote", "--heads", str(source_bare), "homebrew-v1.7.0"],
@@ -213,22 +424,22 @@ class PublishTapRetryTest(unittest.TestCase):
         pages = {
             "docs/hugo/content/quick-start.md":
                 "lastmod = 2020-01-01T00:00:00+00:00\n"
-                'GOBIN="$PWD/bin" go install github.com/teramoby/speedle-plus/cmd/...@' + version + "\n"
-                f"`{version}` is the latest release tag at the time of writing.\n",
+                '```bash\nGOBIN="$PWD/bin" go install github.com/teramoby/speedle-plus/cmd/...@' + version + "\nls bin\n```\n\n"
+                f"`GOBIN` keeps binaries here. `{version}` is the latest release tag at the time of writing.\n",
             "docs/hugo/content/quick-start.zh.md":
                 "lastmod = 2020-01-01T00:00:00+00:00\n"
-                'GOBIN="$PWD/bin" go install github.com/teramoby/speedle-plus/cmd/...@' + version + "\n"
-                f"`{version}` 是撰写本文时的最新发布标签。\n",
+                '```bash\nGOBIN="$PWD/bin" go install github.com/teramoby/speedle-plus/cmd/...@' + version + "\nls bin\n```\n\n"
+                f"`GOBIN` 保留程序。 `{version}` 是撰写本文时的最新发布标签。\n",
             "docs/quick-start/index.html":
                 '<meta property="article:modified_time" content="2020-01-01T00:00:00&#43;00:00">\n'
-                "go install github.com/teramoby/speedle-plus/cmd/...@" + version + "\n"
-                f"<code>{version}</code> is the latest release tag at the time of writing.\n",
+                "<pre><code>go install github.com/teramoby/speedle-plus/cmd/...@" + version + "</code></pre>\n<p>"
+                f"<code>GOBIN</code> keeps binaries here. <code>{version}</code> is the latest release tag at the time of writing.</p>\n",
             "docs/zh/quick-start/index.html":
                 '<meta property="article:modified_time" content="2020-01-01T00:00:00&#43;00:00">\n'
-                "go install github.com/teramoby/speedle-plus/cmd/...@" + version + "\n"
-                f"<code>{version}</code> 是撰写本文时的最新发布标签。\n",
+                "<pre><code>go install github.com/teramoby/speedle-plus/cmd/...@" + version + "</code></pre>\n<p>"
+                f"<code>GOBIN</code> 保留程序。 <code>{version}</code> 是撰写本文时的最新发布标签。</p>\n",
             "docs/zh/index.xml":
-                "go install github.com/teramoby/speedle-plus/cmd/...@" + version + "\n",
+                f"<item>go install github.com/teramoby/speedle-plus/cmd/...@{version} GOBIN 保留程序。 {version} 是撰写本文时的最新发布标签。</item>\n",
             "docs/en/sitemap.xml":
                 "<loc>https://engine.speedle.io/quick-start/</loc>\n"
                 "<lastmod>2020-01-01T00:00:00+00:00</lastmod>\n",
@@ -236,6 +447,17 @@ class PublishTapRetryTest(unittest.TestCase):
                 "<loc>https://engine.speedle.io/zh/quick-start/</loc>\n"
                 "<lastmod>2020-01-01T00:00:00+00:00</lastmod>\n",
         }
+        for locale in EXTRA_LOCALES:
+            pages[f"docs/hugo/content/quick-start.{locale}.md"] = pages["docs/hugo/content/quick-start.md"]
+            pages[f"docs/{locale}/quick-start/index.html"] = pages["docs/quick-start/index.html"]
+            pages[f"docs/{locale}/index.xml"] = (
+                f"<rss><channel><item>go install github.com/teramoby/speedle-plus/cmd/...@{version} "
+                f"GOBIN keeps binaries here. {version} is the latest release tag at the time of writing.</item></channel></rss>\n"
+            )
+            pages[f"docs/{locale}/sitemap.xml"] = (
+                f"<loc>https://engine.speedle.io/{locale}/quick-start/</loc>\n"
+                "<lastmod>2020-01-01T00:00:00+00:00</lastmod>\n"
+            )
         for rel, text in pages.items():
             path = workspace / rel
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -280,6 +502,16 @@ class PublishTapRetryTest(unittest.TestCase):
         ):
             self.assertIn(f"lastmod = {author}", show(guide))
             self.assertNotIn("2020-01-01T00:00:00", show(guide))
+        for locale in EXTRA_LOCALES:
+            guide = show(f"docs/hugo/content/quick-start.{locale}.md")
+            html = show(f"docs/{locale}/quick-start/index.html")
+            feed = show(f"docs/{locale}/index.xml")
+            self.assertIn(f"lastmod = {author}", guide)
+            self.assertIn(author.replace("+", "&#43;"), html)
+            self.assertIn(author, show(f"docs/{locale}/sitemap.xml"))
+            for text in (guide, html, feed):
+                self.assertIn(f"cmd/...@{version}", text)
+                self.assertNotIn(previous, text)
         self.assertIn(author, show("docs/en/sitemap.xml"))
         self.assertIn(author, show("docs/zh/sitemap.xml"))
         self.assertNotIn("2020-01-01T00:00:00", show("docs/en/sitemap.xml"))
