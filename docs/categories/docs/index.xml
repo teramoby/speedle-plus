@@ -114,7 +114,7 @@ MongoDB must run as a replica set or sharded cluster. ADS watches the database w
       
       <guid>https://engine.speedle.io/docs/store/mysql/</guid>
       <description>This guide uses MySQL 8.4 LTS and two native Speedle processes: PMS writes policies, and ADS reads the same database with a separate read-only account. The local example uses Docker and plain HTTP on loopback. For a remote deployment, use your existing MySQL server and the Security guide.
-1. Build Speedle with the MySQL backend Install Git, Bash, curl, Docker and a supported Go toolchain (Go 1.26.10 or Go 1.</description>
+1. Build Speedle with the MySQL backend Install Git, Bash, curl, Docker and a supported Go toolchain (Go 1.27.4 or Go 1.</description>
     </item>
     
     <item>
@@ -293,8 +293,8 @@ Create an API key Open API keys, enter a name of 1–128 characters after trimmi
       
       <guid>https://engine.speedle.io/docs/store/etcd/</guid>
       <description>This walkthrough uses an external etcd v3.6.14 server with a persistent Docker volume. PMS writes policies and ADS watches the same key prefix. The single-node example listens on loopback and uses plain HTTP for local development. Production TLS and cluster configuration follow the walkthrough.
-1. Build Speedle Prepare Bash, Git, curl, Docker and Go 1.26.10 or Go 1.27.3. Start Docker, then build the native services:
-git clone --depth 1 https://github.</description>
+1. Build Speedle Prepare Bash, Git, curl, Docker and Go 1.27.4. Start Docker, then build the native services:
+git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o .</description>
     </item>
     
     <item>
@@ -315,7 +315,7 @@ Call IsAllowed from your server Send an account API key with the ads scope in on
       
       <guid>https://engine.speedle.io/docs/decisions/</guid>
       <description>What is an authorization decision? Speedle evaluates a subject, action and resource within a service. The application must enforce the result. Treat an evaluation error or timeout separately from a normal Deny and fail closed. REST, gRPC and embedded Go APIs have different wire representations; use their respective contracts.
-Before running the examples Build ./bin/spctl, ./bin/speedle-pms and ./bin/speedle-ads using the quick start. Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch), Bash, curl and Python 3.</description>
+Before running the examples Build ./bin/spctl, ./bin/speedle-pms and ./bin/speedle-ads using the quick start. Use Go 1.27.4 (or a newer patch on the same release branch), Bash, curl and Python 3.</description>
     </item>
     
     <item>

@@ -17,7 +17,7 @@ MongoDB 必须以**副本集或分片集群**方式运行：ADS 使用 change st
 
 ## 1. 编译 Speedle
 
-准备 Bash、Git、curl、已启动的 Docker，以及 Go 1.26.10 或 Go 1.27.3，然后从源码编译：
+准备 Bash、Git、curl、已启动的 Docker，以及 Go 1.27.4，然后从源码编译：
 
 <!-- mongodb-step: build -->
 ```bash

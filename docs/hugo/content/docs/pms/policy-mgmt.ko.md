@@ -63,7 +63,7 @@ grant (role designer, role dba) update db_design_doc
 
 ## 예제 실행 전 준비
 
-[빠른 시작](/quick-start/)의 설명에 따라 저장소 루트 아래의 `./bin/spctl`, `./bin/speedle-pms`, `./bin/speedle-ads`를 빌드합니다. Go 1.26.10 또는 Go 1.27.3(또는 동일 릴리스 브랜치의 최신 패치 버전), Bash, curl, Python 3이 필요합니다. 각 터미널은 저장소 루트에서 실행하십시오. 이 페이지를 위해 새 정책 파일을 사용합니다. 두 서비스가 모두 중지된 후에만 파일을 재설정하십시오.
+[빠른 시작](/quick-start/)의 설명에 따라 저장소 루트 아래의 `./bin/spctl`, `./bin/speedle-pms`, `./bin/speedle-ads`를 빌드합니다. Go 1.27.4(또는 동일 릴리스 브랜치의 최신 패치 버전), Bash, curl, Python 3이 필요합니다. 각 터미널은 저장소 루트에서 실행하십시오. 이 페이지를 위해 새 정책 파일을 사용합니다. 두 서비스가 모두 중지된 후에만 파일을 재설정하십시오.
 
 빈 정책 파일 초기화:
 

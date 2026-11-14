@@ -97,8 +97,7 @@ candidate library, and checks Allow/Deny output for both. Both checkers use the
 document blocks as executable inputs. The same global gate runs
 `go test ./website/tests/docscheck` for the documented API contracts and
 `tests/check_docs.py` for the remaining bilingual executable API/deployment guides.
-The gate uses its current Go toolchain; nightly Quick Start checks additionally
-cover Go 1.26.10 and 1.27.3.
+The gate uses its current Go toolchain; nightly Quick Start checks use the supported Go 1.27.4 toolchain.
 The Quick Start check runs the documented `go install` route once against the
 pinned release tag, checks the documented module path offline with `go list -m`,
 requires the highest full semantic tag returned by public `git ls-remote --tags`

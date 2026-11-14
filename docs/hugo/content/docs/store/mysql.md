@@ -18,8 +18,8 @@ use your existing MySQL server and the [Security guide](/docs/security/).
 
 ## 1. Build Speedle with the MySQL backend
 
-Install Git, Bash, curl, Docker and a supported Go toolchain (Go 1.26.10 or
-Go 1.27.3). Docker must be running. Build from current source so both binaries
+Install Git, Bash, curl, Docker and a supported Go toolchain (Go 1.27.4 or
+Go 1.27.4). Docker must be running. Build from current source so both binaries
 contain the `mysql` store; an older installed release may not contain it.
 
 <!-- mysql-step: build -->
