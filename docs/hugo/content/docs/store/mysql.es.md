@@ -15,7 +15,7 @@ Esta guía utiliza **MySQL 8.4 LTS** y dos procesos nativos de Speedle: PMS escr
 
 ## 1. Compilar Speedle con el backend MySQL
 
-Instale Git, Bash, curl, Docker y una versión compatible de Go (Go 1.26.10 o Go 1.27.3). Docker debe estar en ejecución. Compile desde el código fuente actual para que ambos binarios contengan el almacenamiento `mysql`; una versión anterior instalada podría no incluirlo.
+Instale Git, Bash, curl, Docker y una versión compatible de Go (Go 1.27.4). Docker debe estar en ejecución. Compile desde el código fuente actual para que ambos binarios contengan el almacenamiento `mysql`; una versión anterior instalada podría no incluirlo.
 
 <!-- mysql-step: build -->
 ```bash

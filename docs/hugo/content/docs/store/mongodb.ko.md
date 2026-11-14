@@ -17,7 +17,7 @@ MongoDB는 **복제본 세트 또는 샤딩된 클러스터**로 실행해야 �
 
 ## 1. Speedle 빌드
 
-Bash, Git, curl, Docker, 그리고 Go 1.26.10 또는 Go 1.27.3을 준비합니다. Docker를 시작하고 네이티브 서비스를 빌드합니다:
+Bash, Git, curl, Docker, 그리고 Go 1.27.4을 준비합니다. Docker를 시작하고 네이티브 서비스를 빌드합니다:
 
 <!-- mongodb-step: build -->
 ```bash

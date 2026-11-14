@@ -49,9 +49,9 @@ results=${RESULTS_DIR:-test-results}
 # The gate reruns only these packages with etcd; nightly reruns every
 # package, whose STORE_TYPE-aware fixtures (testutil/storetest) then use etcd.
 store_dependent=(./pkg/eval ./cmd/spctl/command)
-# Supported Go releases besides the CI default (see the quick start).
-other_toolchains=(go1.27.4)
-all_toolchains=(go1.26.11 go1.27.4)
+# Exact supported toolchains for the current source module.
+weekly_toolchains=(go1.27.4)
+all_toolchains=(go1.27.4)
 
 packages() {
   # MongoDB runs in the nightly hosted job; generated protobuf packages,
@@ -180,7 +180,7 @@ case "${mode}" in
   weekly)
     mkdir -p "${results}"; : > "${results}/checks.txt"
     listed=$(packages); pkgs=(); while IFS= read -r package; do pkgs+=("${package}"); done <<< "${listed}"
-    for toolchain in "${other_toolchains[@]}"; do
+    for toolchain in "${weekly_toolchains[@]}"; do
       gotest_json "go-${toolchain}" GOTOOLCHAIN="${toolchain}" STORE_TYPE=file -- -p 1 -count=1 -timeout 600s "${pkgs[@]}"
     done
     gotest_json feature-large STORE_TYPE=file SPEEDLE_STRESS_POLICIES=100000 -- -race -count=1 -timeout 1200s -tags feature_stress ./pkg/eval -run '^TestFeatureLargePolicyRoleSets$'

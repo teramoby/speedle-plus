@@ -19,7 +19,7 @@
       <guid>https://engine.speedle.io/ko/docs/deployment/embedded/</guid>
       <description>Speedle 임베디드 모드란 무엇인가 임베디드 모드는 Speedle 정책 결정 엔진을 Go 애플리케이션 프로세스 내에서 직접 실행합니다. PMS 또는 ADS 서버를 시작하지 않고 평가 엔진을 직접 호출합니다. 애플리케이션은 사용자를 인증하고 각 결정에 대해 주체, 리소스 및 작업을 제공합니다.
 코드를 작성하기 전에 기본 정책을 체험하려면 플레이그라운드를 이용하십시오. Speedle을 독립 실행형 서비스로 실행하려면 빠른 시작을 따르십시오.
-사전 요구 사항 빠른 시작과 동일하게 Linux 또는 macOS 환경과 명령줄 셸, 그리고 Go 1.26.10 또는 Go 1.</description>
+사전 요구 사항 빠른 시작과 동일하게 Linux 또는 macOS 환경과 명령줄 셸, 그리고 Go 1.27.4(또는 동일 릴리스 브랜치의 최신 패치 버전)을 준비합니다.</description>
     </item>
     
     <item>

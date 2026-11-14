@@ -18,10 +18,10 @@
       <guid>https://engine.speedle.io/ja/docs/store/mongodb/</guid>
       <description>このウォークスルーでは、永続的な Docker ボリュームを備えたシングルノードレプリカセットとして MongoDB 7.0.16 を使用します。PMS はポリシーを書き込み、ADS はチェンジストリームを介して同じデータベースを追跡します。サンプルでは、ローカル開発用に認証なしでループバックでリッスンします。本番環境の認証、TLS、およびレプリカセットの構成はウォークスルーの後に説明します。
 MongoDB はレプリカセットまたはシャーディングされたクラスターとして実行する必要があります。ADS はチェンジストリームでデータベースを監視し、ポリシーストア全体の置換はトランザクション内で実行されます。スタンドアロンの mongod ではどちらもサポートされていません。開発用にはシングルノードのレプリカセットで十分です。
-1. Speedle のビルド Bash、Git、curl、Docker、および Go 1.26.10 または Go 1.27.3 を準備します。Docker を起動し、ネイティブサービスをビルドします:
+1. Speedle のビルド Bash、Git、curl、Docker、および Go 1.27.4 を準備します。Docker を起動し、ネイティブサービスをビルドします:
 git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads 後続のコマンドはこのチェックアウトから実行します。ローカルポート 27017、6733、6734 を利用可能にしておくか、コマンドと構成を同時に更新してください。
 2. MongoDB の起動 名前付きボリュームが MongoDB のデータを保持します。--replSet は speedle-rs レプリカセットのメンバーとして mongod を起動します。ループバック上のデータベースポートのみが公開されます。
-docker run --name speedle-mongodb --detach \  --publish 127.0.0.1:27017:27017 \  --volume speedle-mongodb-data:/data/db \  mongo:7.</description>
+docker run --name speedle-mongodb --detach \  --publish 127.0.0.1:27017:27017 \  --volume speedle-mongodb-data:/data/db \  mongo:7.0.16 \  --replSet speedle-rs --bind_ip_all サーバーがコマンドを受け付けるのを待ちます:</description>
     </item>
     
   </channel>
