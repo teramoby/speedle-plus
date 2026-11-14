@@ -209,6 +209,19 @@ receives one event per non-local route without subjects, tokens or request bodie
 the services also write their standard audit logs. Gate implementations must be
 safe for concurrent requests and own their fallback authentication and resources.</p>
 
+<p><code>gate.Response.Metadata</code> (<code>map[string][]string</code>) supplies optional response
+metadata on successful forwarded decisions, including denials and role/permission
+lists. REST copies the allowed values as response headers; gRPC sends the same
+keys, lower-cased, as response header metadata. Repeated values are preserved.
+Both transports drop hop-by-hop headers (including names listed in <code>Connection</code>),
+<code>Set-Cookie</code>, <code>Content-Length</code>, <code>Content-Type</code>, and service-owned headers such as
+<code>Cache-Control</code>, <code>Retry-After</code>, <code>X-Speedle-Decision-Source</code>, <code>Speedle-Principals</code>,
+<code>WWW-Authenticate</code>, <code>Date</code> and <code>Server</code>. Reserved <code>grpc-*</code> and binary <code>*-bin</code> keys,
+invalid text keys and non-printable/non-ASCII values are also dropped. REST keeps
+headers already set by middleware. Empty metadata leaves behavior unchanged;
+evaluation errors and failed forwards do not copy metadata. Keep a reused map
+immutable while requests are active.</p>
+
 <p>A store can implement <code>gate.GateProvider.RequestGate() gate.Gate</code>; REST and gRPC
 discover it through the evaluator&rsquo;s backing-store accessor. Embedded callers can
 use <code>eval.NewWithStore</code>, then <code>adsrest.NewRouter(evaluator,
