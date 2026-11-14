@@ -38,7 +38,11 @@ certificate validity, server authentication usage and the URL's hostname/IP
 SAN. TLS versions before 1.2 are rejected. Each instance generates its own
 UUIDv7 and persists it in `CacheDir`. No certificate common-name matching or
 configured instance ID is used. Keep this directory across restarts and
-certificate rotations. Cascade startup rejects corrupt retained state.
+certificate rotations. Cascade startup rejects corrupt retained state and names
+the offending file. A copied or restored cache can also fail this check when
+its permissions are no longer `0600`. Delete the named `service-*.json` file to
+re-fetch and re-verify that service from the relay; deleting the whole
+directory also discards the retained CRL floors.
 
 The store polls TLS files every 30 seconds; `TLSReloadInterval` accepts a Go
 duration to override that period. The `speedle-ads` command routes SIGHUP to

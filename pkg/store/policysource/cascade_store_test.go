@@ -102,7 +102,8 @@ func TestCascadeStoreFailsOnCorruptRetainedCache(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(valid.CacheDir, "service-"+testServiceID1+".json"), []byte("corrupt"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Open(context.Background(), valid); err == nil || !strings.Contains(err.Error(), "cache") {
+	name := "service-" + testServiceID1 + ".json"
+	if _, err := Open(context.Background(), valid); err == nil || !strings.Contains(err.Error(), "cache") || !strings.Contains(err.Error(), name) {
 		t.Fatalf("corrupt retained cache: %v", err)
 	}
 }

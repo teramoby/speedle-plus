@@ -292,7 +292,7 @@ func (c *Cache) validateRetained() error {
 		}
 		serviceID := strings.TrimSuffix(strings.TrimPrefix(name, "service-"), ".json")
 		if _, err := c.Load(serviceID); err != nil {
-			return fmt.Errorf("adsync: invalid retained cascade cache: %w", err)
+			return fmt.Errorf("adsync: invalid retained cascade cache file %q: %w", filepath.Join(c.dir, name), err)
 		}
 	}
 	return nil
