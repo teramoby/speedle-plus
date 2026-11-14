@@ -52,54 +52,55 @@ def tracked_paths(root):
     return sorted(path.relative_to(root) for path in paths if path.is_file())
 
 
-def bump_text(text, version):
-    """Replace this file's install pin and the sentence that names it.
+def bump_text(text, version, plain=False):
+    """Repair the command and its following release-tag description independently.
 
-    Returns the new text and whether it changed. A file without the install
-    command is left untouched.
+    A previous attempt may have updated just the command. RSS summaries use a
+    plain release tag; the source and HTML use Markdown/HTML code spans.
     """
     match = INSTALL.search(text)
     if match is None:
         return text, False
-    old = match.group(2)
-    if old == version:
-        return text, False
-    text = text.replace(match.group(0), match.group(1) + version, 1)
-    markdown = f"`{old}`"
-    html = f"<code>{old}</code>"
-    if markdown in text:
-        text = text.replace(markdown, f"`{version}`", 1)
-    elif html in text:
-        text = text.replace(html, f"<code>{version}</code>", 1)
-    return text, True
+    prefix = text[:match.start()]
+    body = INSTALL.sub(lambda pin: pin.group(1) + version, text[match.start():])
+    # Start after the first command, so its pin cannot mask a stale description.
+    command = INSTALL.search(body)
+    after = body[command.end():]
+    if plain:
+        pattern = r"(?<![\w./-])v[0-9]+\.[0-9]+\.[0-9]+(?![\w.])"
+        after = re.sub(pattern, lambda _: version, after, count=1)
+    else:
+        pattern = r"`v[0-9]+\.[0-9]+\.[0-9]+`|<code>v[0-9]+\.[0-9]+\.[0-9]+</code>"
+        after = re.sub(pattern, lambda tag: f"`{version}`" if tag.group().startswith("`")
+                       else f"<code>{version}</code>", after, count=1)
+    updated = prefix + body[:command.end()] + after
+    return updated, updated != text
 
 
 def bump_tree(root, version):
-    """Update every guide and its generated page/feed without changing archives."""
+    """Repair every source, generated page and feed, including partial retries."""
     root = Path(root)
     changed = False
     for guide in guide_paths(root):
-        text, did = bump_text(guide.read_text(), version)
-        if not did:
-            continue
         page, feed, _, _ = outputs(root, guide)
         if not page.is_file():
             raise SystemExit(f"missing generated Quick Start page {page}")
-        rendered, rendered_did = bump_text(page.read_text(), version)
-        if not rendered_did:
-            raise SystemExit(f"{page} does not contain the previous install pin")
-        guide.write_text(text)
-        page.write_text(rendered)
+        for path in (guide, page):
+            original = path.read_text()
+            if INSTALL.search(original) is None:
+                raise SystemExit(f"{path} does not contain the install pin")
+            text, did = bump_text(original, version)
+            if did:
+                path.write_text(text)
+                changed = True
         if feed.is_file():
-            # RSS summaries have plain text rather than Markdown/HTML code spans.
             # Restrict replacements to the item containing the install command.
-            def bump_item(match):
-                item = match.group(0)
-                pin = INSTALL.search(item)
-                return item.replace(pin.group(2), version) if pin else item
-
-            feed.write_text(re.sub(r"<item>[\s\S]*?</item>", bump_item, feed.read_text()))
-        changed = True
+            original = feed.read_text()
+            text = re.sub(r"<item>[\s\S]*?</item>",
+                          lambda item: bump_text(item.group(), version, plain=True)[0], original)
+            if text != original:
+                feed.write_text(text)
+                changed = True
     return changed
 
 

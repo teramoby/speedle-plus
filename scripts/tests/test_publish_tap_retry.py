@@ -51,6 +51,10 @@ class PublishTapRetryTest(unittest.TestCase):
             root = Path(temporary)
             self._run_case(root, open_pr=False, quick_start="v1.6.0")
 
+    def test_release_pr_repairs_generated_files_when_sources_are_current(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            self._run_case(Path(temporary), open_pr=False, quick_start="v1.6.0", current_sources=True)
+
     def test_stamp_writes_utc_in_the_form_hugo_prints(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -88,6 +92,8 @@ class PublishTapRetryTest(unittest.TestCase):
             unrelated = root / "docs/hugo/content/embedded.fr.md"
             unrelated.write_text("historical v1.7.1")
             self.assertTrue(bump_pin.bump_tree(root, "v1.8.0"))
+            self.assertNotIn("v1.7.1", (root / "docs/zh/index.xml").read_text())
+            self.assertIn("cmd/...@v1.8.0", (root / "docs/zh/index.xml").read_text())
             for locale in EXTRA_LOCALES:
                 for rel in (f"docs/hugo/content/quick-start.{locale}.md",
                             f"docs/{locale}/quick-start/index.html", f"docs/{locale}/index.xml"):
@@ -100,6 +106,21 @@ class PublishTapRetryTest(unittest.TestCase):
             self.assertEqual(archive.read_text(), "historical cmd/...@v1.7.1")
             self.assertEqual(unrelated.read_text(), "historical v1.7.1")
 
+    def test_current_commands_do_not_hide_stale_release_descriptions(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self._write_quick_start(root, "v1.7.1")
+            # Reproduce a partially updated source, HTML or RSS item: command
+            # says v1.8.0, but its following release description says v1.7.1.
+            for path in root.rglob("*"):
+                if path.is_file():
+                    path.write_text(path.read_text().replace("cmd/...@v1.7.1", "cmd/...@v1.8.0"))
+            self.assertTrue(bump_pin.bump_tree(root, "v1.8.0"))
+            for path in root.rglob("*"):
+                if path.is_file():
+                    self.assertNotIn("v1.7.1", path.read_text(), str(path))
+            self.assertFalse(bump_pin.bump_tree(root, "v1.8.0"))
+
     def test_missing_generated_locale_page_fails(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -108,7 +129,7 @@ class PublishTapRetryTest(unittest.TestCase):
             with self.assertRaisesRegex(SystemExit, "missing generated Quick Start page.*fr/"):
                 bump_pin.bump_tree(root, "v1.8.0")
 
-    def _run_case(self, root, open_pr, existing_tap_branch=False, quick_start=None):
+    def _run_case(self, root, open_pr, existing_tap_branch=False, quick_start=None, current_sources=False):
         source_bare = root / "source.git"
         tap_bare = root / "tap.git"
         workspace = root / "workspace"
@@ -125,6 +146,9 @@ class PublishTapRetryTest(unittest.TestCase):
         shutil.copytree(homebrew, homebrew_dest)
         if quick_start:
             self._write_quick_start(workspace, quick_start)
+            if current_sources:
+                for guide in (workspace / "docs/hugo/content").glob("quick-start*.md"):
+                    guide.write_text(guide.read_text().replace(quick_start, "v1.7.0"))
         self._git("add", "deployment", cwd=workspace)
         if quick_start:
             self._git("add", "docs", cwd=workspace)
@@ -269,7 +293,7 @@ class PublishTapRetryTest(unittest.TestCase):
                 "go install github.com/teramoby/speedle-plus/cmd/...@" + version + "\n"
                 f"<code>{version}</code> 是撰写本文时的最新发布标签。\n",
             "docs/zh/index.xml":
-                "<item>go install github.com/teramoby/speedle-plus/cmd/...@" + version + "</item>\n",
+                f"<item>go install github.com/teramoby/speedle-plus/cmd/...@{version} {version} 是撰写本文时的最新发布标签。</item>\n",
             "docs/en/sitemap.xml":
                 "<loc>https://engine.speedle.io/quick-start/</loc>\n"
                 "<lastmod>2020-01-01T00:00:00+00:00</lastmod>\n",
