@@ -24,7 +24,7 @@ grant group Administrators list,watch,get expr:^c1/default/core/pods/.*$ この�
 AND プリンシパルグループは、リスト内のすべてのプリンシパルが一致することを要求します。個別のグループ間は OR 条件になります。たとえば、以下の例では両方のロールが適用される必要があります:
 grant (role designer, role dba) update db_design_doc リソースは保護対象のオブジェクトを指定し、アクションはアプリケーションの操作を指定します。条件は、信頼できる属性、定数、演算子、およびサポートされている関数から評価されるブール式です。
 文法については SPDL を、完全な決定例については RBAC/ABAC を参照してください。
-サンプル実行前の準備 クイックスタート の手順に従い、リポジトリルート下の ./bin/spctl、./bin/speedle-pms、./bin/speedle-ads をビルドします。Go 1.26.10 または Go 1.</description>
+サンプル実行前の準備 クイックスタート の手順に従い、リポジトリルート下の ./bin/spctl、./bin/speedle-pms、./bin/speedle-ads をビルドします。Go 1.27.4（または同じリリースブランチの新しいパッチバージョン）、Bash、curl、Python 3 が必要です。各ターミナルはリポジトリのルートから実行してください。このページ用に新しいポリシーファイルを使用します。両方のサービスを停止した後にのみファイルをリセットしてください。</description>
     </item>
     
     <item>

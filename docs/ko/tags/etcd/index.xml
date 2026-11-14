@@ -17,7 +17,7 @@
       
       <guid>https://engine.speedle.io/ko/docs/store/etcd/</guid>
       <description>이 가이드에서는 영구 Docker 볼륨을 사용하는 외부 etcd v3.6.14 서버를 사용합니다. PMS는 정책을 작성하고 ADS는 동일한 키 접두사를 감시(watch)합니다. 단일 노드 예제는 로컬 개발을 위해 루프백 주소에서 수신 대기하고 일반 텍스트 HTTP를 사용합니다. 프로덕션 환경의 TLS 및 클러스터 구성은 가이드 후반부에서 설명합니다.
-1. Speedle 빌드 Bash, Git, curl, Docker, 그리고 Go 1.26.10 또는 Go 1.27.3을 준비합니다. Docker를 시작하고 네이티브 서비스를 빌드합니다:
+1. Speedle 빌드 Bash, Git, curl, Docker, 그리고 Go 1.27.4을 준비합니다. Docker를 시작하고 네이티브 서비스를 빌드합니다:
 git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o .</description>
     </item>
     

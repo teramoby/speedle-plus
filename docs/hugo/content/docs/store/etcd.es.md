@@ -15,7 +15,7 @@ Esta guía paso a paso utiliza un servidor **etcd v3.6.14 externo** con un volum
 
 ## 1. Compilar Speedle
 
-Prepare Bash, Git, curl, Docker y Go 1.26.10 o Go 1.27.3. Inicie Docker y luego compile los servicios nativos:
+Prepare Bash, Git, curl, Docker y Go 1.27.4. Inicie Docker y luego compile los servicios nativos:
 
 <!-- etcd-step: build -->
 ```bash

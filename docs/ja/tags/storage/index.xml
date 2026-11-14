@@ -19,10 +19,10 @@
       <guid>https://engine.speedle.io/ja/docs/store/mongodb/</guid>
       <description>このウォークスルーでは、永続的な Docker ボリュームを備えたシングルノードレプリカセットとして MongoDB 7.0.16 を使用します。PMS はポリシーを書き込み、ADS はチェンジストリームを介して同じデータベースを追跡します。サンプルでは、ローカル開発用に認証なしでループバックでリッスンします。本番環境の認証、TLS、およびレプリカセットの構成はウォークスルーの後に説明します。
 MongoDB はレプリカセットまたはシャーディングされたクラスターとして実行する必要があります。ADS はチェンジストリームでデータベースを監視し、ポリシーストア全体の置換はトランザクション内で実行されます。スタンドアロンの mongod ではどちらもサポートされていません。開発用にはシングルノードのレプリカセットで十分です。
-1. Speedle のビルド Bash、Git、curl、Docker、および Go 1.26.10 または Go 1.27.3 を準備します。Docker を起動し、ネイティブサービスをビルドします:
+1. Speedle のビルド Bash、Git、curl、Docker、および Go 1.27.4 を準備します。Docker を起動し、ネイティブサービスをビルドします:
 git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads 後続のコマンドはこのチェックアウトから実行します。ローカルポート 27017、6733、6734 を利用可能にしておくか、コマンドと構成を同時に更新してください。
 2. MongoDB の起動 名前付きボリュームが MongoDB のデータを保持します。--replSet は speedle-rs レプリカセットのメンバーとして mongod を起動します。ループバック上のデータベースポートのみが公開されます。
-docker run --name speedle-mongodb --detach \  --publish 127.0.0.1:27017:27017 \  --volume speedle-mongodb-data:/data/db \  mongo:7.</description>
+docker run --name speedle-mongodb --detach \  --publish 127.0.0.1:27017:27017 \  --volume speedle-mongodb-data:/data/db \  mongo:7.0.16 \  --replSet speedle-rs --bind_ip_all サーバーがコマンドを受け付けるのを待ちます:</description>
     </item>
     
     <item>
@@ -32,10 +32,10 @@ docker run --name speedle-mongodb --detach \  --publish 127.0.0.1:27017:27017 \ 
       
       <guid>https://engine.speedle.io/ja/docs/store/mysql/</guid>
       <description>このガイドでは、MySQL 8.4 LTS と 2 つのネイティブ Speedle プロセスを使用します。PMS はポリシーを書き込み、ADS は個別の読み取り専用アカウントで同じデータベースを読み取ります。ローカルの例では Docker とループバック上の平文 HTTP を使用します。リモートデプロイの場合は、既存の MySQL サーバーと セキュリティガイド を使用してください。
-1. MySQL バックエンドを含む Speedle のビルド Git、Bash、curl、Docker、およびサポートされている Go ツールチェーン（Go 1.26.10 または Go 1.27.3）をインストールします。Docker が実行されている必要があります。両方のバイナリに mysql ストアが含まれるように、最新のソースからビルドします。以前インストールされた古いリリースには含まれていない可能性があります。
+1. MySQL バックエンドを含む Speedle のビルド Git、Bash、curl、Docker、およびサポートされている Go ツールチェーン（Go 1.27.4）をインストールします。Docker が実行されている必要があります。両方のバイナリに mysql ストアが含まれるように、最新のソースからビルドします。以前インストールされた古いリリースには含まれていない可能性があります。
 git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads 残りのコマンドはこの speedle-plus ディレクトリから実行します。ポート 3306、6733、6734 を解放しておくか、以下のすべてのコマンドおよび構成で対応するアドレスを変更してください。
 2. MySQL 8.4 の起動 以下の固定パスワードはローカルデモ用の認証情報です。デプロイ時には独自の認証情報とシークレット配信メカニズムを使用してください。名前付き Docker ボリュームは、このコンテナが停止または再作成された場合でもデータベースを保持します。
-docker run --name speedle-mysql --detach \  --publish 127.</description>
+docker run --name speedle-mysql --detach \  --publish 127.0.0.1:3306:3306 \  --volume speedle-mysql-data:/var/lib/mysql \  --env MYSQL_ROOT_PASSWORD=SpeedleDemoRoot84 \  mysql:8.</description>
     </item>
     
     <item>
@@ -45,7 +45,7 @@ docker run --name speedle-mysql --detach \  --publish 127.</description>
       
       <guid>https://engine.speedle.io/ja/docs/store/etcd/</guid>
       <description>このウォークスルーでは、永続的な Docker ボリュームを備えた外部の etcd v3.6.14 サーバーを使用します。PMS はポリシーを書き込み、ADS は同じキープレフィックスを監視（watch）します。シングルノードのサンプルはローカル開発用にループバックでリッスンし、平文の HTTP を使用します。本番環境の TLS とクラスター構成はウォークスルーの後に説明します。
-1. Speedle のビルド Bash、Git、curl、Docker、および Go 1.26.10 または Go 1.27.3 を準備します。Docker を起動し、ネイティブサービスをビルドします:
+1. Speedle のビルド Bash、Git、curl、Docker、および Go 1.27.4 を準備します。Docker を起動し、ネイティブサービスをビルドします:
 git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads 後続のコマンドはこのチェックアウトから実行します。ローカルポート 2379、6733、6734 を利用可能にしておくか、コマンドと構成を同時に更新してください。
 2. 外部 etcd サーバーの起動 名前付きボリュームが etcd のデータを保持します。ホストにはクライアントポートのみが公開され、ピアポートはこのシングルノードコンテナ内に留まります。
 docker run --name speedle-etcd --detach \  --publish 127.0.0.1:2379:2379 \  --volume speedle-etcd-data:/etcd-data \  gcr.io/etcd-development/etcd:v3.6.14 \  /usr/local/bin/etcd \  --name speedle-local \  --data-dir /etcd-data \  --listen-client-urls http://0.</description>

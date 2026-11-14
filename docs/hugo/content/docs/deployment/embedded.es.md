@@ -19,7 +19,7 @@ Para probar políticas básicas antes de escribir código, abra el [Playground](
 
 ## Requisitos previos
 
-Utilice Linux o macOS con un shell y **Go 1.26.10 o Go 1.27.3** (o un parche más reciente en la misma rama de lanzamiento), coincidiendo con el [Inicio rápido](/es/quick-start/). Esta guía utiliza módulos de Go y la versión publicada **Speedle v1.6.0**. Go 1.27.3 es la cadena de herramientas recomendada; el ejemplo ha sido verificado con Go 1.26.10 y Go 1.27.3.
+Utilice Linux o macOS con un shell y **Go 1.27.4** (o un parche más reciente en la misma rama de lanzamiento), coincidiendo con el [Inicio rápido](/es/quick-start/). Esta guía utiliza módulos de Go y la versión publicada **Speedle v1.6.0**.
 
 Instale Go siguiendo las [instrucciones oficiales de instalación](https://go.dev/doc/install), luego verifique su versión:
 

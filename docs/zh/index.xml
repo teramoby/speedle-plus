@@ -42,9 +42,9 @@ grant group Administrators list,watch,get expr:^c1/default/core/pods/.*$ 此正�
 AND 主体组要求组内所有身份均匹配，多组之间为 OR。以下例子要求两个角色都有效：
 grant (role designer, role dba) update db_design_doc 资源指需要保护的对象，操作是应用定义的动作。条件是由可信属性、常量、运算符和受支持函数构成的布尔表达式。
 语法见 SPDL，完整决策示例见 RBAC 与 ABAC。
-运行示例前 先按快速入门编译仓库根目录下的 ./bin/spctl、./bin/speedle-pms 和 ./bin/speedle-ads，需要 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
+运行示例前 先按快速入门编译仓库根目录下的 ./bin/spctl、./bin/speedle-pms 和 ./bin/speedle-ads，需要 Go 1.27.4（也可使用同一大版本的更新补丁版本）、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
 初始化空策略文件：
-printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.</description>
+printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json  macOS： /usr/sbin/spctl 是 Apple 的 Gatekeeper 工具，直接运行 spctl 时可能会选中它。请使用 Speedle CLI 的完整路径，或在其所在目录中用 .</description>
     </item>
     
     <item>
@@ -55,7 +55,7 @@ printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.</description>
       <guid>https://engine.speedle.io/zh/docs/pms/global-policy/</guid>
       <description>什么时候使用全局角色？ 普通角色限定在某个服务中。当多个服务需要共享角色分配时，可以在特殊的 global 服务中定义角色策略，再在各服务自己的授权策略中引用该角色。
 当前仅支持全局角色策略。全局角色分配本身并不授予任意操作，各普通服务仍需定义自己的权限；全局授权策略尚不支持。
-运行示例前 先按快速入门编译仓库根目录下的 ./bin/spctl、./bin/speedle-pms 和 ./bin/speedle-ads，需要 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
+运行示例前 先按快速入门编译仓库根目录下的 ./bin/spctl、./bin/speedle-pms 和 ./bin/speedle-ads，需要 Go 1.27.4（也可使用同一大版本的更新补丁版本）、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
 初始化空策略文件：
 printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一启动 PMS，并保持运行：
 ./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --grpc-endpoint 127.0.0.1:0 --insecure=true 终端二启动 ADS，并保持运行：
@@ -87,12 +87,13 @@ curl --header &amp;#39;Content-Type: application/json&amp;#39; --data &amp;#39;{
       <guid>https://engine.speedle.io/zh/docs/pms/diagnosis/</guid>
       <description>授权诊断提供什么？ Diagnose 用于解释一次授权评估：决策、原因、有效角色、属性及参与评估的策略。其请求上下文与 IsAllowed 相同；REST 路径为 /authz-check/v1/diagnose，Go/gRPC 方法均名为 Diagnose。
 诊断会暴露策略定义和请求上下文，必须通过API 安全配置限制为可信运维人员访问，不能作为公开调试端点。
-运行示例前 先按快速入门编译仓库根目录下的 ./bin/spctl、./bin/speedle-pms 和 ./bin/speedle-ads，需要 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
+运行示例前 先按快速入门编译仓库根目录下的 ./bin/spctl、./bin/speedle-pms 和 ./bin/speedle-ads，需要 Go 1.27.4（也可使用同一大版本的更新补丁版本）、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
 初始化空策略文件：
 printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一启动 PMS，并保持运行：
 ./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --grpc-endpoint 127.0.0.1:0 --insecure=true 终端二启动 ADS，并保持运行：
 ./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6734 --grpc-endpoint 127.0.0.1:0 --insecure=true 在第三个终端运行后续命令。PMS/ADS 共享同一个文件，策略更新通过 watch 异步到达 ADS；先查询确认已更新，再依赖新策略做决策。--insecure=true 仅用于回环地址上的本地示例，生产连接见安全配置。示例显式指定 PMS 地址，不修改 ~/.spctlconfig。完成后在两个服务终端按 Ctrl-C。
-创建示例策略 测试文件允许 user1 对 ^/api/v1/example/.*$ 下的资源执行 get，但显式拒绝 /api/v1/example/res1。</description>
+创建示例策略 测试文件允许 user1 对 ^/api/v1/example/.*$ 下的资源执行 get，但显式拒绝 /api/v1/example/res1。
+./bin/spctl --pms-endpoint http://127.</description>
     </item>
     
     <item>
@@ -140,7 +141,7 @@ plugins { application } repositories { mavenCentral() } dependencies { implement
       
       <guid>https://engine.speedle.io/zh/docs/store/mysql/</guid>
       <description>本指南使用 MySQL 8.4 LTS，分别启动 PMS 和 ADS：PMS 写入策略，ADS 使用独立的只读账号读取同一个数据库。本地演示使用 Docker，HTTP 服务只监听本机回环地址。远程部署可使用已有的 MySQL，并参考安全配置。
-1. 编译包含 MySQL 后端的 Speedle 准备 Git、Bash、curl、已启动的 Docker，以及支持的 Go 工具链（Go 1.26.10 或 Go 1.27.3）。从当前源码编译，确保两个服务都包含 mysql 后端；已安装的旧版本可能没有该后端。
+1. 编译包含 MySQL 后端的 Speedle 准备 Git、Bash、curl、已启动的 Docker，以及支持的 Go 工具链（Go 1.27.4）。从当前源码编译，确保两个服务都包含 mysql 后端；已安装的旧版本可能没有该后端。
 git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads 后续命令都在这个 speedle-plus 目录执行。确认 3306、6733、6734 端口未被占用；若修改端口，需同步修改下文的命令和配置。
 2. 启动 MySQL 8.4 下列固定密码仅为本地演示凭据。部署时请使用自己的凭据与密钥交付方式。命名卷会在容器停止或重建后保留数据库。
 docker run --name speedle-mysql --detach \  --publish 127.0.0.1:3306:3306 \  --volume speedle-mysql-data:/var/lib/mysql \  --env MYSQL_ROOT_PASSWORD=SpeedleDemoRoot84 \  mysql:8.</description>
@@ -154,11 +155,12 @@ docker run --name speedle-mysql --detach \  --publish 127.0.0.1:3306:3306 \  --v
       <guid>https://engine.speedle.io/zh/docs/deployment/embedded/</guid>
       <description>什么是 Speedle 嵌入模式 嵌入模式将 Speedle 策略决策引擎运行在你的 Go 应用进程中，通过 evaluator 直接决策，无需启动 PMS 或 ADS 服务。应用负责认证用户，并为每次决策提供主体、资源和操作。
 编写代码前，可以先用 Playground 体验基本策略功能。如果希望以独立服务运行 Speedle，请参阅快速入门。
-前提条件 使用 Linux 或 macOS、命令行 shell，以及 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本），安全补丁版本要求与快速入门一致。本例使用 Go modules 和已发布的 Speedle v1.6.0，推荐使用 Go 1.27.3；示例已在 Go 1.26.10 和 Go 1.27.3 下验证。
+前提条件 使用 Linux 或 macOS、命令行 shell，以及 Go 1.27.4（也可使用同一大版本的更新补丁版本），安全补丁版本要求与快速入门一致。本例使用 Go modules 和已发布的 Speedle v1.6.0，
 按照 Go 官方安装说明安装 Go，然后检查版本：
 go version Go 会自动配置 GOROOT 和默认 GOPATH，无需手工设置。
 创建应用模块 在 Speedle 源码目录之外，选择一个有写入权限的目录，从新目录开始本例：
-mkdir speedle-embedded-demo cd speedle-embedded-demo go mod init example.com/speedle-embedded-demo go get github.com/teramoby/speedle-plus/pkg/eval@v1.6.0 如果已有包含 go.</description>
+mkdir speedle-embedded-demo cd speedle-embedded-demo go mod init example.com/speedle-embedded-demo go get github.com/teramoby/speedle-plus/pkg/eval@v1.6.0 如果已有包含 go.mod 的应用，只需在该应用的模块目录中执行最后一条 go get 命令。
+这里的 go get 将指定版本的库依赖加入 go.mod 和 go.</description>
     </item>
     
     <item>
@@ -169,11 +171,11 @@ mkdir speedle-embedded-demo cd speedle-embedded-demo go mod init example.com/spe
       <guid>https://engine.speedle.io/zh/quick-start/</guid>
       <description>先在 Playground 中试用 无需安装，即可先体验 Speedle 的基本功能。 打开 Playground 策略实验室，编辑 SPDL 策略、设置用户、资源和动作，即可在浏览器中查看真实的 Allow/Deny（允许／拒绝）授权结果，无需安装 Go 或启动服务。
 准备在本机安装和运行 Speedle 时，再继续下面的步骤。
-准备环境 准备 Linux 或 macOS、Bash、Git、curl，以及 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）。Speedle 支持 Go 1.26 和 Go 1.27 的安全补丁版本；本教程已在 Go 1.26.10 和 Go 1.27.3 上验证，推荐使用稳定版 Go 1.27.3 完成本教程。
+准备环境 准备 Linux 或 macOS、Bash、Git、curl，以及 Go 1.27.4（也可使用 Go 1.27 的更新补丁版本）。当前源码构建要求 Go 1.27.4 或更新版本；已发布版本保留各自的工具链要求。
 按照 Go 官方安装说明安装，然后检查版本：
 go version Go 会自动配置 GOROOT 和默认的 GOPATH，无需手动指定。下面的两种方式都会把三个可执行程序放到 bin 目录。
 安装 Speedle 两种方式任选一种：方式 A 安装最新发布版本，方式 B 编译当前源码。后续命令都使用 ./bin/...，两种方式通用。
-方式 A：安装最新发布版本 GOBIN=&amp;#34;$PWD/bin&amp;#34; go install github.com/teramoby/speedle-plus/cmd/...@v1.7.1 ls bin GOBIN 把可执行程序放到当前目录的 bin 中；不设置时，Go 会把它们写入 $(go env GOPATH)/bin。v1.</description>
+方式 A：安装最新发布版本 GOBIN=&amp;#34;$PWD/bin&amp;#34; go install github.com/teramoby/speedle-plus/cmd/...@v1.7.1 ls bin GOBIN 把可执行程序放到当前目录的 bin 中；不设置时，Go 会把它们写入 $(go env GOPATH)/bin。v1.7.1 是撰写本文时的最新发布标签；go install 使用该标签的源码编译，并通过 Go 校验和数据库验证。</description>
     </item>
     
     <item>
@@ -288,10 +290,10 @@ import sys from speedle import Auth, Client, SpeedleError try: with Client( back
       
       <guid>https://engine.speedle.io/zh/docs/store/etcd/</guid>
       <description>本指南使用独立的 etcd v3.6.14 和 Docker 持久化卷。PMS 写入策略，ADS 监听同一个 key prefix。本地单节点示例通过回环地址提供 HTTP 服务；生产环境的 TLS 与集群配置见后文。
-1. 编译 Speedle 准备 Bash、Git、curl、已启动的 Docker，以及 Go 1.26.10 或 Go 1.27.3，然后从源码编译：
+1. 编译 Speedle 准备 Bash、Git、curl、已启动的 Docker，以及 Go 1.27.4，然后从源码编译：
 git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads 后续命令均在这个代码目录执行。确认 2379、6733、6734 端口可用；修改端口时要同步修改命令和配置。
 2. 启动独立 etcd 服务 命名卷保存 etcd 数据。这里只把客户端端口发布到宿主机，单节点内部通信使用的 peer 端口保留在容器内。
-docker run --name speedle-etcd --detach \  --publish 127.0.0.1:2379:2379 \  --volume speedle-etcd-data:/etcd-data \  gcr.</description>
+docker run --name speedle-etcd --detach \  --publish 127.0.0.1:2379:2379 \  --volume speedle-etcd-data:/etcd-data \  gcr.io/etcd-development/etcd:v3.6.14 \  /usr/local/bin/etcd \  --name speedle-local \  --data-dir /etcd-data \  --listen-client-urls http://0.</description>
     </item>
     
     <item>
@@ -344,10 +346,10 @@ brew services start speedle-pms brew services start speedle-ads speedle-pms 监�
       <guid>https://engine.speedle.io/zh/docs/store/mongodb/</guid>
       <description>本指南使用 MongoDB 7.0.16 单节点副本集和 Docker 持久化卷。PMS 写入策略，ADS 通过 change stream 跟踪同一个数据库。本地示例只监听回环地址且不开启身份认证，用于开发环境；生产环境的身份认证、TLS 与副本集配置见后文。
 MongoDB 必须以副本集或分片集群方式运行：ADS 使用 change stream 监听数据库，整体替换策略存储时使用事务，独立运行的 mongod 两者都不支持。开发环境使用单节点副本集即可。
-1. 编译 Speedle 准备 Bash、Git、curl、已启动的 Docker，以及 Go 1.26.10 或 Go 1.27.3，然后从源码编译：
+1. 编译 Speedle 准备 Bash、Git、curl、已启动的 Docker，以及 Go 1.27.4，然后从源码编译：
 git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads 后续命令均在这个代码目录执行。确认 27017、6733、6734 端口可用；修改端口时要同步修改命令和配置。
 2. 启动 MongoDB 命名卷保存 MongoDB 数据。--replSet 让 mongod 作为副本集 speedle-rs 的成员启动；只把数据库端口发布到宿主机的回环地址。
-docker run --name speedle-mongodb --detach \  --publish 127.</description>
+docker run --name speedle-mongodb --detach \  --publish 127.0.0.1:27017:27017 \  --volume speedle-mongodb-data:/data/db \  mongo:7.</description>
     </item>
     
     <item>
@@ -357,13 +359,13 @@ docker run --name speedle-mongodb --detach \  --publish 127.</description>
       
       <guid>https://engine.speedle.io/zh/docs/decisions/</guid>
       <description>什么是授权决策？ Speedle 在指定服务内评估主体、操作与资源，由应用执行结果。应区分评估错误、超时与正常的 Deny，并在出错时拒绝访问。REST、gRPC、嵌入式 Go 的数据表示不同，应分别遵循各自的 API 契约。
-运行示例前 先按快速入门编译仓库根目录下的 ./bin/spctl、./bin/speedle-pms 和 ./bin/speedle-ads，需要 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
+运行示例前 先按快速入门编译仓库根目录下的 ./bin/spctl、./bin/speedle-pms 和 ./bin/speedle-ads，需要 Go 1.27.4（也可使用同一大版本的更新补丁版本）、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
 初始化空策略文件：
 printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一启动 PMS，并保持运行：
 ./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --grpc-endpoint 127.0.0.1:0 --insecure=true 终端二启动 ADS，并保持运行：
 ./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6734 --grpc-endpoint 127.0.0.1:0 --insecure=true 在第三个终端运行后续命令。PMS/ADS 共享同一个文件，策略更新通过 watch 异步到达 ADS；先查询确认已更新，再依赖新策略做决策。--insecure=true 仅用于回环地址上的本地示例，生产连接见安全配置。示例显式指定 PMS 地址，不修改 ~/.spctlconfig。完成后在两个服务终端按 Ctrl-C。
 创建可重复的测试策略 测试文件给 Alan 分配 role1、role2；其中 role1 可以下载 /books/HarryPotter。
-./bin/spctl --pms-endpoint http://127.</description>
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service --json-file website/tests/examples/bookstore.</description>
     </item>
     
     <item>
@@ -385,10 +387,10 @@ printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一启动 PMS，
       <description>什么是身份域？ 身份域（idd）为主体提供显式命名空间。同名的 user1 可以属于不同的域。域字符串由可信应用或已配置的令牌断言服务提供，本身不代表完成了身份认证。Speedle 不会仅根据域名称推断或验证身份提供方的租户模型。
 在策略与请求中表示身份域 grant user user1 from github read book grant user user1 from IDCS.tenant01 read book 在主体名后使用 from &amp;lt;identity-domain&amp;gt;。PMS JSON 策略中的等价编码为 idd=github:user:user1；决策请求中的主体表示为：
 { &amp;#34;type&amp;#34;: &amp;#34;user&amp;#34;, &amp;#34;name&amp;#34;: &amp;#34;user1&amp;#34;, &amp;#34;idd&amp;#34;: &amp;#34;github&amp;#34; } 带 from github 的策略只匹配该域；省略 from 则按主体名跨域匹配。多租户应用应明确审查这一选择；域字符串不能用于验证令牌。更多内容见身份与 IAM和令牌断言。
-运行示例前 先按快速入门编译仓库根目录下的 ./bin/spctl、./bin/speedle-pms 和 ./bin/speedle-ads，需要 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
+运行示例前 先按快速入门编译仓库根目录下的 ./bin/spctl、./bin/speedle-pms 和 ./bin/speedle-ads，需要 Go 1.27.4（也可使用同一大版本的更新补丁版本）、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
 初始化空策略文件：
 printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一启动 PMS，并保持运行：
-./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --grpc-endpoint 127.</description>
+./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --grpc-endpoint 127.0.0.1:0 --insecure=true 终端二启动 ADS，并保持运行：</description>
     </item>
     
     <item>

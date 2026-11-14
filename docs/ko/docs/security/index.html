@@ -233,7 +233,7 @@
 
 <h2 id="로컬-테스트용-인증서-생성">로컬 테스트용 인증서 생성</h2>
 
-<p><a href="/ko/quick-start/">빠른 시작</a>의 설명에 따라 바이너리를 빌드합니다. 저장소 루트에서 Go 1.26.10 또는 Go 1.27.3(또는 동일 릴리스 브랜치의 최신 패치 버전)을 사용하여 로컬 CA와 개별 서버/클라이언트 인증서를 생성합니다. 서버 인증서에는 <code>localhost</code>, <code>127.0.0.1</code> 및 <code>::1</code>의 SAN이 포함됩니다. 개인 키 권한은 0600입니다. 이는 <strong>24시간 유효한 데모용 인증서</strong>이며 프로덕션용 자격 증명이 아닙니다. 생성기는 기존 파일 덮어쓰기를 거부합니다. 다시 생성하려면 새 출력 디렉터리를 선택하십시오.</p>
+<p><a href="/ko/quick-start/">빠른 시작</a>의 설명에 따라 바이너리를 빌드합니다. 저장소 루트에서 Go 1.27.4(또는 동일 릴리스 브랜치의 최신 패치 버전)을 사용하여 로컬 CA와 개별 서버/클라이언트 인증서를 생성합니다. 서버 인증서에는 <code>localhost</code>, <code>127.0.0.1</code> 및 <code>::1</code>의 SAN이 포함됩니다. 개인 키 권한은 0600입니다. 이는 <strong>24시간 유효한 데모용 인증서</strong>이며 프로덕션용 자격 증명이 아닙니다. 생성기는 기존 파일 덮어쓰기를 거부합니다. 다시 생성하려면 새 출력 디렉터리를 선택하십시오.</p>
 
 <!-- docs-check: certificates -->
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go run ./website/tests/examples/certificates --out ./tls</code></pre></div>
