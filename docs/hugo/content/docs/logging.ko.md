@@ -90,7 +90,7 @@ text의 따옴표, 순서, 색상과 시간 정밀도는 logrus와 다를 수 �
 
 ## Go API 마이그레이션
 
-`InitLogInstance(logrusLogger, config)`를 `logger, err := logging.NewLogger(config)`로 바꾸세요. `AuditLog()`는 `*slog.Logger`를 반환합니다. logrus setter/hook 대신 네이티브 slog 메서드와 `SetAuditLog(logger)`를 사용하세요. `LogConfig.RotationConfig`에 lumberjack v2를 가져와야 하며 v1 포인터는 컴파일되지 않습니다. `InitLog`와 `InitAuditLog`는 생략된 설정을 유지하고 nil은 변경하지 않습니다. 잘못된 설정은 기존 logger를 교체하지 않습니다.
+`InitLogInstance(logrusLogger, config)`를 `logger, err := logging.NewLogger(config)`로 바꾸세요. `AuditLog()`는 `*slog.Logger`를 반환합니다. logrus setter/hook 대신 네이티브 slog 메서드와 `SetAuditLog(logger)`를 사용하세요. `LogConfig.RotationConfig`에 lumberjack v2를 가져와야 하며 v1 포인터는 컴파일되지 않습니다. `InitLog`와 `InitAuditLog`는 생략된 설정을 유지하고 nil 또는 빈 설정은 변경하지 않습니다. 잘못된 설정은 기존 logger를 교체하지 않습니다.
 
 `logging.Default()`를 사용하거나 `logging.SetDefault(logger)`로 호스트 소유 handler를 설치하세요. `slog.Default()`와 호스트의 표준 `log` 출력은 변경하지 않습니다. `logging.Fatal(message)`는 기록 후 상태 1로 종료하고 `logging.Panic(message)`는 기록 후 panic합니다. 출력이 필터링되어도 종료 동작은 실행됩니다.
 

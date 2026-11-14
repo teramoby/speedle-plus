@@ -297,7 +297,7 @@
 
 <h2 id="go-api-の移行">Go API の移行</h2>
 
-<p><code>InitLogInstance(logrusLogger, config)</code> を <code>logger, err := logging.NewLogger(config)</code> に置き換えます。<code>AuditLog()</code> は <code>*slog.Logger</code> を返します。logrus の setter/hook の代わりに slog のメソッドと <code>SetAuditLog(logger)</code> を使用します。<code>LogConfig.RotationConfig</code> は lumberjack v2 をインポートしてください。v1 ポインタはコンパイルできません。<code>InitLog</code> と <code>InitAuditLog</code> は省略した設定を維持し、nil は変更しません。不正な設定は既存の logger を置き換えません。</p>
+<p><code>InitLogInstance(logrusLogger, config)</code> を <code>logger, err := logging.NewLogger(config)</code> に置き換えます。<code>AuditLog()</code> は <code>*slog.Logger</code> を返します。logrus の setter/hook の代わりに slog のメソッドと <code>SetAuditLog(logger)</code> を使用します。<code>LogConfig.RotationConfig</code> は lumberjack v2 をインポートしてください。v1 ポインタはコンパイルできません。<code>InitLog</code> と <code>InitAuditLog</code> は省略した設定を維持し、nil または空の設定は変更しません。不正な設定は既存の logger を置き換えません。</p>
 
 <p><code>logging.Default()</code> を使用するか、<code>logging.SetDefault(logger)</code> で独自の handler を設定します。<code>slog.Default()</code> とホストの標準 <code>log</code> 出力は変更しません。<code>logging.Fatal(message)</code> は記録後に終了コード 1 で終了し、<code>logging.Panic(message)</code> は記録後に panic します。出力がフィルターされても終了動作は実行します。</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#ff79c6">import</span> (

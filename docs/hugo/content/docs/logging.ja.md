@@ -90,7 +90,7 @@ text の引用符、順序、色、時刻の精度は logrus と異なる場合�
 
 ## Go API の移行
 
-`InitLogInstance(logrusLogger, config)` を `logger, err := logging.NewLogger(config)` に置き換えます。`AuditLog()` は `*slog.Logger` を返します。logrus の setter/hook の代わりに slog のメソッドと `SetAuditLog(logger)` を使用します。`LogConfig.RotationConfig` は lumberjack v2 をインポートしてください。v1 ポインタはコンパイルできません。`InitLog` と `InitAuditLog` は省略した設定を維持し、nil は変更しません。不正な設定は既存の logger を置き換えません。
+`InitLogInstance(logrusLogger, config)` を `logger, err := logging.NewLogger(config)` に置き換えます。`AuditLog()` は `*slog.Logger` を返します。logrus の setter/hook の代わりに slog のメソッドと `SetAuditLog(logger)` を使用します。`LogConfig.RotationConfig` は lumberjack v2 をインポートしてください。v1 ポインタはコンパイルできません。`InitLog` と `InitAuditLog` は省略した設定を維持し、nil または空の設定は変更しません。不正な設定は既存の logger を置き換えません。
 
 `logging.Default()` を使用するか、`logging.SetDefault(logger)` で独自の handler を設定します。`slog.Default()` とホストの標準 `log` 出力は変更しません。`logging.Fatal(message)` は記録後に終了コード 1 で終了し、`logging.Panic(message)` は記録後に panic します。出力がフィルターされても終了動作は実行します。
 

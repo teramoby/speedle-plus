@@ -90,7 +90,7 @@ text 的引号、字段顺序、颜色和时间精度可能与 logrus 不同；�
 
 ## Go API 迁移
 
-将 `InitLogInstance(logrusLogger, config)` 改为 `logger, err := logging.NewLogger(config)`。`AuditLog()` 现在返回 `*slog.Logger`；使用原生 slog 方法和 `SetAuditLog(logger)` 替代 logrus 的 setter/hook。给 `LogConfig.RotationConfig` 赋值时改用 lumberjack v2 导入，v1 指针不再编译通过。`InitLog` 和 `InitAuditLog` 保留未指定的设置，nil 配置不作修改，非法配置不会替换现有 logger。
+将 `InitLogInstance(logrusLogger, config)` 改为 `logger, err := logging.NewLogger(config)`。`AuditLog()` 现在返回 `*slog.Logger`；使用原生 slog 方法和 `SetAuditLog(logger)` 替代 logrus 的 setter/hook。给 `LogConfig.RotationConfig` 赋值时改用 lumberjack v2 导入，v1 指针不再编译通过。`InitLog` 和 `InitAuditLog` 保留未指定的设置，nil 或空配置不作修改，非法配置不会替换现有 logger。
 
 通过 `logging.Default()` 获取 Engine logger，或通过 `logging.SetDefault(logger)` 安装宿主提供的 slog handler。这些函数不会修改 `slog.Default()`，也不会重定向宿主的标准 `log` 输出。`logging.Fatal(message)` 记录日志后以状态 1 退出；`logging.Panic(message)` 记录日志后 panic，即使日志被过滤也会执行终止动作。
 

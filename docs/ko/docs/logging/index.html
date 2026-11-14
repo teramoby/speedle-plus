@@ -297,7 +297,7 @@
 
 <h2 id="go-api-마이그레이션">Go API 마이그레이션</h2>
 
-<p><code>InitLogInstance(logrusLogger, config)</code>를 <code>logger, err := logging.NewLogger(config)</code>로 바꾸세요. <code>AuditLog()</code>는 <code>*slog.Logger</code>를 반환합니다. logrus setter/hook 대신 네이티브 slog 메서드와 <code>SetAuditLog(logger)</code>를 사용하세요. <code>LogConfig.RotationConfig</code>에 lumberjack v2를 가져와야 하며 v1 포인터는 컴파일되지 않습니다. <code>InitLog</code>와 <code>InitAuditLog</code>는 생략된 설정을 유지하고 nil은 변경하지 않습니다. 잘못된 설정은 기존 logger를 교체하지 않습니다.</p>
+<p><code>InitLogInstance(logrusLogger, config)</code>를 <code>logger, err := logging.NewLogger(config)</code>로 바꾸세요. <code>AuditLog()</code>는 <code>*slog.Logger</code>를 반환합니다. logrus setter/hook 대신 네이티브 slog 메서드와 <code>SetAuditLog(logger)</code>를 사용하세요. <code>LogConfig.RotationConfig</code>에 lumberjack v2를 가져와야 하며 v1 포인터는 컴파일되지 않습니다. <code>InitLog</code>와 <code>InitAuditLog</code>는 생략된 설정을 유지하고 nil 또는 빈 설정은 변경하지 않습니다. 잘못된 설정은 기존 logger를 교체하지 않습니다.</p>
 
 <p><code>logging.Default()</code>를 사용하거나 <code>logging.SetDefault(logger)</code>로 호스트 소유 handler를 설치하세요. <code>slog.Default()</code>와 호스트의 표준 <code>log</code> 출력은 변경하지 않습니다. <code>logging.Fatal(message)</code>는 기록 후 상태 1로 종료하고 <code>logging.Panic(message)</code>는 기록 후 panic합니다. 출력이 필터링되어도 종료 동작은 실행됩니다.</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#ff79c6">import</span> (

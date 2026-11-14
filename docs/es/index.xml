@@ -310,8 +310,8 @@ TLS cifra la conexión y autentica al servidor. Para requerir clientes autentica
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/logging/</guid>
-      <description>Descripción general Se utilizan los siguientes dos proyectos de código abierto para procesar mensajes de registro:
-1. https://github.com/sirupsen/logrus 2. https://github.com/natefinch/lumberjack Logrus es un registrador estructurado para Go (golang), totalmente compatible a nivel de API con el registrador de la biblioteca estándar de Go. Tenga en cuenta que logrus no admite la rotación de registros, y esa es exactamente la razón por la que incorporamos el segundo proyecto, lumberjack, que proporciona un registrador con rotación continua.</description>
+      <description>Descripción general La versión posterior a v1.8.0 usa Go log/slog para los registros de aplicación y auditoría y gopkg.in/natefinch/lumberjack.v2 para la rotación. v1.8.0 y las versiones anteriores conservan la API anterior.
+Configuración del registro Se conservan las opciones --log-* y --auditlog-*, las variables SPDL_* y las claves JSON. La precedencia es opción explícita &amp;gt; entorno &amp;gt; archivo. La aplicación usa info, text y stderr sin datos del llamador; la auditoría usa info y JSON.</description>
     </item>
     
     <item>

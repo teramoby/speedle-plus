@@ -400,12 +400,9 @@ using Speedle.Sdk; try { await using var speedle = new SpeedleClient(new Speedle
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/logging/</guid>
-      <description>日志组件 Speedle 使用以下两个开源项目处理日志：
-1. https://github.com/sirupsen/logrus 2. https://github.com/natefinch/lumberjack Logrus 是 Go 结构化日志库，API 与 Go 标准库的 logger 兼容。Logrus 本身不负责日志滚动，Speedle 用 lumberjack 补足这部分能力。两者通过 io.Writer 接口连接：
-日志配置 可以通过命令行参数或配置文件设置 Speedle 日志。
-通过命令行参数配置日志 可用参数如下。level、formatter、reportcaller 由 logrus 使用，文件和滚动设置由 lumberjack 使用。
---log-level string --log-formatter string --log-reportcaller bool --log-filename string --log-maxsize int --log-maxbackups int --log-maxage int --log-localtime bool --log-compress bool 所有参数都可省略。未配置文件日志时，日志默认输出到标准错误（stderr），默认级别为 info。
-   配置项 说明 默认值     &amp;ndash;log-level 日志级别：panic、fatal、error、warn、info、debug info   &amp;ndash;log-formatter 日志格式：text、json text   &amp;ndash;log-reportcaller 是否在日志中包含调用信息（文件名、行号和函数名） false   &amp;ndash;log-filename 日志文件路径。未设置时输出到标准错误（stderr） 空   &amp;ndash;log-maxsize 单个日志文件的最大尺寸，仅在设置 --log-filename 后生效 100M   &amp;ndash;log-maxbackups 最多保留多少个历史日志文件，仅在设置 --log-filename 后生效 0，保留全部文件；达到 maxAge 上限的文件仍会删除   &amp;ndash;log-maxage 历史日志文件最多保留多少天，仅在设置 --log-filename 后生效 0，不按天数删除；达到 maxBackups 上限的文件仍会删除   &amp;ndash;log-localtime 滚动日志文件名是否使用本地时间，仅在设置 --log-filename 后生效 false，使用 UTC   &amp;ndash;log-compress 是否压缩滚动后的历史日志，仅在设置 --log-filename 后生效 false，不压缩    以下分别是 text 和 json 格式的日志示例：</description>
+      <description>日志组件 v1.8.0 之后的下一个版本使用 Go log/slog 输出应用日志和审计日志，使用 gopkg.in/natefinch/lumberjack.v2 滚动日志文件。v1.8.0 及更早版本仍使用旧的日志 API。
+日志配置 现有 --log-*、--auditlog-* 参数、SPDL_* 环境变量及 JSON 配置键保持兼容。显式命令行参数优先于环境变量，环境变量优先于配置文件。应用日志默认为 info、text、stderr，不包含调用位置；审计日志默认为 info、JSON。使用对应的 --auditlog-* 参数单独配置审计日志。
+--log-level string --log-formatter string --log-reportcaller bool --log-filename string --log-maxsize int --log-maxbackups int --log-maxage int --log-localtime bool --log-compress bool    Flag Default Meaning     --log-level info Minimum severity   --log-formatter text text or json   --log-reportcaller false Include caller file, line and function   --log-filename unset Stderr unless a file is configured   --log-maxsize 100 Maximum file size in MB   --log-maxbackups 0 Backup count; 0 retains all, subject to max age   --log-maxage 0 Backup age in days; 0 disables age deletion   --log-localtime false Local time for backup filenames, otherwise UTC   --log-compress false Compress backups    { &amp;#34;logConfig&amp;#34;: { &amp;#34;level&amp;#34;: &amp;#34;info&amp;#34;, &amp;#34;formatter&amp;#34;: &amp;#34;text&amp;#34;, &amp;#34;setReportCaller&amp;#34;: false, &amp;#34;rotationConfig&amp;#34;: { &amp;#34;filename&amp;#34;: &amp;#34;/mnt/logs/speedle.</description>
     </item>
     
     <item>

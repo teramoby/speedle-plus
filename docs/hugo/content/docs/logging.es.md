@@ -90,7 +90,7 @@ Los archivos nuevos usan `0600` (solo propietario), sujeto a umask, en lugar de 
 
 ## Migración de la API Go
 
-Sustituya `InitLogInstance(logrusLogger, config)` por `logger, err := logging.NewLogger(config)`. `AuditLog()` devuelve `*slog.Logger`: use sus métodos nativos y `SetAuditLog(logger)` en lugar de setters/hooks de logrus. Importe lumberjack v2 para `LogConfig.RotationConfig`; los punteros v1 ya no compilan. `InitLog` y `InitAuditLog` conservan los ajustes omitidos; nil no modifica nada. Una configuración inválida no sustituye el logger instalado.
+Sustituya `InitLogInstance(logrusLogger, config)` por `logger, err := logging.NewLogger(config)`. `AuditLog()` devuelve `*slog.Logger`: use sus métodos nativos y `SetAuditLog(logger)` en lugar de setters/hooks de logrus. Importe lumberjack v2 para `LogConfig.RotationConfig`; los punteros v1 ya no compilan. `InitLog` y `InitAuditLog` conservan los ajustes omitidos; nil o una configuración vacía no modifican nada. Una configuración inválida no sustituye el logger instalado.
 
 Use `logging.Default()` o instale un handler propio con `logging.SetDefault(logger)`. No se modifica `slog.Default()` ni se redirige el `log` estándar del anfitrión. `logging.Fatal(message)` registra y sale con estado 1; `logging.Panic(message)` registra y provoca panic, incluso si se filtra el registro.
 

@@ -90,7 +90,7 @@ New rotated log files default to owner-only `0600` permissions, subject to umask
 
 ## Go API migration
 
-Replace `InitLogInstance(logrusLogger, config)` with `logger, err := logging.NewLogger(config)`. `AuditLog()` now returns `*slog.Logger`; use native slog methods and `SetAuditLog(logger)` instead of logrus setters/hooks. Change the lumberjack import to v2 when assigning `LogConfig.RotationConfig`; v1 pointers no longer compile. `InitLog` and `InitAuditLog` retain unspecified settings and treat nil as a no-op. Invalid configuration leaves the installed logger unchanged.
+Replace `InitLogInstance(logrusLogger, config)` with `logger, err := logging.NewLogger(config)`. `AuditLog()` now returns `*slog.Logger`; use native slog methods and `SetAuditLog(logger)` instead of logrus setters/hooks. Change the lumberjack import to v2 when assigning `LogConfig.RotationConfig`; v1 pointers no longer compile. `InitLog` and `InitAuditLog` retain unspecified settings and treat nil or an empty config as a no-op. Invalid configuration leaves the installed logger unchanged.
 
 Use `logging.Default()` for the Engine logger or `logging.SetDefault(logger)` to install a host-owned slog handler. These functions do not change `slog.Default()` or redirect the host application’s standard `log` output. `logging.Fatal(message)` logs then exits with status 1; `logging.Panic(message)` logs then panics, even when their records are filtered.
 

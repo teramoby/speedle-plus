@@ -297,7 +297,7 @@
 
 <h2 id="migración-de-la-api-go">Migración de la API Go</h2>
 
-<p>Sustituya <code>InitLogInstance(logrusLogger, config)</code> por <code>logger, err := logging.NewLogger(config)</code>. <code>AuditLog()</code> devuelve <code>*slog.Logger</code>: use sus métodos nativos y <code>SetAuditLog(logger)</code> en lugar de setters/hooks de logrus. Importe lumberjack v2 para <code>LogConfig.RotationConfig</code>; los punteros v1 ya no compilan. <code>InitLog</code> y <code>InitAuditLog</code> conservan los ajustes omitidos; nil no modifica nada. Una configuración inválida no sustituye el logger instalado.</p>
+<p>Sustituya <code>InitLogInstance(logrusLogger, config)</code> por <code>logger, err := logging.NewLogger(config)</code>. <code>AuditLog()</code> devuelve <code>*slog.Logger</code>: use sus métodos nativos y <code>SetAuditLog(logger)</code> en lugar de setters/hooks de logrus. Importe lumberjack v2 para <code>LogConfig.RotationConfig</code>; los punteros v1 ya no compilan. <code>InitLog</code> y <code>InitAuditLog</code> conservan los ajustes omitidos; nil o una configuración vacía no modifican nada. Una configuración inválida no sustituye el logger instalado.</p>
 
 <p>Use <code>logging.Default()</code> o instale un handler propio con <code>logging.SetDefault(logger)</code>. No se modifica <code>slog.Default()</code> ni se redirige el <code>log</code> estándar del anfitrión. <code>logging.Fatal(message)</code> registra y sale con estado 1; <code>logging.Panic(message)</code> registra y provoca panic, incluso si se filtra el registro.</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#ff79c6">import</span> (
