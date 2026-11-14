@@ -215,6 +215,25 @@ func TestCacheRejectsUnsafeDirectory(t *testing.T) {
 	}
 }
 
+func TestCascadeRetainedCacheRejectsHashedServiceIDs(t *testing.T) {
+	cache, err := NewCache(filepath.Join(t.TempDir(), "cache"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	id := "service/with/slashes"
+	if err := cache.Save(&ServiceState{ServiceID: id}); !errors.Is(err, ErrProtocol) {
+		t.Fatalf("Save accepted an ID requiring a hashed filename: %v", err)
+	}
+	// Such IDs are not supported by the protocol. A file manually placed at
+	// their hashed path must fail startup, even if its contents are corrupt.
+	if err := os.WriteFile(cache.path(id), []byte("corrupt"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := cache.validateRetained(); !errors.Is(err, ErrCacheCorrupt) {
+		t.Fatalf("hashed retained filename bypassed validation: %v", err)
+	}
+}
+
 func TestCacheInputValidation(t *testing.T) {
 	if _, err := NewCache(""); err == nil {
 		t.Error("NewCache accepted an empty directory")

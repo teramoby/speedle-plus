@@ -258,6 +258,7 @@ test('container smoke writes a policy through PMS and requires ADS to allow it f
   const call = verify.indexOf('bash scripts/release-smoke.sh');
   assert.ok(cacheOnly !== -1 && cacheOnly < load && load < call);
   assert.match(smoke, /spctl="\$\{SPEEDLE_SMOKE_SPCTL:-dist\/spctl_linux_\$\{host_arch\}\}"/);
+  assert.match(smoke, /docker run --rm "\$\{image\}" spctl --help/);
   assert.equal([...smoke.matchAll(/"\$\{spctl\}" --pms-endpoint/g)].length, 3);
   assert.doesNotMatch(smoke, /dist\/spctl_linux_(?:amd64|arm64) --pms-endpoint/);
   assert.match(smoke, /create service smoke/);
@@ -383,7 +384,7 @@ test('container smoke selects the host spctl binary and native container image o
   assert.ok(!unsupported.records.some(record => record.tool === 'docker' || record.tool === 'spctl'));
 });
 
-test('pull requests build the host image and run the shared smoke script', () => {
+test('pull requests build both image architectures, load the host image and run the shared smoke script', () => {
   const workflow = fs.readFileSync(path.resolve(__dirname, '../../.github/workflows/image-smoke.yml'), 'utf8');
   assert.match(workflow, /pull_request:/);
   for (const pathFilter of ['deployment/container/**', '.github/workflows/release.yml', '.github/workflows/image-smoke.yml', 'scripts/release-smoke.sh', 'cmd/**']) {
@@ -391,10 +392,27 @@ test('pull requests build the host image and run the shared smoke script', () =>
   }
   assert.match(workflow, /runs-on: ubuntu-latest/);
   assert.match(workflow, /bash scripts\/release-smoke\.sh/);
+  assert.match(workflow, /--platform linux\/amd64,linux\/arm64/);
+  assert.match(workflow, /--output type=cacheonly/);
   assert.match(workflow, /--platform "linux\/\$\{host_arch\}" --load/);
   assert.match(workflow, /--tag speedle:smoke/);
   assert.match(workflow, /deployment\/container\/dispatch/);
+  assert.match(workflow, /ca-certificates\.crt/);
+  assert.doesNotMatch(workflow, /--push/);
   assert.doesNotMatch(workflow, /environment:\s*release/);
   assert.doesNotMatch(workflow, /secrets\./);
   assert.doesNotMatch(workflow, /--provenance/);
+});
+
+test('the release image is scratch, unprivileged, has no default command and carries the public CA bundle', () => {
+  const prepare = script('Prepare the container build context');
+  assert.match(prepare, /ca_bundle=\/etc\/ssl\/certs\/ca-certificates\.crt/);
+  assert.match(prepare, /cp "\$\{ca_bundle\}" "\$\{CONTAINER_CONTEXT\}\/ca-certificates\.crt"/);
+  const dockerfile = fs.readFileSync(path.resolve(__dirname, '../../deployment/container/Dockerfile'), 'utf8');
+  assert.match(dockerfile, /^FROM scratch$/m);
+  assert.match(dockerfile, /^COPY ca-certificates\.crt \/etc\/ssl\/certs\/ca-certificates\.crt$/m);
+  assert.match(dockerfile, /^EXPOSE 6733 6734$/m);
+  assert.match(dockerfile, /^USER 65532:65532$/m);
+  assert.match(dockerfile, /^ENTRYPOINT \["\/dispatch"\]$/m);
+  assert.doesNotMatch(dockerfile, /^CMD /m);
 });

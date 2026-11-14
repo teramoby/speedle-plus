@@ -38,7 +38,7 @@
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/deployment/#webpage","@type":"WebPage","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-10T14:45:43+08:00","description":"Run Speedle embedded in a Go application, from the published container image, with Homebrew, or as standalone PMS and ADS services.","headline":"Deployment","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/deployment/","@type":"WebPage"},"name":"Deployment","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/deployment/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/deployment/#webpage","@type":"WebPage","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-14T10:30:00+08:00","description":"Run Speedle embedded in a Go application, from the published container image, with Homebrew, or as standalone PMS and ADS services.","headline":"Deployment","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/deployment/","@type":"WebPage"},"name":"Deployment","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/deployment/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/deployment/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/","name":"Home","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/docs/","name":"Documentation","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/docs/deployment/","name":"Deployment","position":3}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -216,30 +216,30 @@ go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads</code></pre><
 
 <p>Each release published by the release workflow attaches prebuilt <code>spctl</code>, <code>speedle-pms</code> and <code>speedle-ads</code> binaries for macOS and Linux on amd64 and arm64, named <code>&lt;command&gt;_&lt;os&gt;_&lt;arch&gt;</code>, plus a <code>checksums.txt</code> file. Download them from the <a href="https://github.com/teramoby/speedle-plus/releases">Releases page</a> and verify each downloaded file against its SHA-256 checksum before running it; the checksum file is attached to the same release, so it detects incomplete or corrupted downloads rather than authenticating the release. Binaries and container images are produced by the release workflow, so they are available starting with the first release created after the workflow was added.</p>
 
-<p>The release workflow also publishes two multi-architecture container images for Linux amd64 and arm64:</p>
+<p>The release workflow also publishes one multi-architecture container image for Linux amd64 and arm64. It contains <code>speedle-pms</code>, <code>speedle-ads</code> and <code>spctl</code>; the first argument selects the program:</p>
 
 <ul>
-<li><code>ghcr.io/teramoby/speedle-pms</code></li>
-<li><code>ghcr.io/teramoby/speedle-ads</code></li>
+<li>Docker Hub: <code>docker.io/speedle/speedle</code></li>
+<li>GHCR: <code>ghcr.io/teramoby/speedle</code></li>
 </ul>
 
-<p>Anonymous pulls require the packages to be public; if a package is private, authenticate first with <code>docker login ghcr.io</code>.</p>
+<p>Anonymous pulls work. If GHCR refuses an anonymous pull, authenticate first with <code>docker login ghcr.io</code>.</p>
 
 <p>Pull the release you deploy; <code>latest</code> follows the newest release:</p>
 
 <!-- deployment-template: image-pull -->
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker pull ghcr.io/teramoby/speedle-pms:latest
-docker pull ghcr.io/teramoby/speedle-ads:latest</code></pre></div>
-<p>To pin an image by digest, read the released digest with <code>docker buildx imagetools inspect ghcr.io/teramoby/speedle-pms:&lt;tag&gt;</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker pull docker.io/speedle/speedle:latest
+docker pull ghcr.io/teramoby/speedle:latest</code></pre></div>
+<p>To pin an image by digest, read the released digest with <code>docker buildx imagetools inspect docker.io/speedle/speedle:&lt;tag&gt;</code>.</p>
 
-<p>Both images run the service as UID 65532 and include a writable <code>/data</code> directory for the file store. Pass the server flags after the image name, and run each command in its own terminal:</p>
+<p>The image runs as UID 65532 and includes a writable <code>/data</code> directory for the file store. Pass the program name and its flags after the image name, and run each command in its own terminal:</p>
 
 <!-- deployment-template: image-run -->
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker run --rm -p <span style="color:#bd93f9">127</span>.0.0.1:6733:6733 -v speedle-policies:/data ghcr.io/teramoby/speedle-pms:latest --store-type file --filestore-loc /data/policies.json --endpoint <span style="color:#bd93f9">0</span>.0.0.0:6733 --insecure<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">true</span>
-docker run --rm -p <span style="color:#bd93f9">127</span>.0.0.1:6734:6734 -v speedle-policies:/data ghcr.io/teramoby/speedle-ads:latest --store-type file --filestore-loc /data/policies.json --endpoint <span style="color:#bd93f9">0</span>.0.0.0:6734 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker run --rm -p <span style="color:#bd93f9">127</span>.0.0.1:6733:6733 -v speedle-policies:/data docker.io/speedle/speedle:latest speedle-pms --store-type file --filestore-loc /data/policies.json --endpoint <span style="color:#bd93f9">0</span>.0.0.0:6733 --insecure<span style="color:#ff79c6">=</span><span style="color:#8be9fd;font-style:italic">true</span>
+docker run --rm -p <span style="color:#bd93f9">127</span>.0.0.1:6734:6734 -v speedle-policies:/data docker.io/speedle/speedle:latest speedle-ads --store-type file --filestore-loc /data/policies.json --endpoint <span style="color:#bd93f9">0</span>.0.0.0:6734 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
 <p>PMS has no built-in caller authentication; the <code>127.0.0.1</code> binding keeps the unauthenticated management API on this machine. Never publish these ports on a host interface or expose them to an untrusted network.</p>
 
-<p>The images do not include CA certificates; provide the CA file for TLS endpoints. <code>--insecure=true</code> is for this local example only; see <a href="/docs/security/">Security</a>.</p>
+<p>The image includes the public CA bundle. Releases 1.7.0 and 1.7.1 were published before the bundle was added; pass a CA file for TLS endpoints when using those tags. <code>--insecure=true</code> is for this local example only; see <a href="/docs/security/">Security</a>. The <a href="/docs/deployment/docker/">Docker image</a> page covers <code>spctl</code>, health checks, Compose and provenance.</p>
 
 <h2 id="kubernetes-development-example">Kubernetes development example</h2>
 
@@ -271,8 +271,8 @@ spec:
               mountPath: /data
       containers:
         - name: pms
-          image: ghcr.io/teramoby/speedle-pms:&lt;release-tag<span style="color:#f1fa8c">&gt;
-</span><span style="color:#f1fa8c">          args: [&#34;--store-type&#34;, &#34;file&#34;, &#34;--filestore-loc&#34;, &#34;/data/policies.json&#34;, &#34;--endpoint&#34;, &#34;0.0.0.0:6733&#34;, &#34;--insecure=true&#34;]
+          image: docker.io/speedle/speedle:&lt;release-tag<span style="color:#f1fa8c">&gt;
+</span><span style="color:#f1fa8c">          args: [&#34;speedle-pms&#34;, &#34;--store-type&#34;, &#34;file&#34;, &#34;--filestore-loc&#34;, &#34;/data/policies.json&#34;, &#34;--endpoint&#34;, &#34;0.0.0.0:6733&#34;, &#34;--insecure=true&#34;]
 </span><span style="color:#f1fa8c">          ports:
 </span><span style="color:#f1fa8c">            - containerPort: 6733
 </span><span style="color:#f1fa8c">          readinessProbe:
@@ -282,8 +282,8 @@ spec:
 </span><span style="color:#f1fa8c">            - name: policies
 </span><span style="color:#f1fa8c">              mountPath: /data</span>
         - name: ads
-          image: ghcr.io/teramoby/speedle-ads:&lt;release-tag<span style="color:#f1fa8c">&gt;
-</span><span style="color:#f1fa8c">          args: [&#34;--store-type&#34;, &#34;file&#34;, &#34;--filestore-loc&#34;, &#34;/data/policies.json&#34;, &#34;--endpoint&#34;, &#34;0.0.0.0:6734&#34;, &#34;--insecure=true&#34;]
+          image: docker.io/speedle/speedle:&lt;release-tag<span style="color:#f1fa8c">&gt;
+</span><span style="color:#f1fa8c">          args: [&#34;speedle-ads&#34;, &#34;--store-type&#34;, &#34;file&#34;, &#34;--filestore-loc&#34;, &#34;/data/policies.json&#34;, &#34;--endpoint&#34;, &#34;0.0.0.0:6734&#34;, &#34;--insecure=true&#34;]
 </span><span style="color:#f1fa8c">          ports:
 </span><span style="color:#f1fa8c">            - containerPort: 6734
 </span><span style="color:#f1fa8c">          readinessProbe:
@@ -311,10 +311,10 @@ spec:
     - name: ads
       port: <span style="color:#bd93f9">6734</span>
       targetPort: <span style="color:#bd93f9">6734</span></code></pre></div>
-<p>Set <code>PMS_IMAGE</code> and <code>ADS_IMAGE</code> to the exact images you deploy, for example a release tag or a digest. Substitute them locally before applying; keep port-forward running while using Quick Start clients:</p>
+<p>Set <code>SPEEDLE_IMAGE</code> to the exact image you deploy, for example a release tag or a digest. Substitute it locally before applying; keep port-forward running while using Quick Start clients:</p>
 
 <!-- deployment-template: apply -->
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kubectl <span style="color:#8be9fd;font-style:italic">set</span> image --local -f speedle-dev.yaml <span style="color:#8be9fd;font-style:italic">pms</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$PMS_IMAGE</span><span style="color:#f1fa8c">&#34;</span> <span style="color:#8be9fd;font-style:italic">ads</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ADS_IMAGE</span><span style="color:#f1fa8c">&#34;</span> -o yaml | kubectl apply -f -
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kubectl <span style="color:#8be9fd;font-style:italic">set</span> image --local -f speedle-dev.yaml <span style="color:#8be9fd;font-style:italic">pms</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$SPEEDLE_IMAGE</span><span style="color:#f1fa8c">&#34;</span> <span style="color:#8be9fd;font-style:italic">ads</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$SPEEDLE_IMAGE</span><span style="color:#f1fa8c">&#34;</span> -o yaml | kubectl apply -f -
 kubectl rollout status deployment/speedle-dev
 kubectl port-forward service/speedle-dev <span style="color:#bd93f9">6733</span>:6733 <span style="color:#bd93f9">6734</span>:6734</code></pre></div>
 <h2 id="production-deployments">Production deployments</h2>

@@ -74,6 +74,9 @@ type Store struct {
 	runtimeMu sync.Mutex
 	runtime   *distributionRuntime
 	closeOnce sync.Once
+	tlsCancel context.CancelFunc
+	tlsDone   chan struct{}
+	tlsReload chan struct{}
 
 	// afterFetch, when set by a test, runs after a service fetch succeeds and
 	// before its result is stored. It is nil in production.
@@ -112,7 +115,7 @@ var (
 )
 
 // Open validates the options and builds the protocol client and the state
-// machine. The instance authenticates with its API key and identifies itself
+// machine. The instance authenticates with its API key or mTLS and identifies itself
 // with the instance ID the client creates on its first request and persists in
 // CacheDir.
 //
@@ -131,8 +134,8 @@ func Open(ctx context.Context, options Options) (_ *Store, err error) {
 	if err := validateUpstream(&options); err != nil {
 		return nil, err
 	}
-	if options.APIKey == "" {
-		return nil, errors.New(errors.ConfigError, "configure item APIKey is required")
+	if err := validateCredentials(options); err != nil {
+		return nil, err
 	}
 	if options.InstanceID != "" && !adsync.ValidInstanceID(options.InstanceID) {
 		return nil, errors.New(errors.ConfigError, "policy source InstanceID must be a UUIDv7")
@@ -140,21 +143,49 @@ func Open(ctx context.Context, options Options) (_ *Store, err error) {
 	if options.CacheDir == "" && options.InstanceID == "" {
 		log.Warn("policy-source store has no CacheDir: the instance ID is not persisted, so every restart registers a new instance")
 	}
+	// The authentication mode follows the credentials: an APIKey selects
+	// direct mode, and complete mTLS material without one selects cascade.
+	// Log the selected mode so a missing or restored secret is visible at
+	// startup rather than only in request failures.
+	if options.APIKey == "" {
+		log.Info("policy-source: cascade mTLS mode; requests carry no bearer credential and the relay is verified against CAFile only")
+		if len(options.CRLFiles)+len(options.CRLURLs) == 0 {
+			log.Warn("policy-source: no relay CRL sources configured; relay revocation is not checked without a retained CRL floor")
+		}
+	} else {
+		log.Info("policy-source: direct mode; requests carry the API key")
+	}
 
-	client, err := adsync.NewClient(adsync.Config{
-		BaseURL:        options.UpstreamURL,
-		APIKey:         string(options.APIKey),
-		InstanceID:     options.InstanceID,
-		InstanceIDDir:  options.CacheDir,
-		HTTPClient:     options.HTTPClient,
-		CAFile:         options.CAFile,
-		ClientCertFile: options.ClientCertFile,
-		ClientKeyFile:  options.ClientKeyFile,
-		RequestTimeout: options.RequestTimeout,
-		Retry:          options.Retry,
+	client, err := adsync.NewClientContext(ctx, adsync.Config{
+		BaseURL:            options.UpstreamURL,
+		APIKey:             string(options.APIKey),
+		InstanceID:         options.InstanceID,
+		InstanceIDDir:      options.CacheDir,
+		HTTPClient:         options.HTTPClient,
+		CAFile:             options.CAFile,
+		ClientCertFile:     options.ClientCertFile,
+		ClientKeyFile:      options.ClientKeyFile,
+		TLSReloadInterval:  options.TLSReloadInterval,
+		CRLFiles:           options.CRLFiles,
+		CRLURLs:            options.CRLURLs,
+		CRLRefreshInterval: options.CRLRefreshInterval,
+		CRLMaxAge:          options.CRLMaxAge,
+		RequestTimeout:     options.RequestTimeout,
+		Retry:              options.Retry,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, errors.ConfigError, "invalid policy source client configuration")
+	}
+	defer func() {
+		if err != nil {
+			client.Close()
+		}
+	}()
+	if options.APIKey == "" {
+		// Validate retained identity at startup, before any channel can send it.
+		if _, err := client.InstanceID(); err != nil {
+			return nil, errors.Wrap(err, errors.ConfigError, "invalid cascade CacheDir identity")
+		}
 	}
 	syncer, err := adsync.NewSyncer(client, options.CacheDir)
 	if err != nil {
@@ -203,6 +234,7 @@ func Open(ctx context.Context, options Options) (_ *Store, err error) {
 		})
 	}
 	if options.StartRuntime {
+		store.startTLSWatch()
 		return store, nil
 	}
 
@@ -216,6 +248,7 @@ func Open(ctx context.Context, options Options) (_ *Store, err error) {
 		// confirmed live and every decision fails closed until a sync succeeds.
 		log.Warnf("policy-source store started without a complete bootstrap: %v", redactConfigError(err, options.APIKey))
 	}
+	store.startTLSWatch()
 	return store, nil
 }
 

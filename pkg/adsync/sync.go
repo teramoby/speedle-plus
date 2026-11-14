@@ -109,6 +109,11 @@ func NewSyncer(client *Client, cacheDir string) (*Syncer, error) {
 			return nil, err
 		}
 	}
+	if cache != nil && client.tlsMaterial != nil {
+		if err := cache.validateRetained(); err != nil {
+			return nil, err
+		}
+	}
 	return &Syncer{
 		client: client,
 		cache:  cache,

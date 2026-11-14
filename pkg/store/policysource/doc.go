@@ -12,27 +12,39 @@
 //
 // # Configuration
 //
-// UpstreamURL is the policy-source root. APIKey is accepted only in the
-// configuration file and retained as a redacted secret in Options. Every
-// request carries the key and the instance ID, a UUIDv7 the ADS generates on
-// its first request and keeps in CacheDir; without CacheDir every start is a
-// new instance. The upstream registers the instance on its first channel
-// request and assigns its services. ServeDownstream enables the downstream
-// mTLS listener: the store mirrors each verified copy and exposes the
-// policy-source protocol handler (DownstreamHandler) for the process to serve
-// on its dedicated listener. A service is withheld from downstream serving
-// while a copy is being fetched and verified, after a failed pass, and while
-// the instance is paused or no longer live; it becomes servable again only at
-// a confirmed head. The listener's endpoint, certificate, key, client CA and
-// CRL sources are server configuration; the store has no fan-out, chain-depth
-// or connection limits.
+// UpstreamURL is one HTTPS root or an ordered list. Direct mode uses APIKey
+// and one upstream; the key is accepted only in the configuration file and
+// retained as a redacted secret in Options. Cascade mode omits APIKey and
+// requires ClientCertFile, ClientKeyFile, CAFile and CacheDir. Cascade sends
+// no bearer header and verifies the relay chain, serverAuth usage and URL host
+// SAN against CAFile. TLS files reload every 30 seconds (TLSReloadInterval)
+// and on SIGHUP; valid changes reconnect upstream channels and HTTP
+// connections. Invalid changes retain the last valid generation. Optional
+// CRLFiles and CRLURLs check relay revocation. See docs/POLICY_SOURCE.md for
+// configuration and current scope.
+//
+// Every instance generates a UUIDv7 and keeps it in CacheDir. Cascade requires
+// this directory, rejects corrupt retained state, and keeps its ID across
+// certificate rotation. Direct mode without CacheDir creates a new ID on each
+// start. The upstream registers the instance on its first channel request and
+// assigns its services.
+//
+// ServeDownstream enables the downstream mTLS listener: the store mirrors each
+// verified copy and exposes the policy-source protocol handler
+// (DownstreamHandler) for the process to serve on its dedicated listener. A
+// service is withheld from downstream serving while a copy is being fetched
+// and verified, after a failed pass, and while the instance is paused or no
+// longer live; it becomes servable again only at a confirmed head. The
+// listener's endpoint, certificate, key, client CA and CRL sources are server
+// configuration; the store has no fan-out, chain-depth or connection limits.
 //
 // PolicySourceURL, CredentialFile, SPEEDLE_ADS_CREDENTIAL,
 // PolicySourcePublicKeys, Services, CloudFallbackURL, CloudCredentialFile,
-// InstanceName, DownstreamCredentialsFile, MaxDownstream, MaxChainDepth and
-// MaxConnectionsPerDownstream are rejected. Configure UpstreamURL and APIKey
-// instead; select services in the Cloud console. Engines using other store
-// types are unaffected.
+// InstanceName, InstanceID, DownstreamCredentialsFile, MaxDownstream,
+// MaxChainDepth and MaxConnectionsPerDownstream are rejected. Configure
+// UpstreamURL and either APIKey or cascade mTLS material instead; select
+// services in the Cloud console. Engines using other store types are
+// unaffected.
 //
 // # Change notification
 //
@@ -61,7 +73,7 @@
 //
 // The store implements adsync.RequestGate for the REST and gRPC entry points:
 // it reports the instance and per-service state, and ForwardFallback sends one
-// authorization request to UpstreamURL with the same key while a service is
+// authorization request to UpstreamURL with the mode's credentials while a service is
 // syncing or the instance is stale. FallbackWhileSyncing (default true) turns
 // that path off. An authentication failure from the upstream stops the
 // instance as revoked.

@@ -112,9 +112,10 @@ type Config struct {
 	// https://cloud.speedle.io. HTTPS is required; a non-443 port is allowed
 	// for testing and internal proxies.
 	BaseURL string
-	// APIKey authenticates every request: synchronization, the channel and
+	// APIKey selects direct mode and authenticates every request: synchronization, the channel and
 	// forwarded authorization requests. It is sent only in the Authorization
-	// header to BaseURL and never appears in an error.
+	// header to BaseURL and never appears in an error. Without it, complete
+	// ClientCertFile, ClientKeyFile, CAFile and InstanceIDDir select cascade mode.
 	APIKey string
 	// InstanceID fixes the instance ID, a UUIDv7. When it is empty the ID is
 	// created the first time a request needs it: persisted in InstanceIDDir
@@ -126,12 +127,18 @@ type Config struct {
 	// HTTPClient overrides the entire transport. Transport fields below must
 	// then be empty.
 	HTTPClient *http.Client
-	// CAFile adds a PEM-encoded CA bundle to the system roots, for enterprise
-	// TLS inspection.
+	// CAFile adds PEM CAs to system roots in direct mode. Cascade requires it
+	// and trusts only this explicit bundle for relay verification.
 	CAFile string
 	// ClientCertFile and ClientKeyFile enable mutual TLS when both are set.
-	ClientCertFile string
-	ClientKeyFile  string
+	ClientCertFile                string
+	ClientKeyFile                 string
+	TLSReloadInterval             time.Duration
+	CRLFiles, CRLURLs             []string
+	CRLRefreshInterval, CRLMaxAge time.Duration
+
+	// tlsMaterial is shared by HTTPS and WebSocket transports.
+	tlsMaterial *clientTLS
 	// Proxy overrides the proxy function. By default HTTPS_PROXY and NO_PROXY
 	// are read from the environment when the Client is created.
 	Proxy func(*http.Request) (*url.URL, error)
@@ -142,7 +149,8 @@ type Config struct {
 	Dialer *websocket.Dialer
 
 	// RequestTimeout limits time without response bytes, including the wait
-	// for headers. Active downloads have no total-duration limit.
+	// for headers. Active policy downloads have no total-duration limit; CRL
+	// downloads also have a fixed total cap.
 	// SnapshotTimeout is deprecated and ignored; retained for source compatibility.
 	RequestTimeout  time.Duration
 	SnapshotTimeout time.Duration
@@ -156,6 +164,7 @@ type Config struct {
 // per-service state; Syncer adds resume and caching.
 type Client struct {
 	base            *url.URL
+	tlsMaterial     *clientTLS
 	apiKey          string
 	http            *http.Client
 	dialer          *websocket.Dialer
@@ -184,8 +193,44 @@ type Client struct {
 
 // NewClient validates the configuration and builds the HTTP transport.
 func NewClient(config Config) (*Client, error) {
-	if err := ValidateAPIKey(config.APIKey); err != nil {
+	return NewClientContext(context.Background(), config)
+}
+
+// NewClientContext also applies the caller's cancellation to initial CRL fetches.
+// Downloads use stall deadlines; this context is the owner's startup lifetime.
+func NewClientContext(ctx context.Context, config Config) (*Client, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := ctx.Err(); err != nil {
 		return nil, err
+	}
+	if config.APIKey != "" {
+		if config.TLSReloadInterval != 0 || config.CRLFiles != nil || config.CRLURLs != nil || config.CRLRefreshInterval != 0 || config.CRLMaxAge != 0 {
+			return nil, fmt.Errorf("adsync: TLSReloadInterval, CRLFiles, CRLURLs, CRLRefreshInterval and CRLMaxAge require cascade mode (no APIKey)")
+		}
+		if err := ValidateAPIKey(config.APIKey); err != nil {
+			return nil, err
+		}
+	} else {
+		if (config.CRLFiles != nil || config.CRLURLs != nil) && len(config.CRLFiles)+len(config.CRLURLs) == 0 {
+			return nil, fmt.Errorf("adsync: configured CRLFiles/CRLURLs require at least one CRL source")
+		}
+		if config.ClientCertFile == "" || config.ClientKeyFile == "" || config.CAFile == "" {
+			return nil, fmt.Errorf("adsync: configure APIKey for direct mode or complete ClientCertFile, ClientKeyFile and CAFile for cascade mode")
+		}
+		if config.InstanceIDDir == "" {
+			return nil, fmt.Errorf("adsync: CacheDir is required in cascade mode")
+		}
+		if config.InstanceID != "" {
+			return nil, fmt.Errorf("adsync: cascade generates InstanceID in CacheDir")
+		}
+		if config.HTTPClient != nil || config.Dialer != nil {
+			return nil, fmt.Errorf("adsync: cascade requires the managed mTLS transport")
+		}
+	}
+	if config.TLSReloadInterval < 0 || config.CRLRefreshInterval < 0 || config.CRLMaxAge < 0 {
+		return nil, fmt.Errorf("adsync: TLS/CRL intervals must not be negative")
 	}
 	if config.InstanceID != "" && !ValidInstanceID(config.InstanceID) {
 		return nil, fmt.Errorf("%w: InstanceID must be a UUIDv7", ErrProtocol)
@@ -197,13 +242,13 @@ func NewClient(config Config) (*Client, error) {
 	if base.Scheme != "https" {
 		return nil, fmt.Errorf("adsync: BaseURL must use https")
 	}
-	if base.Host == "" {
+	if base.Hostname() == "" {
 		return nil, fmt.Errorf("adsync: BaseURL has no host")
 	}
 	if base.User != nil {
 		return nil, fmt.Errorf("adsync: BaseURL must not contain a credential")
 	}
-	if base.RawQuery != "" || base.Fragment != "" {
+	if base.RawQuery != "" || base.ForceQuery || base.Fragment != "" || strings.Contains(config.BaseURL, "#") {
 		return nil, fmt.Errorf("adsync: BaseURL must not contain a query or fragment")
 	}
 	base.Path = strings.TrimSuffix(base.Path, "/")
@@ -220,6 +265,12 @@ func NewClient(config Config) (*Client, error) {
 		return nil, err
 	}
 
+	if config.APIKey == "" {
+		config.tlsMaterial, err = newClientTLS(ctx, config, base.Hostname())
+		if err != nil {
+			return nil, err
+		}
+	}
 	httpClient := config.HTTPClient
 	dialer := config.Dialer
 	if httpClient == nil {
@@ -250,6 +301,7 @@ func NewClient(config Config) (*Client, error) {
 	}
 	return &Client{
 		base:            base,
+		tlsMaterial:     config.tlsMaterial,
 		apiKey:          config.APIKey,
 		http:            httpClient,
 		dialer:          dialer,
@@ -297,7 +349,11 @@ func (c *Client) authorize(header http.Header) error {
 	if err != nil {
 		return err
 	}
-	header.Set("Authorization", "Bearer "+c.apiKey)
+	if c.apiKey != "" {
+		header.Set("Authorization", "Bearer "+c.apiKey)
+	} else {
+		header.Del("Authorization")
+	}
 	header.Set(InstanceHeader, id)
 	return nil
 }
@@ -317,6 +373,9 @@ func newHTTPClient(config Config) (*http.Client, error) {
 		TLSHandshakeTimeout:   10 * time.Second,
 		ExpectContinueTimeout: time.Second,
 	}
+	if config.tlsMaterial != nil {
+		transport.DialContext = config.tlsMaterial.dialContext
+	}
 	return &http.Client{
 		Transport: transport,
 		// A policy source is a fixed endpoint. Following a redirect could move
@@ -334,16 +393,23 @@ func newWebSocketDialer(config Config) (*websocket.Dialer, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &websocket.Dialer{
+	dialer := &websocket.Dialer{
 		Proxy:            newProxyFunc(config),
 		TLSClientConfig:  tlsConfig,
 		HandshakeTimeout: defaultRequestTimeout,
-	}, nil
+	}
+	if config.tlsMaterial != nil {
+		dialer.NetDialContext = config.tlsMaterial.dialContext
+	}
+	return dialer, nil
 }
 
 // newTLSConfig builds the TLS configuration shared by the HTTPS client and the
 // WebSocket dialer.
 func newTLSConfig(config Config) (*tls.Config, error) {
+	if config.tlsMaterial != nil {
+		return config.tlsMaterial.config(), nil
+	}
 	tlsConfig := &tls.Config{MinVersion: tls.VersionTLS12}
 	if config.CAFile != "" {
 		pool, err := loadCertPool(config.CAFile)

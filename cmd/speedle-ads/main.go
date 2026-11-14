@@ -100,6 +100,60 @@ func newDownstreamListener(params *flags.Parameters, evaluator eval.InternalEval
 	return listener, nil
 }
 
+// startUpstreamTLSReload is the process owner's SIGHUP registration for a
+// cascade store, whose upstream client owns the reloadable TLS material. A
+// store without it, such as a direct engine, keeps its signal behavior.
+func startUpstreamTLSReload(evaluator eval.InternalEvaluator) func() {
+	reload := upstreamTLSReloadAction(evaluator)
+	if reload == nil {
+		return func() {}
+	}
+	reloadSignals := make(chan os.Signal, 1)
+	signal.Notify(reloadSignals, syscall.SIGHUP)
+	reloadStop := make(chan struct{})
+	reloadStopped := make(chan struct{})
+	go func() {
+		defer close(reloadStopped)
+		runTLSReload(reloadSignals, reloadStop, reload)
+	}()
+	return func() {
+		signal.Stop(reloadSignals)
+		close(reloadStop)
+		<-reloadStopped
+	}
+}
+
+// upstreamTLSReloadAction returns the cascade store's coalesced reload request,
+// or nil when the store has no reloadable upstream TLS material.
+func upstreamTLSReloadAction(evaluator eval.InternalEvaluator) func() {
+	provider, ok := evaluator.(interface{ DistributionStore() any })
+	if !ok {
+		return nil
+	}
+	upstream, ok := provider.DistributionStore().(interface {
+		UpstreamTLSReloadEnabled() bool
+		RequestTLSReload()
+	})
+	if !ok || !upstream.UpstreamTLSReloadEnabled() {
+		return nil
+	}
+	return upstream.RequestTLSReload
+}
+
+func runTLSReload(signals <-chan os.Signal, stop <-chan struct{}, reload func()) {
+	for {
+		select {
+		case <-stop:
+			return
+		case _, ok := <-signals:
+			if !ok {
+				return
+			}
+			reload()
+		}
+	}
+}
+
 // run starts the servers and serves until one of them fails or stop
 // receives a signal.
 func run(params *flags.Parameters, conf *cfg.Config, stop <-chan os.Signal) error {
@@ -130,6 +184,11 @@ func run(params *flags.Parameters, conf *cfg.Config, stop <-chan os.Signal) erro
 	if closer, ok := evaluator.(io.Closer); ok {
 		defer closer.Close()
 	}
+
+	// Both signal registrations coexist: the store's upstream TLS material and
+	// the relay listener's downstream material reload on the same SIGHUP.
+	stopUpstreamTLSReload := startUpstreamTLSReload(evaluator)
+	defer stopUpstreamTLSReload()
 
 	downstreamListener, err := newDownstreamListener(params, evaluator)
 	if err != nil {

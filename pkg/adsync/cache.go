@@ -210,6 +210,12 @@ func cacheFileName(serviceID string) string {
 }
 
 func writeFileAtomic(path string, data []byte) error {
+	return writeFileAtomicChecked(path, data, nil)
+}
+
+// beforeCommit runs after staging and flushing, immediately before the rename.
+// Its caller must keep any tentative in-memory state private until success.
+func writeFileAtomicChecked(path string, data []byte, beforeCommit func() error) error {
 	directory := filepath.Dir(path)
 	temporary, err := os.CreateTemp(directory, ".adsync-cache-*")
 	if err != nil {
@@ -227,6 +233,11 @@ func writeFileAtomic(path string, data []byte) error {
 	}
 	if err := temporary.Close(); err != nil {
 		return err
+	}
+	if beforeCommit != nil {
+		if err := beforeCommit(); err != nil {
+			return err
+		}
 	}
 	if err := os.Rename(temporaryName, path); err != nil {
 		return err
@@ -265,4 +276,24 @@ func (c *Cache) List() []*ServiceState {
 		states = append(states, state)
 	}
 	return states
+}
+
+// validateRetained fails closed for cascade: an unreadable or corrupt copy
+// also carries the retained revision floor and cannot be treated as a miss.
+func (c *Cache) validateRetained() error {
+	entries, err := os.ReadDir(c.dir)
+	if err != nil {
+		return fmt.Errorf("adsync: read cascade CacheDir: %w", err)
+	}
+	for _, entry := range entries {
+		name := entry.Name()
+		if !strings.HasPrefix(name, "service-") || !strings.HasSuffix(name, ".json") {
+			continue
+		}
+		serviceID := strings.TrimSuffix(strings.TrimPrefix(name, "service-"), ".json")
+		if _, err := c.Load(serviceID); err != nil {
+			return fmt.Errorf("adsync: invalid retained cascade cache file %q: %w", filepath.Join(c.dir, name), err)
+		}
+	}
+	return nil
 }
