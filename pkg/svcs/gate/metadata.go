@@ -13,6 +13,11 @@ func FilterMetadata(values map[string][]string) map[string][]string {
 		"proxy-authenticate": true, "proxy-authorization": true,
 		"te": true, "trailer": true, "transfer-encoding": true, "upgrade": true,
 		"set-cookie": true, "content-length": true, "content-type": true,
+		// The services serialize a fresh body rather than forwarding upstream bytes.
+		"content-encoding": true, "content-range": true, "content-md5": true,
+		"digest": true, "content-digest": true, "repr-digest": true,
+		"etag": true, "last-modified": true, "accept-ranges": true,
+		"content-disposition": true, "content-location": true, "content-language": true,
 		"cache-control": true, "retry-after": true, "x-speedle-decision-source": true,
 		"speedle-principals": true, "www-authenticate": true, "date": true, "server": true,
 	}

@@ -125,12 +125,16 @@ func exampleMetadata() map[string][]string {
 	for _, key := range []string{
 		"Proxy-Connection", "Keep-Alive", "Proxy-Authenticate", "Proxy-Authorization",
 		"TE", "Trailer", "Transfer-Encoding", "Upgrade", "Set-Cookie",
-		"Content-Length", "Content-Type", "Cache-Control", "Retry-After",
+		"Content-Length", "Content-Type", "Content-Encoding", "Content-Range",
+		"Content-MD5", "Digest", "Content-Digest", "Repr-Digest", "ETag", "Last-Modified",
+		"Accept-Ranges", "Content-Disposition", "Content-Location", "Content-Language",
+		"Cache-Control", "Retry-After",
 		"X-Speedle-Decision-Source", "Speedle-Principals", "WWW-Authenticate", "Date", "Server",
 		"grpc-status", "grpc-message", ":status", "bad key", "X-Test-Bin",
 	} {
 		result[key] = []string{"forbidden"}
 	}
+	result["Content-Encoding"] = []string{"gzip"}
 	return result
 }
 
