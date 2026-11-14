@@ -197,13 +197,22 @@ func (s *Store) findServices(ctx context.Context) ([]*pms.Service, error) {
 
 }
 
+// aggregateOptions preserves the v1 server execution limit independently of
+// the caller's five-second deadline. Driver v2 removed SetMaxTime and omits
+// maxTimeMS on cursor aggregates even when the context has a deadline. Keep
+// this compatibility shim isolated so a future public replacement is local.
+func aggregateOptions(maxTime time.Duration) *options.AggregateOptionsBuilder {
+	//lint:ignore SA1019 v2 has no public aggregate maxTimeMS setter; preserve the existing command and retry/read-concern behavior.
+	return options.Aggregate().SetCustom(bson.M{"maxTimeMS": maxTime.Milliseconds()})
+}
+
 // GetServiceNames reads all the service names
 func (s *Store) GetServiceNames() ([]string, error) {
 	serviceCollection := s.client.Database(s.Database).Collection("services")
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	projectstag := bson.D{{"$project", bson.D{{"_id", 1}}}}
-	cur, err := serviceCollection.Aggregate(ctx, mongo.Pipeline{projectstag})
+	cur, err := serviceCollection.Aggregate(ctx, mongo.Pipeline{projectstag}, aggregateOptions(2*time.Second))
 	if err != nil {
 		return nil, err
 	}
@@ -239,7 +248,7 @@ func (s *Store) GetPolicyAndRolePolicyCounts() (map[string]*pms.PolicyAndRolePol
 				}}}},
 		}}}
 
-	cur, err := serviceCollection.Aggregate(ctx, mongo.Pipeline{matchstag, projectstag})
+	cur, err := serviceCollection.Aggregate(ctx, mongo.Pipeline{matchstag, projectstag}, aggregateOptions(5*time.Second))
 	if err != nil {
 		return nil, err
 	}
@@ -604,7 +613,7 @@ func parseFilter(filterStr string) (bson.D, error) {
 // For policy manager
 func (s *Store) ListAllPolicies(serviceName string, filter string) ([]*pms.Policy, error) {
 	serviceCollection := s.client.Database(s.Database).Collection("services")
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	matchstag := bson.D{{"$match", bson.D{{"_id", serviceName}}}}
 	condition, err := parseFilter(filter)
@@ -621,7 +630,7 @@ func (s *Store) ListAllPolicies(serviceName string, filter string) ([]*pms.Polic
 				}},
 			}},
 		}}
-	cur, err := serviceCollection.Aggregate(ctx, mongo.Pipeline{matchstag, projectstag})
+	cur, err := serviceCollection.Aggregate(ctx, mongo.Pipeline{matchstag, projectstag}, aggregateOptions(2*time.Second))
 	if err != nil {
 		return nil, err
 	}
@@ -650,7 +659,7 @@ func (s *Store) GetPolicyCount(serviceName string) (int64, error) {
 
 	projectstag := bson.D{{"$project", bson.D{{"policycount", bson.D{{"$size", bson.D{{"$ifNull", bson.A{"$policies", bson.A{}}}}}}}}}}
 
-	cur, err := serviceCollection.Aggregate(ctx, mongo.Pipeline{matchstag, projectstag})
+	cur, err := serviceCollection.Aggregate(ctx, mongo.Pipeline{matchstag, projectstag}, aggregateOptions(5*time.Second))
 	if err != nil {
 		return -1, err
 	}
@@ -690,7 +699,7 @@ func (s *Store) GetPolicy(serviceName string, id string) (*pms.Policy, error) {
 				}},
 			}},
 		}}
-	cur, err := serviceCollection.Aggregate(ctx, mongo.Pipeline{matchstag, projectstag})
+	cur, err := serviceCollection.Aggregate(ctx, mongo.Pipeline{matchstag, projectstag}, aggregateOptions(5*time.Second))
 	if err != nil {
 		return nil, err
 	}
@@ -765,7 +774,7 @@ func (s *Store) CreatePolicy(serviceName string, policy *pms.Policy) (*pms.Polic
 // For role policy manager
 func (s *Store) ListAllRolePolicies(serviceName string, filter string) ([]*pms.RolePolicy, error) {
 	serviceCollection := s.client.Database(s.Database).Collection("services")
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	matchstag := bson.D{{"$match", bson.D{{"_id", serviceName}}}}
 	condition, err := parseFilter(filter)
@@ -782,7 +791,7 @@ func (s *Store) ListAllRolePolicies(serviceName string, filter string) ([]*pms.R
 				}},
 			}},
 		}}
-	cur, err := serviceCollection.Aggregate(ctx, mongo.Pipeline{matchstag, projectstag})
+	cur, err := serviceCollection.Aggregate(ctx, mongo.Pipeline{matchstag, projectstag}, aggregateOptions(2*time.Second))
 	if err != nil {
 		return nil, err
 	}
@@ -811,7 +820,7 @@ func (s *Store) GetRolePolicyCount(serviceName string) (int64, error) {
 
 	projectstag := bson.D{{"$project", bson.D{{"policycount", bson.D{{"$size", bson.D{{"$ifNull", bson.A{"$rolepolicies", bson.A{}}}}}}}}}}
 
-	cur, err := serviceCollection.Aggregate(ctx, mongo.Pipeline{matchstag, projectstag})
+	cur, err := serviceCollection.Aggregate(ctx, mongo.Pipeline{matchstag, projectstag}, aggregateOptions(5*time.Second))
 	if err != nil {
 		return -1, err
 	}
@@ -851,7 +860,7 @@ func (s *Store) GetRolePolicy(serviceName string, id string) (*pms.RolePolicy, e
 				}},
 			}},
 		}}
-	cur, err := serviceCollection.Aggregate(ctx, mongo.Pipeline{matchstag, projectstag})
+	cur, err := serviceCollection.Aggregate(ctx, mongo.Pipeline{matchstag, projectstag}, aggregateOptions(5*time.Second))
 	if err != nil {
 		return nil, err
 	}
