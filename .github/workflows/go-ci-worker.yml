@@ -20,9 +20,12 @@ jobs:
     # Linux Hugo release, so it stays on the charming pool. Weekly stays on
     # fiona to reduce timing noise in its benchmark comparison. The identity
     # check also accepts donkey-speedle (Linux x64) for every task but weekly.
+    # merge-head may reserve HEAD_RUNS_ON (a JSON string or labels array).
+    # Without it, retain the existing task pools. Labels only select scheduling;
+    # the trusted-event predicate and runner identity checks still apply.
     # The host lock below keeps fixed-port tests from overlapping on the charming host.
     runs-on: >-
-      ${{ github.repository == 'teramoby/speedle-plus' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && github.ref == 'refs/heads/master') || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.event.sender.type == 'User' || github.event.sender.type == 'Bot')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.user.type == 'User' || github.event.pull_request.user.type == 'Bot'))) && fromJSON(inputs.mode == 'build' && '["self-hosted","Linux","X64","speedle-linux"]' || inputs.mode == 'weekly' && '["self-hosted","fiona-speedle"]' || '["self-hosted","speedle-runner"]') || 'ubuntu-latest' }}
+      ${{ github.repository == 'teramoby/speedle-plus' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && github.ref == 'refs/heads/master') || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.event.sender.type == 'User' || github.event.sender.type == 'Bot')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.user.type == 'User' || github.event.pull_request.user.type == 'Bot'))) && fromJSON(github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'merge-head') && vars.HEAD_RUNS_ON || inputs.mode == 'build' && '["self-hosted","Linux","X64","speedle-linux"]' || inputs.mode == 'weekly' && '["self-hosted","fiona-speedle"]' || '["self-hosted","speedle-runner"]') || 'ubuntu-latest' }}
     # test can wait on the host lock behind a nightly on the other charming runner.
     timeout-minutes: ${{ (inputs.mode == 'nightly' || inputs.mode == 'weekly' || inputs.mode == 'regression' || inputs.mode == 'test') && 150 || 30 }}
     steps:
