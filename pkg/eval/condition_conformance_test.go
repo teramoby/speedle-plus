@@ -595,6 +595,10 @@ func TestConditionConformanceMatrix(t *testing.T) {
 // of request_time replaces only that attribute, not the calendar attributes.
 // No PEP overrides are used here, and deriving the calendar from the observed
 // Unix timestamp avoids midnight/hour rollover races between separate reads.
+// populateContext uses now := time.Now() and derives all calendar fields from
+// that same local-zone instant; this test deliberately pins that implementation
+// contract rather than assuming UTC. TZ=UTC and TZ=Pacific/Kiritimati exercise
+// this contract across different hour/day boundaries without changing host settings.
 func TestConditionConformanceInjectedTypesAndValues(t *testing.T) {
 	location := filepath.Join(t.TempDir(), "policies.json")
 	if err := os.WriteFile(location, []byte(`{"services":[{"name":"app","policies":[{"id":"p","effect":"grant"}]}]}`), 0600); err != nil {

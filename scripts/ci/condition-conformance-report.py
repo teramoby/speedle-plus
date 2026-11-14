@@ -4,7 +4,7 @@
 Run from the repository root (profile uses covermode=count or atomic as well):
   go test -count=1 -coverpkg=./pkg/eval/condition,./pkg/eval/function,./3rdparty/github.com/Knetic/govaluate -coverprofile=condition.out ./pkg/eval/... ./pkg/svcs/adsrest/... ./3rdparty/github.com/Knetic/govaluate
   go test -count=1 -v ./pkg/eval -run '^TestConditionConformanceMatrix$' > condition-matrix.log
-  python3 scripts/ci/condition-conformance-report.py condition.out condition-matrix.log
+  python3 scripts/ci/condition-conformance-report.py --go-version "$(go env GOVERSION)" condition.out condition-matrix.log
 
 Does not alter the existing repository coverage gate. Every uncovered block in
 scope must have an explicit audited reason. Duplicate blocks from -coverpkg are
@@ -83,6 +83,8 @@ UNREACHABLE = {'EvaluableExpression.go': {('82.3,83.1', 1): 'Validated token kin
 # Bind the audit to source contents as well as coverage spans. A source edit
 # requires an explicit reachability re-audit even if its line numbers survive.
 AUDITED_SOURCE_SHA256 = {'EvaluableExpression.go': '8402d0eadf149b6bf511e992e89ef9fb8f9e29d78e3a433ac09b59edf29f2555',
+ 'EvaluableExpression_sql.go': '5d6a75e21e68fdd19ee4aafa92e0bc15f14c76ee7d488d36647f541db3300699',
+ 'expressionOutputStream.go': 'd8fee24cc6d334bbfe5880b382bb9a659ffffeca0f3ed917b12f2594bdde47d2',
  'lexerState.go': '5071044819e265850070b61495692e9fb78f97785cafb829c1296a43b51790e0',
  'parsing.go': 'c77b0949ff985d2a5683c06824eb8529ad4b830c6bab1b166f97d0df6e35fab6',
  'stagePlanner.go': 'e46fc41044ec3b2e6ea66b5bb570de68cce3360e494d5e05e4ebb72187948650'}
@@ -116,7 +118,14 @@ GO126_SPANS = {('EvaluableExpression.go', '81.16,83.3', 1): ('82.3,83.1', 1),
  ('stagePlanner.go', '696.16,698.3', 1): ('697.3,698.1', 1),
  ('stagePlanner.go', '717.16,719.3', 1): ('718.3,719.1', 1)}
 
-def report(profile, matrix=None):
+def report(profile, matrix=None, *, go_version):
+    # Unknown compiler layouts require a reachability audit, not dozens of
+    # misleading per-block gaps. Respect the caller's toolchain override while
+    # explicitly restricting this audit to the two verified stable series.
+    if not re.fullmatch(r'go1\.(26|27)(?:\.\d+)?', go_version):
+        print(f'ERROR: coverage layout for {go_version} is not audited '
+              '(expected Go 1.26/1.27); re-audit required')
+        return True
     blocks = {}
     for line in Path(profile).read_text().splitlines()[1:]:
         location, statements, count = line.split()
@@ -131,6 +140,7 @@ def report(profile, matrix=None):
         blocks[key] = (n, max(previous, int(count)))
     if not blocks:
         raise ValueError('no condition-path coverage blocks found')
+    print(f'Audited Go coverage layout: {go_version}')
     totals = defaultdict(lambda: [0, 0, 0])
     exclusions = []
     failures = []
@@ -196,7 +206,8 @@ def report(profile, matrix=None):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--go-version', required=True, help='go env GOVERSION from the coverage run')
     parser.add_argument('profile')
     parser.add_argument('matrix', nargs='?')
     args = parser.parse_args()
-    raise SystemExit(report(args.profile, args.matrix))
+    raise SystemExit(report(args.profile, args.matrix, go_version=args.go_version))

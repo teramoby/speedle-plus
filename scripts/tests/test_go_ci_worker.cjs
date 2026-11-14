@@ -272,7 +272,7 @@ test('gate runs every package once, only store-dependent packages again with etc
   assert.deepEqual(matrix.args.slice(-3), ['./pkg/eval', '-run', '^TestConditionConformanceMatrix$']);
   assert.deepEqual(docs.args, ['test', '-count=1', './website/tests/docscheck']);
   assert.deepEqual(conditionReports.map(r => r.args), [
-    ['scripts/ci/condition-conformance-report.py', profile, profile.replace(/coverage\.out$/, 'matrix.log')],
+    ['scripts/ci/condition-conformance-report.py', '--go-version', 'go1.27.4', profile, profile.replace(/coverage\.out$/, 'matrix.log')],
     ['-m', 'unittest', 'discover', '-s', 'scripts/tests', '-p', 'test_condition_conformance_report.py'],
   ]);
   const gate = records.find(r => r.tool === 'python3');

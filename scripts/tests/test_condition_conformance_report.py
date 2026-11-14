@@ -40,7 +40,7 @@ class ConditionCoverageReportTest(unittest.TestCase):
                 matrix_file=Path(directory) / 'matrix.log'
                 matrix_file.write_text(matrix)
             with contextlib.redirect_stdout(output):
-                failed = reporter.report(profile,matrix_file)
+                failed = reporter.report(profile,matrix_file, go_version='go1.26.11' if go126 else 'go1.27.4')
             return failed, output.getvalue()
 
     def test_duplicate_blocks_are_merged_not_added(self):
@@ -66,11 +66,11 @@ class ConditionCoverageReportTest(unittest.TestCase):
             profile = Path(directory) / 'coverage.out'
             profile.write_text('mode: count\n')
             with self.assertRaisesRegex(ValueError, 'no condition-path'):
-                reporter.report(profile)
+                reporter.report(profile, go_version='go1.27.4')
             profile.write_text('mode: count\n' +
                 'github.com/teramoby/speedle-plus/pkg/eval/condition/condition.go:1.1,1.2 1 1\n')
             with contextlib.redirect_stdout(io.StringIO()):
-                self.assertTrue(reporter.report(profile))
+                self.assertTrue(reporter.report(profile, go_version='go1.27.4'))
 
     def test_unmatched_annotation_fails(self):
         failed, output = self.run_report(omit=('parsing.go', '49.4,50.1', 1))
@@ -90,6 +90,21 @@ class ConditionCoverageReportTest(unittest.TestCase):
             failed, output = self.run_report()
         self.assertTrue(failed)
         self.assertIn('audited source changed; re-audit required', output)
+
+    def test_changed_excluded_sql_sources_fail(self):
+        for file in ('EvaluableExpression_sql.go', 'expressionOutputStream.go'):
+            with self.subTest(file=file), mock.patch.dict(reporter.AUDITED_SOURCE_SHA256, {file: 'changed'}):
+                failed, output = self.run_report()
+                self.assertTrue(failed)
+                self.assertIn(f'audited source changed; re-audit required: {reporter.FORK}{file}', output)
+
+    def test_unaudited_toolchain_fails_once_before_reading_profile(self):
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            failed = reporter.report('profile-must-not-be-read', go_version='go1.28.0')
+        self.assertTrue(failed)
+        self.assertEqual(output.getvalue(), 'ERROR: coverage layout for go1.28.0 is not audited '
+                         '(expected Go 1.26/1.27); re-audit required\n')
 
     def test_go126_layout_matches_same_annotations(self):
         failed, output = self.run_report(go126=True)
