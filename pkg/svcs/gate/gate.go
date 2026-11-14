@@ -38,7 +38,8 @@ type Route struct {
 
 // Response is the transport-independent result of a fallback. Only the fields
 // for the requested operation are used. ErrorMessage is an evaluation error:
-// REST IsAllowed returns it in its normal response; gRPC returns Internal.
+// Allowed is normalized to false and Reason to ERROR_IN_EVALUATION. REST
+// IsAllowed returns its normal error body; gRPC returns Internal.
 type Response struct {
 	Allowed      bool
 	Reason       ads.Reason
@@ -49,7 +50,9 @@ type Response struct {
 
 // Gate chooses a route by service name before local evaluation. Forward handles
 // the three decision/list operations; Diagnose and Discover cannot be forwarded.
-// Implementations own fallback authentication, cancellation and error policy.
+// Both transports route before local token assertion. Forward receives the
+// original identity, and implementations own fallback authentication,
+// cancellation and error policy.
 type Gate interface {
 	Route(serviceName string) Route
 	Forward(context.Context, Operation, *ads.RequestContext) (*Response, error)
@@ -115,6 +118,9 @@ func Dispatch(ctx context.Context, g Gate, op Operation, request *ads.RequestCon
 			}
 			if response != nil {
 				event.Allowed = response.Allowed
+				if response.ErrorMessage != "" {
+					event.Reason = "evaluation_error"
+				}
 			}
 			audit.Audit(ctx, event)
 		}
@@ -131,6 +137,13 @@ func Dispatch(ctx context.Context, g Gate, op Operation, request *ads.RequestCon
 	}
 	if response == nil {
 		return nil, true, &UnavailableError{Reason: "fallback_unavailable"}
+	}
+	// Never expose a grant alongside an evaluation failure. Copy before
+	// normalizing so a gate can safely reuse an immutable response.
+	if response.ErrorMessage != "" {
+		failed := *response
+		failed.Allowed, failed.Reason = false, ads.ERROR_IN_EVALUATION
+		response = &failed
 	}
 	return response, true, nil
 }

@@ -105,3 +105,18 @@ func TestRoutingAndFailurePolicy(t *testing.T) {
 		t.Fatal("reason error")
 	}
 }
+
+func TestEvaluationFailureCannotGrantOrMutateSharedResponse(t *testing.T) {
+	original := &gate.Response{Allowed: true, Reason: ads.GRANT_POLICY_FOUND, ErrorMessage: "evaluation failed"}
+	g := &example{route: gate.Route{Kind: gate.Fallback}, response: original}
+	result, handled, err := gate.Dispatch(context.Background(), g, gate.IsAllowed, &ads.RequestContext{ServiceName: "app"})
+	if !handled || err != nil || result.Allowed || result.Reason != ads.ERROR_IN_EVALUATION || result.ErrorMessage != "evaluation failed" {
+		t.Fatalf("result=%+v err=%v", result, err)
+	}
+	if !original.Allowed || original.Reason != ads.GRANT_POLICY_FOUND {
+		t.Fatal("gate response was mutated")
+	}
+	if g.event.Allowed || g.event.Reason != "evaluation_error" {
+		t.Fatalf("audit=%+v", g.event)
+	}
+}

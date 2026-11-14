@@ -9,6 +9,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"time"
 
 	adsapi "github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/pkg/assertion"
@@ -31,7 +32,7 @@ import (
 // It owns the evaluator and its store/watch lifecycle. Register custom stores
 // before calling Run. The caller owns signal handling and extra flag parsing.
 func Run(ctx context.Context, params *flags.Parameters, conf *cfg.Config, options ...Option) error {
-	settings := settings{}
+	settings := settings{shutdownTimeout: 5 * time.Second}
 	for _, option := range options {
 		option(&settings)
 	}
@@ -42,6 +43,10 @@ func Run(ctx context.Context, params *flags.Parameters, conf *cfg.Config, option
 	if settings.grpcListener != nil {
 		defer settings.grpcListener.Close()
 	}
+	if settings.shutdownTimeout <= 0 {
+		return errors.New(errors.ConfigError, "shutdown timeout must be positive")
+	}
+
 	// Initialize the logging
 	if conf.LogConfig != nil {
 		err := logging.InitLog(conf.LogConfig)
@@ -119,15 +124,20 @@ func Run(ctx context.Context, params *flags.Parameters, conf *cfg.Config, option
 	}
 
 	log.Info("Stopping servers...")
-	// Stop all services
-	if httpServer != nil {
-		log.Info("Stopping HTTP Server.")
-		httpServer.Shutdown(context.Background())
-	}
+	// Stop gRPC independently of active HTTP requests.
 	if grpcServer != nil {
 		log.Info("Stopping GRPC Server.")
 		grpcServer.Stop()
 	}
+	if httpServer != nil {
+		log.Info("Stopping HTTP Server.")
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), settings.shutdownTimeout)
+		defer cancel()
+		if shutdownErr := httpServer.Shutdown(shutdownCtx); shutdownErr != nil {
+			_ = httpServer.Close()
+		}
+	}
+
 	return err
 }
 

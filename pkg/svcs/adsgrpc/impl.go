@@ -86,16 +86,15 @@ func convertGRPCSubject(subject *pb.Subject) *adsapi.Subject {
 func (impl *GRPCService) IsAllowed(ctx context.Context, in *pb.ContextRequest) (*pb.IsAllowedResponse, error) {
 	reqCtx := convertGRPCContextRequest(in)
 
-	// assert token
-	if err := impl.evaluator.AssertToken(reqCtx); err != nil {
-		return nil, err
-	}
-
 	if response, handled, err := impl.dispatch(ctx, gate.IsAllowed, reqCtx); handled {
 		if err != nil {
 			return nil, err
 		}
 		return decisionResponse(response), nil
+	}
+	// assert token
+	if err := impl.evaluator.AssertToken(reqCtx); err != nil {
+		return nil, err
 	}
 
 	allowed, reason, err := impl.evaluator.IsAllowed(*reqCtx)
@@ -119,16 +118,15 @@ func (impl *GRPCService) IsAllowed(ctx context.Context, in *pb.ContextRequest) (
 func (impl *GRPCService) GetAllGrantedRoles(ctx context.Context, in *pb.ContextRequest) (*pb.AllRoleResponse, error) {
 	reqCtx := convertGRPCContextRequest(in)
 
-	// assert token
-	if err := impl.evaluator.AssertToken(reqCtx); err != nil {
-		return nil, err
-	}
-
 	if response, handled, err := impl.dispatch(ctx, gate.AllGrantedRoles, reqCtx); handled {
 		if err != nil {
 			return nil, err
 		}
 		return rolesResponse(response), nil
+	}
+	// assert token
+	if err := impl.evaluator.AssertToken(reqCtx); err != nil {
+		return nil, err
 	}
 
 	roles, err := impl.evaluator.GetAllGrantedRoles(*reqCtx)
@@ -149,16 +147,15 @@ func (impl *GRPCService) GetAllGrantedRoles(ctx context.Context, in *pb.ContextR
 func (impl *GRPCService) GetAllPermissions(ctx context.Context, in *pb.ContextRequest) (*pb.AllPermissionResponse, error) {
 	reqCtx := convertGRPCContextRequest(in)
 
-	// assert token
-	if err := impl.evaluator.AssertToken(reqCtx); err != nil {
-		return nil, err
-	}
-
 	if response, handled, err := impl.dispatch(ctx, gate.AllGrantedPermissions, reqCtx); handled {
 		if err != nil {
 			return nil, err
 		}
 		return permissionsResponse(response), nil
+	}
+	// assert token
+	if err := impl.evaluator.AssertToken(reqCtx); err != nil {
+		return nil, err
 	}
 
 	perms, err := impl.evaluator.GetAllGrantedPermissions(*reqCtx)
@@ -187,16 +184,15 @@ func (impl *GRPCService) GetAllPermissions(ctx context.Context, in *pb.ContextRe
 func (impl *GRPCService) Discover(ctx context.Context, in *pb.ContextRequest) (*pb.IsAllowedResponse, error) {
 	reqCtx := convertGRPCContextRequest(in)
 
-	// assert token
-	if err := impl.evaluator.AssertToken(reqCtx); err != nil {
-		return nil, err
-	}
-
 	if response, handled, err := impl.dispatch(ctx, gate.Discover, reqCtx); handled {
 		if err != nil {
 			return nil, err
 		}
 		return decisionResponse(response), nil
+	}
+	// assert token
+	if err := impl.evaluator.AssertToken(reqCtx); err != nil {
+		return nil, err
 	}
 
 	allowed, reason, err := impl.evaluator.Discover(*reqCtx)
@@ -371,12 +367,11 @@ func convertAPIRolePolicy2EvaluatedRolePolicyResponse(apiRolePolicy *adsapi.Eval
 func (impl *GRPCService) Diagnose(ctx context.Context, in *pb.ContextRequest) (*pb.EvaluationDebugResponse, error) {
 	reqCtx := convertGRPCContextRequest(in)
 
-	// assert token
-	if err := impl.evaluator.AssertToken(reqCtx); err != nil {
+	if _, handled, err := impl.dispatch(ctx, gate.Diagnose, reqCtx); handled {
 		return nil, err
 	}
-
-	if _, handled, err := impl.dispatch(ctx, gate.Diagnose, reqCtx); handled {
+	// assert token
+	if err := impl.evaluator.AssertToken(reqCtx); err != nil {
 		return nil, err
 	}
 

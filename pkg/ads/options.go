@@ -6,6 +6,7 @@ import (
 	"google.golang.org/grpc"
 	"net"
 	"net/http"
+	"time"
 )
 
 type settings struct {
@@ -14,6 +15,7 @@ type settings struct {
 	httpListener, grpcListener net.Listener
 	httpServer                 func(*http.Server)
 	grpcOptions                []grpc.ServerOption
+	shutdownTimeout            time.Duration
 }
 
 // Option configures the reusable decision server.
@@ -40,4 +42,12 @@ func WithHTTPServer(configure func(*http.Server)) Option {
 // already installs a unary panic recovery interceptor.
 func WithGRPCOptions(options ...grpc.ServerOption) Option {
 	return func(s *settings) { s.grpcOptions = append(s.grpcOptions, options...) }
+}
+
+// WithShutdownTimeout bounds HTTP graceful shutdown, after gRPC is stopped.
+// The default is five seconds. The duration must be positive. Active HTTP
+// connections are closed when the grace period expires; custom handlers and
+// gates should observe request context cancellation.
+func WithShutdownTimeout(timeout time.Duration) Option {
+	return func(s *settings) { s.shutdownTimeout = timeout }
 }

@@ -17,6 +17,7 @@ import (
 	api "github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/ads"
+	"github.com/teramoby/speedle-plus/pkg/assertion"
 	"github.com/teramoby/speedle-plus/pkg/cfg"
 	"github.com/teramoby/speedle-plus/pkg/cmd/flags"
 	"github.com/teramoby/speedle-plus/pkg/eval"
@@ -97,7 +98,10 @@ func (g *exampleGate) Forward(ctx context.Context, op gate.Operation, request *a
 	case "nil":
 		return nil, nil
 	case "evaluation-error":
-		return &gate.Response{ErrorMessage: "evaluation failed"}, nil
+		return &gate.Response{Allowed: true, Reason: api.GRANT_POLICY_FOUND, ErrorMessage: "evaluation failed"}, nil
+	}
+	if request.ServiceName == "token" && (request.Subject == nil || request.Subject.Asserted || request.Subject.Token != "test-token" || request.Subject.TokenType != "bearer") {
+		return nil, fmt.Errorf("fallback identity was changed")
 	}
 	if request.Subject == nil || len(request.Subject.Principals) != 1 || request.Subject.Principals[0].Name != "alice" || request.Attributes["example"] != "value" {
 		return nil, fmt.Errorf("request not preserved")
@@ -128,7 +132,9 @@ func TestExternalStoreGateAndServer(t *testing.T) {
 	}
 	params := &flags.Parameters{}
 	params.Insecure.Value = "true"
-	conf := &cfg.Config{StoreConfig: &cfg.StoreConfig{StoreType: name}}
+	asserter := assertion.NewTestServer(t, nil)
+	defer asserter.Close()
+	conf := &cfg.Config{StoreConfig: &cfg.StoreConfig{StoreType: name}, AsserterWebhookConfig: &assertion.AsserterConfig{Endpoint: asserter.URL + "/assert"}}
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan error, 1)
 	var rpcCalls atomic.Int32
@@ -190,11 +196,20 @@ func TestExternalStoreGateAndServer(t *testing.T) {
 	defer conn.Close()
 	rpcClient := pb.NewEvaluatorClient(conn)
 	request := func(service string) *pb.ContextRequest {
-		return &pb.ContextRequest{ServiceName: service, Resource: "book", Action: "read", Subject: &pb.Subject{Principals: []*pb.Principal{{Type: "user", Name: "alice"}}}, Attributes: map[string]string{"example": "value"}}
+		req := &pb.ContextRequest{ServiceName: service, Resource: "book", Action: "read", Subject: &pb.Subject{Principals: []*pb.Principal{{Type: "user", Name: "alice"}}}, Attributes: map[string]string{"example": "value"}}
+		if service == "token" {
+			req.Subject.TokenType = "bearer"
+			req.Subject.Token = "test-token"
+		}
+		return req
 	}
 	callREST := func(service, op string) (int, map[string]interface{}, http.Header) {
 		t.Helper()
-		body := fmt.Sprintf(`{"serviceName":%q,"resource":"book","action":"read","subject":{"principals":[{"type":"user","name":"alice"}]},"attributes":[{"name":"example","value":"value"}]}`, service)
+		token := ""
+		if service == "token" {
+			token = `,"tokenType":"bearer","token":"test-token"`
+		}
+		body := fmt.Sprintf(`{"serviceName":%q,"resource":"book","action":"read","subject":{"principals":[{"type":"user","name":"alice"}]%s},"attributes":[{"name":"example","value":"value"}]}`, service, token)
 		response, err := client.Post(url+"/authz-check/v1/"+op, "application/json", strings.NewReader(body))
 		if err != nil {
 			t.Fatal(err)
@@ -206,7 +221,7 @@ func TestExternalStoreGateAndServer(t *testing.T) {
 		}
 		return response.StatusCode, out, response.Header
 	}
-	for _, service := range []string{"local", "allow", "deny", "unknown", "unavailable", "failure", "quota", "nil", "evaluation-error"} {
+	for _, service := range []string{"local", "allow", "token", "deny", "unknown", "unavailable", "failure", "quota", "nil", "evaluation-error"} {
 		t.Run(service, func(t *testing.T) {
 			code, body, header := callREST(service, "is-allowed")
 			var md metadata.MD
@@ -228,11 +243,11 @@ func TestExternalStoreGateAndServer(t *testing.T) {
 					t.Fatalf("unknown local service: %d %v %v", code, body, err)
 				}
 			case "evaluation-error":
-				if code != 200 || body["errorMessage"] != "evaluation failed" || status.Code(err) != codes.Internal {
+				if code != 200 || body["errorMessage"] != "evaluation failed" || body["allowed"] != false || body["reason"] != float64(api.ERROR_IN_EVALUATION) || status.Code(err) != codes.Internal {
 					t.Fatalf("REST %d %v gRPC %v", code, body, err)
 				}
 			default:
-				allowed := service == "local" || service == "allow"
+				allowed := service == "local" || service == "allow" || service == "token"
 				if code != 200 || body["allowed"] != allowed || err != nil || result.Allowed != allowed {
 					t.Fatalf("REST %d %v gRPC %v %v", code, body, result, err)
 				}
@@ -293,10 +308,13 @@ func TestExternalStoreGateAndServer(t *testing.T) {
 	}
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	if len(g.events) != 22 {
+	if len(g.events) != 24 {
 		t.Fatalf("audit count=%d: %+v", len(g.events), g.events)
 	}
 	for _, event := range g.events {
+		if event.ServiceName == "evaluation-error" && (event.Allowed || event.Reason != "evaluation_error") {
+			t.Fatalf("evaluation failure audit: %+v", event)
+		}
 		if event.ServiceName == "local" || event.ServiceName == "unknown" {
 			t.Fatalf("local dispatch produced nonlocal audit: %+v", event)
 		}

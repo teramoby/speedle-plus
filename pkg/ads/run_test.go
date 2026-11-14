@@ -208,3 +208,93 @@ func run(params *flags.Parameters, conf *cfg.Config, stop <-chan os.Signal, opti
 	}
 	return Run(ctx, params, conf, options...)
 }
+
+func TestRunBoundsShutdownWithActiveHandler(t *testing.T) {
+	rest, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	rpc, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	address := rest.Addr().String()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	started, release := make(chan struct{}), make(chan struct{})
+	defer close(release)
+	done := make(chan error, 1)
+	go func() {
+		done <- Run(ctx, insecureParams("", ""), fixtureConfig(t), WithListeners(rest, rpc), WithShutdownTimeout(20*time.Millisecond), WithHTTPServer(func(server *http.Server) {
+			base := server.Handler
+			server.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path == "/block" {
+					close(started)
+					<-release
+					return
+				}
+				base.ServeHTTP(w, r)
+			})
+		}))
+	}()
+	client := &http.Client{Timeout: time.Second}
+	waitFor(t, func() bool {
+		response, err := client.Get("http://" + address + "/healthz")
+		if err != nil {
+			return false
+		}
+		response.Body.Close()
+		return response.StatusCode == 200
+	})
+	requestDone := make(chan error, 1)
+	go func() {
+		response, err := client.Get("http://" + address + "/block")
+		if response != nil {
+			response.Body.Close()
+		}
+		requestDone <- err
+	}()
+	select {
+	case <-started:
+	case <-time.After(time.Second):
+		t.Fatal("handler not entered")
+	}
+	cancel()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("shutdown blocked on HTTP handler")
+	}
+	select {
+	case err := <-requestDone:
+		if err == nil {
+			t.Fatal("active connection was not closed")
+		}
+	case <-time.After(time.Second):
+		t.Fatal("active connection remains open")
+	}
+	if conn, err := net.DialTimeout("tcp", rpc.Addr().String(), time.Second); err == nil {
+		conn.Close()
+		t.Fatal("gRPC listener remained open")
+	}
+}
+
+func TestRunClosesSuppliedListenersOnSetupFailure(t *testing.T) {
+	for _, timeout := range []time.Duration{0, -time.Second} {
+		listener, err := net.Listen("tcp", "127.0.0.1:0")
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = Run(context.Background(), insecureParams("", ""), fixtureConfig(t), WithListeners(listener, nil), WithShutdownTimeout(timeout))
+		if err == nil {
+			t.Fatal("nonpositive shutdown timeout accepted")
+		}
+		if conn, err := net.DialTimeout("tcp", listener.Addr().String(), time.Second); err == nil {
+			conn.Close()
+			t.Fatal("failed startup retained listener")
+		}
+	}
+}
