@@ -130,6 +130,34 @@ func TestCascadePinnedLeafWithoutIssuerFailsClosed(t *testing.T) {
 	}
 }
 
+// TestCascadePinnedLeafWithRetainedFloorFailsClosed first loads a CRL under
+// the issuer, so its floor is retained, then pins only the relay leaf and
+// configures no CRL. The pinned chain has no issuer, so the retained floor
+// cannot be ruled out and the connection fails closed.
+func TestCascadePinnedLeafWithRetainedFloorFailsClosed(t *testing.T) {
+	pki := newCascadePKI(t)
+	now := time.Now().Truncate(time.Second)
+	serverCert, serverPEM, _ := pki.issue(t, 2, x509.ExtKeyUsageServerAuth, "127.0.0.1", now.Add(time.Hour))
+	server := cascadeServer(t, pki, serverCert, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		io.WriteString(w, `{"servicesVersion":1,"services":[]}`)
+	}))
+	config := cascadeConfig(t, pki, server.URL)
+	config.CRLFiles = []string{writeTestFile(t, t.TempDir(), "relay.crl", pki.crl(t, 0, 1, now.Add(-time.Minute), now.Add(time.Hour), false), 0600)}
+	covered := mustCascadeClient(t, config)
+	if _, err := covered.Services(context.Background()); err != nil {
+		t.Fatalf("CRL-covered relay connection: %v", err)
+	}
+	if err := covered.Close(); err != nil {
+		t.Fatal(err)
+	}
+	config.CAFile = writeTestFile(t, t.TempDir(), "pinned.pem", serverPEM, 0600)
+	config.CRLFiles = nil
+	pinned := mustCascadeClient(t, config)
+	if _, err := pinned.Services(context.Background()); err == nil || !strings.Contains(err.Error(), "CRL coverage") {
+		t.Fatalf("pinned leaf accepted beside a retained floor: %v", err)
+	}
+}
+
 func TestCascadeCRLValidationAndReload(t *testing.T) {
 	pki := newCascadePKI(t)
 	certificate, _, _ := pki.issue(t, 2, x509.ExtKeyUsageServerAuth, "127.0.0.1", time.Now().Add(time.Hour))

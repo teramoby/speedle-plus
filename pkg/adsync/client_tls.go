@@ -402,9 +402,10 @@ func (m *clientTLS) verifyConnection(state tls.ConnectionState) error {
 			if issuer == nil {
 				// The trust anchor needs no revocation check. When CAFile
 				// pins the peer's own certificate, Verify returns a
-				// one-element chain whose issuer is absent; configured CRLs
-				// cannot cover it, so the chain fails closed.
-				if i == 0 && len(generation.crls) > 0 {
+				// one-element chain whose issuer is absent. Configured CRLs,
+				// or a retained floor whose issuer name matches, cannot be
+				// verified against that chain, so it fails closed.
+				if i == 0 && (len(generation.crls) > 0 || m.mayRetainFloorForName(certificate.RawIssuer)) {
 					valid = false
 				}
 				continue

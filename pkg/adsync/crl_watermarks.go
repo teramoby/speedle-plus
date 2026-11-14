@@ -114,6 +114,19 @@ func (m *clientTLS) retainsFloor(issuer *x509.Certificate) bool {
 	return false
 }
 
+// mayRetainFloorForName reports whether a retained floor could belong to an
+// issuer whose certificate is absent from the verified chain. Floors are keyed
+// by subject and key; the peer's issuer name rules out every other subject but
+// cannot confirm the key, so a matching name is treated as possibly applicable.
+func (m *clientTLS) mayRetainFloorForName(rawIssuer []byte) bool {
+	for _, floor := range m.crlFloors {
+		if bytes.Equal(floor.Subject, rawIssuer) {
+			return true
+		}
+	}
+	return false
+}
+
 func (m *clientTLS) persistCRLFloors(next *clientTLSGeneration, publish func() error) error {
 	candidates := make([]crlWatermark, 0, len(next.crls))
 	for _, crl := range next.crls {
