@@ -306,6 +306,7 @@ func (s *Syncer) loadSnapshot(ctx context.Context, service Service, local *Servi
 	}
 	if local != nil && local.Epoch == response.Epoch {
 		if response.Revision < local.Revision {
+			revisionWarnings.warn(service.ID, response.Epoch, response.Revision, local.Revision, "snapshot")
 			return nil, fmt.Errorf("%w: snapshot revision %d would roll back local revision %d",
 				ErrProtocol, response.Revision, local.Revision)
 		}

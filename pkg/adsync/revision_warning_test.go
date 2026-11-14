@@ -1,0 +1,219 @@
+// Licensed under the Universal Permissive License (UPL) Version 1.0.
+
+package adsync
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"reflect"
+	"sync"
+	"testing"
+	"time"
+
+	log "github.com/sirupsen/logrus"
+)
+
+// These tests, like the existing log-capture tests, must not run in parallel:
+// they temporarily configure the package's process-wide logger and limiter.
+func captureRevisionWarnings(t *testing.T) (*bytes.Buffer, *fakeClock) {
+	t.Helper()
+	clock := newFakeClock()
+	revisionWarnings.mu.Lock()
+	oldClock, oldLast, oldCleanup := revisionWarnings.clock, revisionWarnings.last, revisionWarnings.lastCleanup
+	revisionWarnings.clock, revisionWarnings.last, revisionWarnings.lastCleanup = clock, nil, time.Time{}
+	revisionWarnings.mu.Unlock()
+	logger := log.StandardLogger()
+	out, formatter, level := logger.Out, logger.Formatter, logger.GetLevel()
+	buffer := new(bytes.Buffer)
+	logger.SetOutput(buffer)
+	logger.SetFormatter(&log.JSONFormatter{})
+	logger.SetLevel(log.WarnLevel)
+	t.Cleanup(func() {
+		logger.SetOutput(out)
+		logger.SetFormatter(formatter)
+		logger.SetLevel(level)
+		revisionWarnings.mu.Lock()
+		revisionWarnings.clock, revisionWarnings.last, revisionWarnings.lastCleanup = oldClock, oldLast, oldCleanup
+		revisionWarnings.mu.Unlock()
+	})
+	return buffer, clock
+}
+
+func requireRevisionWarning(t *testing.T, buffer *bytes.Buffer, id, epoch, source string, upstream, local uint64) {
+	t.Helper()
+	var entry map[string]any
+	if err := json.Unmarshal(bytes.TrimSpace(buffer.Bytes()), &entry); err != nil {
+		t.Fatalf("expected exactly one JSON warning, got %q: %v", buffer.String(), err)
+	}
+	for field, want := range map[string]any{
+		"level": "warning", "service_id": id, "epoch": epoch, "source": source,
+		"upstream_revision": float64(upstream), "local_revision": float64(local),
+	} {
+		if entry[field] != want {
+			t.Errorf("warning %s = %v, want %v", field, entry[field], want)
+		}
+	}
+}
+
+func TestLowerHeadRevisionWarnsWithoutRollback(t *testing.T) {
+	for _, source := range []string{"ack", "notification", "discovery", "notification without epoch"} {
+		t.Run(source, func(t *testing.T) {
+			buffer, _ := captureRevisionWarnings(t)
+			machine, _ := newTestMachine(t)
+			mustAck(t, machine, ackWith(testAckService(testServiceID1, "books", 5)))
+			mustApply(t, machine, testServiceState(testServiceID1, "books", 5))
+			for range 3 {
+				switch source {
+				case "ack":
+					mustAck(t, machine, ackWith(testAckService(testServiceID1, "books", 4)))
+				case "discovery":
+					if err := machine.Discover([]Service{testAckService(testServiceID1, "books", 4)}); err != nil {
+						t.Fatal(err)
+					}
+				default:
+					epoch := testServiceID1
+					if source == "notification without epoch" {
+						epoch = ""
+					}
+					if err := machine.ObserveHead(Head{ID: testServiceID1, Epoch: epoch, Revision: 4}); err != nil {
+						t.Fatal(err)
+					}
+				}
+			}
+			status := requireServiceState(t, machine, "books", SyncStateInSync, "")
+			if status.Head != 5 || status.Revision != 5 {
+				t.Fatalf("head/local revision = %d/%d, want 5/5", status.Head, status.Revision)
+			}
+			if source == "notification without epoch" {
+				source = "notification"
+			}
+			requireRevisionWarning(t, buffer, testServiceID1, testServiceID1, source, 4, 5)
+		})
+	}
+}
+
+func TestLowerAckWarnsForLocalCopyBeforeFirstHead(t *testing.T) {
+	buffer, _ := captureRevisionWarnings(t)
+	machine, _ := newTestMachine(t)
+	mustApply(t, machine, testServiceState(testServiceID1, "books", 5))
+	mustAck(t, machine, ackWith(testAckService(testServiceID1, "books", 4)))
+	requireRevisionWarning(t, buffer, testServiceID1, testServiceID1, "ack", 4, 5)
+}
+
+func TestLowerSnapshotRevisionWarnsAndKeepsProtocolError(t *testing.T) {
+	buffer, _ := captureRevisionWarnings(t)
+	service := newFixtureService(testServiceID1, "books")
+	fixture := newFixture(t, service)
+	syncer := fixture.newSyncer("", nil)
+	initial := syncFixtureService(t, syncer, "books")
+	// Force a snapshot reload with a higher discovered revision; the valid
+	// snapshot is now below the verified local copy in the same epoch.
+	local := initial.clone()
+	local.Revision = 5
+	if err := syncer.store(local); err != nil {
+		t.Fatal(err)
+	}
+	service.Revision = 6
+	fixture.source.configure(func(source *fixtureSource) {
+		response := fixtureSnapshot(service)
+		response.Revision = 4
+		source.snapshotOverride = response
+		source.changesReason = "history_unavailable"
+	})
+	for range 3 {
+		_, err := syncer.Sync(context.Background(), testAckService(testServiceID1, "books", 6))
+		want := fmt.Sprintf("%v: snapshot revision 4 would roll back local revision 5", ErrProtocol)
+		if !errors.Is(err, ErrProtocol) || err.Error() != want {
+			t.Fatalf("Sync error = %v, want %q", err, want)
+		}
+	}
+	current, found := syncer.State(service.ID)
+	if !found || !reflect.DeepEqual(current, local) {
+		t.Fatalf("snapshot rollback changed the verified copy: %+v", current)
+	}
+	requireRevisionWarning(t, buffer, service.ID, service.Epoch, "snapshot", 4, 5)
+}
+
+func TestEpochChangeDoesNotWarn(t *testing.T) {
+	for _, source := range []string{"ack", "notification", "snapshot"} {
+		t.Run(source, func(t *testing.T) {
+			buffer, _ := captureRevisionWarnings(t)
+			if source == "snapshot" {
+				service := newFixtureService(testServiceID1, "books")
+				fixture := newFixture(t, service)
+				syncer := fixture.newSyncer("", nil)
+				initial := syncFixtureService(t, syncer, "books")
+				initial.Epoch = testServiceID2
+				initial.Revision = 5
+				if err := syncer.store(initial); err != nil {
+					t.Fatal(err)
+				}
+				state := syncFixtureService(t, syncer, "books")
+				if state.Epoch != service.Epoch || state.Revision != 1 {
+					t.Fatalf("epoch change did not replace copy: %+v", state)
+				}
+			} else {
+				machine, _ := newTestMachine(t)
+				mustAck(t, machine, ackWith(testAckService(testServiceID1, "books", 5)))
+				mustApply(t, machine, testServiceState(testServiceID1, "books", 5))
+				service := testAckService(testServiceID1, "books", 1)
+				service.Epoch = testServiceID2
+				if source == "ack" {
+					mustAck(t, machine, ackWith(service))
+				} else if err := machine.ObserveHead(Head{ID: service.ID, Epoch: service.Epoch, Revision: 1}); err != nil {
+					t.Fatal(err)
+				}
+				status, _ := machine.Status("books")
+				if status.Service.Head != 1 || status.Service.Revision != 0 {
+					t.Fatalf("epoch change did not replace head: %+v", status.Service)
+				}
+			}
+			if buffer.Len() != 0 {
+				t.Fatalf("epoch change warned: %s", buffer.String())
+			}
+		})
+	}
+}
+
+func TestRevisionWarningBudgetSharedAcrossSourcesAndServicesIndependent(t *testing.T) {
+	buffer, clock := captureRevisionWarnings(t)
+	machine, _ := newTestMachine(t)
+	mustAck(t, machine, ackWith(testAckService(testServiceID1, "books", 5), testAckService(testServiceID2, "orders", 5)))
+	mustAck(t, machine, ackWith(testAckService(testServiceID1, "books", 4), testAckService(testServiceID2, "orders", 5)))
+	requireRevisionWarning(t, buffer, testServiceID1, testServiceID1, "ack", 4, 5)
+	buffer.Reset()
+	clock.Advance(time.Minute - time.Nanosecond)
+	if err := machine.ObserveHead(Head{ID: testServiceID1, Epoch: testServiceID1, Revision: 3}); err != nil {
+		t.Fatal(err)
+	}
+	revisionWarnings.warn(testServiceID1, testServiceID1, 3, 5, "snapshot")
+	if buffer.Len() != 0 {
+		t.Fatalf("same service warned twice within a minute: %s", buffer.String())
+	}
+	if err := machine.ObserveHead(Head{ID: testServiceID2, Epoch: testServiceID2, Revision: 3}); err != nil {
+		t.Fatal(err)
+	}
+	requireRevisionWarning(t, buffer, testServiceID2, testServiceID2, "notification", 3, 5)
+	buffer.Reset()
+	clock.Advance(time.Nanosecond)
+	revisionWarnings.warn(testServiceID1, testServiceID1, 3, 5, "snapshot")
+	requireRevisionWarning(t, buffer, testServiceID1, testServiceID1, "snapshot", 3, 5)
+	clock.Advance(time.Minute)
+	revisionWarnings.warn(testServiceID1, testServiceID1, 3, 5, "snapshot")
+	if len(revisionWarnings.last) != 1 {
+		t.Fatalf("expired service warning entries retained: %v", revisionWarnings.last)
+	}
+}
+
+func TestConcurrentRevisionWarningsAreRateLimited(t *testing.T) {
+	buffer, _ := captureRevisionWarnings(t)
+	var wg sync.WaitGroup
+	for range 50 {
+		wg.Go(func() { revisionWarnings.warn(testServiceID1, testServiceID1, 4, 5, "snapshot") })
+	}
+	wg.Wait()
+	requireRevisionWarning(t, buffer, testServiceID1, testServiceID1, "snapshot", 4, 5)
+}

@@ -455,7 +455,7 @@ func (m *Machine) ObserveHead(head Head) error {
 	if record == nil || (m.setKnown && !record.setMember) || record.state == SyncStateRemoved {
 		return nil
 	}
-	m.updateRecordHeadLocked(record, head.Epoch, head.Revision, head.StateHash, false)
+	m.updateRecordHeadLocked(record, head.Epoch, head.Revision, head.StateHash, false, "notification")
 	m.recomputeRecordLocked(record)
 	return nil
 }
@@ -464,7 +464,23 @@ func (m *Machine) ObserveHead(head Head) error {
 // invalidates every attempt that began under the previous epoch: a result
 // fetched from replaced policy must not be publishable afterwards, not even
 // when a delayed message moves the head back to the old epoch.
-func (m *Machine) updateRecordHeadLocked(record *serviceRecord, epoch string, revision uint64, stateHash Hash, confirmed bool) {
+func (m *Machine) updateRecordHeadLocked(record *serviceRecord, epoch string, revision uint64, stateHash Hash, confirmed bool, source string) {
+	// Notifications may omit the epoch, in which case updateHead retains the
+	// known one. Compare only revisions belonging to that same effective epoch.
+	effectiveEpoch := epoch
+	if effectiveEpoch == "" {
+		effectiveEpoch = record.epoch
+	}
+	var localRevision uint64
+	if record.headKnown && record.epoch == effectiveEpoch {
+		localRevision = record.headRevision
+	}
+	if record.hasLocal && record.localEpoch == effectiveEpoch && record.localRevision > localRevision {
+		localRevision = record.localRevision
+	}
+	if revision < localRevision {
+		revisionWarnings.warn(record.id, effectiveEpoch, revision, localRevision, source)
+	}
 	if record.headKnown && epoch != "" && record.epoch != "" && epoch != record.epoch {
 		m.invalidateAttemptsLocked(record)
 	}
@@ -898,7 +914,11 @@ func (m *Machine) applySetLocked(services []Service, confirmed bool) {
 				record.failed = false
 			}
 		}
-		m.updateRecordHeadLocked(record, service.Epoch, service.Revision, service.HeadStateHash, confirmed)
+		source := "discovery"
+		if confirmed {
+			source = "ack"
+		}
+		m.updateRecordHeadLocked(record, service.Epoch, service.Revision, service.HeadStateHash, confirmed, source)
 	}
 	for _, record := range m.records {
 		m.recomputeRecordLocked(record)
