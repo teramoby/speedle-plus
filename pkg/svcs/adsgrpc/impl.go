@@ -186,7 +186,7 @@ func (impl *GRPCService) GetAllPermissions(ctx context.Context, in *pb.ContextRe
 	}
 
 	// Audit log
-	logging.WriteSimpleSucceededAuditLog("[gRPC]GetAllGrantedPermissions", reqCtx, ret.Permissions)
+	logging.WriteSimpleSucceededAuditLog("[gRPC]GetAllGrantedPermissions", reqCtx, auditPermissions(ret.Permissions))
 
 	return &ret, nil
 }
@@ -428,7 +428,7 @@ func (impl *GRPCService) Diagnose(ctx context.Context, in *pb.ContextRequest) (*
 	}
 
 	// Audit log
-	logging.WriteSimpleSucceededAuditLog("[gRPC]Diagnose", reqCtx, &response)
+	logging.WriteSimpleSucceededAuditLog("[gRPC]Diagnose", reqCtx, protoAuditValue{&response})
 
 	return &response, nil
 }

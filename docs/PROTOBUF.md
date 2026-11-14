@@ -20,7 +20,12 @@ qualified directory. Reflection clients looking up files must use those paths.
 Reflection clients must use these new message names; hypothetical
 `Any` type URLs built from those names would also change. Speedle's RPCs do
 not use `Any`. The standalone schemas in `docs/protobuf` describe the legacy
-wire contract; generation uses the schemas under `pkg/svcs`.
+wire contract; generation uses the schemas under `pkg/svcs`. The published
+standalone schemas intentionally retain `pb.*`: they are wire-compatible with
+the server, but not descriptor-identical to its reflected message names and
+file paths. Reflection/schema-registry consumers should use the server schemas
+or reflection. The generation script verifies all three pinned tool versions
+before writing files.
 
 `testdata/legacy-wire.json` in each generated package was captured from the
 old `github.com/golang/protobuf` bindings, populating all public fields in
