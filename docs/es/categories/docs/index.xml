@@ -168,8 +168,8 @@ Iniciar un ejemplo local reproducible Compile los binarios mediante el Inicio r�
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
 
       <guid>https://engine.speedle.io/es/docs/extending-decision-service/</guid>
-      <description>Implemente store.StoreBuilder y devuelva un almacén que cumpla las interfaces de pms.PolicyStoreManager que necesite su aplicación. Registre el constructor con un nombre único mediante store.Register en la función init de su paquete e importe ese paquete en su ejecutable. Los programas estándar importan los almacenes en cmd/speedle-ads/stores.go y cmd/speedle-pms/stores.go. GetStoreParams relaciona los indicadores de línea de comandos con las propiedades del almacén.
-Para un servicio embebido, pase su almacén a eval.</description>
+      <description>Implemente store.StoreBuilder, registre un nombre único con store.Register e importe el paquete en su ejecutable. GetStoreParams relaciona indicadores adicionales con propiedades del almacén. Analice sus indicadores antes del arranque; la biblioteca no analiza argumentos ni instala manejadores de señales.
+Reutilice el arranque ADS con ads.Run(ctx, params, conf, options...) de github.com/teramoby/speedle-plus/pkg/ads. params es *flags.Parameters y conf es *cfg.Config; cancelar ctx detiene ambos servidores. ads.WithGate(g) sustituye la detección de puertas en ambos protocolos; ads.</description>
     </item>
 
     <item>

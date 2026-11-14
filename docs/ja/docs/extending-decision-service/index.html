@@ -174,11 +174,16 @@
 
 
 
-  <div id="kube-component" class="content"><p><code>store.StoreBuilder</code> を実装し、アプリケーションに必要な <code>pms.PolicyStoreManager</code> インターフェースを満たすストアを返します。パッケージの <code>init</code> 関数で <code>store.Register</code> を呼び、一意の名前で登録して実行プログラムからインポートします。標準プログラムは <code>cmd/speedle-ads/stores.go</code> と <code>cmd/speedle-pms/stores.go</code> でストアをインポートします。<code>GetStoreParams</code> はコマンドラインフラグをストアのプロパティに対応付けます。</p>
+  <div id="kube-component" class="content"><p><code>store.StoreBuilder</code> を実装し、<code>store.Register</code> で一意の名前を登録して、実行プログラムからパッケージをインポートします。<code>GetStoreParams</code> は追加フラグをストアのプロパティに対応付けます。独自フラグは起動前に解析します。ライブラリはフラグ解析やシグナルハンドラーの登録を行いません。</p>
 
-<p>組み込みサービスでは、ストアを <code>eval.NewWithStore</code> に渡し、得られた評価器を <code>adsrest.NewRouter</code> または <code>adsgrpc.NewGRPCService</code> に渡します。変更イベントの購読が必要なストアは <code>store.WatchRequirement</code> を実装できます。<code>(*eval.PolicyEvalImpl).DistributionStore()</code> は外部アダプター用のストアアクセサーとして維持されます。エンジンは独自のゲートウェイインターフェースを解釈しません。ゲートウェイやルーティングは独自の実行プログラムで組み合わせてください。</p>
+<p><code>github.com/teramoby/speedle-plus/pkg/ads</code> の <code>ads.Run(ctx, params, conf, options...)</code> で標準 ADS 起動を再利用します。<code>params</code> は <code>*flags.Parameters</code>、<code>conf</code> は <code>*cfg.Config</code> です。<code>ctx</code> のキャンセルで両サーバーを停止します。<code>ads.WithGate(g)</code> は両プロトコルのゲート検出を上書きし、<code>ads.WithGate(nil)</code> は無効にします。<code>ads.WithListeners(rest, rpc)</code> はバインド済み <code>net.Listener</code> を受け取り、nil は設定済みエンドポイントを使います。Run は起動失敗時も含めてリスナーを所有し、閉じます。REST の TLS 設定と gRPC のサーバー認証情報は維持されます。<code>ads.WithHTTPServer(func(*http.Server))</code> でハンドラーをラップし、ルートを追加できます。<code>ads.WithGRPCOptions(...)</code> でオプションを追加します。標準の panic 回復を維持するため、追加インターセプターには <code>grpc.ChainUnaryInterceptor(...)</code> を使います。</p>
 
-<p><a href="https://github.com/teramoby/speedle-plus/tree/master/pkg/store">ストアのインターフェース</a>と<a href="/ja/docs/deployment/embedded/">組み込みデプロイ</a>を参照してください。</p>
+<p>プロトコルに依存しない <code>pkg/svcs/gate.Gate</code> は、<code>Route(serviceName string) gate.Route</code> で <code>gate.Local</code>、<code>gate.Fallback</code>、<code>gate.Unavailable</code> を選び、<code>Forward(context.Context, gate.Operation, *ads.RequestContext) (*gate.Response, error)</code> で型付き結果を返します。Local は通常の評価を続行します。Fallback は許可・拒否、ロール、権限を返せます。失敗時にローカル評価へ切り替わることはありません。Diagnose と Discover は Fallback では拒否されます。<code>*gate.UnavailableError</code> の公開理由コード以外のエラーと nil 応答は <code>fallback_unavailable</code> になります。REST は 503 と <code>authorization_unavailable</code>、理由、<code>Cache-Control: no-store</code>、<code>Retry-After: 30</code> を返し、gRPC は Unavailable を返します。応答の <code>ErrorMessage</code> は評価エラーを表し、REST IsAllowed は通常の 200 エラー本文、他の REST 操作は 500、gRPC は Internal を返します。成功した後備応答には <code>X-Speedle-Decision-Source: upstream</code> が付きます（gRPC メタデータのキーは小文字）。任意の <code>gate.Auditor.Audit(ctx, event)</code> は非ローカル経路ごとに一度呼ばれ、主体、トークン、リクエスト本文を含みません。標準監査ログも記録されます。ゲートは並行呼び出しに対応し、後備認証とリソースを管理します。</p>
+
+<p>ストアが <code>gate.GateProvider.RequestGate() gate.Gate</code> を実装すると、REST と gRPC は評価器のストアアクセサーから検出します。組み込み用途では <code>eval.NewWithStore</code> の後に <code>adsrest.NewRouter(evaluator, adsrest.WithGate(g))</code> または <code>adsgrpc.NewGRPCService(evaluator, adsgrpc.WithGate(g))</code> を使います。オプション省略時はストアから検出し、明示的な nil は無効化します。ゲートなしのローカル動作は変わりません。</p>
+
+<p><code>store.WatchRequirement.RequireWatch()</code> は設定で無効でも購読を強制します。任意の <code>ReadPolicyStoreForReload() (*pms.PolicyStore, func(), error)</code> はスナップショットと、インストール成功後にのみ呼ばれる確認コールバックを提供します。<code>(*eval.PolicyEvalImpl).DistributionStore()</code> はアダプター向けのストアアクセサーです。評価器を閉じると監視を停止し、閉じられるストアを閉じます。<code>ads.Run</code> はこの後始末を行います。明示的に渡したゲートの所有者は呼び出し側です。
+<a href="https://github.com/teramoby/speedle-plus/blob/master/pkg/ads/extensions_test.go">テスト専用ストアとゲート</a>、<a href="https://github.com/teramoby/speedle-plus/tree/master/pkg/store">ストアインターフェース</a>、<a href="/ja/docs/deployment/embedded/">組み込みデプロイ</a>を参照してください。</p>
 </div>
 </div>
 </main>

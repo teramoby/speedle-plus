@@ -174,11 +174,16 @@
 
 
 
-  <div id="kube-component" class="content"><p>实现 <code>store.StoreBuilder</code>，并返回满足应用所需 <code>pms.PolicyStoreManager</code> 接口的存储。在包的 <code>init</code> 函数中调用 <code>store.Register</code>，使用唯一名称注册构建器，再在可执行程序中导入该包。标准程序通过 <code>cmd/speedle-ads/stores.go</code> 和 <code>cmd/speedle-pms/stores.go</code> 导入存储。<code>GetStoreParams</code> 将命令行参数映射到存储属性。</p>
+  <div id="kube-component" class="content"><p>实现 <code>store.StoreBuilder</code>，用 <code>store.Register</code> 注册唯一名称，并在自己的可执行程序中导入该包。<code>GetStoreParams</code> 将附加命令行参数映射到存储属性。先解析自己的参数，再启动服务；库不解析参数，也不安装信号处理器。</p>
 
-<p>嵌入式服务可将存储传给 <code>eval.NewWithStore</code>，再将返回的求值器传给 <code>adsrest.NewRouter</code> 或 <code>adsgrpc.NewGRPCService</code>。必须订阅变更事件的存储可实现 <code>store.WatchRequirement</code>。<code>(*eval.PolicyEvalImpl).DistributionStore()</code> 保留为供外部适配器访问底层存储的接口；引擎不解释自定义网关接口。请在自己的可执行程序中组合网关或路由。</p>
+<p>从 <code>github.com/teramoby/speedle-plus/pkg/ads</code> 调用 <code>ads.Run(ctx, params, conf, options...)</code>，复用标准 ADS 启动流程。<code>params</code> 为 <code>*flags.Parameters</code>，<code>conf</code> 为 <code>*cfg.Config</code>；取消 <code>ctx</code> 会停止两个服务。<code>ads.WithGate(g)</code> 覆盖两个协议的门控发现；<code>ads.WithGate(nil)</code> 禁用门控。<code>ads.WithListeners(rest, rpc)</code> 接受预先绑定的 <code>net.Listener</code>（nil 使用配置的端点）。Run 接管并关闭这些监听器，启动失败时也会关闭。REST 保留配置的 TLS，gRPC 保留服务端凭证。<code>ads.WithHTTPServer(func(*http.Server))</code> 可在服务启动前包装处理器或添加路由。<code>ads.WithGRPCOptions(...)</code> 添加服务端选项；附加拦截器请用 <code>grpc.ChainUnaryInterceptor(...)</code>，以保留标准的 panic 恢复拦截器。</p>
 
-<p>参见<a href="https://github.com/teramoby/speedle-plus/tree/master/pkg/store">存储接口</a>和<a href="/zh/docs/deployment/embedded/">嵌入式部署</a>。</p>
+<p>与协议无关的 <code>pkg/svcs/gate.Gate</code> 有两个方法：<code>Route(serviceName string) gate.Route</code> 选择 <code>gate.Local</code>、<code>gate.Fallback</code> 或 <code>gate.Unavailable</code>；<code>Forward(context.Context, gate.Operation, *ads.RequestContext) (*gate.Response, error)</code> 提供有类型的后备结果。Local 继续本地求值。Fallback 可返回允许、拒绝、角色或权限；失败时绝不转回本地求值。Diagnose 和 Discover 在选择 Fallback 时拒绝处理。<code>*gate.UnavailableError</code> 携带公开原因码；其他错误及 nil 响应映射为 <code>fallback_unavailable</code>。REST 返回 503，包含 <code>authorization_unavailable</code>、原因、<code>Cache-Control: no-store</code> 和 <code>Retry-After: 30</code>；gRPC 返回 Unavailable。响应的 <code>ErrorMessage</code> 表示求值错误：REST IsAllowed 返回正常的 200 错误体，其他 REST 操作返回 500，gRPC 返回 Internal。后备成功响应携带 <code>X-Speedle-Decision-Source: upstream</code>（gRPC 元数据使用小写键）。可选的 <code>gate.Auditor.Audit(ctx, event)</code> 对每个非本地路由接收一次事件，不包含主体、令牌或请求体；服务仍写入标准审计日志。门控实现须支持并发请求，自行管理后备认证和资源。</p>
+
+<p>存储可实现 <code>gate.GateProvider.RequestGate() gate.Gate</code>，REST 和 gRPC 会通过求值器的底层存储访问器发现它。嵌入式调用者可用 <code>eval.NewWithStore</code>，再调用 <code>adsrest.NewRouter(evaluator, adsrest.WithGate(g))</code> 或 <code>adsgrpc.NewGRPCService(evaluator, adsgrpc.WithGate(g))</code>。省略选项会发现存储提供的门控；显式 nil 禁用门控。没有门控时，本地行为不变。</p>
+
+<p>明确存储生命周期：<code>store.WatchRequirement.RequireWatch()</code> 即使在配置关闭监听时也会强制订阅。可选的 <code>ReadPolicyStoreForReload() (*pms.PolicyStore, func(), error)</code> 提供快照和确认回调，只有安装成功后才调用回调。<code>(*eval.PolicyEvalImpl).DistributionStore()</code> 为适配器提供底层存储。关闭求值器会停止监听并关闭可关闭的存储；<code>ads.Run</code> 负责此清理。显式传入的门控由调用者管理。
+参见<a href="https://github.com/teramoby/speedle-plus/blob/master/pkg/ads/extensions_test.go">仅供测试的外部存储与门控示例</a>、<a href="https://github.com/teramoby/speedle-plus/tree/master/pkg/store">存储接口</a>和<a href="/zh/docs/deployment/embedded/">嵌入式部署</a>。</p>
 </div>
 </div>
 </main>

@@ -239,8 +239,8 @@ git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ko/docs/extending-decision-service/</guid>
-      <description>store.StoreBuilder를 구현하고 애플리케이션에 필요한 pms.PolicyStoreManager 인터페이스를 충족하는 저장소를 반환합니다. 패키지의 init 함수에서 store.Register로 고유한 이름을 등록한 뒤 실행 프로그램에서 패키지를 가져옵니다. 표준 프로그램은 cmd/speedle-ads/stores.go와 cmd/speedle-pms/stores.go에서 저장소를 가져옵니다. GetStoreParams는 명령줄 플래그를 저장소 속성에 연결합니다.
-임베디드 서비스에서는 저장소를 eval.NewWithStore에 전달하고 반환된 평가기를 adsrest.NewRouter 또는 adsgrpc.NewGRPCService에 전달합니다. 변경 이벤트를 구독해야 하는 저장소는 store.WatchRequirement를 구현할 수 있습니다. (*eval.PolicyEvalImpl).DistributionStore()는 외부 어댑터가 기반 저장소에 접근할 수 있도록 유지됩니다. 엔진은 사용자 정의 게이트웨이 인터페이스를 해석하지 않습니다. 게이트웨이나 라우팅은 자체 실행 프로그램에서 구성하세요.</description>
+      <description>store.StoreBuilder를 구현하고 store.Register로 고유한 이름을 등록한 뒤 실행 프로그램에서 패키지를 가져옵니다. GetStoreParams는 추가 플래그를 저장소 속성에 연결합니다. 자체 플래그는 시작 전에 파싱합니다. 라이브러리는 플래그를 파싱하거나 신호 처리기를 설치하지 않습니다.
+github.com/teramoby/speedle-plus/pkg/ads의 ads.Run(ctx, params, conf, options...)로 표준 ADS 시작을 재사용합니다. params는 *flags.Parameters, conf는 *cfg.Config이며 ctx 취소 시 두 서버가 중지됩니다. ads.WithGate(g)는 두 프로토콜의 게이트 탐색을 재정의하고 ads.WithGate(nil)은 비활성화합니다. ads.WithListeners(rest, rpc)는 미리 바인딩한 net.Listener를 받으며 nil은 설정된 엔드포인트를 사용합니다. Run은 시작 실패 시에도 리스너를 소유하고 닫습니다.</description>
     </item>
 
     <item>

@@ -174,21 +174,57 @@
 
 
 
-  <div id="kube-component" class="content"><p>Implement <code>store.StoreBuilder</code> and return a store implementing the
-<code>pms.PolicyStoreManager</code> interfaces needed by your application. Register the
-builder under a unique name with <code>store.Register</code> in your package&rsquo;s <code>init</code>
-function. Import that package in your executable; the standard binaries link
-stores through <code>cmd/speedle-ads/stores.go</code> and <code>cmd/speedle-pms/stores.go</code>.
-<code>GetStoreParams</code> maps command-line flags to store properties.</p>
+  <div id="kube-component" class="content"><p>Implement <code>store.StoreBuilder</code>, register a unique name with <code>store.Register</code>, and
+import the package from your executable. <code>GetStoreParams</code> maps extra flags to
+store properties. Parse your own flags before starting the server; the Engine
+library does not parse flags or install signal handlers.</p>
 
-<p>For an embedded service, pass your store to <code>eval.NewWithStore</code> and pass the
-resulting evaluator to <code>adsrest.NewRouter</code> or <code>adsgrpc.NewGRPCService</code>. A store
-that must receive change events can implement <code>store.WatchRequirement</code>.
-<code>(*eval.PolicyEvalImpl).DistributionStore()</code> remains a backing-store accessor
-for external adapters; the Engine does not interpret custom gateway interfaces.
-Compose any custom gateway or routing in your own executable.</p>
+<p>Use <code>ads.Run(ctx, params, conf, options...)</code> from
+<code>github.com/teramoby/speedle-plus/pkg/ads</code> to reuse the standard ADS startup.
+<code>params</code> is <code>*flags.Parameters</code>, <code>conf</code> is <code>*cfg.Config</code>, and cancelling <code>ctx</code>
+stops both servers. <code>ads.WithGate(g)</code> overrides gate discovery on both transports;
+<code>ads.WithGate(nil)</code> disables it. <code>ads.WithListeners(rest, rpc)</code> accepts pre-bound
+<code>net.Listener</code> values (nil uses the configured endpoint). Run owns and closes
+those listeners, even on startup failure. REST retains the configured TLS;
+gRPC retains its server credentials. <code>ads.WithHTTPServer(func(*http.Server))</code>
+can wrap the handler or add routes before serving. <code>ads.WithGRPCOptions(...)</code>
+adds server options; use <code>grpc.ChainUnaryInterceptor(...)</code> for extra interceptors
+to preserve the standard panic recovery interceptor.</p>
 
-<p>See the <a href="https://github.com/teramoby/speedle-plus/tree/master/pkg/store">store interfaces</a>
+<p>The transport-independent <code>pkg/svcs/gate.Gate</code> has two methods:
+<code>Route(serviceName string) gate.Route</code> chooses <code>gate.Local</code>, <code>gate.Fallback</code>, or
+<code>gate.Unavailable</code>, and <code>Forward(context.Context, gate.Operation,
+*ads.RequestContext) (*gate.Response, error)</code> supplies a typed fallback result.
+Local continues normal evaluation. Fallback can allow or deny, return roles, or
+return permissions; failures never switch to local evaluation. Diagnose and
+Discover fail closed when fallback is selected. A <code>*gate.UnavailableError</code> carries
+a public reason code; other failures and nil responses map to
+<code>fallback_unavailable</code>. REST returns 503 with <code>authorization_unavailable</code>, a
+reason, <code>Cache-Control: no-store</code>, and <code>Retry-After: 30</code>; gRPC returns Unavailable.
+A response&rsquo;s <code>ErrorMessage</code> is an evaluation failure: REST IsAllowed returns its
+normal 200 error body, other REST operations return 500, and gRPC returns Internal.
+Successful fallback responses carry <code>X-Speedle-Decision-Source: upstream</code> (gRPC
+metadata uses the lowercase key). An optional <code>gate.Auditor.Audit(ctx, event)</code>
+receives one event per non-local route without subjects, tokens or request bodies;
+the services also write their standard audit logs. Gate implementations must be
+safe for concurrent requests and own their fallback authentication and resources.</p>
+
+<p>A store can implement <code>gate.GateProvider.RequestGate() gate.Gate</code>; REST and gRPC
+discover it through the evaluator&rsquo;s backing-store accessor. Embedded callers can
+use <code>eval.NewWithStore</code>, then <code>adsrest.NewRouter(evaluator,
+adsrest.WithGate(g))</code> or <code>adsgrpc.NewGRPCService(evaluator,
+adsgrpc.WithGate(g))</code>. Omitting the option discovers the store gate; an explicit
+nil disables it. Without a gate, existing local behavior is unchanged.</p>
+
+<p>Keep store lifetimes explicit: <code>store.WatchRequirement.RequireWatch()</code> forces
+subscription even if config disables watching. Optional
+<code>ReadPolicyStoreForReload() (*pms.PolicyStore, func(), error)</code> supplies a snapshot
+and an acknowledgement callback, called only after successful installation.
+<code>(*eval.PolicyEvalImpl).DistributionStore()</code> exposes the backing store for
+adapters. Closing the evaluator stops its watch and closes a closable store;
+<code>ads.Run</code> performs that cleanup. An explicitly supplied gate remains caller-owned.
+See the <a href="https://github.com/teramoby/speedle-plus/blob/master/pkg/ads/extensions_test.go">test-only external store and gate</a>
+for REST/gRPC examples, the <a href="https://github.com/teramoby/speedle-plus/tree/master/pkg/store">store interfaces</a>
 and <a href="/docs/deployment/embedded/">embedded deployment</a>.</p>
 </div>
 </div>
