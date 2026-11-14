@@ -799,9 +799,18 @@ func (k *Parameters) Param2Config(storeParamsMap map[string]string) (*cfg.Config
 	for k, v := range storeParamsMap {
 		f := pflag.Lookup(k)
 		if f != nil {
-			if storeConf.StoreType == "policy-source" && removedPolicySourceFlagProperty(v) && !f.Changed {
-				if _, set := os.LookupEnv(FlagToEnv(k)); !set {
+			// A removed policy-source setting only reaches a policy-source
+			// store, and only when it was explicitly set: its empty default is
+			// never injected, and other store types do not see it. The
+			// policy-source builder then rejects it by name.
+			if removedPolicySourceFlagProperty(v) {
+				if storeConf.StoreType != "policy-source" {
 					continue
+				}
+				if !f.Changed {
+					if _, set := os.LookupEnv(FlagToEnv(k)); !set {
+						continue
+					}
 				}
 			}
 			storeConf.StoreProps[v] = f.Value.String()

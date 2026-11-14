@@ -125,3 +125,27 @@ func TestCascadeProductionFlagConfiguration(t *testing.T) {
 		})
 	}
 }
+
+// TestRemovedPolicySourceFlagsStayOutOfOtherStores proves the removed
+// distribution flags are not injected into another store type's properties,
+// even when explicitly set.
+func TestRemovedPolicySourceFlagsStayOutOfOtherStores(t *testing.T) {
+	oldArgs, oldFlags := os.Args, pflag.CommandLine
+	defer func() { os.Args, pflag.CommandLine = oldArgs, oldFlags }()
+	pflag.CommandLine = pflag.NewFlagSet("store-scope", pflag.ContinueOnError)
+	pflag.CommandLine.SetOutput(io.Discard)
+	paramsMap := (Builder{}).GetStoreParams()
+	for name := range paramsMap {
+		pflag.String(name, oldFlags.Lookup(name).DefValue, "")
+	}
+	os.Args = []string{"speedle-ads", "--store-type=file", "--" + MaxChainDepthFlag + "=3"}
+	params := &flags.Parameters{}
+	params.ParseFlags(flags.DefaultAuthzCheckEndPoint, func() {}, paramsMap)
+	config, err := params.Param2Config(paramsMap)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, exists := config.StoreConfig.StoreProps[MaxChainDepthKey]; exists {
+		t.Fatal("a removed policy-source setting leaked into another store's properties")
+	}
+}
