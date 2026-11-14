@@ -216,7 +216,9 @@ keys, lower-cased, as response header metadata. Repeated values are preserved.
 Both transports drop hop-by-hop headers (including names listed in <code>Connection</code>),
 <code>Set-Cookie</code>, <code>Content-Length</code>, <code>Content-Type</code>, and service-owned headers such as
 <code>Cache-Control</code>, <code>Retry-After</code>, <code>X-Speedle-Decision-Source</code>, <code>Speedle-Principals</code>,
-<code>WWW-Authenticate</code>, <code>Date</code> and <code>Server</code>. Reserved <code>grpc-*</code> and binary <code>*-bin</code> keys,
+<code>WWW-Authenticate</code>, <code>Date</code> and <code>Server</code>. Upstream body headers, including
+<code>Content-Encoding</code>, <code>Content-Range</code>, digests and validators, are excluded because
+the services serialize a new response body. Reserved <code>grpc-*</code> and binary <code>*-bin</code> keys,
 invalid text keys and non-printable/non-ASCII values are also dropped. REST keeps
 headers already set by middleware. Empty metadata leaves behavior unchanged;
 evaluation errors and failed forwards do not copy metadata. Keep a reused map
