@@ -1,6 +1,7 @@
 # Generating the gRPC bindings
 
-Install `protoc`, then install the pinned Go generators:
+The checked-in bindings use `protoc` 36.2 (`libprotoc 36.2`, reported in
+Go headers as v7.36.2). Install that compiler, then the pinned Go generators:
 
 ```sh
 go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11
@@ -13,7 +14,10 @@ The generated Go packages and public message fields remain in
 and `pb.PolicyManager` names, RPC paths and binary request/response layouts.
 Message declarations live in separate `speedle.ads` and `speedle.pms`
 namespaces so both sets of descriptors can coexist in the modern protobuf
-registry. Reflection clients must use these new message names; hypothetical
+registry. Descriptor file names also change from `service.proto` to
+`pkg/svcs/{ads,pms}grpc/pb/service.proto` and `messages.proto` under the same
+qualified directory. Reflection clients looking up files must use those paths.
+Reflection clients must use these new message names; hypothetical
 `Any` type URLs built from those names would also change. Speedle's RPCs do
 not use `Any`. The standalone schemas in `docs/protobuf` describe the legacy
 wire contract; generation uses the schemas under `pkg/svcs`.
