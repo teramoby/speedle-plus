@@ -85,7 +85,7 @@ func SetAuditLog(logger *slog.Logger) {
 func InitLog(cfg *LogConfig) error { return application.init(cfg) }
 
 func (s *loggerState) init(cfg *LogConfig) error {
-	if cfg == nil {
+	if cfg == nil || cfg.Level == "" && cfg.Formatter == "" && !cfg.SetReportCaller && cfg.RotationConfig == nil {
 		return nil
 	}
 	s.mu.Lock()
@@ -195,52 +195,131 @@ func newHandler(writer io.Writer, cfg LogConfig) (slog.Handler, error) {
 // user-supplied time/level/msg apart from the handler's own metadata.
 type compatibleHandler struct {
 	slog.Handler
-	caller  bool
-	grouped bool
-	text    bool
+	caller bool
+	text   bool
+	attrs  []slog.Attr
+	groups []string
 }
 
-func (h *compatibleHandler) normalize(a slog.Attr, top bool) slog.Attr {
+// resolve copies group slices as well: WithAttrs must not retain mutable
+// caller-owned slices. Collision handling happens only after all scopes merge.
+func (h *compatibleHandler) resolve(a slog.Attr) slog.Attr {
+	if a.Equal(slog.Attr{}) {
+		return a
+	}
 	a.Value = a.Value.Resolve()
 	if a.Value.Kind() == slog.KindGroup {
 		attrs := a.Value.Group()
-		normalized := make([]slog.Attr, len(attrs))
+		copied := make([]slog.Attr, len(attrs))
 		for i, child := range attrs {
-			normalized[i] = h.normalize(child, top && a.Key == "")
+			copied[i] = h.resolve(child)
 		}
-		a.Value = slog.GroupValue(normalized...)
+		a.Value = slog.GroupValue(copied...)
 	} else if err, ok := a.Value.Any().(error); ok {
 		a.Value = slog.StringValue(err.Error())
 	} else if h.text && a.Value.Kind() == slog.KindAny {
-		// TextHandler uses %+v for arbitrary values; the existing audit contract
-		// uses fmt.Sprint (%v), including the legacy protobuf response structs.
+		// TextHandler uses %+v; legacy audit values use fmt.Sprint (%v).
 		a.Value = slog.StringValue(fmt.Sprint(a.Value.Any()))
-	}
-	if top && (a.Key == "time" || a.Key == "level" || a.Key == "msg" || h.caller && (a.Key == "file" || a.Key == "func")) {
-		a.Key = "fields." + a.Key
+	} else if source, ok := a.Value.Any().(*slog.Source); ok && source != nil {
+		// Do not confuse a user-supplied Source with AddSource's metadata.
+		a.Value = slog.GroupValue(slog.String("function", source.Function), slog.String("file", source.File), slog.Int("line", source.Line))
 	}
 	return a
 }
 
+func scopedAttrs(groups []string, attrs []slog.Attr) []slog.Attr {
+	for i := len(groups) - 1; i >= 0; i-- {
+		attrs = []slog.Attr{{Key: groups[i], Value: slog.GroupValue(attrs...)}}
+	}
+	return attrs
+}
+
+// coalesce retains map-style last-write precedence. Reserved fields overwrite
+// an explicitly supplied fields.<key> alias, as the old logrus formatter did.
+// Buffering WithAttrs until Handle allows this to work across With chains too.
+func (h *compatibleHandler) coalesce(attrs []slog.Attr, top bool) []slog.Attr {
+	result := make([]slog.Attr, 0, len(attrs))
+	positions := make(map[string]int, len(attrs))
+	var add func(slog.Attr)
+	add = func(a slog.Attr) {
+		if a.Equal(slog.Attr{}) {
+			return
+		}
+		if a.Key == "" && a.Value.Kind() == slog.KindGroup {
+			for _, child := range a.Value.Group() {
+				add(child)
+			}
+			return
+		}
+		if i, ok := positions[a.Key]; ok {
+			if result[i].Value.Kind() == slog.KindGroup && a.Value.Kind() == slog.KindGroup {
+				children := append([]slog.Attr(nil), result[i].Value.Group()...)
+				a.Value = slog.GroupValue(append(children, a.Value.Group()...)...)
+			}
+			result[i] = a
+		} else {
+			positions[a.Key] = len(result)
+			result = append(result, a)
+		}
+	}
+	for _, a := range attrs {
+		add(a)
+	}
+	for i, a := range result {
+		if a.Value.Kind() == slog.KindGroup {
+			result[i].Value = slog.GroupValue(h.coalesce(a.Value.Group(), false)...)
+		}
+	}
+	if top {
+		reserved := []string{"time", "msg", "level", "logrus_error"}
+		if h.caller {
+			reserved = append(reserved, "file", "func")
+		}
+		for _, key := range reserved {
+			i, ok := positions[key]
+			if !ok {
+				continue
+			}
+			a := result[i]
+			a.Key = "fields." + key
+			if j, ok := positions[a.Key]; ok {
+				result[j] = a
+				result[i] = slog.Attr{}
+			} else {
+				result[i] = a
+			}
+		}
+	}
+	return result
+}
+
 func (h *compatibleHandler) Handle(ctx context.Context, r slog.Record) error {
+	attrs := append([]slog.Attr(nil), h.attrs...)
+	var current []slog.Attr
+	r.Attrs(func(a slog.Attr) bool { current = append(current, h.resolve(a)); return true })
+	attrs = append(attrs, scopedAttrs(h.groups, current)...)
 	record := slog.NewRecord(r.Time, r.Level, strings.TrimSuffix(r.Message, "\n"), r.PC)
-	r.Attrs(func(a slog.Attr) bool { record.AddAttrs(h.normalize(a, !h.grouped)); return true })
+	record.AddAttrs(h.coalesce(attrs, true)...)
 	return h.Handler.Handle(ctx, record)
 }
 
 func (h *compatibleHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	normalized := make([]slog.Attr, len(attrs))
+	copied := make([]slog.Attr, len(attrs))
 	for i, a := range attrs {
-		normalized[i] = h.normalize(a, !h.grouped)
+		copied[i] = h.resolve(a)
 	}
-	return &compatibleHandler{Handler: h.Handler.WithAttrs(normalized), caller: h.caller, grouped: h.grouped, text: h.text}
+	next := *h
+	next.attrs = append(append([]slog.Attr(nil), h.attrs...), scopedAttrs(h.groups, copied)...)
+	return &next
 }
 
 func (h *compatibleHandler) WithGroup(name string) slog.Handler {
 	if name == "" {
 		return h
 	}
-	return &compatibleHandler{Handler: h.Handler.WithGroup(name), caller: h.caller, grouped: true, text: h.text}
+	next := *h
+	next.groups = append(append([]string(nil), h.groups...), name)
+	return &next
 }
 
 // Fatal logs at the fatal level and exits with status 1 even when filtered.

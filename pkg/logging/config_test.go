@@ -330,3 +330,135 @@ func TestConcurrentLoggerReplacement(t *testing.T) {
 	}
 	wg.Wait()
 }
+
+// decoding into a map alone would hide duplicate JSON keys. Check tokens at
+// every object depth before using a decoded record for value assertions.
+func requireUniqueJSONKeys(t *testing.T, data []byte) {
+	t.Helper()
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	var value func()
+	value = func() {
+		token, err := decoder.Token()
+		if err != nil {
+			t.Fatal(err)
+		}
+		delim, ok := token.(json.Delim)
+		if !ok {
+			return
+		}
+		switch delim {
+		case '{':
+			seen := map[string]bool{}
+			for decoder.More() {
+				key, err := decoder.Token()
+				if err != nil {
+					t.Fatal(err)
+				}
+				name := key.(string)
+				if seen[name] {
+					t.Fatalf("duplicate key %q in %s", name, data)
+				}
+				seen[name] = true
+				value()
+			}
+		case '[':
+			for decoder.More() {
+				value()
+			}
+		default:
+			t.Fatalf("unexpected token %v", token)
+		}
+		if _, err := decoder.Token(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	value()
+}
+
+func TestReservedFieldCollisionPrecedence(t *testing.T) {
+	for _, caller := range []bool{false, true} {
+		for _, key := range []string{"time", "level", "msg", "logrus_error", "file", "func"} {
+			if (key == "file" || key == "func") && !caller {
+				continue
+			}
+			for _, reverse := range []bool{false, true} {
+				logger, out := testLogger(t, LogConfig{Formatter: "json", SetReportCaller: caller})
+				if reverse {
+					logger = logger.With(key, "reserved").With("fields."+key, "alias")
+				} else {
+					logger = logger.With("fields."+key, "alias").With(key, "reserved")
+				}
+				logger.Info("record", "ordinary", 1, "ordinary", 2)
+				requireUniqueJSONKeys(t, out.Bytes())
+				entry := lastEntry(t, out)
+				if entry["fields."+key] != "reserved" || entry["ordinary"] != float64(2) {
+					t.Fatalf("precedence %v", entry)
+				}
+			}
+		}
+	}
+	logger, out := testLogger(t, LogConfig{Formatter: "json", SetReportCaller: true})
+	logger.WithGroup("level").With("msg", "nested").Info("grouped", "level", "nested-level")
+	requireUniqueJSONKeys(t, out.Bytes())
+	entry := lastEntry(t, out)
+	group, ok := entry["fields.level"].(map[string]any)
+	if !ok || group["msg"] != "nested" || group["level"] != "nested-level" || entry["level"] != "info" {
+		t.Fatalf("group collision %v", entry)
+	}
+	logger.WithGroup("request").With("same", "old").WithGroup("nested").With("key", "value").Info("nested", "same", "new")
+	lines := bytes.Split(bytes.TrimSpace(out.Bytes()), []byte("\n"))
+	requireUniqueJSONKeys(t, lines[len(lines)-1])
+	out.Reset()
+	logger.Info("source", "source", &slog.Source{Function: "user", File: "user.go", Line: 7})
+	requireUniqueJSONKeys(t, out.Bytes())
+	if entry := lastEntry(t, out); entry["source"].(map[string]any)["file"] != "user.go" || !strings.Contains(entry["file"].(string), "config_test.go:") {
+		t.Fatalf("source collision %v", entry)
+	}
+}
+
+func TestEmptyConfigPreservesInstalledHandlers(t *testing.T) {
+	oldApp, oldAudit := application, audit
+	application, audit = newState(), newState()
+	t.Cleanup(func() { application, audit = oldApp, oldAudit })
+	custom, out := testLogger(t, LogConfig{Formatter: "json"})
+	SetDefault(custom)
+	SetAuditLog(custom)
+	for _, cfg := range []*LogConfig{nil, {}} {
+		if err := InitLog(cfg); err != nil {
+			t.Fatal(err)
+		}
+		if err := InitAuditLog(cfg); err != nil {
+			t.Fatal(err)
+		}
+		if Default() != custom || AuditLog() != custom {
+			t.Fatal("empty config replaced a host handler")
+		}
+	}
+	Default().Info("host application")
+	AuditLog().Info("host audit")
+	if strings.Count(out.String(), "\n") != 2 {
+		t.Fatalf("host handler lost: %s", out)
+	}
+	if err := InitLog(&LogConfig{Level: "error"}); err != nil {
+		t.Fatal(err)
+	}
+	if Default() == custom || AuditLog() != custom {
+		t.Fatal("explicit application config must replace only the application handler")
+	}
+	if err := InitAuditLog(&LogConfig{Formatter: "text"}); err != nil {
+		t.Fatal(err)
+	}
+	if AuditLog() == custom {
+		t.Fatal("explicit audit config did not replace the handler")
+	}
+}
+
+func TestAuditReservedAliasesDoNotDuplicateMetadata(t *testing.T) {
+	out := captureAudit(t)
+	WriteSucceededAuditLog("collision", map[string]interface{}{"level": "request", "fields.level": "old", "time": "request-time", "fields.time": "old-time"}, map[string]interface{}{"level": "response", "fields.level": "new-alias"})
+	requireUniqueJSONKeys(t, out.Bytes())
+	entry := lastEntry(t, out)
+	if entry["level"] != "info" || entry["fields.level"] != "response" || entry["fields.time"] != "request-time" {
+		t.Fatalf("audit collision %v", entry)
+	}
+}

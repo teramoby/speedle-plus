@@ -28,7 +28,10 @@ preserve existing termination behavior. Do not build a replacement logrus API.
 - `AuditLog()` returns `*slog.Logger`. Keep `SetTenantID`, audit constants and
   the existing `Write*AuditLog` function signatures.
 - Preserve partial initialization: absent settings retain the initialized
-  logger's settings; `InitLog(nil)`/`InitAuditLog(nil)` are no-ops. Fresh loggers
+  logger's settings; `InitLog(nil)`/`InitAuditLog(nil)` and all-empty configs are no-ops.
+  Installing a custom logger retains it until a nonempty configuration is
+  explicitly supplied; explicit configuration rebuilds the handler using the
+  last configured Engine settings, rather than modifying an arbitrary host handler. Fresh loggers
   default to info, text, stderr and caller reporting disabled. Validate settings
   before publishing a replacement so errors leave the previous logger intact.
 - Existing fatal calls must still log then exit with status 1; panic calls must
@@ -60,7 +63,11 @@ trace messages. Convert printf calls with
 attributes and `WithError` to an `error` string attribute. Keep structured values
 structured. Preserve `time`, `level`, `msg`, and caller `file`/`func` keys; caller
 `file` includes its line number. Reserved-key user fields retain logrus-style
-`fields.` prefixes rather than creating duplicate metadata keys.
+`fields.` prefixes rather than creating duplicate metadata keys. If both `level` and
+`fields.level` (or another reserved pair) are provided, the original reserved
+field wins over its explicit alias, matching the old map formatter. Merge
+attributes across `With` chains before normalization and prefix top-level
+reserved group names as well.
 
 Audit logs keep `[AUDIT]` directly before the API name and preserve
 `tenantid`, `target_index` (`audit-<tenant>-YYYYMM`), `response`, `reason`,
