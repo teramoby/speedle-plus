@@ -1,6 +1,6 @@
 +++
 title = "Java SDK"
-description = "Speedle Java SDK を追加し、ローカルの Speedle または Speedle Cloud に対して認可チェックを実行"
+description = "Speedle Java SDK を追加し、ローカルの Speedle に対して認可チェックを実行"
 weight = 10
 aliases = ["/ja/docs/api/sdk-java/"]
 draft = false
@@ -8,7 +8,7 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "Maven または Gradle で io.speedle:speedle-sdk 0.2.0 を追加し、ローカルの Speedle または Speedle Cloud に対して isAllowed と check を呼び出します。"
+bref = "Maven または Gradle で io.speedle:speedle-sdk 0.2.0 を追加し、ローカルの Speedle に対して isAllowed と check を呼び出します。"
 lastmod = 2026-11-08T19:23:52+08:00
 +++
 
@@ -114,60 +114,6 @@ alice get /docs/public: allowed=true
 alice delete /docs/public: allowed=false reason=NO_APPLICABLE_POLICIES
 ```
 
-## Speedle Cloud の呼び出し
-
-> **Speedle Cloud はまもなく公開されます。**
-
-プログラムは `SPEEDLE_SERVICE` からサービス名を、`SPEEDLE_TOKEN` から`ads` スコープのアカウント API キーを読み取ります。`SPEEDLE_ENDPOINT` はデフォルトのエンドポイント `https://cloud.speedle.io` を上書きします。`src/main/java/Main.java` を以下に置き換えます:
-
-```java
-import io.speedle.sdk.Auth;
-import io.speedle.sdk.Backend;
-import io.speedle.sdk.Decision;
-import io.speedle.sdk.SpeedleClient;
-import io.speedle.sdk.SpeedleException;
-import io.speedle.sdk.Subject;
-import java.net.URI;
-import java.util.List;
-
-public class Main {
-  public static void main(String[] args) {
-    String endpoint = System.getenv().getOrDefault("SPEEDLE_ENDPOINT", "https://cloud.speedle.io");
-    try (SpeedleClient speedle = SpeedleClient.builder()
-        .backend(Backend.SPEEDLE_CLOUD)
-        .endpoint(URI.create(endpoint))
-        .auth(Auth.bearer(System.getenv("SPEEDLE_TOKEN")))
-        .serviceName(System.getenv("SPEEDLE_SERVICE"))
-        .build()) {
-      boolean allowed = speedle.isAllowed(Subject.user("alice"), "get", "/docs/public", List.of());
-      System.out.println("alice get /docs/public: allowed=" + allowed);
-
-      Decision d = speedle.check(Subject.user("alice"), "delete", "/docs/public", List.of());
-      System.out.println("alice delete /docs/public: allowed=" + d.allowed() + " reason=" + d.reason());
-    } catch (SpeedleException e) {
-      System.err.println("Speedle error: " + e.getMessage());
-      System.exit(1);
-    }
-  }
-}
-```
-
-環境変数を設定して実行します。`read -rs` を使用すると、API キーがシェルの履歴や画面に表示されません:
-
-```bash
-export SPEEDLE_SERVICE=docs
-read -rs SPEEDLE_TOKEN && export SPEEDLE_TOKEN
-mvn -q compile exec:java -Dexec.mainClass=Main
-```
-
-サービスにサンプルポリシーが存在する場合の出力:
-
-```text
-alice get /docs/public: allowed=true
-alice delete /docs/public: allowed=false reason=NO_APPLICABLE_POLICIES
-```
-
-API キーはサーバー側のシークレットです。ブラウザ、モバイルアプリ、またはデスクトップクライアントには絶対に配布しないでください。
 
 ## エラー処理
 

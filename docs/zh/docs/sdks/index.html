@@ -148,20 +148,8 @@
 </ul>
 
 </li>
-
-
-
-<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/zh/docs/cloud/">Speedle Cloud</a></span>
-<ul class="">
-<li data-docs-depth="1" class=""><a href="/zh/docs/cloud/getting-started/">快速入门</a></li>
-<li data-docs-depth="1" class=""><a href="/zh/docs/cloud/tokens/">API 密钥</a></li>
-<li data-docs-depth="1" class=""><a href="/zh/docs/cloud/authorization-api/">授权 API</a></li>
-<li data-docs-depth="1" class=""><a href="/zh/docs/cloud/api-reference/">API 参考</a></li>
-<li data-docs-depth="1" class=""><a href="/zh/docs/cloud/limits-and-errors/">限额与错误</a></li>
-</ul>
-
-</li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/security/">安全</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/extending-decision-service/">扩展决策服务</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/logging/">日志</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/versions/">版本</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/custom-function/">自定义函数</a></li><li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">其他</span>
@@ -181,7 +169,7 @@
   <h1>SDK</h1>
   <p></p>
 
-<p>Speedle SDK 是决策 API <code>POST /authz-check/v1/is-allowed</code> 的客户端库，既可用于自托管的 Speedle ADS，也可用于 Speedle Cloud。每个语言页面说明如何添加软件包，并分别给出两种场景下经过实测的完整程序。源代码和完整参考见 <a href="https://github.com/teramoby/speedle-sdk">teramoby/speedle-sdk</a>。这些示例要调用的 PMS 和 ADS，见<a href="/zh/docs/deployment/">部署</a>和<a href="/zh/docs/deployment/docker/">Docker 镜像</a>。</p>
+<p>Speedle SDK 是决策 API <code>POST /authz-check/v1/is-allowed</code> 的客户端库，可用于自托管的 Speedle ADS。每个语言页面说明如何添加软件包，并分别给出自托管场景下经过实测的完整程序。源代码和完整参考见 <a href="https://github.com/teramoby/speedle-sdk">teramoby/speedle-sdk</a>。这些示例要调用的 PMS 和 ADS，见<a href="/zh/docs/deployment/">部署</a>和<a href="/zh/docs/deployment/docker/">Docker 镜像</a>。</p>
 
 <h2 id="软件包">软件包</h2>
 
@@ -221,11 +209,6 @@
 <td>自托管 Speedle ADS</td>
 <td>六个 SDK 均支持</td>
 </tr>
-
-<tr>
-<td>Speedle Cloud</td>
-<td>即将上线</td>
-</tr>
 </tbody>
 </table>
 
@@ -239,8 +222,6 @@
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service docs
 ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c <span style="color:#f1fa8c">&#34;grant user alice get,list /docs/public&#34;</span> --service-name<span style="color:#ff79c6">=</span>docs</code></pre></div>
 <p>本地示例以无凭据方式连接 <code>http://localhost:6734</code>。SDK 只对回环地址接受明文 <code>http://</code>；连接其他 ADS 时请使用 HTTPS。</p>
-
-<p>Speedle Cloud 示例连接 <code>https://cloud.speedle.io</code>，并从环境变量 <code>SPEEDLE_SERVICE</code> 和 <code>SPEEDLE_TOKEN</code> 读取服务名及具有 <code>ads</code> 权限范围的账号 API 密钥。在该服务中创建同样的策略即可得到相同的结果。API 密钥是服务端密钥，切勿放进浏览器、移动应用或桌面客户端。</p>
 </div></main>
         </div>
     </div>

@@ -1,6 +1,6 @@
 +++
 title = "C#/.NET SDK"
-description = "Speedle .NET SDK를 추가하고 로컬 Speedle 또는 Speedle Cloud에 대해 인가 확인 수행"
+description = "Speedle .NET SDK를 추가하고 로컬 Speedle에 대해 인가 확인 수행"
 weight = 40
 aliases = ["/ko/docs/api/sdk-dotnet/"]
 draft = false
@@ -8,7 +8,7 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "dotnet add package로 Speedle.Sdk 0.2.0을 추가하고 로컬 Speedle 또는 Speedle Cloud에 대해 IsAllowedAsync 및 CheckAsync를 호출합니다."
+bref = "dotnet add package로 Speedle.Sdk 0.2.0을 추가하고 로컬 Speedle에 대해 IsAllowedAsync 및 CheckAsync를 호출합니다."
 lastmod = 2026-11-07T19:43:15+08:00
 +++
 
@@ -70,55 +70,6 @@ alice get /docs/public: allowed=True
 alice delete /docs/public: allowed=False reason=NoApplicablePolicies
 ```
 
-## Speedle Cloud 호출
-
-> **Speedle Cloud는 출시 예정입니다.**
-
-프로그램은 `SPEEDLE_SERVICE`에서 서비스 이름을, `SPEEDLE_TOKEN`에서 `ads` 범위의 계정 API 키을 읽습니다. `SPEEDLE_ENDPOINT`는 기본 엔드포인트 `https://cloud.speedle.io`를 재정의합니다. `Program.cs`를 다음과 같이 대체합니다:
-
-```csharp
-using Speedle.Sdk;
-
-try
-{
-    await using var speedle = new SpeedleClient(new SpeedleClientOptions
-    {
-        Backend = Backend.SpeedleCloud,
-        Endpoint = new Uri(Environment.GetEnvironmentVariable("SPEEDLE_ENDPOINT") ?? "https://cloud.speedle.io"),
-        Auth = Auth.Bearer(Environment.GetEnvironmentVariable("SPEEDLE_TOKEN") ?? ""),
-        ServiceName = Environment.GetEnvironmentVariable("SPEEDLE_SERVICE") ?? "",
-    });
-
-    bool allowed = await speedle.IsAllowedAsync("alice", "get", "/docs/public");
-    Console.WriteLine($"alice get /docs/public: allowed={allowed}");
-
-    Decision d = await speedle.CheckAsync("alice", "delete", "/docs/public");
-    Console.WriteLine($"alice delete /docs/public: allowed={d.Allowed} reason={d.Reason}");
-}
-catch (SpeedleException e)
-{
-    Console.Error.WriteLine($"Speedle error: {e.Message}");
-    return 1;
-}
-return 0;
-```
-
-환경 변수를 설정하고 실행합니다. `read -rs`를 사용하면 API 키이 셸 기록이나 화면에 노출되지 않습니다:
-
-```bash
-export SPEEDLE_SERVICE=docs
-read -rs SPEEDLE_TOKEN && export SPEEDLE_TOKEN
-dotnet run
-```
-
-서비스에 예제 정책이 있는 경우 출력:
-
-```text
-alice get /docs/public: allowed=True
-alice delete /docs/public: allowed=False reason=NoApplicablePolicies
-```
-
-API 키은 서버 측 비밀 값입니다. 브라우저, 모바일 앱 또는 데스크톱 클라이언트에 절대 배포하지 마십시오.
 
 ## 오류 처리
 

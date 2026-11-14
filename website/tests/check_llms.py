@@ -178,10 +178,10 @@ def check_llms(root, external):
         if line.startswith("- ["):
             if not BULLET_LINK.match(line):
                 failures.append(f"llms.txt bullet is not an annotated absolute link: {line}")
-    for fact in ("0.2.0", "@speedle/sdk", "@speedle/mcp", "opens soon"):
+    for fact in ("0.2.0", "@speedle/sdk", "@speedle/mcp"):
         if fact not in text:
             failures.append(f"llms.txt is missing the current statement containing {fact!r}")
-    for cross in ("https://ai.speedle.io/llms.txt", "https://cloud.speedle.io/llms.txt"):
+    for cross in ("https://ai.speedle.io/llms.txt",):
         if cross not in text:
             failures.append(f"llms.txt must link {cross}")
     link_failures, internal, remote = check_links("llms.txt", text, root, external)

@@ -89,6 +89,16 @@ Antes de ejecutar los ejemplos Compile .</description>
     </item>
     
     <item>
+      <title>Extender el servicio de decisiones</title>
+      <link>https://engine.speedle.io/es/docs/extending-decision-service/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+
+      <guid>https://engine.speedle.io/es/docs/extending-decision-service/</guid>
+      <description>Implemente store.StoreBuilder y devuelva un almacén que cumpla las interfaces de pms.PolicyStoreManager que necesite su aplicación. Registre el constructor con un nombre único mediante store.Register en la función init de su paquete e importe ese paquete en su ejecutable. Los programas estándar importan los almacenes en cmd/speedle-ads/stores.go y cmd/speedle-pms/stores.go. GetStoreParams relaciona los indicadores de línea de comandos con las propiedades del almacén.
+Para un servicio embebido, pase su almacén a eval.</description>
+    </item>
+
+    <item>
       <title>Seguridad</title>
       <link>https://engine.speedle.io/es/docs/security/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

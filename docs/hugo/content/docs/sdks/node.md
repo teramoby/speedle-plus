@@ -1,6 +1,6 @@
 +++
 title = "Node.js/TypeScript SDK"
-description = "Add the Speedle Node.js/TypeScript SDK and check authorization against a local Speedle or Speedle Cloud."
+description = "Add the Speedle Node.js/TypeScript SDK and check authorization against a local Speedle."
 weight = 60
 aliases = ["/docs/api/sdk-node/"]
 draft = false
@@ -8,7 +8,7 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "Install @speedle/sdk with npm, then call isAllowed and check against a local Speedle or Speedle Cloud."
+bref = "Install @speedle/sdk with npm, then call isAllowed and check against a local Speedle."
 lastmod = 2026-11-10T09:48:45+08:00
 +++
 
@@ -71,54 +71,6 @@ alice get /docs/public: allowed=true
 alice delete /docs/public: allowed=false reason=NoApplicablePolicies
 ```
 
-## Call Speedle Cloud
-
-> **Speedle Cloud is coming soon.**
-
-The program reads the service name from `SPEEDLE_SERVICE` and an account API key with the `ads` scope from `SPEEDLE_TOKEN`. `SPEEDLE_ENDPOINT` overrides the default endpoint `https://cloud.speedle.io`. Replace `main.ts` with:
-
-```typescript
-import { Auth, Reason, SpeedleClient, SpeedleError } from "@speedle/sdk";
-
-try {
-  const speedle = new SpeedleClient({
-    backend: "speedle-cloud",
-    endpoint: process.env.SPEEDLE_ENDPOINT ?? "https://cloud.speedle.io",
-    auth: Auth.bearer(process.env.SPEEDLE_TOKEN ?? ""),
-    serviceName: process.env.SPEEDLE_SERVICE ?? "",
-  });
-  try {
-    const allowed = await speedle.isAllowed("alice", "get", "/docs/public");
-    console.log(`alice get /docs/public: allowed=${allowed}`);
-
-    const d = await speedle.check("alice", "delete", "/docs/public");
-    console.log(`alice delete /docs/public: allowed=${d.allowed} reason=${Reason[d.reason] ?? d.reason}`);
-  } finally {
-    await speedle.close();
-  }
-} catch (e) {
-  if (!(e instanceof SpeedleError)) throw e;
-  console.error(`Speedle error: ${e.message}`);
-  process.exitCode = 1;
-}
-```
-
-Set the environment and run it. `read -rs` keeps the API key out of your shell history and screen:
-
-```bash
-export SPEEDLE_SERVICE=docs
-read -rs SPEEDLE_TOKEN && export SPEEDLE_TOKEN
-node main.ts
-```
-
-Output, when the service has the example policy:
-
-```text
-alice get /docs/public: allowed=true
-alice delete /docs/public: allowed=false reason=NoApplicablePolicies
-```
-
-The API key is a server-side secret. Never ship it to browsers, mobile apps or desktop clients.
 
 ## Speedle MCP
 

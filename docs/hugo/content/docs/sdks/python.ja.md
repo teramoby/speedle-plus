@@ -1,6 +1,6 @@
 +++
 title = "Python SDK"
-description = "Speedle Python SDK を追加し、ローカルの Speedle または Speedle Cloud に対して認可チェックを実行"
+description = "Speedle Python SDK を追加し、ローカルの Speedle に対して認可チェックを実行"
 weight = 20
 aliases = ["/ja/docs/api/sdk-python/"]
 draft = false
@@ -8,7 +8,7 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "pip または uv で speedle 0.2.0 をインストールし、ローカルの Speedle または Speedle Cloud に対して is_allowed と check を呼び出します。"
+bref = "pip または uv で speedle 0.2.0 をインストールし、ローカルの Speedle に対して is_allowed と check を呼び出します。"
 lastmod = 2026-11-07T19:43:15+08:00
 +++
 
@@ -71,51 +71,6 @@ alice get /docs/public: allowed=True
 alice delete /docs/public: allowed=False reason=<Reason.NO_APPLICABLE_POLICIES: 3>
 ```
 
-## Speedle Cloud の呼び出し
-
-> **Speedle Cloud はまもなく公開されます。**
-
-プログラムは `SPEEDLE_SERVICE` からサービス名を、`SPEEDLE_TOKEN` から`ads` スコープのアカウント API キーを読み取ります。`SPEEDLE_ENDPOINT` はデフォルトのエンドポイント `https://cloud.speedle.io` を上書きします。`main.py` を以下に置き換えます:
-
-```python
-import os
-import sys
-
-from speedle import Auth, Client, SpeedleError
-
-try:
-    with Client(
-        backend="speedle-cloud",
-        endpoint=os.environ.get("SPEEDLE_ENDPOINT", "https://cloud.speedle.io"),
-        auth=Auth.bearer(os.environ["SPEEDLE_TOKEN"]),
-        service_name=os.environ["SPEEDLE_SERVICE"],
-    ) as speedle:
-        allowed = speedle.is_allowed("alice", "get", "/docs/public")
-        print(f"alice get /docs/public: allowed={allowed}")
-
-        decision = speedle.check("alice", "delete", "/docs/public")
-        print(f"alice delete /docs/public: allowed={decision.allowed} reason={decision.reason!r}")
-except SpeedleError as e:
-    print(f"Speedle error: {e}", file=sys.stderr)
-    sys.exit(1)
-```
-
-環境変数を設定して実行します。`read -rs` を使用すると、API キーがシェルの履歴や画面に表示されません:
-
-```bash
-export SPEEDLE_SERVICE=docs
-read -rs SPEEDLE_TOKEN && export SPEEDLE_TOKEN
-python main.py
-```
-
-サービスにサンプルポリシーが存在する場合の出力:
-
-```text
-alice get /docs/public: allowed=True
-alice delete /docs/public: allowed=False reason=<Reason.NO_APPLICABLE_POLICIES: 3>
-```
-
-API キーはサーバー側のシークレットです。ブラウザ、モバイルアプリ、またはデスクトップクライアントには絶対に配布しないでください。
 
 ## エラー処理
 

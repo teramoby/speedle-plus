@@ -1,6 +1,6 @@
 +++
 title = "Go SDK"
-description = "添加 Speedle Go SDK，向本地 Speedle 或 Speedle Cloud 发起授权检查。"
+description = "添加 Speedle Go SDK，向本地 Speedle 发起授权检查。"
 weight = 30
 aliases = ["/zh/docs/api/sdk-go/"]
 draft = false
@@ -8,7 +8,7 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "用 go get 添加 github.com/teramoby/speedle-sdk/go v0.2.0，再向本地 Speedle 或 Speedle Cloud 调用 IsAllowed 与 Check。"
+bref = "用 go get 添加 github.com/teramoby/speedle-sdk/go v0.2.0，再向本地 Speedle 调用 IsAllowed 与 Check。"
 lastmod = 2026-11-08T11:21:16+08:00
 +++
 
@@ -83,73 +83,6 @@ alice get /docs/public: allowed=true
 alice delete /docs/public: allowed=false reason=NO_APPLICABLE_POLICIES
 ```
 
-## 调用 Speedle Cloud
-
-> **Speedle Cloud 即将上线。**
-
-程序从 `SPEEDLE_SERVICE` 读取服务名，从 `SPEEDLE_TOKEN` 读取具有 `ads` 权限范围的账号 API 密钥。`SPEEDLE_ENDPOINT` 可覆盖默认端点 `https://cloud.speedle.io`。将 `main.go` 替换为：
-
-```go
-package main
-
-import (
-	"context"
-	"fmt"
-	"os"
-
-	speedle "github.com/teramoby/speedle-sdk/go"
-)
-
-func main() {
-	endpoint := os.Getenv("SPEEDLE_ENDPOINT")
-	if endpoint == "" {
-		endpoint = "https://cloud.speedle.io"
-	}
-	client, err := speedle.NewClient(speedle.Config{
-		Backend:     speedle.BackendSpeedleCloud,
-		Endpoint:    endpoint,
-		Auth:        speedle.BearerToken(os.Getenv("SPEEDLE_TOKEN")),
-		ServiceName: os.Getenv("SPEEDLE_SERVICE"),
-	})
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Speedle error:", err)
-		os.Exit(1)
-	}
-	defer client.Close()
-
-	ctx := context.Background()
-	allowed, err := client.IsAllowed(ctx, speedle.User("alice"), "get", "/docs/public", nil)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Speedle error:", err)
-		os.Exit(1)
-	}
-	fmt.Printf("alice get /docs/public: allowed=%t\n", allowed)
-
-	d, err := client.Check(ctx, speedle.User("alice"), "delete", "/docs/public", nil)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Speedle error:", err)
-		os.Exit(1)
-	}
-	fmt.Printf("alice delete /docs/public: allowed=%t reason=%s\n", d.Allowed, d.Reason)
-}
-```
-
-设置环境变量后运行。`read -rs` 不会把API 密钥写入 shell 历史，也不会显示在屏幕上：
-
-```bash
-export SPEEDLE_SERVICE=docs
-read -rs SPEEDLE_TOKEN && export SPEEDLE_TOKEN
-go run .
-```
-
-服务中已有示例策略时，输出为：
-
-```text
-alice get /docs/public: allowed=true
-alice delete /docs/public: allowed=false reason=NO_APPLICABLE_POLICIES
-```
-
-API 密钥是服务端密钥，切勿放进浏览器、移动应用或桌面客户端。
 
 ## 错误处理
 

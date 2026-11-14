@@ -80,11 +80,27 @@
     
     <li>
   <h2 class="title2">
-    <a href="/zh/docs/spdl/" itemprop="headline">SPDL：Speedle 策略定义语言</a>
+    <a href="/zh/docs/sdks/java/" itemprop="headline">Java SDK</a>
   </h2>
   
-  <p itemprop="about">SPDL 的全称是 Speedle Policy Definition Language（Speedle 策略定义语言），用于编写 Speedle 策略和角色策略。</p>
+  <p itemprop="about">添加 Speedle Java SDK，向本地 Speedle 发起授权检查。</p>
   
+  
+  <p itemprop="about">用 Maven 或 Gradle 添加 io.speedle:speedle-sdk 0.2.0，再向本地 Speedle 调用 isAllowed 与 check。</p>
+
+  <hr />
+</li>
+
+    
+    <li>
+  <h2 class="title2">
+    <a href="/zh/docs/deployment/docker/" itemprop="headline">Docker 镜像</a>
+  </h2>
+  
+  <p itemprop="about">用已发布的 Speedle 镜像运行 speedle-pms、speedle-ads 和 spctl。</p>
+  
+  
+  <p itemprop="about">Docker Hub 和 GHCR 上的同一个镜像运行策略管理服务、决策服务和 spctl，并共用一份文件存储。</p>
   
   <hr />
 </li>
@@ -92,13 +108,13 @@
     
     <li>
   <h2 class="title2">
-    <a href="/zh/docs/sdks/python/" itemprop="headline">Python SDK</a>
+    <a href="/zh/docs/sdks/go/" itemprop="headline">Go SDK</a>
   </h2>
   
-  <p itemprop="about">添加 Speedle Python SDK，向本地 Speedle 或 Speedle Cloud 发起授权检查。</p>
+  <p itemprop="about">添加 Speedle Go SDK，向本地 Speedle 发起授权检查。</p>
+
   
-  
-  <p itemprop="about">用 pip 或 uv 安装 speedle 0.2.0，再向本地 Speedle 或 Speedle Cloud 调用 is_allowed 与 check。</p>
+  <p itemprop="about">用 go get 添加 github.com/teramoby/speedle-sdk/go v0.2.0，再向本地 Speedle 调用 IsAllowed 与 Check。</p>
   
   <hr />
 </li>
@@ -106,25 +122,13 @@
     
     <li>
   <h2 class="title2">
-    <a href="/zh/docs/decisions/" itemprop="headline">授权决策</a>
+    <a href="/zh/docs/deployment/homebrew/" itemprop="headline">Homebrew 安装</a>
   </h2>
   
-  <p itemprop="about">获取服务访问请求的授权决策，并查询已授予的角色和权限。</p>
+  <p itemprop="about">用 Homebrew 安装 speedle-spctl、speedle-pms 和 speedle-ads，并在本机跑一次演示。</p>
   
   
-  <hr />
-</li>
-
-    
-    <li>
-  <h2 class="title2">
-    <a href="/zh/docs/cloud/api-reference/" itemprop="headline">API 参考</a>
-  </h2>
-  
-  <p itemprop="about">Speedle Cloud API 参考：使用 API key 进行授权检查和策略管理。请求从你的服务器发出；本页只读。</p>
-  
-  
-  <p itemprop="about">Speedle Cloud API 参考：使用 API key 进行授权检查和策略管理。请求从你的服务器发出；本页只读。</p>
+  <p itemprop="about">Homebrew 安装命令行工具和两个服务，并让它们在 127.0.0.1 上共用一份策略文件。</p>
   
   <hr />
 </li>

@@ -38,6 +38,7 @@ FULL_PAGES = [
     "docs/pms/global-policy",
     "docs/pms/discover",
     "docs/pms/diagnosis",
+    "docs/extending-decision-service",
     "docs/custom-function",
     "docs/assertor",
     "docs/idd",
@@ -56,12 +57,6 @@ FULL_PAGES = [
     "docs/deployment/embedded",
     "docs/deployment/docker",
     "docs/deployment/homebrew",
-    "docs/cloud/_index",
-    "docs/cloud/getting-started",
-    "docs/cloud/tokens",
-    "docs/cloud/authorization-api",
-    "docs/cloud/api-reference",
-    "docs/cloud/limits-and-errors",
     "docs/store/_index",
     "docs/store/mysql",
     "docs/store/etcd",
@@ -110,12 +105,6 @@ ANNOTATIONS = {
     "docs/deployment/embedded": "Embed the evaluator in a Go application with Go modules and check Allow and Deny.",
     "docs/deployment/docker": "Run speedle-pms, speedle-ads and spctl from docker.io/speedle/speedle and ghcr.io/teramoby/speedle.",
     "docs/deployment/homebrew": "Install speedle-spctl, speedle-pms and speedle-ads with Homebrew and run them on 127.0.0.1 with one shared policy file.",
-    "docs/cloud/_index": "Hosted authorization for developers: sign-in and account management, SPDL policies, account API keys, the authorization API, limits, errors and downloads.",
-    "docs/cloud/getting-started": "The console workflow: sign-in and account settings, a service, SPDL policies, session management requests, Playground tests and policy export.",
-    "docs/cloud/tokens": "Create, protect, list and revoke account API keys with a required expiry and a fixed scope, with one-time secret disclosure and recent authentication.",
-    "docs/cloud/authorization-api": "The published ADS IsAllowed request and response contract, with caller identity, a Node.js 22 example, policy snapshots and transport constraints.",
-    "docs/cloud/api-reference": "Reference for the Speedle Cloud API: authorization checks and policy management with an API key. Requests run from your server; this page is read-only.",
-    "docs/cloud/limits-and-errors": "Account quotas, request limits, flat JSON errors, rate and quota headers, daily accounting and retry guidance.",
     "docs/versions": "Release history and semantic versioning.",
 }
 
@@ -131,9 +120,7 @@ FIXED_LINKS = {
     "modeler": ("https://ai.speedle.io/#policy-modeler", "The open-source policy-modeler Agent Skill turns employee handbooks and regulations into RBAC + ABAC SPDL models with tests."),
     "mcp_repository": ("https://github.com/teramoby/speedle-mcp/", "Speedle MCP server source. `@speedle/mcp` 0.2.1 is published on npm with check and manage modes. Run the `speedle-mcp` binary with `npx @speedle/mcp@0.2.1 check`."),
     "modeler_skill": ("https://raw.githubusercontent.com/teramoby/ai.speedle.io/main/skills/speedle-policy-modeler/SKILL.md", "The entry point for the policy-modeler Agent Skill; its repository folder holds references, scripts, templates and English/Chinese example runs."),
-    "cloud": ("https://cloud.speedle.io/", "Speedle Cloud, a hosted authorization service. Free public beta; sign-in opens soon."),
     "ai_llms": ("https://ai.speedle.io/llms.txt", "Speedle AI's own llms.txt index."),
-    "cloud_llms": ("https://cloud.speedle.io/llms.txt", "Speedle Cloud's own llms.txt index."),
 }
 
 ZH_LINKS = [
@@ -141,7 +128,6 @@ ZH_LINKS = [
     ("中文文档", "https://engine.speedle.io/zh/docs/", "概念、策略管理、部署、API 与 SDK 的中文文档。"),
     ("SPDL 中文参考", "https://engine.speedle.io/zh/docs/spdl/", "SPDL 策略与角色策略语法、条件、属性与函数。"),
     ("中文快速开始", "https://engine.speedle.io/zh/quick-start/", "安装 Speedle 并做出第一个授权决策。"),
-    ("Speedle Cloud 中文文档", "https://engine.speedle.io/zh/docs/cloud/", "Speedle Cloud 托管授权文档：账号与策略管理、API 密钥、授权 API、限制与错误。"),
     ("SDK 中文文档", "https://engine.speedle.io/zh/docs/sdks/", "六种语言 SDK 的中文文档。"),
     ("部署中文文档", "https://engine.speedle.io/zh/docs/deployment/", "嵌入模式、Docker 镜像、Homebrew，以及独立的 PMS 和 ADS。"),
 ]
@@ -151,7 +137,6 @@ JA_LINKS = [
     ("日本語ドキュメント", "https://engine.speedle.io/ja/docs/", "概念、ポリシー管理、デプロイ、API、SDK の日本語ドキュメント。"),
     ("SPDL 日本語リファレンス", "https://engine.speedle.io/ja/docs/spdl/", "SPDL のポリシーとロールポリシーの構文、条件、属性、関数。"),
     ("クイックスタート", "https://engine.speedle.io/ja/quick-start/", "Speedle をインストールして最初の認可判定を得る。"),
-    ("Speedle Cloud 日本語ドキュメント", "https://engine.speedle.io/ja/docs/cloud/", "Speedle Cloud のホスト型認可ドキュメント：アカウントとポリシー管理、API キー、認可 API、制限とエラー。"),
     ("SDK 日本語ドキュメント", "https://engine.speedle.io/ja/docs/sdks/", "6 言語の SDK の日本語ドキュメント。"),
     ("デプロイ", "https://engine.speedle.io/ja/docs/deployment/", "組み込みモード、Docker イメージ、スタンドアロンの PMS と ADS。"),
 ]
@@ -161,7 +146,6 @@ KO_LINKS = [
     ("한국어 문서", "https://engine.speedle.io/ko/docs/", "개념, 정책 관리, 배포, API, SDK의 한국어 문서。"),
     ("SPDL 한국어 참고", "https://engine.speedle.io/ko/docs/spdl/", "SPDL 정책과 역할 정책의 구문, 조건, 속성, 함수。"),
     ("빠른 시작", "https://engine.speedle.io/ko/quick-start/", "Speedle을 설치하고 첫 인가 결정을 받습니다。"),
-    ("Speedle Cloud 한국어 문서", "https://engine.speedle.io/ko/docs/cloud/", "Speedle Cloud 호스팅 인가 문서: 계정과 정책 관리, API 키, 인가 API, 제한과 오류。"),
     ("SDK 한국어 문서", "https://engine.speedle.io/ko/docs/sdks/", "여섯 언어 SDK의 한국어 문서。"),
     ("배포", "https://engine.speedle.io/ko/docs/deployment/", "임베디드 모드, Docker 이미지, 독립 실행형 PMS와 ADS。"),
 ]
@@ -171,7 +155,6 @@ ES_LINKS = [
     ("Documentación en español", "https://engine.speedle.io/es/docs/", "Documentación en español de conceptos, gestión de políticas, despliegue, API y SDK."),
     ("Referencia de SPDL en español", "https://engine.speedle.io/es/docs/spdl/", "Sintaxis de políticas y políticas de roles de SPDL, condiciones, atributos y funciones."),
     ("Inicio rápido", "https://engine.speedle.io/es/quick-start/", "Instale Speedle y obtenga la primera decisión de autorización."),
-    ("Documentación de Speedle Cloud en español", "https://engine.speedle.io/es/docs/cloud/", "Documentación de la autorización hospedada de Speedle Cloud: cuentas, políticas, claves API de cuenta, API de autorización, límites y errores."),
     ("Documentación de SDK en español", "https://engine.speedle.io/es/docs/sdks/", "Documentación en español de los SDK en seis lenguajes."),
     ("Despliegue", "https://engine.speedle.io/es/docs/deployment/", "Modo embebido, imagen de Docker y PMS y ADS independientes."),
 ]
@@ -342,6 +325,7 @@ def render_llms(pages, definition):
             item("docs/spdl"),
             item("docs/pms/policy-mgmt"),
             item("docs/decisions"),
+            item("docs/extending-decision-service"),
             item("docs/custom-function"),
             item("docs/api/decision_api"),
             item("docs/api/management_api"),
@@ -362,15 +346,6 @@ def render_llms(pages, definition):
             item("docs/deployment/embedded"),
             item("docs/deployment/docker"),
             item("docs/deployment/homebrew"),
-        ]),
-        section("Speedle Cloud", [
-            item("docs/cloud/_index"),
-            item("docs/cloud/getting-started"),
-            item("docs/cloud/tokens"),
-            item("docs/cloud/authorization-api"),
-            item("docs/cloud/api-reference"),
-            item("docs/cloud/limits-and-errors"),
-            fixed("cloud", "cloud.speedle.io"),
         ]),
         section("Speedle AI", [
             fixed("ai", "Speedle AI"),
@@ -400,7 +375,6 @@ def render_llms(pages, definition):
         ]),
         section("Other Speedle sites", [
             fixed("ai_llms", "Speedle AI llms.txt"),
-            fixed("cloud_llms", "Speedle Cloud llms.txt"),
         ]),
     ]
     return "\n\n".join(blocks) + "\n"

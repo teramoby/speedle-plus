@@ -148,19 +148,7 @@
 </ul>
 
 </li>
-
-
-
-<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ko/docs/cloud/">Speedle Cloud</a></span>
-<ul class="">
-<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/getting-started/">Speedle Cloud 빠른 시작</a></li>
-<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/tokens/">API 키</a></li>
-<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/authorization-api/">인가 API</a></li>
-<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/api-reference/">API 레퍼런스</a></li>
-<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/limits-and-errors/">제한과 오류</a></li>
-</ul>
-
-</li>
+<li data-docs-depth="0" class=""><a href="/ko/docs/extending-decision-service/">결정 서비스 확장</a></li>
 <li data-docs-depth="0" class=""><a href="/ko/docs/security/">보안</a></li>
 <li data-docs-depth="0" class=""><a href="/ko/docs/logging/">로깅 프레임워크</a></li>
 <li data-docs-depth="0" class=""><a href="/ko/docs/versions/">버전</a></li>
@@ -181,7 +169,7 @@
   <h1>SDK</h1>
   <p></p>
 
-<p>Speedle SDK는 결정 API <code>POST /authz-check/v1/is-allowed</code>의 클라이언트 라이브러리입니다. 자체 호스팅 Speedle ADS 및 Speedle Cloud 모두에서 작동합니다. 각 언어 페이지에서는 패키지 추가 방법을 설명하고 두 환경 모두에 대해 테스트를 거친 완전한 프로그램을 제공합니다. 소스 코드와 전체 참조 문서는 <a href="https://github.com/teramoby/speedle-sdk">teramoby/speedle-sdk</a>에서 확인할 수 있습니다. 이 예제들에서 사용할 PMS 및 ADS 실행 방법에 대해서는 <a href="/ko/docs/deployment/">배포</a>와 <a href="/ko/docs/deployment/docker/">Docker 이미지</a>를 참조하십시오.</p>
+<p>Speedle SDK는 결정 API <code>POST /authz-check/v1/is-allowed</code>의 클라이언트 라이브러리입니다. 자체 호스팅 Speedle ADS에서 작동합니다. 각 언어 페이지에서는 패키지 추가 방법을 설명하고 자체 호스팅 환경에 대해 테스트를 거친 완전한 프로그램을 제공합니다. 소스 코드와 전체 참조 문서는 <a href="https://github.com/teramoby/speedle-sdk">teramoby/speedle-sdk</a>에서 확인할 수 있습니다. 이 예제들에서 사용할 PMS 및 ADS 실행 방법에 대해서는 <a href="/ko/docs/deployment/">배포</a>와 <a href="/ko/docs/deployment/docker/">Docker 이미지</a>를 참조하십시오.</p>
 
 <h2 id="패키지">패키지</h2>
 
@@ -221,11 +209,6 @@
 <td>자체 호스팅 Speedle ADS</td>
 <td>6개 SDK 모두 지원</td>
 </tr>
-
-<tr>
-<td>Speedle Cloud</td>
-<td>출시 예정</td>
-</tr>
 </tbody>
 </table>
 
@@ -239,8 +222,6 @@
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service docs
 ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c <span style="color:#f1fa8c">&#34;grant user alice get,list /docs/public&#34;</span> --service-name<span style="color:#ff79c6">=</span>docs</code></pre></div>
 <p>로컬 예제는 자격 증명 없이 <code>http://localhost:6734</code>에 연결합니다. SDK는 루프백 호스트에 대해서만 일반 텍스트 <code>http://</code>를 허용하며, 다른 ADS 호스트에 연결할 때는 HTTPS를 사용해야 합니다.</p>
-
-<p>Speedle Cloud 예제는 <code>https://cloud.speedle.io</code>에 연결하며 환경 변수 <code>SPEEDLE_SERVICE</code> 및 <code>SPEEDLE_TOKEN</code>에서 서비스 이름과 <code>ads</code> 범위의 계정 API 키을 읽습니다. 해당 서비스에 동일한 정책을 생성하면 동일한 결과를 얻을 수 있습니다. API 키은 서버 측 비밀 값이므로 브라우저, 모바일 앱 또는 데스크톱 클라이언트에 절대 노출하지 마십시오.</p>
 </div></main>
         </div>
     </div>

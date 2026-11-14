@@ -4,7 +4,7 @@ icon = "Speedle_logo_about.svg"
 lastmod = 2026-11-08T19:23:52+08:00
 +++
 
-Speedle は、SPDL ポリシー言語を採用したオープンソース（UPL-1.0）認可エンジンです。ADS（認可決定）と PMS（ポリシー管理）、6つの言語の SDK、Speedle Cloud（ホスト型サービス）、および Speedle AI（AI エージェント向けおよび AI 支援による認可、MCP サーバー、policy-modeler スキル）で構成されています。
+Speedle は、SPDL ポリシー言語を採用したオープンソース（UPL-1.0）認可エンジンです。ADS（認可決定）と PMS（ポリシー管理）、6つの言語の SDK、および Speedle AI（AI エージェント向けおよび AI 支援による認可、MCP サーバー、policy-modeler スキル）で構成されています。
 
 Speedle は Oracle Entitlements Server（OES）を開発したチームによって構築されました。その設計は、OES、BEA ALES/WLES、CrossLogix などの以前の認可製品に関する同チームの長年にわたる製品反復の経験に基づいています。
 

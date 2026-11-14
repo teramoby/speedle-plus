@@ -93,6 +93,16 @@ The Token Assertion Plugin API uses integer errCode and an optional attribute ob
     </item>
     
     <item>
+      <title>Extending the decision service</title>
+      <link>https://engine.speedle.io/docs/extending-decision-service/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+
+      <guid>https://engine.speedle.io/docs/extending-decision-service/</guid>
+      <description>Implement store.StoreBuilder and return a store implementing the pms.PolicyStoreManager interfaces needed by your application. Register the builder under a unique name with store.Register in your package&amp;rsquo;s init function. Import that package in your executable; the standard binaries link stores through cmd/speedle-ads/stores.go and cmd/speedle-pms/stores.go. GetStoreParams maps command-line flags to store properties.
+For an embedded service, pass your store to eval.NewWithStore and pass the resulting evaluator to adsrest.NewRouter or adsgrpc.NewGRPCService. A store that must receive change events can implement store.</description>
+    </item>
+
+    <item>
       <title>Security</title>
       <link>https://engine.speedle.io/docs/security/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

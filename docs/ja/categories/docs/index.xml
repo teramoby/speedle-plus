@@ -12,6 +12,19 @@
     
     
     <item>
+      <title>Rust SDK</title>
+      <link>https://engine.speedle.io/ja/docs/sdks/rust/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+
+      <guid>https://engine.speedle.io/ja/docs/sdks/rust/</guid>
+      <description>Rust SDK は Rust 1.75 以降が必要です。tokio と reqwest (rustls) をベースにした非同期構成です。blocking 機能により、以下で使用するブロッキングクライアントが追加されます。クレート: crates.io の speedle 0.2.0。リファレンス: speedle-sdk/rust。
+サンプルでは、SDK 概要 で説明されているポリシーをチェックします。
+依存関係の追加 新しいパッケージを作成します:
+cargo new speedle-example cd speedle-example cargo add speedle@0.2.0 --features blocking ローカルの Speedle の呼び出し SDK 概要 の説明に従って Speedle を起動し、サンプルポリシーを作成します。src/main.rs を以下に置き換えます:
+use speedle::blocking::Client; use speedle::{Auth, Backend}; fn main() { if let Err(e) = run() { eprintln!(&amp;#34;Speedle error: {e}&amp;#34;); std::process::exit(1); } } fn run() -&amp;gt; Result&amp;lt;(), speedle::Error&amp;gt; { let speedle = Client::builder(Backend::Speedle, &amp;#34;http://localhost:6734&amp;#34;, Auth::none(), &amp;#34;docs&amp;#34;).</description>
+    </item>
+
+    <item>
       <title>ポリシー管理</title>
       <link>https://engine.speedle.io/ja/docs/pms/policy-mgmt/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -87,6 +100,32 @@ printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json ターミナル 1 で 
 ./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6734 --grpc-endpoint 127.0.0.1:0 --insecure=true 残りのコマンドは 3 つ目のターミナルで実行します。PMS と ADS は同じファイルを共有し、変更は watch を通じて非同期に伝播します。新しいポリシーに依存する前に、更新が反映されていることを確認してください。--insecure=true はローカルのループバック用です。本番環境の接続については セキュリティ を参照してください。明示的な PMS アドレスの指定により、~/.</description>
     </item>
     
+    <item>
+      <title>トークンアサーター</title>
+      <link>https://engine.speedle.io/ja/docs/assertor/</link>
+      <pubDate>Mon, 21 Jan 2019 09:28:30 +0800</pubDate>
+
+      <guid>https://engine.speedle.io/ja/docs/assertor/</guid>
+      <description>トークンアサーターの役割 設定されたアサーターはトークンを検証し、アイデンティティドメインを含む明示的なプリンシパルを返します。Speedle はそれらのアイデンティティを使用してポリシーを評価します。本番環境の実装では、トークンの署名またはイントロスペクション結果、発行者、対象者、有効期限、およびプロバイダー固有の要件を検証する必要があります。Webhook インターフェースがあること自体は、任意の OAuth/OIDC トークンとの自動互換性を意味するものではありません。
+トークンアサーション API の errCode は整数型であり、オプションの属性はオブジェクトであり、型付き属性配列ではありません。asserterWebhookConfig.endpoint は完全な URL です。以下の例では /v1/assert を使用します。
+確定的なローカルモックの実行 このモックは、githubtoken/github、googletoken/google、gitlabtoken/gitlab の 3 組の入力のみを認識し、それぞれ対応するドメインの user1 を表します。トークンとプロバイダーのペアが一致しない場合は失敗します。これはテスト用フィクスチャであり、実際のトークン検証ではありません。 トークンの値は記録されません。ループバックアドレスのみにバインドし、本番環境では実際のプロバイダー統合に置き換えてください。
+リポジトリルートから別のターミナルで起動します:
+go run ./website/tests/examples/asserter // A deterministic mock for the token-assertion tutorial. Never use for real tokens. package main import ( &amp;#34;encoding/json&amp;#34; &amp;#34;flag&amp;#34; &amp;#34;log&amp;#34; &amp;#34;net/http&amp;#34; &amp;#34;strings&amp;#34; &amp;#34;time&amp;#34; ) type principal struct { Type string `json:&amp;#34;type&amp;#34;` Name string `json:&amp;#34;name&amp;#34;` IDD string `json:&amp;#34;idd&amp;#34;` } type response struct { Principals []principal `json:&amp;#34;principals,omitempty&amp;#34;` ErrCode int `json:&amp;#34;errCode&amp;#34;` ErrMessage string `json:&amp;#34;errMessage,omitempty&amp;#34;` } func assert(w http.</description>
+    </item>
+
+    <item>
+      <title>API</title>
+      <link>https://engine.speedle.io/ja/docs/api/</link>
+      <pubDate>Tue, 10 Nov 2026 14:45:43 +0800</pubDate>
+
+      <guid>https://engine.speedle.io/ja/docs/api/</guid>
+      <description>Java、Python、Go、.NET、Rust、Node.js/TypeScript 向けのクライアントライブラリは SDK にあります。
+REST API これらは 構成された PMS/ADS またはアサーターエンドポイント の参照仕様です。speedle.io はドキュメントとブラウザ Playground を配信しており、ホスト型の PMS/ADS サービスではありません。Content-Type: application/json で JSON を提供し、TLS/mTLS とアクセス制御 を構成してください。
+ ポリシー管理 API 認可決定 API トークンアサーション Webhook  ポリシーおよびロールポリシーの ID は文字列です。PMS のレスポンスはフラットなオブジェクトであり、認可権限には permissions（複数形）を使用します。REST の決定リクエストは型付き属性配列を使用しますが、診断レスポンス属性および Webhook 属性はオブジェクトです。
+gRPC API  PMS proto: pb.PolicyManager ADS proto: pb.Evaluator  現在の proto と生成されたクライアントを一緒に使用してください。PMS は pb.PolicyManager を使用し、ADS は pb.Evaluator を使用します。gRPC はサーバーが --grpc-endpoint で起動されない限り無効であり、REST と同じ TLS 設定を使用します。
+組み込み Go API  ポリシー管理インターフェース 認可決定インターフェース  完全なアプリケーションとリソースのライフサイクルの例については、組み込みモード を参照してください。</description>
+    </item>
+
     <item>
       <title>Docker イメージ</title>
       <link>https://engine.speedle.io/ja/docs/deployment/docker/</link>
@@ -173,6 +212,19 @@ docker run --name speedle-mysql --detach \  --publish 127.</description>
     </item>
     
     <item>
+      <title>Node.js/TypeScript SDK</title>
+      <link>https://engine.speedle.io/ja/docs/sdks/node/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+
+      <guid>https://engine.speedle.io/ja/docs/sdks/node/</guid>
+      <description>Node.js SDK は Node.js 22 以降が必要で、TypeScript の型定義を含む ESM および CommonJS ビルドを提供し、ランタイム依存関係はありません。パッケージ: npm の @speedle/sdk。リファレンス: speedle-sdk/node。
+サンプルでは、SDK 概要 で説明されているポリシーをチェックします。
+依存関係の追加 新しい ES モジュールパッケージを作成します:
+mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm install @speedle/sdk@0.2.1 ローカルの Speedle の呼び出し SDK 概要 の説明に従って Speedle を起動し、サンプルポリシーを作成します。このプログラムを main.ts として保存します:
+import { Auth, Reason, SpeedleClient, SpeedleError } from &amp;#34;@speedle/sdk&amp;#34;; try { const speedle = new SpeedleClient({ backend: &amp;#34;speedle&amp;#34;, endpoint: &amp;#34;http://localhost:6734&amp;#34;, auth: Auth.none(), serviceName: &amp;#34;docs&amp;#34;, }); try { const allowed = await speedle.</description>
+    </item>
+
+    <item>
       <title>Python SDK</title>
       <link>https://engine.speedle.io/ja/docs/sdks/python/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -187,6 +239,17 @@ import sys from speedle import Auth, Client, SpeedleError try: with Client( back
     </item>
     
     <item>
+      <title>SDK</title>
+      <link>https://engine.speedle.io/ja/docs/sdks/</link>
+      <pubDate>Tue, 10 Nov 2026 14:45:43 +0800</pubDate>
+
+      <guid>https://engine.speedle.io/ja/docs/sdks/</guid>
+      <description>Speedle SDK は、決定 API POST /authz-check/v1/is-allowed のクライアントライブラリです。セルフホストの Speedle ADS で動作します。各言語ページではパッケージの追加方法を説明し、セルフホスト環境向けにテスト済みの完全なプログラムを提供しています。ソースコードと完全なリファレンスは teramoby/speedle-sdk にあります。これらのサンプルで PMS と ADS を実行する方法については、デプロイ と Docker イメージ を参照してください。
+パッケージ Java、Python、Go、.NET、Rust はバージョン 0.2.0 です。@speedle/sdk は npm で公開されています。各言語のインストールコマンドは各ページに記載されています。
+ Java: Maven Central io.speedle:speedle-sdk、公開済み。 Python: PyPI speedle、公開済み。 Go: Go モジュール github.com/teramoby/speedle-sdk/go、公開済み。 C#/.NET: NuGet Speedle.Sdk、公開済み。 Rust: crates.io speedle、公開済み。 Node.js / TypeScript: npm @speedle/sdk、公開済み。  機能    機能 ステータス     isAllowed: 認可決定を返す 6 つの SDK すべて   check: 認可決定と理由（該当するポリシーがない等）を返す 6 つの SDK すべて   セルフホストの Speedle ADS 6 つの SDK すべて    メソッド名は各言語の命名規則に従っています。Python と Rust では is_allowed と check、Go では IsAllowed と Check、.</description>
+    </item>
+
+    <item>
       <title>SPDL: Speedle ポリシー定義言語</title>
       <link>https://engine.speedle.io/ja/docs/spdl/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -196,35 +259,73 @@ import sys from speedle import Auth, Client, SpeedleError try: with Client( back
     </item>
     
     <item>
-      <title>Speedle Cloud API キー</title>
-      <link>https://engine.speedle.io/ja/docs/cloud/tokens/</link>
+      <title>Speedle ポリシー</title>
+      <link>https://engine.speedle.io/ja/docs/pms/</link>
+      <pubDate>Wed, 28 Oct 2026 13:16:58 +0000</pubDate>
+
+      <guid>https://engine.speedle.io/ja/docs/pms/</guid>
+      <description> ポリシー管理 グローバルポリシー ポリシー検出 認可診断  </description>
+    </item>
+
+    <item>
+      <title>etcd セットアップ</title>
+      <link>https://engine.speedle.io/ja/docs/store/etcd/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://engine.speedle.io/ja/docs/cloud/tokens/</guid>
-      <description>API キーはアカウントに属し、スコープに応じてそのアカウントのサービスにアクセスします。アプリケーションを認証するもので、エンドユーザーの認証ではありません。API キー、セッション、連携 ID の管理にはログイン済みのコンソールセッションが必要です。
-Speedle Cloud はまもなく公開されます。 このガイドは、本番環境のサインインと認証付き認可 API が利用可能になった際の手順を説明しています。例は実際の Cloud 環境では実行していません。
-API キーを作成する API キー を開き、前後の空白を除いて 1–128 文字の名前、スコープ、有効期限（7d、30d、90d、180d、365d。コンソールの既定は 3 か月）を指定し、作成を選択します。作成には過去 10 分以内の連携プロバイダーによる認証が必要です。403 reauth_required の場合は再認証後、再び作成を選択してください。プロバイダーから戻るだけでは作成されません。
-各キーには作成後に変更できないスコープが 1 つあります。
-   スコープ アクセス     ads（既定） /authz-check/v1/* による認可チェックのみ。   pms:read /policy-mgmt/v1 によるアカウント内のサービス、認可ポリシー、ロールポリシーの読み取り。   pms:write /policy-mgmt/v1 によるアカウント内のサービス、認可ポリシー、ロールポリシーの読み取り、作成、削除。    管理スコープは ADS を呼び出せず、ads はポリシーを管理できません。不適切なスコープは 403 insufficient_scope です。サインインが閉じている場合の管理スコープの発行は 403 management_scope_disabled です。
-コンソールはセッション認証付きのリクエストを送信します。
-POST /api/tokens Origin: https://cloud.speedle.io X-SC-CSRF: 1 Content-Type: application/json {&amp;#34;name&amp;#34;:&amp;#34;books-app&amp;#34;,&amp;#34;scope&amp;#34;:&amp;#34;ads&amp;#34;,&amp;#34;expiresIn&amp;#34;:&amp;#34;90d&amp;#34;} 入力は name、必須の expiresIn、任意の scope（既定は ads）です。expiresIn は 7d、30d、90d、180d、365d のいずれかです（1 週間、1 か月、3 か月、6 か月、1 年）。1 日は 24 時間です。コンソールの 有効期間 は既定で 3 か月で、送信前に 有効期限のプレビュー (UTC) を表示します。無期限のキーはありません。サービス指定、expiresAt、認証証明は送信しません。expiresIn がない、認識できない、またはクライアントが expiresAt を送った場合は 400 invalid_request です。name と scope だけを送ったリクエストも同じエラーです。サーバーは expiresIn を補いません。セッション Cookie と CSRF ヘッダーが必要で、API キーではセッションを代替できません。</description>
+      <guid>https://engine.speedle.io/ja/docs/store/etcd/</guid>
+      <description>このウォークスルーでは、永続的な Docker ボリュームを備えた外部の etcd v3.6.14 サーバーを使用します。PMS はポリシーを書き込み、ADS は同じキープレフィックスを監視（watch）します。シングルノードのサンプルはローカル開発用にループバックでリッスンし、平文の HTTP を使用します。本番環境の TLS とクラスター構成はウォークスルーの後に説明します。
+1. Speedle のビルド Bash、Git、curl、Docker、および Go 1.26.10 または Go 1.27.3 を準備します。Docker を起動し、ネイティブサービスをビルドします:
+git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads 後続のコマンドはこのチェックアウトから実行します。ローカルポート 2379、6733、6734 を利用可能にしておくか、コマンドと構成を同時に更新してください。
+2. 外部 etcd サーバーの起動 名前付きボリュームが etcd のデータを保持します。ホストにはクライアントポートのみが公開され、ピアポートはこのシングルノードコンテナ内に留まります。
+docker run --name speedle-etcd --detach \  --publish 127.0.0.1:2379:2379 \  --volume speedle-etcd-data:/etcd-data \  gcr.io/etcd-development/etcd:v3.6.14 \  /usr/local/bin/etcd \  --name speedle-local \  --data-dir /etcd-data \  --listen-client-urls http://0.</description>
     </item>
     
     <item>
-      <title>Speedle Cloud クイックスタート</title>
-      <link>https://engine.speedle.io/ja/docs/cloud/getting-started/</link>
+      <title>セキュリティ</title>
+      <link>https://engine.speedle.io/ja/docs/security/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://engine.speedle.io/ja/docs/cloud/getting-started/</guid>
-      <description>Speedle Cloud はまもなく公開されます。 このガイドは、本番環境のサインインと認証付き認可 API が利用可能になった際の手順を説明しています。例は実際の Cloud 環境では実行していません。
-GitHub または Google によるサインイン（まもなく開始） ブラウザーで Cloud コンソールを開き、利用可能なプロバイダーでサインインします。未使用の確認済みメールアドレスで初めて利用する場合は、アカウント作成を確認します。メールアドレスが使用済みの場合は、コンソールに表示された連携済みプロバイダーでサインインしてください。
-サービスとポリシーを作成する サービスワークスペースを開き、books と入力してサービス作成を選択します。既存ポリシーが結果に影響しないよう、新しいサービスで試してください。既存データは上書きしないでください。
-新しいポリシーを選択し、名前を read-books にして、次の SPDL を入力します。
-grant user alice from corp get /books このポリシーは、ID ドメイン corp の alice が /books に対して get を実行することを許可します。from を省略すると、すべてのドメインの同名ユーザーに一致します。信頼できる認証データからドメインを取得し、各リクエストの idd に設定してください。ID ドメインを参照してください。
-ポリシーの検証、ポリシーを保存の順に選択します。検証は構文を確認するだけで、下書きを保存しません。保存したポリシーが認可 API に反映されるまで約 60 秒かかります。
-API キーを作成する API キーを開き、books-app などの名前を入力し、ads スコープ（認可チェック）を選択し、有効期限を選び（コンソールの既定は 3 か月で、UTC の時刻を表示します）、API キーを作成を押します。本人確認を求められた場合は、確認を完了してからフォームを再送信します。シークレットは一度しか表示されないため、その場でコピーしてください。すべてのキーには有効期限があります。有効期限が必須になる前に作られたキーも含まれます。いつ期限切れになるかは API キーの管理 に書いてあります。一覧の期限を確認し、その前に新しいキーを作成してください。不要になったキーは期限前に失効させてください。
-キーをサーバーのシークレットストアに保存し、環境変数 SPEEDLE_API_KEY で渡します。ブラウザーのコードやソース管理には含めないでください。
-アプリケーションから認可を確認する 保存したポリシーに対して、アプリケーションのサーバーから次の isAllowed リクエストを送信します。このポリシーは属性を必要としないため、attributes は空です。</description>
+      <guid>https://engine.speedle.io/ja/docs/security/</guid>
+      <description>両方の API トランスポートを保護 独立して動作する PMS と ADS は REST と gRPC を公開します。現在、両者とも同じ --insecure、--cert、--key、--client-cert、および --force-client-cert トランスポート設定を使用します。証明書または信頼設定が無効な場合、起動は失敗します。セキュアモードがプレーンテキストにフォールバックすることはありません。
+TLS は接続を暗号化し、サーバーを認証します。認証されたクライアントを要求するには、--client-cert でクライアント CA を提供し、かつ --force-client-cert=true を設定します。そのフラグがない場合、構成された CA はクライアントが証明書を提供した場合にのみクライアント証明書を検証します。TLS だけでは管理者の認可や Bearer トークンの検証は提供されません。管理、診断、および検出エンドポイントには、認証済みゲートウェイまたは同等のアクセス制御を使用してください。--enable-authz フラグは、組み込みのエンドポイント認可ポリシーを提供するものではありません。
+リッスンアドレスと互換性    サービス デフォルト REST アドレス デフォルト gRPC アドレス     PMS 0.0.0.0:6733 --grpc-endpoint が設定されるまで無効   ADS 0.0.0.0:6734 --grpc-endpoint が設定されるまで無効    REST と gRPC のリッスンアドレスは個別に構成されます。--endpoint のみを設定しても gRPC は有効になりません。PMS 用には --grpc-endpoint 127.0.0.1:50001、ADS 用には --grpc-endpoint 127.</description>
+    </item>
+
+    <item>
+      <title>デプロイ</title>
+      <link>https://engine.speedle.io/ja/docs/deployment/</link>
+      <pubDate>Sat, 14 Nov 2026 10:30:00 +0800</pubDate>
+
+      <guid>https://engine.speedle.io/ja/docs/deployment/</guid>
+      <description>Speedle は Go アプリケーション内への組み込み、1 つの公開コンテナイメージからの実行、またはスタンドアロンの PMS および ADS サービスとして実行できます。
+ 組み込みモード は Go プロセス内で評価エンジンを実行します。 Docker イメージ は docker.io/speedle/speedle または ghcr.io/teramoby/speedle から speedle-pms、speedle-ads、spctl を実行します。 Homebrew はコマンドラインツールと両方のサービスをインストールし、ローカルでデモを実行します。  デプロイモードの選択 Go プロセス内で評価エンジンを実行するには 組み込みモード を使用します。アプリケーションが REST または gRPC 経由で Speedle を呼び出す場合は、Docker イメージ またはスタンドアロンの PMS と ADS を使用します。Homebrew はこれらのプログラムをインストールし、ローカルでデモを実行します。クイックスタート では、ローカルでのポリシー管理と認可の完全なウォークスルーを提供しています。
+最新の Go でビルド Linux または macOS 上で、Go 1.26.10 または Go 1.27.3（または同じリリースブランチの新しいパッチバージョン）（Go 1.27.3 推奨）、Git、およびシェルを使用します。Go modules を使用し、チェックアウト先は書き込み可能な任意のディレクトリで構いません。カスタムの GOROOT、GOPATH、dep、または GOPATH ソースレイアウトは不要です。
+git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o .</description>
+    </item>
+
+    <item>
+      <title>パフォーマンステストガイド</title>
+      <link>https://engine.speedle.io/ja/docs/performance-testing/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+
+      <guid>https://engine.speedle.io/ja/docs/performance-testing/</guid>
+      <description>ここでは性能レポートを公開しません。結果はハードウェア、ポリシー、固定したバージョンによって変わります。
+最初に、Speedle と比較したいオープンソースの認可プロジェクトを私に質問してください。ポリシー数と時間の予算も質問し、既定値として 10、100、1,000 件と 30 分を提示してください。私が回答するまで、ほかの作業を始めないでください。 その後、新しいローカルディレクトリで、同じマシンを使い、予算内で公平に比較してください。すべてのエンジンとツールのバージョンを固定してください。等価な RBAC・ABAC ポリシーと、期待する許可・拒否の判定を持つ共通リクエストを作成し、計測前に全エンジンの判定を検証してください。意味の違いを記録し、非対応のケースは直接比較から除外してください。 合意したポリシー数でスケーリングを測定してください。ポリシー読み込みと定常評価、組み込みとネットワーク/API の測定を分けてください。同じリクエスト、同時実行数、キャッシュ設定を使い、各エンジンをウォームアップして最低 5 回繰り返してください。レイテンシ p50/p95/p99 とスループットを、単位、実行時間、ばらつきとともに報告してください。実測値だけを報告し、未実行と失敗は明記してください。スクリプト、ポリシー、正確なコマンド、バージョン、環境情報、生の出力をローカルに保存し、結果を再現できるようにしてください。 プロンプトをコピーしてエージェントに貼り付け、質問に答えてください。</description>
+    </item>
+
+    <item>
+      <title>ポリシー検出</title>
+      <link>https://engine.speedle.io/ja/docs/pms/discover/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+
+      <guid>https://engine.speedle.io/ja/docs/pms/discover/</guid>
+      <description>ポリシー検出の役割 検出モードはリクエストを記録し、記録操作が成功した場合に理由 5 で allowed=true を返します。これは既存のポリシーが操作を認可したことを証明するものではありません。分離されたテスト環境でのみ使用し、生成されたグラントを確認してから、通常の is-allowed による強制を復元してください。アサーションやストレージのエラーは引き続き適切に処理する必要があり、エラーを認可と見なしてはなりません。
+再現可能なローカルサンプルの開始 クイックスタート の手順でバイナリをビルドし、チェックアウトのルートからすべてのターミナルを実行します。開始前に新しいファイルを使用し、前のページのフィクスチャを停止してください。
+printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json ターミナル 1:
+./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --insecure=true ターミナル 2:
+./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6734 --insecure=true 両方を実行したままにします。ターミナル 3 で、1 つのリクエストを記録します:
+curl --fail --silent --show-error -H &amp;#39;Content-Type: application/json&amp;#39; \  -d &amp;#39;{&amp;#34;subject&amp;#34;:{&amp;#34;principals&amp;#34;:[{&amp;#34;type&amp;#34;:&amp;#34;user&amp;#34;,&amp;#34;name&amp;#34;:&amp;#34;alice&amp;#34;}]},&amp;#34;serviceName&amp;#34;:&amp;#34;observed&amp;#34;,&amp;#34;resource&amp;#34;:&amp;#34;book&amp;#34;,&amp;#34;action&amp;#34;:&amp;#34;read&amp;#34;}&amp;#39; \  http://127.0.0.1:6734/authz-check/v1/discover キャプチャされたリクエストを調査し、提案されるサービス定義を生成します:
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ discover request --service-name observed ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ discover policy --service-name observed &amp;gt; discovered-service.</description>
     </item>
     
     <item>
@@ -239,16 +340,6 @@ API キーを作成する API キーを開き、books-app などの名前を入�
 printf &amp;#39;{} &amp;#39; &amp;gt; docs-policies.json ターミナル1で PMS を起動し、実行したままにします:
 ./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --grpc-endpoint 127.0.0.1:0 --insecure=true ターミナル2で ADS を起動し、実行したままにします:
 ./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6734 --grpc-endpoint 127.0.0.1:0 --insecure=true 残りのコマンドはターミナル3で実行します。PMS と ADS はファイルを共有し、変更は非同期に反映されます。意図した更新が ADS に到達したことを確認してから依存してください。--insecure=true はこのループバックサンプルのためのものです。本番接続については セキュリティ を参照してください。明示的な PMS アドレスを指定することで ~/.spctlconfig の変更を回避できます。終了したら、両方のサーバーターミナルで Ctrl-C を押して停止します。</description>
-    </item>
-    
-    <item>
-      <title>API リファレンス</title>
-      <link>https://engine.speedle.io/ja/docs/cloud/api-reference/</link>
-      <pubDate>Thu, 12 Nov 2026 10:00:00 +0800</pubDate>
-      
-      <guid>https://engine.speedle.io/ja/docs/cloud/api-reference/</guid>
-      <description>認可 API プレビュー は IsAllowed 呼び出しを説明します。制限とエラー はクォータとエラー応答を列挙します。
-   document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/openapi/cloud-public.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34;, supportedSubmitMethods: [] }); window.ui = ui; });  </description>
     </item>
     
     <item>
@@ -279,150 +370,6 @@ using Speedle.Sdk; try { await using var speedle = new SpeedleClient(new Speedle
     </item>
     
     <item>
-      <title>Rust SDK</title>
-      <link>https://engine.speedle.io/ja/docs/sdks/rust/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/ja/docs/sdks/rust/</guid>
-      <description>Rust SDK は Rust 1.75 以降が必要です。tokio と reqwest (rustls) をベースにした非同期構成です。blocking 機能により、以下で使用するブロッキングクライアントが追加されます。クレート: crates.io の speedle 0.2.0。リファレンス: speedle-sdk/rust。
-サンプルでは、SDK 概要 で説明されているポリシーをチェックします。
-依存関係の追加 新しいパッケージを作成します:
-cargo new speedle-example cd speedle-example cargo add speedle@0.2.0 --features blocking ローカルの Speedle の呼び出し SDK 概要 の説明に従って Speedle を起動し、サンプルポリシーを作成します。src/main.rs を以下に置き換えます:
-use speedle::blocking::Client; use speedle::{Auth, Backend}; fn main() { if let Err(e) = run() { eprintln!(&amp;#34;Speedle error: {e}&amp;#34;); std::process::exit(1); } } fn run() -&amp;gt; Result&amp;lt;(), speedle::Error&amp;gt; { let speedle = Client::builder(Backend::Speedle, &amp;#34;http://localhost:6734&amp;#34;, Auth::none(), &amp;#34;docs&amp;#34;).</description>
-    </item>
-    
-    <item>
-      <title>Speedle Cloud 制限とエラー</title>
-      <link>https://engine.speedle.io/ja/docs/cloud/limits-and-errors/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/ja/docs/cloud/limits-and-errors/</guid>
-      <description>Speedle Cloud はまもなく公開されます。 このガイドは、本番環境のサインインと認証付き認可 API が利用可能になった際の手順を説明しています。例は実際の Cloud 環境では実行していません。
-特記がない限り、制限はアカウント全体で共有します。API キーを変更しても日次クォータは増えません。
-制限    対象 上限 到達時の対応     アカウントのサービス 100 409 quota_exceeded。未使用のサービスを削除。時間によるリセットなし。   全サービスの認可・ロールポリシー合計 アカウントごとに 200 409 quota_exceeded。ポリシーを削除。時間によるリセットなし。   1 ポリシーの完全な SPDL ソース 1,024 UTF-8 バイト コンソールの書き込みは 400 invalid_request。ソースを短縮。文字数ではなくバイト数。時間によるリセットなし。   全スコープの有効な API キー アカウントごとに 10 409 quota_exceeded、limit: 10。未使用キーを失効するか、期限切れを待つ。上限は周期では戻らない。失効済みと期限切れは対象外。   ポリシー名 / API キー名 128 Unicode コードポイント / 前後の空白を除いて 1–128 文字 400 invalid_request。名前を修正。時間によるリセットなし。   課金対象のポリシー管理・認可呼び出し アカウントごとに UTC 日あたり 10,000 429 daily_quota_exceeded。00:00 UTC にリセット。Retry-After に従う。   API キーの短時間のバースト Cloud の各ロケーションでキーごとに毎分約 600 429 rate_limited、Retry-After: 60。待ってから再試行。保証された処理量でも追加の日次枠でもない。   通常のリクエスト本文 65,536 バイト（64 KiB） 413 request_too_large。本文を縮小。時間によるリセットなし。   アトミック JSON インポート本文（POST /api/service/import のみ） 5,100,000 バイト 413 request_too_large。データを縮小。ポリシーとアカウントの上限も適用。時間によるリセットなし。   入力属性 50 属性、正規化 JSON の UTF-8 で 16,384 バイト 400 SPDL-0004。属性を減らすか縮小。時間によるリセットなし。    スコープ、有効期限、作成、失効は API キーを参照してください。</description>
-    </item>
-    
-    <item>
-      <title>トークンアサーター</title>
-      <link>https://engine.speedle.io/ja/docs/assertor/</link>
-      <pubDate>Mon, 21 Jan 2019 09:28:30 +0800</pubDate>
-      
-      <guid>https://engine.speedle.io/ja/docs/assertor/</guid>
-      <description>トークンアサーターの役割 設定されたアサーターはトークンを検証し、アイデンティティドメインを含む明示的なプリンシパルを返します。Speedle はそれらのアイデンティティを使用してポリシーを評価します。本番環境の実装では、トークンの署名またはイントロスペクション結果、発行者、対象者、有効期限、およびプロバイダー固有の要件を検証する必要があります。Webhook インターフェースがあること自体は、任意の OAuth/OIDC トークンとの自動互換性を意味するものではありません。
-トークンアサーション API の errCode は整数型であり、オプションの属性はオブジェクトであり、型付き属性配列ではありません。asserterWebhookConfig.endpoint は完全な URL です。以下の例では /v1/assert を使用します。
-確定的なローカルモックの実行 このモックは、githubtoken/github、googletoken/google、gitlabtoken/gitlab の 3 組の入力のみを認識し、それぞれ対応するドメインの user1 を表します。トークンとプロバイダーのペアが一致しない場合は失敗します。これはテスト用フィクスチャであり、実際のトークン検証ではありません。 トークンの値は記録されません。ループバックアドレスのみにバインドし、本番環境では実際のプロバイダー統合に置き換えてください。
-リポジトリルートから別のターミナルで起動します:
-go run ./website/tests/examples/asserter // A deterministic mock for the token-assertion tutorial. Never use for real tokens. package main import ( &amp;#34;encoding/json&amp;#34; &amp;#34;flag&amp;#34; &amp;#34;log&amp;#34; &amp;#34;net/http&amp;#34; &amp;#34;strings&amp;#34; &amp;#34;time&amp;#34; ) type principal struct { Type string `json:&amp;#34;type&amp;#34;` Name string `json:&amp;#34;name&amp;#34;` IDD string `json:&amp;#34;idd&amp;#34;` } type response struct { Principals []principal `json:&amp;#34;principals,omitempty&amp;#34;` ErrCode int `json:&amp;#34;errCode&amp;#34;` ErrMessage string `json:&amp;#34;errMessage,omitempty&amp;#34;` } func assert(w http.</description>
-    </item>
-    
-    <item>
-      <title>API</title>
-      <link>https://engine.speedle.io/ja/docs/api/</link>
-      <pubDate>Tue, 10 Nov 2026 14:45:43 +0800</pubDate>
-      
-      <guid>https://engine.speedle.io/ja/docs/api/</guid>
-      <description>Java、Python、Go、.NET、Rust、Node.js/TypeScript 向けのクライアントライブラリは SDK にあります。
-REST API これらは 構成された PMS/ADS またはアサーターエンドポイント の参照仕様です。speedle.io はドキュメントとブラウザ Playground を配信しており、ホスト型の PMS/ADS サービスではありません。Content-Type: application/json で JSON を提供し、TLS/mTLS とアクセス制御 を構成してください。
- ポリシー管理 API 認可決定 API トークンアサーション Webhook  ポリシーおよびロールポリシーの ID は文字列です。PMS のレスポンスはフラットなオブジェクトであり、認可権限には permissions（複数形）を使用します。REST の決定リクエストは型付き属性配列を使用しますが、診断レスポンス属性および Webhook 属性はオブジェクトです。
-gRPC API  PMS proto: pb.PolicyManager ADS proto: pb.Evaluator  現在の proto と生成されたクライアントを一緒に使用してください。PMS は pb.PolicyManager を使用し、ADS は pb.Evaluator を使用します。gRPC はサーバーが --grpc-endpoint で起動されない限り無効であり、REST と同じ TLS 設定を使用します。
-組み込み Go API  ポリシー管理インターフェース 認可決定インターフェース  完全なアプリケーションとリソースのライフサイクルの例については、組み込みモード を参照してください。</description>
-    </item>
-    
-    <item>
-      <title>Node.js/TypeScript SDK</title>
-      <link>https://engine.speedle.io/ja/docs/sdks/node/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/ja/docs/sdks/node/</guid>
-      <description>Node.js SDK は Node.js 22 以降が必要で、TypeScript の型定義を含む ESM および CommonJS ビルドを提供し、ランタイム依存関係はありません。パッケージ: npm の @speedle/sdk。リファレンス: speedle-sdk/node。
-サンプルでは、SDK 概要 で説明されているポリシーをチェックします。
-依存関係の追加 新しい ES モジュールパッケージを作成します:
-mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm install @speedle/sdk@0.2.1 ローカルの Speedle の呼び出し SDK 概要 の説明に従って Speedle を起動し、サンプルポリシーを作成します。このプログラムを main.ts として保存します:
-import { Auth, Reason, SpeedleClient, SpeedleError } from &amp;#34;@speedle/sdk&amp;#34;; try { const speedle = new SpeedleClient({ backend: &amp;#34;speedle&amp;#34;, endpoint: &amp;#34;http://localhost:6734&amp;#34;, auth: Auth.none(), serviceName: &amp;#34;docs&amp;#34;, }); try { const allowed = await speedle.</description>
-    </item>
-    
-    <item>
-      <title>SDK</title>
-      <link>https://engine.speedle.io/ja/docs/sdks/</link>
-      <pubDate>Tue, 10 Nov 2026 14:45:43 +0800</pubDate>
-      
-      <guid>https://engine.speedle.io/ja/docs/sdks/</guid>
-      <description>Speedle SDK は、決定 API POST /authz-check/v1/is-allowed のクライアントライブラリです。セルフホストの Speedle ADS および Speedle Cloud の両方で動作します。各言語ページではパッケージの追加方法を説明し、両方の環境向けにテスト済みの完全なプログラムを提供しています。ソースコードと完全なリファレンスは teramoby/speedle-sdk にあります。これらのサンプルで PMS と ADS を実行する方法については、デプロイ と Docker イメージ を参照してください。
-パッケージ Java、Python、Go、.NET、Rust はバージョン 0.2.0 です。@speedle/sdk は npm で公開されています。各言語のインストールコマンドは各ページに記載されています。
- Java: Maven Central io.speedle:speedle-sdk、公開済み。 Python: PyPI speedle、公開済み。 Go: Go モジュール github.com/teramoby/speedle-sdk/go、公開済み。 C#/.NET: NuGet Speedle.Sdk、公開済み。 Rust: crates.io speedle、公開済み。 Node.js / TypeScript: npm @speedle/sdk、公開済み。  機能    機能 ステータス     isAllowed: 認可決定を返す 6 つの SDK すべて   check: 認可決定と理由（該当するポリシーがない等）を返す 6 つの SDK すべて   セルフホストの Speedle ADS 6 つの SDK すべて   Speedle Cloud まもなく公開    メソッド名は各言語の命名規則に従っています。Python と Rust では is_allowed と check、Go では IsAllowed と Check、.</description>
-    </item>
-    
-    <item>
-      <title>Speedle Cloud</title>
-      <link>https://engine.speedle.io/ja/docs/cloud/</link>
-      <pubDate>Thu, 12 Nov 2026 21:00:00 +0800</pubDate>
-      
-      <guid>https://engine.speedle.io/ja/docs/cloud/</guid>
-      <description>Speedle Cloud はオープンソースの Speedle エンジンによるホスト型認可サービスです。サービス、SPDL 認可・ロールポリシーを管理し、Playground で判定をテストして、サーバーから API を呼び出せます。
-Speedle Cloud はまもなく公開されます。 このガイドは、本番環境のサインインと認証付き認可 API が利用可能になった際の手順を説明しています。例は実際の Cloud 環境では実行していません。
-コンソールの利用と API キー作成にはサインインが利用可能である必要があります。無料パブリックベータは試用、学習、評価用で SLA はなく、本番利用は推奨しません。機能と制限は変更される場合があります。
-ドキュメント  クイックスタート：サインインし、コンソールでサービスとポリシー、API キーを作成して、アプリケーションから認可を確認します。 API キー: アカウントの認証情報、固定スコープ、必須の有効期限、作成と失効、一度だけの表示、ページング。 認可 API: IsAllowed、ユーザー ID、Node.js 22、通信の制約。 API リファレンス: API key による認可チェックとポリシー管理。リクエストはサーバーから送り、このページは読み取り専用です。 制限とエラー: アカウント上限、サイズ、バースト、日次枠、エラーコード、リセット時刻。  ダウンロード  API リファレンス（Swagger）: すべてのエンドポイント、パラメーター、レスポンス例をオンラインで確認できます。 日本語 Markdown: Cloud の 4 章をまとめたオフラインガイド。 OpenAPI 仕様: YAML · JSON、コード生成ツールや API クライアント向けです。  Cloud の次の文書をご確認ください： 利用規約 / プライバシーポリシー。</description>
-    </item>
-    
-    <item>
-      <title>Speedle Cloud 認可 API</title>
-      <link>https://engine.speedle.io/ja/docs/cloud/authorization-api/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/ja/docs/cloud/authorization-api/</guid>
-      <description>Speedle Cloud はまもなく公開されます。 このガイドは、本番環境のサインインと認証付き認可 API が利用可能になった際の手順を説明しています。例は実際の Cloud 環境では実行していません。
-アカウント API キーを使い、サーバーから認可を確認します。キー作成にはサインインが利用可能である必要があります。管理スコープでは ADS を呼び出せません。ads 以外は 403 insufficient_scope です。
-サーバーから IsAllowed を呼び出す ads スコープの API キーを 1 つの Authorization: Bearer ヘッダーに入れ、POST で送信します。
-POST /authz-check/v1/is-allowed Authorization: Bearer &amp;lt;API key&amp;gt; Content-Type: application/json {&amp;#34;subject&amp;#34;:{&amp;#34;principals&amp;#34;:[{&amp;#34;type&amp;#34;:&amp;#34;user&amp;#34;,&amp;#34;name&amp;#34;:&amp;#34;alice&amp;#34;,&amp;#34;idd&amp;#34;:&amp;#34;corp&amp;#34;}]},&amp;#34;serviceName&amp;#34;:&amp;#34;books&amp;#34;,&amp;#34;resource&amp;#34;:&amp;#34;/books&amp;#34;,&amp;#34;action&amp;#34;:&amp;#34;get&amp;#34;,&amp;#34;attributes&amp;#34;:[{&amp;#34;name&amp;#34;:&amp;#34;level&amp;#34;,&amp;#34;type&amp;#34;:&amp;#34;numeric&amp;#34;,&amp;#34;value&amp;#34;:3},{&amp;#34;name&amp;#34;:&amp;#34;when&amp;#34;,&amp;#34;type&amp;#34;:&amp;#34;datetime&amp;#34;,&amp;#34;value&amp;#34;:&amp;#34;2026-11-05T03:00:00Z&amp;#34;}]} 本文は自ホストの Speedle ADS と同じ REST 形式です。attributes は {name, type, value} の配列で、型は string、numeric、bool、RFC 3339 の datetime です。
-idd はアプリケーションが認証した ID ドメインです。信頼できるサーバー側の認証情報から設定してください。grant user alice from corp get /books は corp のみで一致します。from のないポリシーは全ドメインの同名ユーザーに一致します。idd を省略した principal も全ドメインに一致するため、複数の ID ソースでは必ず送信してください。</description>
-    </item>
-    
-    <item>
-      <title>Speedle ポリシー</title>
-      <link>https://engine.speedle.io/ja/docs/pms/</link>
-      <pubDate>Wed, 28 Oct 2026 13:16:58 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/ja/docs/pms/</guid>
-      <description> ポリシー管理 グローバルポリシー ポリシー検出 認可診断  </description>
-    </item>
-    
-    <item>
-      <title>etcd セットアップ</title>
-      <link>https://engine.speedle.io/ja/docs/store/etcd/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/ja/docs/store/etcd/</guid>
-      <description>このウォークスルーでは、永続的な Docker ボリュームを備えた外部の etcd v3.6.14 サーバーを使用します。PMS はポリシーを書き込み、ADS は同じキープレフィックスを監視（watch）します。シングルノードのサンプルはローカル開発用にループバックでリッスンし、平文の HTTP を使用します。本番環境の TLS とクラスター構成はウォークスルーの後に説明します。
-1. Speedle のビルド Bash、Git、curl、Docker、および Go 1.26.10 または Go 1.27.3 を準備します。Docker を起動し、ネイティブサービスをビルドします:
-git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads 後続のコマンドはこのチェックアウトから実行します。ローカルポート 2379、6733、6734 を利用可能にしておくか、コマンドと構成を同時に更新してください。
-2. 外部 etcd サーバーの起動 名前付きボリュームが etcd のデータを保持します。ホストにはクライアントポートのみが公開され、ピアポートはこのシングルノードコンテナ内に留まります。
-docker run --name speedle-etcd --detach \  --publish 127.0.0.1:2379:2379 \  --volume speedle-etcd-data:/etcd-data \  gcr.io/etcd-development/etcd:v3.6.14 \  /usr/local/bin/etcd \  --name speedle-local \  --data-dir /etcd-data \  --listen-client-urls http://0.</description>
-    </item>
-    
-    <item>
-      <title>セキュリティ</title>
-      <link>https://engine.speedle.io/ja/docs/security/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/ja/docs/security/</guid>
-      <description>両方の API トランスポートを保護 独立して動作する PMS と ADS は REST と gRPC を公開します。現在、両者とも同じ --insecure、--cert、--key、--client-cert、および --force-client-cert トランスポート設定を使用します。証明書または信頼設定が無効な場合、起動は失敗します。セキュアモードがプレーンテキストにフォールバックすることはありません。
-TLS は接続を暗号化し、サーバーを認証します。認証されたクライアントを要求するには、--client-cert でクライアント CA を提供し、かつ --force-client-cert=true を設定します。そのフラグがない場合、構成された CA はクライアントが証明書を提供した場合にのみクライアント証明書を検証します。TLS だけでは管理者の認可や Bearer トークンの検証は提供されません。管理、診断、および検出エンドポイントには、認証済みゲートウェイまたは同等のアクセス制御を使用してください。--enable-authz フラグは、組み込みのエンドポイント認可ポリシーを提供するものではありません。
-リッスンアドレスと互換性    サービス デフォルト REST アドレス デフォルト gRPC アドレス     PMS 0.0.0.0:6733 --grpc-endpoint が設定されるまで無効   ADS 0.0.0.0:6734 --grpc-endpoint が設定されるまで無効    REST と gRPC のリッスンアドレスは個別に構成されます。--endpoint のみを設定しても gRPC は有効になりません。PMS 用には --grpc-endpoint 127.0.0.1:50001、ADS 用には --grpc-endpoint 127.</description>
-    </item>
-    
-    <item>
-      <title>デプロイ</title>
-      <link>https://engine.speedle.io/ja/docs/deployment/</link>
-      <pubDate>Sat, 14 Nov 2026 10:30:00 +0800</pubDate>
-      
-      <guid>https://engine.speedle.io/ja/docs/deployment/</guid>
-      <description>Speedle は Go アプリケーション内への組み込み、1 つの公開コンテナイメージからの実行、またはスタンドアロンの PMS および ADS サービスとして実行できます。
- 組み込みモード は Go プロセス内で評価エンジンを実行します。 Docker イメージ は docker.io/speedle/speedle または ghcr.io/teramoby/speedle から speedle-pms、speedle-ads、spctl を実行します。 Homebrew はコマンドラインツールと両方のサービスをインストールし、ローカルでデモを実行します。  デプロイモードの選択 Go プロセス内で評価エンジンを実行するには 組み込みモード を使用します。アプリケーションが REST または gRPC 経由で Speedle を呼び出す場合は、Docker イメージ またはスタンドアロンの PMS と ADS を使用します。Homebrew はこれらのプログラムをインストールし、ローカルでデモを実行します。クイックスタート では、ローカルでのポリシー管理と認可の完全なウォークスルーを提供しています。
-最新の Go でビルド Linux または macOS 上で、Go 1.26.10 または Go 1.27.3（または同じリリースブランチの新しいパッチバージョン）（Go 1.27.3 推奨）、Git、およびシェルを使用します。Go modules を使用し、チェックアウト先は書き込み可能な任意のディレクトリで構いません。カスタムの GOROOT、GOPATH、dep、または GOPATH ソースレイアウトは不要です。
-git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o .</description>
-    </item>
-    
-    <item>
       <title>バージョン</title>
       <link>https://engine.speedle.io/ja/docs/versions/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -430,16 +377,6 @@ git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus
       <guid>https://engine.speedle.io/ja/docs/versions/</guid>
       <description>Speedle のリリース 公開されたバージョンとリリースノートについては、GitHub Releases ページを参照してください。v1.6.0 は、現在の組み込み Go ウォークスルーで固定されているバージョンです。再現可能なモジュール依存関係のために、明示的にリリースされたバージョンを使用してください。組み込みガイド で設定方法を説明しています。
 以前の Oracle Speedle リリース バージョン 0.1.0 は、ポリシー管理、認可決定、コマンドラインツール、および統合サンプルを含む最初のオープンソースリリースでした。過去の 0.2.0 計画メモは、現在の Speedle リリースロードマップではありません。</description>
-    </item>
-    
-    <item>
-      <title>パフォーマンステストガイド</title>
-      <link>https://engine.speedle.io/ja/docs/performance-testing/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/ja/docs/performance-testing/</guid>
-      <description>ここでは性能レポートを公開しません。結果はハードウェア、ポリシー、固定したバージョンによって変わります。
-最初に、Speedle と比較したいオープンソースの認可プロジェクトを私に質問してください。ポリシー数と時間の予算も質問し、既定値として 10、100、1,000 件と 30 分を提示してください。私が回答するまで、ほかの作業を始めないでください。 その後、新しいローカルディレクトリで、同じマシンを使い、予算内で公平に比較してください。すべてのエンジンとツールのバージョンを固定してください。等価な RBAC・ABAC ポリシーと、期待する許可・拒否の判定を持つ共通リクエストを作成し、計測前に全エンジンの判定を検証してください。意味の違いを記録し、非対応のケースは直接比較から除外してください。 合意したポリシー数でスケーリングを測定してください。ポリシー読み込みと定常評価、組み込みとネットワーク/API の測定を分けてください。同じリクエスト、同時実行数、キャッシュ設定を使い、各エンジンをウォームアップして最低 5 回繰り返してください。レイテンシ p50/p95/p99 とスループットを、単位、実行時間、ばらつきとともに報告してください。実測値だけを報告し、未実行と失敗は明記してください。スクリプト、ポリシー、正確なコマンド、バージョン、環境情報、生の出力をローカルに保存し、結果を再現できるようにしてください。 プロンプトをコピーしてエージェントに貼り付け、質問に答えてください。</description>
     </item>
     
     <item>
@@ -459,21 +396,6 @@ git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus
     </item>
     
     <item>
-      <title>ポリシー検出</title>
-      <link>https://engine.speedle.io/ja/docs/pms/discover/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/ja/docs/pms/discover/</guid>
-      <description>ポリシー検出の役割 検出モードはリクエストを記録し、記録操作が成功した場合に理由 5 で allowed=true を返します。これは既存のポリシーが操作を認可したことを証明するものではありません。分離されたテスト環境でのみ使用し、生成されたグラントを確認してから、通常の is-allowed による強制を復元してください。アサーションやストレージのエラーは引き続き適切に処理する必要があり、エラーを認可と見なしてはなりません。
-再現可能なローカルサンプルの開始 クイックスタート の手順でバイナリをビルドし、チェックアウトのルートからすべてのターミナルを実行します。開始前に新しいファイルを使用し、前のページのフィクスチャを停止してください。
-printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json ターミナル 1:
-./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --insecure=true ターミナル 2:
-./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6734 --insecure=true 両方を実行したままにします。ターミナル 3 で、1 つのリクエストを記録します:
-curl --fail --silent --show-error -H &amp;#39;Content-Type: application/json&amp;#39; \  -d &amp;#39;{&amp;#34;subject&amp;#34;:{&amp;#34;principals&amp;#34;:[{&amp;#34;type&amp;#34;:&amp;#34;user&amp;#34;,&amp;#34;name&amp;#34;:&amp;#34;alice&amp;#34;}]},&amp;#34;serviceName&amp;#34;:&amp;#34;observed&amp;#34;,&amp;#34;resource&amp;#34;:&amp;#34;book&amp;#34;,&amp;#34;action&amp;#34;:&amp;#34;read&amp;#34;}&amp;#39; \  http://127.0.0.1:6734/authz-check/v1/discover キャプチャされたリクエストを調査し、提案されるサービス定義を生成します:
-./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ discover request --service-name observed ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ discover policy --service-name observed &amp;gt; discovered-service.</description>
-    </item>
-    
-    <item>
       <title>ロギングフレームワーク</title>
       <link>https://engine.speedle.io/ja/docs/logging/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -486,6 +408,17 @@ curl --fail --silent --show-error -H &amp;#39;Content-Type: application/json&amp
 --log-level string ログレベル（panic, fatal, error, warn, info, debug） (default &amp;#34;info&amp;#34;) --log-formatter string ログフォーマッター（text, json） (default &amp;#34;text&amp;#34;) --log-reportcaller 呼び出し元のメソッド名とファイル名を含めるかどうか --log-file string ログファイルパス --log-file-maxsize int ログローテーション前の最大サイズ（メガバイト） (default 100) --log-file-maxage int 古いログファイルを保持する最大日数 (default 0) --log-file-maxbackups int 保持する古いログファイルの最大数 (default 0) --log-file-localtime バックアップファイルのタイムスタンプにローカル時間を使用するかどうか --log-file-compress ローテーションされたログファイルを gzip で圧縮するかどうか 構成ファイルによるロギング構成 構成ファイルを使用してロギングを設定することもできます。以下は構成例です:</description>
     </item>
     
+    <item>
+      <title>決定サービスの拡張</title>
+      <link>https://engine.speedle.io/ja/docs/extending-decision-service/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+
+      <guid>https://engine.speedle.io/ja/docs/extending-decision-service/</guid>
+      <description>store.StoreBuilder を実装し、アプリケーションに必要な pms.PolicyStoreManager インターフェースを満たすストアを返します。パッケージの init 関数で store.Register を呼び、一意の名前で登録して実行プログラムからインポートします。標準プログラムは cmd/speedle-ads/stores.go と cmd/speedle-pms/stores.go でストアをインポートします。GetStoreParams はコマンドラインフラグをストアのプロパティに対応付けます。
+組み込みサービスでは、ストアを eval.NewWithStore に渡し、得られた評価器を adsrest.NewRouter または adsgrpc.NewGRPCService に渡します。変更イベントの購読が必要なストアは store.WatchRequirement を実装できます。(*eval.PolicyEvalImpl).DistributionStore() は外部アダプター用のストアアクセサーとして維持されます。エンジンは独自のゲートウェイインターフェースを解釈しません。ゲートウェイやルーティングは独自の実行プログラムで組み合わせてください。
+ストアのインターフェースと組み込みデプロイを参照してください。</description>
+    </item>
+
     <item>
       <title>カスタム関数</title>
       <link>https://engine.speedle.io/ja/docs/custom-function/</link>

@@ -149,20 +149,8 @@
 </ul>
 
 </li>
-
-
-
-<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ja/docs/cloud/">Speedle Cloud</a></span>
-<ul class="">
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/getting-started/">Speedle Cloud クイックスタート</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/tokens/">API キー</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/authorization-api/">認可 API</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/api-reference/">API リファレンス</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/limits-and-errors/">制限とエラー</a></li>
-</ul>
-
-</li>
 <li data-docs-depth="0" class=""><a href="/ja/docs/security/">セキュリティ</a></li>
+<li data-docs-depth="0" class=""><a href="/ja/docs/extending-decision-service/">決定サービスの拡張</a></li>
 <li data-docs-depth="0" class=""><a href="/ja/docs/logging/">ロギングフレームワーク</a></li>
 <li data-docs-depth="0" class=""><a href="/ja/docs/versions/">バージョン</a></li>
 <li data-docs-depth="0" class=""><a href="/ja/docs/custom-function/">カスタム関数</a></li><li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">その他</span>
@@ -271,38 +259,6 @@ grant role manager update res1</code></pre></div>
 ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ delete policy <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$policy_id</span><span style="color:#f1fa8c">&#34;</span> --service-name <span style="color:#8be9fd;font-style:italic">test</span>
 ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ delete rolepolicy <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$role_policy_id</span><span style="color:#f1fa8c">&#34;</span> --service-name <span style="color:#8be9fd;font-style:italic">test</span>
 ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ delete service test</code></pre></div>
-<h2 id="speedle-cloud">Speedle Cloud</h2>
-
-<p>アカウント API キーを使い、<code>spctl</code> で Cloud のサービスとポリシーを管理します。管理エンドポイントは次のとおりです。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">https://cloud.speedle.io/policy-mgmt/v1</code></pre></div>
-<p>アカウント API キーには固定スコープを 1 つ指定します。<code>pms:read</code> はサービスとポリシーの読み取り、<code>pms:write</code> はさらに作成と削除を許可します。アカウント内のサービスが対象です。<code>ads</code> キーは管理できず <code>403 insufficient_scope</code> になります。作成と失効は <a href="/ja/docs/cloud/tokens/">API キー</a>を参照してください。</p>
-
-<p>エンドポイントをグローバルフラグとして渡し、<code>SPCTL_TOKEN</code> からAPI キーを読み取ります。対話型シェルでは、これによりシークレットがコマンド引数やシェル履歴に残らなくなります:</p>
-
-<!-- deployment-template: cloud-token-environment -->
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">read</span> -rsp <span style="color:#f1fa8c">&#39;API key: &#39;</span> SPCTL_TOKEN; <span style="color:#8be9fd;font-style:italic">echo</span>
-<span style="color:#8be9fd;font-style:italic">export</span> SPCTL_TOKEN
-./bin/spctl --pms-endpoint https://cloud.speedle.io/policy-mgmt/v1 get service --all
-<span style="color:#8be9fd;font-style:italic">unset</span> SPCTL_TOKEN</code></pre></div>
-<p>互換性のために <code>--token</code> フラグも引き続き利用できますが、環境変数を使用するとコマンド引数によるAPI キーの漏洩を防ぐことができます。すべてのグローバルフラグには環境変数も用意されています。プレフィックス <code>SPCTL_</code> を付け、フラグ名を大文字にしてハイフンをアンダースコアに置き換えます。たとえば、<code>SPCTL_PMS_ENDPOINT</code> は <code>pms-endpoint</code> を設定し、<code>SPCTL_SKIPVERIFY</code> は <code>skipverify</code> を設定します。</p>
-
-<p>設定を保存するには <code>~/.speedle</code> を使用します。形式はコマンドラインと同じフラグ名を持つ、1 行あたり 1 つの <code>name=value</code> ペアです:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-ini" data-lang="ini"><span style="color:#50fa7b">pms-endpoint</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">https://cloud.speedle.io/policy-mgmt/v1</span>
-<span style="color:#50fa7b">token</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&lt;api-key&gt;</span></code></pre></div>
-<p>コマンド引数にAPI キーを含めずにこのファイルを作成または更新します:</p>
-
-<!-- deployment-template: cloud-token-config -->
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">read</span> -rsp <span style="color:#f1fa8c">&#39;API key: &#39;</span> SPCTL_TOKEN; <span style="color:#8be9fd;font-style:italic">echo</span>
-<span style="color:#8be9fd;font-style:italic">printf</span> <span style="color:#f1fa8c">&#39;%s\n&#39;</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$SPCTL_TOKEN</span><span style="color:#f1fa8c">&#34;</span> | ./bin/spctl config token --stdin
-<span style="color:#8be9fd;font-style:italic">unset</span> SPCTL_TOKEN</code></pre></div>
-<p><code>spctl config token --stdin</code> はパーミッション <code>0600</code> で <code>~/.speedle</code> を書き込みます。手動でファイルを編集する場合は、<code>install -m 600 /dev/null ~/.speedle</code> で作成するか、後で <code>chmod 0600 ~/.speedle</code> を実行してください。パーミッションがグループまたはその他のアクセスを許可しているファイルからAPI キーを読み取ると、<code>spctl</code> は標準エラー出力に警告を出力します。<code>spctl config --list</code> は設定されたAPI キーを <code>********</code> としてマスクします。</p>
-
-<p>明示的なコマンドラインフラグは環境変数をオーバーライドし、環境変数は両方の設定ファイルをオーバーライドします。ファイル間では、<code>~/.speedle</code> が <code>~/.spctlconfig</code> をオーバーライドします。<code>spctl config</code> で <code>token</code> 以外の設定項目を変更すると、それが <code>~/.spctlconfig</code> に書き込まれ、<code>~/.speedle</code> から対応するコピーが削除されます。</p>
-
-<p>API キーは、証明書の検証が有効になっている HTTPS 経由でのみ <code>Authorization: Bearer</code> 認証情報として送信されます。API キーを使用した平文 HTTP は、<code>127.0.0.1</code>、<code>::1</code>、<code>localhost</code> などのループバックホストに対してのみ許可されます。<code>spctl</code> はリモートの HTTP エンドポイントおよび HTTPS から HTTP へのダウングレードリダイレクトに対しては認証情報を送信する前に拒否します。HTTPS エンドポイントの場合、<code>--skipverify=true</code> が指定されているとAPI キーの送信も拒否されます。代わりに <code>--cacert</code> を使用してプライベートまたは自己署名の認証局を信頼してください。API キーは通常のコマンド出力やエラーメッセージには含まれません。</p>
-
-<p>Cloud のエラーはゼロ以外の終了ステータスを生成します。<code>401</code> の後はAPI キーを確認し、<code>403 insufficient_scope</code> の後はそのスコープを確認してください。<code>404</code> は存在しないリソースを示し、<code>409 service_exists</code> および <code>409 policy_exists</code> は重複を示します。<code>429</code> の場合は、返された <code>Retry-After</code> の値を尊重し、有界なバックオフを使用してください。<code>429 daily_quota_exceeded</code> では <code>Retry-After</code> に従い 00:00 UTC まで待ちます。サービスとポリシーの上限は <code>409 quota_exceeded</code> で、時間ではリセットされません。未使用の項目を削除してください。API キーの枠は、キーを失効するか期限切れを待って空きます。<a href="/ja/docs/cloud/limits-and-errors/">制限とエラー</a>を参照してください。</p>
-
 <h2 id="その他のインターフェース">その他のインターフェース</h2>
 
 <p><a href="/ja/docs/api/management_api/">PMS REST API</a> は JSON を使用し、文字列 ID を持つフラットなポリシーオブジェクトを返します。Go アプリケーションは <a href="https://github.com/teramoby/speedle-plus/tree/master/api/pms">PMS インターフェース</a> を直接呼び出すことができます。gRPC クライアントは <a href="/protobuf/pms.proto">公開されている PMS proto</a> を使用します。管理操作には <a href="/ja/docs/security/">トランスポートおよび呼び出し元のアクセス制御</a> を適用してください。</p>

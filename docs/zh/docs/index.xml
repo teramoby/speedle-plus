@@ -136,6 +136,17 @@ TLS 加密连接并认证服务端。若要强制认证客户端，必须通过 
     </item>
     
     <item>
+      <title>扩展决策服务</title>
+      <link>https://engine.speedle.io/zh/docs/extending-decision-service/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+
+      <guid>https://engine.speedle.io/zh/docs/extending-decision-service/</guid>
+      <description>实现 store.StoreBuilder，并返回满足应用所需 pms.PolicyStoreManager 接口的存储。在包的 init 函数中调用 store.Register，使用唯一名称注册构建器，再在可执行程序中导入该包。标准程序通过 cmd/speedle-ads/stores.go 和 cmd/speedle-pms/stores.go 导入存储。GetStoreParams 将命令行参数映射到存储属性。
+嵌入式服务可将存储传给 eval.NewWithStore，再将返回的求值器传给 adsrest.NewRouter 或 adsgrpc.NewGRPCService。必须订阅变更事件的存储可实现 store.WatchRequirement。(*eval.PolicyEvalImpl).DistributionStore() 保留为供外部适配器访问底层存储的接口；引擎不解释自定义网关接口。请在自己的可执行程序中组合网关或路由。
+参见存储接口和嵌入式部署。</description>
+    </item>
+
+    <item>
       <title>日志</title>
       <link>https://engine.speedle.io/zh/docs/logging/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

@@ -6,7 +6,7 @@
     <description>Recent content in Speedle: Motor de autorización rápido y sencillo on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>es-es</language>
-    <lastBuildDate>Thu, 12 Nov 2026 10:00:00 +0800</lastBuildDate>
+    <lastBuildDate>Wed, 27 May 2020 07:48:20 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/es/index.xml" rel="self" type="application/rss+xml" />
     
@@ -147,16 +147,6 @@ Para probar políticas básicas antes de escribir código, abra el Playground. P
     </item>
     
     <item>
-      <title>Primeros pasos con Speedle Cloud</title>
-      <link>https://engine.speedle.io/es/docs/cloud/getting-started/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/es/docs/cloud/getting-started/</guid>
-      <description>Speedle Cloud estará disponible próximamente. Esta guía describe el flujo para cuando se habiliten el inicio de sesión en producción y las comprobaciones de autorización autenticadas; los ejemplos no se han ejecutado en un entorno Cloud real.
-Iniciar sesión con GitHub o Google (próximamente) Abra la consola Cloud en el navegador e inicie sesión con un proveedor disponible. Para una identidad nueva con un correo verificado sin usar, confirme Crear cuenta.</description>
-    </item>
-    
-    <item>
       <title>Guía de pruebas de rendimiento</title>
       <link>https://engine.speedle.io/es/docs/performance-testing/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -164,16 +154,6 @@ Iniciar sesión con GitHub o Google (próximamente) Abra la consola Cloud en el 
       <guid>https://engine.speedle.io/es/docs/performance-testing/</guid>
       <description>Aquí no publicamos ningún informe de rendimiento; los resultados dependen de su hardware, sus políticas y las versiones fijadas.
 Primero pregúnteme qué proyectos de autorización de código abierto quiero comparar con Speedle. Pregunte también por los tamaños de los conjuntos de políticas y el tiempo disponible, proponiendo por defecto 10, 100 y 1,000 políticas y 30 minutos. Espere mi respuesta antes de hacer cualquier otra cosa. Después, trabaje en un directorio local nuevo y haga una comparación justa en la misma máquina dentro de ese tiempo.</description>
-    </item>
-    
-    <item>
-      <title>Speedle Cloud Claves API</title>
-      <link>https://engine.speedle.io/es/docs/cloud/tokens/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/es/docs/cloud/tokens/</guid>
-      <description>Las claves API pertenecen a la cuenta y acceden a sus servicios según su ámbito. Autentican la aplicación, no al usuario final. Administrar claves API, sesiones e identidades vinculadas requiere una sesión de consola iniciada.
-Speedle Cloud estará disponible próximamente. Esta guía describe el flujo para cuando se habiliten el inicio de sesión en producción y las comprobaciones de autorización autenticadas; los ejemplos no se han ejecutado en un entorno Cloud real.</description>
     </item>
     
     <item>
@@ -207,16 +187,6 @@ El mismo índice de imágenes está disponible en ambos registros:
 Los ejemplos comprueban la política descrita en la descripción general de los SDK.
 Añadir la dependencia Con pip, en un entorno virtual:
 python3 -m venv .venv . .venv/bin/activate pip install speedle==0.2.0 O con uv, en un proyecto uv:</description>
-    </item>
-    
-    <item>
-      <title>API de autorización de Speedle Cloud</title>
-      <link>https://engine.speedle.io/es/docs/cloud/authorization-api/</link>
-      <pubDate>Sun, 08 Nov 2026 00:00:00 +0800</pubDate>
-      
-      <guid>https://engine.speedle.io/es/docs/cloud/authorization-api/</guid>
-      <description>Speedle Cloud estará disponible próximamente. Esta guía describe el flujo para cuando se habiliten el inicio de sesión en producción y las comprobaciones de autorización autenticadas; los ejemplos no se han ejecutado en un entorno Cloud real.
-Use una clave API de cuenta para llamadas de autorización desde el servidor. Para crear claves debe estar disponible el inicio de sesión. Los ámbitos de gestión no pueden llamar a ADS; use ads o recibirá 403 insufficient_scope.</description>
     </item>
     
     <item>
@@ -261,16 +231,6 @@ brew tap teramoby/tap brew trust teramoby/tap brew install teramoby/tap/spctl La
     </item>
     
     <item>
-      <title>Referencia de la API</title>
-      <link>https://engine.speedle.io/es/docs/cloud/api-reference/</link>
-      <pubDate>Thu, 12 Nov 2026 10:00:00 +0800</pubDate>
-      
-      <guid>https://engine.speedle.io/es/docs/cloud/api-reference/</guid>
-      <description>La vista previa de la API de autorización explica la llamada IsAllowed. Límites y errores enumera las cuotas y las respuestas de error.
-   document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/openapi/cloud-public.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34;, supportedSubmitMethods: [] }); window.ui = ui; });  </description>
-    </item>
-    
-    <item>
       <title>Dominio de identidad</title>
       <link>https://engine.speedle.io/es/docs/idd/</link>
       <pubDate>Thu, 17 Jan 2019 13:20:07 +0800</pubDate>
@@ -289,17 +249,6 @@ brew tap teramoby/tap brew trust teramoby/tap brew install teramoby/tap/spctl La
 Los ejemplos comprueban la política descrita en la descripción general de los SDK.
 Añadir la dependencia En un nuevo proyecto de consola:
 dotnet new console -o SpeedleExample cd SpeedleExample dotnet add package Speedle.Sdk --version 0.2.0 Llamar a un Speedle local Inicie Speedle y cree la política de ejemplo como se describe en la descripción general de los SDK.</description>
-    </item>
-    
-    <item>
-      <title>Speedle Cloud Límites y errores</title>
-      <link>https://engine.speedle.io/es/docs/cloud/limits-and-errors/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/es/docs/cloud/limits-and-errors/</guid>
-      <description>Speedle Cloud estará disponible próximamente. Esta guía describe el flujo para cuando se habiliten el inicio de sesión en producción y las comprobaciones de autorización autenticadas; los ejemplos no se han ejecutado en un entorno Cloud real.
-Salvo que se indique lo contrario, los límites se comparten en toda la cuenta. Cambiar de clave API no aumenta la cuota diaria.
-Límites    Qué se limita Límite Qué hacer al alcanzarlo     Servicios de la cuenta 100 409 quota_exceeded; eliminar un servicio sin uso.</description>
     </item>
     
     <item>
@@ -335,6 +284,16 @@ Añadir la dependencia En un paquete de módulos ES nuevo:
 mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm install @speedle/sdk@0.</description>
     </item>
     
+    <item>
+      <title>Extender el servicio de decisiones</title>
+      <link>https://engine.speedle.io/es/docs/extending-decision-service/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+
+      <guid>https://engine.speedle.io/es/docs/extending-decision-service/</guid>
+      <description>Implemente store.StoreBuilder y devuelva un almacén que cumpla las interfaces de pms.PolicyStoreManager que necesite su aplicación. Registre el constructor con un nombre único mediante store.Register en la función init de su paquete e importe ese paquete en su ejecutable. Los programas estándar importan los almacenes en cmd/speedle-ads/stores.go y cmd/speedle-pms/stores.go. GetStoreParams relaciona los indicadores de línea de comandos con las propiedades del almacén.
+Para un servicio embebido, pase su almacén a eval.</description>
+    </item>
+
     <item>
       <title>Seguridad</title>
       <link>https://engine.speedle.io/es/docs/security/</link>
@@ -413,7 +372,7 @@ Configuración de seguridad y endpoints. Esta es una referencia de contrato, no 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/about/</guid>
-      <description>Speedle es un motor de autorización de código abierto (UPL-1.0) con el lenguaje de políticas SPDL. Consta de ADS (decisiones) y PMS (gestión de políticas), SDKs en seis lenguajes, Speedle Cloud (hospedado) y Speedle AI (autorización para y con agentes de IA, un servidor MCP y la habilidad policy-modeler).
+      <description>Speedle es un motor de autorización de código abierto (UPL-1.0) con el lenguaje de políticas SPDL. Consta de ADS (decisiones) y PMS (gestión de políticas), SDKs en seis lenguajes y Speedle AI (autorización para y con agentes de IA, un servidor MCP y la habilidad policy-modeler).
 Speedle fue creado por el equipo detrás de Oracle Entitlements Server (OES). Su diseño se basa en muchos años de trabajo de ese equipo en productos de autorización anteriores, incluidos OES, BEA ALES/WLES y CrossLogix.</description>
     </item>
     
