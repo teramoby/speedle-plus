@@ -113,7 +113,10 @@ jobs:
           ADS_ENDPOINT: http://127.0.0.1:6734
         run: |
           set -euo pipefail
-          test "${RUNNER_NAME}/${RUNNER_OS}/${RUNNER_ARCH}" = fiona-speedle/macOS/ARM64
+          case "${RUNNER_NAME}/${RUNNER_OS}/${RUNNER_ARCH}" in
+            fiona-speedle/macOS/ARM64|fiona/macOS/ARM64) ;;
+            *) echo 'Unexpected Fiona runner.' >&2; exit 1 ;;
+          esac
           export GOPATH="$(go env GOPATH)"
           exec 9>/tmp/speedle-plus-test-services.lock
           flock -w 7200 9
@@ -153,7 +156,10 @@ jobs:
           ADS_ENDPOINT: http://127.0.0.1:6734
         run: |
           set -euo pipefail
-          test "${RUNNER_NAME}/${RUNNER_OS}/${RUNNER_ARCH}" = fiona-speedle/macOS/ARM64
+          case "${RUNNER_NAME}/${RUNNER_OS}/${RUNNER_ARCH}" in
+            fiona-speedle/macOS/ARM64|fiona/macOS/ARM64) ;;
+            *) echo 'Unexpected Fiona runner.' >&2; exit 1 ;;
+          esac
           export GOPATH="$(go env GOPATH)"
           case "${CI_TRIAL}" in
             lint)

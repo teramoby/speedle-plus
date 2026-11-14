@@ -13,7 +13,8 @@ permissions:
 jobs:
   execute:
     name: execute
-    # The runner group accepts only this callee at refs/heads/master. Never
+    # Group members accept only this callee at refs/heads/master; repository-level
+    # fiona is outside that workflow allowlist (see docs/RUNNERS.md). Never
     # derive runner eligibility or checkout revision from caller inputs.
     # Every task but build and weekly goes to any Speedle runner
     # (speedle-runner: both charming instances and fiona). Build needs the

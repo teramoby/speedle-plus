@@ -27,7 +27,7 @@ jobs:
         run: |
           set -euo pipefail
           case "${RUNNER_NAME}/${RUNNER_OS}/${RUNNER_ARCH}" in
-            charming-speedle/Linux/X64|charming-speedle-2/Linux/X64|fiona-speedle/macOS/ARM64) ;;
+            charming-speedle/Linux/X64|charming-speedle-2/Linux/X64|fiona-speedle/macOS/ARM64|fiona/macOS/ARM64) ;;
             *) echo 'Unexpected runner.' >&2; exit 1 ;;
           esac
           printf 'Runner: %s; workspace: %s; temp: %s\n' "${RUNNER_NAME}" "${GITHUB_WORKSPACE}" "${RUNNER_TEMP}"

@@ -15,11 +15,19 @@ Weekly runs stay on `fiona-speedle`.
 
 `fiona` (macOS ARM64) is registered at repository level. The Go CI worker
 accepts it for the same tasks as `fiona-speedle`, rejecting `build` because it
-needs Linux. Its scheduling labels are assigned by a runner administrator after
-the identity change merges.
+needs Linux. The ReviewBot manual regression and Fiona nightly/CI trial guards
+also accept this exact identity. Its planned scheduling labels are
+`speedle-runner` and `fiona-speedle`; a runner administrator assigns them after
+the identity change merges. It must not receive `speedle-linux` or `speedle-control`.
+This repository-level registration is outside the `Speedle` group and its
+workflow allowlist. Its default self-hosted/macOS/ARM64 labels can already be
+selected by repository workflows; accepting its name here does not create that
+access or provide an equivalent workflow restriction. The maintainer's trust
+policy below applies to code admitted to this persistent account.
 
 ReviewBot selects `[self-hosted, speedle-runner]`, so `charming-speedle`,
-`charming-speedle-2` and `fiona-speedle` may take it. Go lint, test, post-merge
+`charming-speedle-2`, `fiona-speedle` and, after label assignment, `fiona` may
+take it. Go lint, test, post-merge
 regression and the nightly use the same label, and the Go CI worker also
 accepts `donkey-speedle` for those tasks. Go build
 (it needs the Linux Hugo release and `sha256sum`) selects
@@ -39,7 +47,8 @@ The `speedle-control` label belongs only to `charming-speedle-2`. ReviewBot's
 dependency merge waiter uses it so waiting for CI never occupies the only
 fixed-port test runner. Keep this label off the first runner.
 
-The group also restricts access to these exact default-branch workflows:
+For its members, the `Speedle` group restricts access to these exact
+default-branch workflows:
 
 - `teramoby/speedle-plus/.github/workflows/go-ci-worker.yml@refs/heads/master`
 - `teramoby/speedle-plus/.github/workflows/reviewbot.yml@refs/heads/master`
@@ -50,7 +59,8 @@ The group also restricts access to these exact default-branch workflows:
 trusted callee, which derives runner eligibility and checkout SHA from the
 original GitHub event, not caller inputs. The validated task selects only between
 the three fixed label lists after that eligibility check. A fork editing its own workflow cannot
-directly select this runner or change the trusted worker's routing policy.
+directly select a group member or change the trusted worker's routing policy.
+The repository-level `fiona` registration is not covered by this group restriction.
 
 | Workload | Runner |
 | --- | --- |
@@ -85,8 +95,9 @@ processes, including those of ReviewBot; changes it leaves can also affect later
 jobs. Separate work directories and pooling do not provide a security boundary.
 Use separate OS accounts with restrictive permissions or isolated hosts if the
 code admitted by this policy cannot be trusted with the runner account's access.
-The runner group restriction prevents forks from changing the trusted routing
-workflow; it does not sandbox code admitted by that workflow. Repository write
+For group members, the runner group restriction prevents forks from changing
+the trusted routing workflow; it does not sandbox code admitted by that
+workflow. Repository write
 access and dependency changes therefore remain part of the host's trust boundary.
 ReviewBot analysis only reads the diff and does not execute PR code.
 
@@ -147,8 +158,9 @@ and protected-worker suites are:
 node --test scripts/tests/test_runner_routing.cjs scripts/tests/test_go_ci_worker.cjs
 ```
 
-Testing a changed ReviewBot workflow on a branch requires an administrator to
-temporarily allow that exact reviewed branch in the runner group and remove it
+Testing a changed ReviewBot workflow on a branch using a group member requires
+an administrator to temporarily allow that exact reviewed branch in the runner
+group and remove it
 after validation. Do not allow PR merge refs or wildcard workflow revisions.
 
 The workflows limit GitHub tokens to required permissions and do not persist Git
@@ -166,10 +178,9 @@ container from `run-mysql-tests.py`, and MongoDB on a temporary native replica
 set from `validate-mongodb.sh`. Its results reach the nightly report.
 
 `mongodb-nightly-validation.yml` runs the MongoDB regression on demand through
-`workflow_dispatch`. It selects the `speedle-runner` label, which charming,
-charming-2 and fiona (macOS ARM64, also in the `Speedle` group) carry, accepts
-macOS ARM64 or Linux x64, and shares the nightly's concurrency group, so the two
-never run at once on the etcd ports.
+`workflow_dispatch`. It selects the shared `speedle-runner` label described
+above, accepts macOS ARM64 or Linux x64, and shares the nightly's concurrency
+group, so the two never run at once on the etcd ports.
 
 Shared integration fixtures select `file`, `etcd`, `mongodb` or `mysql` through
 `STORE_TYPE`. `SPEEDLE_TEST_STORE_PROPS` supplies backend connection properties;
@@ -178,7 +189,8 @@ see `docs/MYSQL_TESTS.md` for isolation, optional-capability checks and artifact
 ## Fiona full nightly trial
 
 The manual MongoDB validation workflow accepts `nightly_trial: true` to run
-the complete nightly script on `fiona-speedle` (macOS ARM64), including all
+the complete nightly script via the `fiona-speedle` label, accepting either
+`fiona-speedle` or `fiona` (macOS ARM64), including all
 four stores, executable guides, supported Go releases and CI script checks.
 It uses the nightly host lock, port preflight and sanitized test environment;
 results are uploaded as `fiona-nightly-results`. Its concurrency group remains
@@ -190,7 +202,8 @@ service cannot open; the test images are public.
 
 ## Fiona CI trial
 
-`ci_trial` on the same workflow runs one CI task on `fiona-speedle` with the
+`ci_trial` on the same workflow runs one CI task via the `fiona-speedle` label,
+accepting either `fiona-speedle` or `fiona` (macOS ARM64), with the
 commands CI uses: `lint` (go vet, go mod tidy check), `test` (the merge gate,
 `run-go-tests.sh gate`), `regression` (the post-merge regression), `weekly`
 (`run-go-tests.sh weekly`) or `reviewbot`
