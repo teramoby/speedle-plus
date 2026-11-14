@@ -40,11 +40,11 @@ Go는 `GOROOT` 및 기본 `GOPATH`를 자동으로 구성하므로 별도의 사
 
 <!-- quick-start: install -->
 ```bash
-GOBIN="$PWD/bin" go install github.com/teramoby/speedle-plus/cmd/...@v1.7.1
+GOBIN="$PWD/bin" go install github.com/teramoby/speedle-plus/cmd/...@v1.8.0
 ls bin
 ```
 
-`GOBIN`을 지정하면 실행 파일이 현재 디렉터리의 `bin` 폴더 내에 유지됩니다. 지정하지 않으면 Go는 `$(go env GOPATH)/bin`에 작성합니다. `v1.7.1`은 작성 시점의 최신 릴리스 태그입니다. `go install`은 태그가 지정된 소스에서 빌드하고 Go 체크섬 데이터베이스와 대조하여 검증합니다.
+`GOBIN`을 지정하면 실행 파일이 현재 디렉터리의 `bin` 폴더 내에 유지됩니다. 지정하지 않으면 Go는 `$(go env GOPATH)/bin`에 작성합니다. `v1.8.0`은 작성 시점의 최신 릴리스 태그입니다. `go install`은 태그가 지정된 소스에서 빌드하고 Go 체크섬 데이터베이스와 대조하여 검증합니다.
 
 ### 경로 B: 클론 후 빌드
 

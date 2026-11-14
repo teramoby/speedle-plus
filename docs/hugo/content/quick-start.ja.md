@@ -40,11 +40,11 @@ Go は `GOROOT` とデフォルトの `GOPATH` を自動的に構成します。
 
 <!-- quick-start: install -->
 ```bash
-GOBIN="$PWD/bin" go install github.com/teramoby/speedle-plus/cmd/...@v1.7.1
+GOBIN="$PWD/bin" go install github.com/teramoby/speedle-plus/cmd/...@v1.8.0
 ls bin
 ```
 
-`GOBIN` により、実行可能ファイルがこのディレクトリの `bin` フォルダー内に保持されます。指定しない場合、Go は `$(go env GOPATH)/bin` に書き込みます。`v1.7.1` は執筆時点での最新リリースタグです。`go install` はタグ付けされたソースからビルドし、Go チェックサムデータベースと照合して検証します。
+`GOBIN` により、実行可能ファイルがこのディレクトリの `bin` フォルダー内に保持されます。指定しない場合、Go は `$(go env GOPATH)/bin` に書き込みます。`v1.8.0` は執筆時点での最新リリースタグです。`go install` はタグ付けされたソースからビルドし、Go チェックサムデータベースと照合して検証します。
 
 ### ルート B: クローンしてビルド
 
