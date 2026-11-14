@@ -201,7 +201,11 @@ func (s *Syncer) SyncAtLeast(ctx context.Context, service Service, minRevision u
 	if local.Epoch == service.Epoch && local.Revision > service.Revision {
 		// This may be the first sight of a newer disk-cache copy: the machine
 		// has not necessarily learned its revision when it processes the ack.
-		revisionWarnings.warn(service.ID, service.Epoch, service.Revision, local.Revision, service.Revision, "discovery")
+		// A caller already carrying a newer notified head may be reusing an
+		// older discovery result after catch-up; that is not a new rollback.
+		if minRevision <= service.Revision {
+			revisionWarnings.warn(service.ID, service.Epoch, service.Revision, local.Revision, service.Revision, "discovery")
+		}
 		if fromCache {
 			if err := s.store(local); err != nil {
 				return nil, err

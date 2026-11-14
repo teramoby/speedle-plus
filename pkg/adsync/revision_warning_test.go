@@ -154,6 +154,35 @@ func TestLowerDiscoveryRevisionWarnsForDiskCacheOnStartup(t *testing.T) {
 	requireRevisionWarning(t, buffer, service.ID, service.Epoch, "discovery", 1, 5)
 }
 
+func TestNotifiedCatchUpDoesNotWarnForReusedDiscovery(t *testing.T) {
+	buffer, _ := captureRevisionWarnings(t)
+	service := newFixtureService(testServiceID1, "books")
+	fixture := newFixture(t, service)
+	syncer := fixture.newSyncer("", nil)
+	syncFixtureService(t, syncer, "books")
+	discovery, err := syncer.Services(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	fixture.source.configure(func(source *fixtureSource) {
+		service.publish(t, Change{Op: "upsert", Kind: "service", ID: service.ID, Name: stringPointer("books")})
+	})
+	// A notification advances the known head to 2, while discovery still
+	// carries 1. The first call catches up; later calls reuse that old result.
+	for range 3 {
+		state, err := syncer.SyncAtLeast(context.Background(), discovery.Services[0], 2)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if state.Revision != 2 {
+			t.Fatalf("notified head = %d, want 2", state.Revision)
+		}
+	}
+	if buffer.Len() != 0 {
+		t.Fatalf("reusing discovery after notified catch-up warned: %s", buffer.String())
+	}
+}
+
 func TestLowerSnapshotRevisionWarnsAndKeepsProtocolError(t *testing.T) {
 	buffer, _ := captureRevisionWarnings(t)
 	service := newFixtureService(testServiceID1, "books")
