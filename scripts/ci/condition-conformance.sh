@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Exercise both authorization paths and the fork's supplemental tests, then
+# audit every condition-path statement without changing the repository gate.
+set -euo pipefail
+cd "$(dirname "$0")/../.."
+conformance_results=$(mktemp -d "${TMPDIR:-/tmp}/speedle-condition-conformance.XXXXXX")
+trap 'rm -rf "${conformance_results}"' EXIT
+
+STORE_TYPE=file go test -count=1 \
+  -coverpkg=./pkg/eval/condition,./pkg/eval/function,./3rdparty/github.com/Knetic/govaluate \
+  -coverprofile="${conformance_results}/coverage.out" \
+  ./pkg/eval/... ./pkg/svcs/adsrest/... ./3rdparty/github.com/Knetic/govaluate
+STORE_TYPE=file go test -count=1 -v ./pkg/eval -run '^TestConditionConformanceMatrix$' \
+  > "${conformance_results}/matrix.log"
+python3 scripts/ci/condition-conformance-report.py \
+  "${conformance_results}/coverage.out" "${conformance_results}/matrix.log"
+python3 -m unittest discover -s scripts/tests -p 'test_condition_conformance_report.py'
