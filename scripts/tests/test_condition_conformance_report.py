@@ -109,3 +109,17 @@ class ConditionCoverageReportTest(unittest.TestCase):
         self.assertFalse(failed, output)
         self.assertIn('Known differences (name / expression / expected authorization):', output)
         self.assertIn('Difference: string/mismatch-!=/wrong-type', output)
+
+    def test_matrix_preserves_error_outcomes_and_reasons(self):
+        failed, output = self.run_report(matrix=(
+            '    condition_conformance_test.go:1: Matrix cells are match / no-match / error counts.\n'
+            '    condition_conformance_test.go:2: | 2.4 / IsSubSet | 1/1/2 |\n'
+            '    condition_conformance_test.go:3: Outcome totals: 1 match / 1 no-match / 2 error\n'
+            '    condition_conformance_test.go:4: Error cases (runtime errors are currently discarded by both public authorization paths):\n'
+            '    condition_conformance_test.go:5: Error: 2.4/IsSubSet/call/arity-zero: IsSubSet() => SPDL-2003 Usage: IsSubSet(S1, S2) - homogeneous scalar sets required; API allowed=false, runtime error discarded\n'))
+        self.assertFalse(failed, output)
+        for expected in ('Matrix cells are match / no-match / error', '| 2.4 / IsSubSet | 1/1/2 |',
+                         'Outcome totals: 1 match / 1 no-match / 2 error', 'Error cases (runtime errors',
+                         'Error: 2.4/IsSubSet/call/arity-zero:', 'SPDL-2003 Usage: IsSubSet(S1, S2)',
+                         'API allowed=false, runtime error discarded'):
+            self.assertIn(expected, output)

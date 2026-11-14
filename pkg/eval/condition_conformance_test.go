@@ -14,6 +14,8 @@ import (
 	"testing"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+	logtest "github.com/sirupsen/logrus/hooks/test"
 	ads "github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/eval"
@@ -26,16 +28,47 @@ import (
 // are explicit snapshots, never calculated using a second expression evaluator.
 // A forbidden cell has a well-typed operand probe and a mismatched operand probe;
 // neither is required to grant. Allowed cells have both grant and nonmatch probes.
+// Authorization and condition outcomes are separate: runtime errors are checked
+// on both paths, even though the current public APIs discard those errors.
 type conditionCase struct {
 	section, row, op, name, expression string
 	effect                             string
-	errorMessage                       string
+	errorMessage                       string // Public IsAllowed/REST error (compile failures).
+	conditionError                     string // Runtime error logged, then discarded by getPolicyList.
 	attributes                         []*adsrest.JsonAttribute
 	want                               bool
 	difference                         string
 }
 
 var conditionOperators = []string{"+", "-", "*", "/", "%", "==", "!=", ">", ">=", "<", "<=", "=~", "in", "&&", "||", "!"}
+
+// Snapshot the fork's diagnostic wording, including its historical "not a
+// number" message for regex/type failures. Do not derive expectations by
+// evaluating a second expression or calling the function under test.
+func operatorError(value, op string) string {
+	switch op {
+	case "!":
+		return fmt.Sprintf("Value '%s' cannot be used with the prefix '%s'", value, op)
+	case "&&", "||":
+		return fmt.Sprintf("Value '%s' cannot be used with the logical operator '%s', it is not a bool", value, op)
+	case "+", "-", "*", "/", "%":
+		return fmt.Sprintf("Value '%s' cannot be used with the modifier '%s', it is not a number", value, op)
+	default:
+		return fmt.Sprintf("Value '%s' cannot be used with the comparator '%s', it is not a number", value, op)
+	}
+}
+
+func builtinError(fn string) string {
+	usage := map[string]string{
+		"Sqrt":     "Usage: Sqrt(x)",
+		"Max":      "Usage: Max(x1, x2, ...), xi must be numeric",
+		"Min":      "Usage: Min(x1, x2, ...), xi must be numeric",
+		"Sum":      "Usage: Sum(x1, x2, ...), xi must be numeric",
+		"Avg":      "Usage: Avg(x1, x2, ...), xi must be finite numeric",
+		"IsSubSet": "Usage: IsSubSet(S1, S2) - homogeneous scalar sets required",
+	}
+	return "SPDL-2003 " + usage[fn]
+}
 
 func conditionCases() []conditionCase {
 	var cases []conditionCase
@@ -86,6 +119,21 @@ func conditionCases() []conditionCase {
 				name := []string{"positive", "negative"}[i]
 				want := ok && i == 0
 				add("2.1", typ.name, op, name, expression, want, attr("x", typ.kind, typ.value), attr("other", "bool", false))
+				if !ok {
+					value := map[string]string{"string": "a", "numeric": "5", "bool": "true", "datetime": "5", "array": "[4 5]"}[typ.name]
+					errorOp := op
+					if op == "!" && i == 1 {
+						switch typ.name {
+						case "string":
+							value = "aa"
+						case "numeric", "datetime":
+							value = "10"
+						case "array":
+							errorOp = "+" // The inner addition fails before ! is evaluated.
+						}
+					}
+					cases[len(cases)-1].conditionError = operatorError(value, errorOp)
+				}
 				if typ.name == "datetime" && strings.Contains("+-*/%", op) || typ.name == "array" && (op == "==" || op == "!=") {
 					cases[len(cases)-1].difference = "known difference, behaviour pinned"
 				}
@@ -109,6 +157,13 @@ func conditionCases() []conditionCase {
 		for _, op := range []string{"==", "!=", ">", ">=", "<", "<=", "=~", "&&", "||"} {
 			// known difference, behaviour pinned: != compares different types as unequal.
 			add("2.1", kind, "mismatch-"+op, "wrong-type", "x "+op+" y", (op == "!=" || kind == "bool" && op == "||"), attr("x", kind, value), attr("y", otherKind, other))
+			if op != "==" && op != "!=" && !(kind == "bool" && op == "||") {
+				errorValue := "5"
+				if kind == "bool" && op != "&&" {
+					errorValue = "true"
+				}
+				cases[len(cases)-1].conditionError = operatorError(errorValue, op)
+			}
 			if op == "!=" || kind == "bool" && op == "||" {
 				cases[len(cases)-1].difference = "known difference, behaviour pinned"
 			}
@@ -231,7 +286,21 @@ func conditionCases() []conditionCase {
 		if c.fn == "unregistered" {
 			cases[len(cases)-1].errorMessage = "Undefined function foo"
 		}
-		if c.name == "scaled-rounding-overflow" || c.name == "flattened-array" || c.name == "flattened-first" {
+		// False results are distinct from rejected calls. The fork flattens an
+		// empty first argument away, so empty-first/both reject at this layer.
+		switch c.name {
+		case "negative", "arity", "arity-zero", "arity-one", "wrong-last", "arity-three-arrays", "mixed-first", "mixed-last", "nan-first", "infinity-last", "empty-first", "empty-both":
+			cases[len(cases)-1].conditionError = builtinError(c.fn)
+		case "empty":
+			if c.fn == "Sqrt" || c.fn == "Max" || c.fn == "Min" {
+				cases[len(cases)-1].conditionError = builtinError(c.fn)
+			}
+		case "overflow":
+			cases[len(cases)-1].conditionError = "SPDL-2003 Sum result is not finite"
+		case "scaled-rounding-overflow":
+			cases[len(cases)-1].conditionError = "SPDL-2003 Avg result is not finite"
+		}
+		if c.name == "scaled-rounding-overflow" || c.name == "flattened-array" || c.name == "flattened-first" || c.name == "empty-first" || c.name == "empty-both" {
 			cases[len(cases)-1].difference = "known difference, behaviour pinned"
 		}
 	}
@@ -242,6 +311,7 @@ func conditionCases() []conditionCase {
 				expression = fn + "(1,(1,2)) == 0"
 			}
 			add("2.4", fn, "call", "reject-"+value, expression, false)
+			cases[len(cases)-1].conditionError = builtinError(fn)
 		}
 	}
 	for i, e := range []string{
@@ -261,6 +331,10 @@ func conditionCases() []conditionCase {
 		add("1 / 2.2.2", "missing", "logic", c.expression, c.expression, c.want)
 		add("1 / 2.2.2", "missing-deny", "logic", c.expression, c.expression, !c.want)
 		cases[len(cases)-1].effect = pms.Deny
+		if c.expression != "true || missing" && c.expression != "false && missing" && c.expression != "!(true || missing)" {
+			cases[len(cases)-1].conditionError = "No parameter 'missing' found."
+			cases[len(cases)-2].conditionError = "No parameter 'missing' found."
+		}
 		if c.expression == "true || missing" {
 			cases[len(cases)-1].difference = "known difference, behaviour pinned"
 			cases[len(cases)-2].difference = "known difference, behaviour pinned"
@@ -282,6 +356,9 @@ func conditionCases() []conditionCase {
 		for i, e := range []string{c.yes, c.no} {
 			add("known differences", c.name, "extension", []string{"positive", "negative"}[i], e, i == 0, attr("hyphen-name", "numeric", 5.0), attr("grant", "numeric", 5.0), attr("s", "string", "5"), attr("n", "numeric", 5.0), attr("nums", "numeric", []interface{}{5.0}))
 			cases[len(cases)-1].difference = "known difference, behaviour pinned"
+			if c.name == "single-element-array" && i == 1 {
+				cases[len(cases)-1].conditionError = operatorError("5", "in")
+			}
 		}
 	}
 	return cases
@@ -291,6 +368,14 @@ func conditionCases() []conditionCase {
 // pkg/svcs/adsrest/{handlers,feature_contract}_test.go. Those helpers are private
 // to that package; an external eval test avoids an eval -> adsrest import cycle.
 func TestConditionConformance(t *testing.T) {
+	// Observe the real evaluateCondition calls in each authorization path.
+	// getPolicyList currently discards their returned errors; requiring only
+	// NO_APPLICABLE_POLICIES would otherwise misclassify failures as clean false.
+	// As in recovery_test.go, keep this test and its subtests nonparallel while
+	// the process-wide logger hook is installed, and restore hooks on cleanup.
+	oldHooks := log.StandardLogger().ReplaceHooks(make(log.LevelHooks))
+	hook := logtest.NewGlobal()
+	t.Cleanup(func() { log.StandardLogger().ReplaceHooks(oldHooks) })
 	cases := conditionCases()
 	service := &pms.Service{Name: "conformance"}
 	for i, c := range cases {
@@ -341,7 +426,9 @@ func TestConditionConformance(t *testing.T) {
 				attrs[a.Name] = v
 			}
 			ctx := ads.RequestContext{ServiceName: service.Name, Resource: fmt.Sprint(i), Action: "read", Subject: subject, Attributes: attrs}
+			hook.Reset()
 			direct, reason, err := e.IsAllowed(ctx)
+			assertConditionError(t, hook, "file-store IsAllowed", c)
 			expectedReason := ads.NO_APPLICABLE_POLICIES
 			if c.want {
 				expectedReason = ads.GRANT_POLICY_FOUND
@@ -363,7 +450,9 @@ func TestConditionConformance(t *testing.T) {
 				t.Fatal(err)
 			}
 			rec := httptest.NewRecorder()
+			hook.Reset()
 			router.ServeHTTP(rec, httptest.NewRequest("POST", svcs.PolicyAtzPath+"is-allowed", bytes.NewReader(body)))
+			assertConditionError(t, hook, "REST is-allowed", c)
 			if rec.Code != 200 {
 				t.Fatalf("REST status %d: %s", rec.Code, rec.Body.String())
 			}
@@ -378,15 +467,55 @@ func TestConditionConformance(t *testing.T) {
 	}
 }
 
+func assertConditionError(t *testing.T, hook *logtest.Hook, path string, c conditionCase) {
+	t.Helper()
+	var got []string
+	const prefix = "Error happens in evaluating condition ("
+	for _, entry := range hook.AllEntries() {
+		if strings.HasPrefix(entry.Message, prefix) {
+			got = append(got, entry.Message)
+			if entry.Level != log.ErrorLevel {
+				t.Errorf("%s: condition failure logged at %v, want error", path, entry.Level)
+			}
+		}
+	}
+	var want []string
+	if c.conditionError != "" {
+		want = []string{prefix + c.expression + "): " + c.conditionError}
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("%s: condition errors = %q, want %q", path, got, want)
+	}
+}
+
+func (c conditionCase) outcome() string {
+	if c.errorMessage != "" || c.conditionError != "" {
+		return "error"
+	}
+	match := c.want
+	if c.effect == pms.Deny {
+		match = !match
+	}
+	if match {
+		return "match"
+	}
+	return "no-match"
+}
+
 func TestConditionConformanceMatrix(t *testing.T) {
-	counts := map[string]map[string]int{}
+	counts := map[string]map[string]map[string]int{}
 	sections := map[string]int{}
+	totals := map[string]int{}
 	for _, c := range conditionCases() {
 		key := c.section + " / " + c.row
 		if counts[key] == nil {
-			counts[key] = map[string]int{}
+			counts[key] = map[string]map[string]int{}
 		}
-		counts[key][c.op]++
+		if counts[key][c.op] == nil {
+			counts[key][c.op] = map[string]int{}
+		}
+		counts[key][c.op][c.outcome()]++
+		totals[c.outcome()]++
 		sections[c.section]++
 	}
 	var rows []string
@@ -398,20 +527,35 @@ func TestConditionConformanceMatrix(t *testing.T) {
 	for i := range header {
 		header[i] = strings.ReplaceAll(header[i], "|", `\|`)
 	}
+	t.Log("Matrix cells are match / no-match / error counts. Runtime errors are asserted from the actual condition-error log in each path; public APIs currently discard them. Compile errors are returned by both APIs.")
 	t.Log("\n| Reference / row | " + strings.Join(header, " | ") + " | other |\n|---|" + strings.Repeat("---|", len(conditionOperators)+1))
 	for _, row := range rows {
 		line := "| " + row + " |"
-		total := 0
+		other := map[string]int{}
+		for _, outcomes := range counts[row] {
+			for outcome, n := range outcomes {
+				other[outcome] += n
+			}
+		}
+		cell := func(outcomes map[string]int) string {
+			return fmt.Sprintf(" %d/%d/%d |", outcomes["match"], outcomes["no-match"], outcomes["error"])
+		}
 		for _, op := range conditionOperators {
-			n := counts[row][op]
-			total += n
-			line += fmt.Sprintf(" %d |", n)
+			line += cell(counts[row][op])
+			for outcome, n := range counts[row][op] {
+				other[outcome] -= n
+			}
 		}
-		other := 0
-		for _, n := range counts[row] {
-			other += n
+		t.Log(line + cell(other))
+	}
+	t.Logf("Outcome totals: %d match / %d no-match / %d error", totals["match"], totals["no-match"], totals["error"])
+	t.Log("Error cases (runtime errors are currently discarded by both public authorization paths):")
+	for _, c := range conditionCases() {
+		if c.conditionError != "" {
+			t.Logf("Error: %s/%s/%s/%s: %s => %s; API allowed=%v, runtime error discarded", c.section, c.row, c.op, c.name, c.expression, c.conditionError, c.want)
+		} else if c.errorMessage != "" {
+			t.Logf("Error: %s/%s/%s/%s: %s => %s; API ERROR_IN_EVALUATION", c.section, c.row, c.op, c.name, c.expression, c.errorMessage)
 		}
-		t.Log(line + fmt.Sprintf(" %d |", other-total))
 	}
 	t.Log("Known differences / open deviations (name / expression / expected authorization):")
 	for _, c := range conditionCases() {
@@ -429,7 +573,11 @@ func TestConditionConformanceMatrix(t *testing.T) {
 	}
 	for _, typ := range []string{"string", "numeric", "bool", "datetime", "array"} {
 		for _, op := range conditionOperators {
-			if counts["2.1 / "+typ][op] != 2 {
+			n := 0
+			for _, count := range counts["2.1 / "+typ][op] {
+				n += count
+			}
+			if n != 2 {
 				t.Errorf("missing positive/negative cell %s %s", typ, op)
 			}
 		}

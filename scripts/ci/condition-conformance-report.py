@@ -184,7 +184,8 @@ def report(profile, matrix=None):
             match = re.search(r'condition_conformance_test.go:\d+:\s?(.*)', line)
             if match:
                 content = match.group(1).strip()
-                if content.startswith(('|', 'Section ', 'Known differences', 'Difference:')):
+                if content.startswith(('|', 'Section ', 'Known differences', 'Difference:',
+                                       'Matrix cells ', 'Outcome totals:', 'Error cases ', 'Error:')):
                     print(content)
             elif line.strip().startswith('|'):
                 print(line.strip())
