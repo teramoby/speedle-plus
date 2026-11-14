@@ -7,6 +7,7 @@ import (
 	"os"
 	"reflect"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"testing"
@@ -83,6 +84,10 @@ func TestLegacyProtoAuditRecords(t *testing.T) {
 					if err := json.Unmarshal(output.Bytes(), &actual); err != nil {
 						t.Fatal(err)
 					}
+					if call.name == "permissions" {
+						actual.Value = normalizePermissionAuditOrder(actual.Value, format)
+						want.Value = normalizePermissionAuditOrder(want.Value, format)
+					}
 					if !reflect.DeepEqual(actual, want) {
 						t.Fatalf("audit JSON changed:\ngot %#v\nwant %#v", actual, want)
 					}
@@ -98,6 +103,10 @@ func TestLegacyProtoAuditRecords(t *testing.T) {
 						}
 						value = text
 					}
+					if call.name == "permissions" {
+						value = normalizePermissionAuditOrder(value, format)
+						want.Value = normalizePermissionAuditOrder(want.Value, format)
+					}
 					if !strings.Contains(output.String(), want.Message) || !strings.Contains(output.String(), "response="+want.Response) || !reflect.DeepEqual(value, want.Value) {
 						t.Fatalf("audit text changed:\ngot %#v\nwant %#v\nrecord %s", value, want.Value, output.String())
 					}
@@ -105,4 +114,28 @@ func TestLegacyProtoAuditRecords(t *testing.T) {
 			})
 		}
 	}
+}
+
+// Permission enumeration was already unordered before this migration. Keep
+// exact per-entry bytes, separators and the final space, normalizing only the
+// order of the two simple fixture entries (whose strings contain no spaces).
+func normalizePermissionAuditOrder(value any, format string) any {
+	if format == "text" {
+		text, ok := value.(string)
+		if !ok || !strings.HasPrefix(text, "[") || !strings.HasSuffix(text, " ]") {
+			return value
+		}
+		entries := strings.Split(text[1:len(text)-2], "  ")
+		sort.Strings(entries)
+		return "[" + strings.Join(entries, "  ") + " ]"
+	}
+	entries, ok := value.([]any)
+	if !ok {
+		return value
+	}
+	ordered := append([]any(nil), entries...)
+	sort.Slice(ordered, func(i, j int) bool {
+		return ordered[i].(map[string]any)["resource"].(string) < ordered[j].(map[string]any)["resource"].(string)
+	})
+	return ordered
 }
