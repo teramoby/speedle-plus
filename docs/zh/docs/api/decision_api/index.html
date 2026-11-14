@@ -211,9 +211,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <h2 id="健康检查端点">健康检查端点</h2>
 
-<p><code>GET /healthz</code> 报告进程存活；进程运行期间始终返回 <code>200 {&quot;status&quot;:&quot;ok&quot;}</code>，不会重启已停止的实例。</p>
+<p><code>GET /healthz</code> 报告进程存活；进程运行期间始终返回 <code>200 {&quot;status&quot;:&quot;ok&quot;}</code>。</p>
 
-<p><code>GET /readyz</code> 报告实例当前能否响应授权请求：就绪返回 <code>200</code>，否则返回 <code>503</code>。该端点无需认证，只返回汇总计数，不暴露 service 标识、版本、停止原因或撤销状态。不支持策略分发的存储始终就绪。</p>
+<p><code>GET /readyz</code> 无需认证，本地决策服务返回 <code>200 {&quot;ready&quot;:true,&quot;servicesTotal&quot;:0,&quot;servicesUsable&quot;:0}</code>。两个计数始终为零，该探针不枚举存储中的服务。</p>
 </div>
 </div>
 </main>

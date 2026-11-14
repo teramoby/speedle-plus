@@ -213,7 +213,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <p><code>GET /healthz</code>는 프로세스의 실행 상태를 보고합니다. 프로세스가 실행 중인 동안 항상 <code>200 {&quot;status&quot;:&quot;ok&quot;}</code>를 반환합니다.</p>
 
-<p><code>GET /readyz</code>는 인스턴스가 인가 요청을 수락하고 평가할 준비가 되었는지 보고합니다. 준비가 완료된 경우 <code>200</code>, 그렇지 않은 경우 <code>503</code>을 반환합니다. 이 엔드포인트는 인증이 필요하지 않으며 집계된 카운트만 반환합니다.</p>
+<p><code>GET /readyz</code>는 인증이 필요하지 않으며 로컬 결정 서비스에서 <code>200 {&quot;ready&quot;:true,&quot;servicesTotal&quot;:0,&quot;servicesUsable&quot;:0}</code>을 반환합니다. 카운트는 항상 0이며 저장된 서비스를 열거하지 않습니다.</p>
 </div>
 </div>
 </main>

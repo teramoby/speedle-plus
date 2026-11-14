@@ -153,14 +153,6 @@ definitions:
     type: array
   PublicReadiness:
     properties:
-      lastConfirmedAckAt:
-        type: string
-      liveness:
-        enum:
-          - live
-          - stale
-          - stopped
-        type: string
       ready:
         type: boolean
       servicesTotal:
@@ -409,17 +401,13 @@ x-additional-paths:
         - health
   /readyz:
     get:
-      description: 授权流量就绪状态，按实例当前服务的 service 汇总。该端点无需认证，不暴露 service 标识或版本。
+      description: 本地决策服务的无需认证探针，始终返回 ready 为 true，两个服务计数为零。
       operationId: readyz
       produces:
         - application/json
       responses:
         "200":
           description: 实例可以响应授权请求
-          schema:
-            $ref: '#/definitions/PublicReadiness'
-        "503":
-          description: 实例当前无法响应授权请求
           schema:
             $ref: '#/definitions/PublicReadiness'
       summary: 授权就绪状态

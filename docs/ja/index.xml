@@ -510,7 +510,7 @@ Speedle Discord コミュニティに参加してください
       <description>構成された ADS のインターフェースリファレンス。リクエスト属性は型付き配列、診断レスポンス属性はオブジェクトです。
 セキュリティとエンドポイント構成。本文はインターフェース仕様を説明するものであり、speedle.io はホスト型バックエンドを提供しません。Try it out は無効です。仕様にサーバーホストがないため、有効にするとリクエストはこのドキュメントサイトへ送られます。
    document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/swagger/policy-check.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34;, supportedSubmitMethods: [] }); window.ui = ui; });  ヘルスチェックエンドポイント GET /healthz はプロセスの稼働状態を報告します。プロセス実行中は常に 200 {&amp;quot;status&amp;quot;:&amp;quot;ok&amp;quot;} を返します。
-GET /readyz はインスタンスが認可リクエストに応答可能かどうかを報告します。準備完了の場合は 200、それ以外は 503 を返します。このエンドポイントは認証を必要とせず、集計カウントのみを返します。</description>
+GET /readyz は認証不要で、ローカル決定サービスでは 200 {&amp;quot;ready&amp;quot;:true,&amp;quot;servicesTotal&amp;quot;:0,&amp;quot;servicesUsable&amp;quot;:0} を返します。カウントは常にゼロで、保存されたサービスを列挙するものではありません。</description>
     </item>
     
   </channel>

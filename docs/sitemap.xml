@@ -2,35 +2,35 @@
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 	
 	<sitemap>
-	   	<loc>https://engine.speedle.io/en/sitemap.xml</loc>
+		<loc>https://engine.speedle.io/ko/sitemap.xml</loc>
 		
 		<lastmod>2026-11-14T18:30:00+08:00</lastmod>
 		
 	</sitemap>
 	
 	<sitemap>
-	   	<loc>https://engine.speedle.io/zh/sitemap.xml</loc>
+		<loc>https://engine.speedle.io/es/sitemap.xml</loc>
 		
 		<lastmod>2026-11-14T18:30:00+08:00</lastmod>
 		
 	</sitemap>
 	
 	<sitemap>
-	   	<loc>https://engine.speedle.io/ja/sitemap.xml</loc>
+		<loc>https://engine.speedle.io/en/sitemap.xml</loc>
 		
 		<lastmod>2026-11-14T18:30:00+08:00</lastmod>
 		
 	</sitemap>
 	
 	<sitemap>
-	   	<loc>https://engine.speedle.io/ko/sitemap.xml</loc>
+		<loc>https://engine.speedle.io/zh/sitemap.xml</loc>
 		
 		<lastmod>2026-11-14T18:30:00+08:00</lastmod>
 		
 	</sitemap>
 	
 	<sitemap>
-	   	<loc>https://engine.speedle.io/es/sitemap.xml</loc>
+		<loc>https://engine.speedle.io/ja/sitemap.xml</loc>
 		
 		<lastmod>2026-11-14T18:30:00+08:00</lastmod>
 		
