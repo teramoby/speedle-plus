@@ -9,9 +9,10 @@
   `logging.LogConfig.RotationConfig` type for source compatibility. The v2
   migration is deferred to the logging redesign in #389.
 - Updated etcd client/server modules to v3.7.3 and their required indirect
-  dependencies. Client creation is now nonblocking: a successful constructor
-  does not establish endpoint readiness, and deprecated `grpc.WithBlock` is
-  ignored by etcd. Embedded etcd no longer supports legacy v2 discovery or v2
+  dependencies. Upstream client creation no longer honors the deprecated
+  `grpc.WithBlock` option. Speedle does not use that option; ADS still loads
+  its initial policy snapshot and establishes any configured watch before
+  opening listeners. Embedded etcd no longer supports legacy v2 discovery or v2
   requests; deployments must follow etcd's 3.6-to-3.7 upgrade guidance. This
   dependency update does not upgrade an externally managed etcd server.
   logrus v1.9.4 and zap v1.27.1 are required module selections from etcd;
@@ -28,7 +29,9 @@
   HTTP/2 requests more strictly, reports truncated messages as unexpected EOF,
   and fixes forceful shutdown while graceful shutdown is waiting. The
   OpenTelemetry SDK/trace modules use v1.47.0 in both the root module and the
-  archived benchmark harness. Benchmark engine baselines, recorded results and
+  archived benchmark harness; its OTLP exporters retain v1.46.0. This is an
+  SDK/trace update, not a coordinated upgrade of every telemetry module.
+  Benchmark engine baselines, recorded results and
   executed-source archives are unchanged; dependency maintenance is not a new
   benchmark measurement.
 
