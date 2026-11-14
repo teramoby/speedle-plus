@@ -160,7 +160,7 @@ def report(profile, matrix, *, go_version):
                     failures.append(f'mixed coverage layouts for one annotation: {file}:{span}')
                 consumed[annotation] = span
         # An unreachable annotation becoming covered signals a stale audit.
-        if count and reason and file not in UNUSED_FILES:
+        if count and reason:
             failures.append(f'stale unreachable annotation: {file}:{span}')
         if not count and reason:
             totals[file][2] += n

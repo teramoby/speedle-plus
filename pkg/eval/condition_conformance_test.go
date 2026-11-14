@@ -346,6 +346,31 @@ func conditionCases() []conditionCase {
 			cases[len(cases)-2].difference = "known difference, behaviour pinned"
 		}
 	}
+	// Runtime type, regex and arity errors also make a deny inapplicable.
+	// Pair each with matching and nonmatching controls to distinguish all three
+	// condition outcomes, with an independent base grant in the fixture below.
+	for _, c := range []struct {
+		name, expression, conditionError string
+		want                             bool
+		attributes                       []*adsrest.JsonAttribute
+	}{
+		{"type-error", "x + 1 == 2", operatorError("true", "+"), true, []*adsrest.JsonAttribute{attr("x", "bool", true)}},
+		{"type-match", "x + 1 == 2", "", false, []*adsrest.JsonAttribute{attr("x", "numeric", 1.0)}},
+		{"type-no-match", "x + 1 == 2", "", true, []*adsrest.JsonAttribute{attr("x", "numeric", 2.0)}},
+		{"regex-error", "'a' =~ pattern", "Unable to compile regexp pattern '(': error parsing regexp: missing closing ): `(`", true, []*adsrest.JsonAttribute{attr("pattern", "string", "(")}},
+		{"regex-match", "'a' =~ pattern", "", false, []*adsrest.JsonAttribute{attr("pattern", "string", "^a$")}},
+		{"regex-no-match", "'a' =~ pattern", "", true, []*adsrest.JsonAttribute{attr("pattern", "string", "^b$")}},
+		{"arity-error", "Sqrt(1,2) == 1", builtinError("Sqrt"), true, nil},
+		{"arity-match", "Sqrt(4) == 2", "", false, nil},
+		{"arity-no-match", "Sqrt(4) == 3", "", true, nil},
+	} {
+		add("1 / 2.2.2", "runtime-deny", "errors", c.name, c.expression, c.want, c.attributes...)
+		last := &cases[len(cases)-1]
+		last.effect, last.conditionError = pms.Deny, c.conditionError
+		if c.conditionError != "" {
+			last.design = "A failed function makes its condition nonmatching, as with other runtime condition errors. [SPDL §2.4.1](https://engine.speedle.io/docs/spdl/#241-built-in-functions); the policy takes effect only when its condition is met [SPDL §1](https://engine.speedle.io/docs/spdl/#1-overview)."
+		}
+	}
 	// known difference, behaviour pinned: the fork accepts these extensions;
 	// pin both results so acceptance alone cannot hide a broken evaluation.
 	for _, c := range []struct{ name, yes, no string }{
@@ -390,8 +415,8 @@ func TestConditionConformance(t *testing.T) {
 			effect = pms.Grant
 		}
 		if effect == pms.Deny {
-			// SPDL §1/§2.2.2 and #411 explicitly make a missing-attribute deny
-			// inapplicable. The independent base grant exposes that documented
+			// SPDL §1/§2.2.2/§2.4.1 make a missing-attribute or runtime-error
+			// condition nonmatching. The independent base grant exposes that
 			// outcome; conditionError still requires the real runtime error on
 			// both paths. Making such denies fail closed changes production
 			// semantics and belongs to a separate decision, not this suite.
@@ -513,7 +538,89 @@ func (c conditionCase) outcome() string {
 	return "no-match"
 }
 
+// Keep the reviewed inventory independent of the generated counts. Removing an
+// entire family must fail even when row counts and totals remain self-consistent.
+// Update this snapshot deliberately when the conformance contract grows.
+func checkConditionInventory(cases []conditionCase) error {
+	expected := map[string]int{
+		"1 / 2.2.2 / missing":                          13,
+		"1 / 2.2.2 / missing-deny":                     13,
+		"1 / 2.2.2 / runtime-deny":                     9,
+		"2.1 / array":                                  32,
+		"2.1 / bool":                                   41,
+		"2.1 / datetime":                               41,
+		"2.1 / numeric":                                41,
+		"2.1 / string":                                 41,
+		"2.2 / request_action":                         18,
+		"2.2 / request_day":                            24,
+		"2.2 / request_entity":                         18,
+		"2.2 / request_groups":                         2,
+		"2.2 / request_hour":                           24,
+		"2.2 / request_month":                          24,
+		"2.2 / request_resource":                       18,
+		"2.2 / request_time":                           14,
+		"2.2 / request_user":                           18,
+		"2.2 / request_weekday":                        18,
+		"2.2 / request_year":                           24,
+		"2.3 / datetime":                               5,
+		"2.4 / Avg":                                    14,
+		"2.4 / IsSubSet":                               17,
+		"2.4 / Max":                                    11,
+		"2.4 / Min":                                    11,
+		"2.4 / Sqrt":                                   12,
+		"2.4 / Sum":                                    12,
+		"2.4 / unregistered":                           2,
+		"2.5 / precedence-1":                           2,
+		"2.5 / precedence-2":                           2,
+		"2.5 / precedence-3":                           2,
+		"2.5 / precedence-4":                           2,
+		"2.5 / precedence-5":                           2,
+		"2.5 / precedence-6":                           2,
+		"2.5 / precedence-7":                           2,
+		"2.5 / precedence-8":                           2,
+		"known differences / bitwise":                  2,
+		"known differences / coalesce":                 2,
+		"known differences / double-quotes":            2,
+		"known differences / escaped-names":            2,
+		"known differences / exponent":                 2,
+		"known differences / keyword-attribute":        2,
+		"known differences / single-element-array":     2,
+		"known differences / string-number-inequality": 2,
+		"known differences / ternary":                  2,
+	}
+	actual := map[string]int{}
+	for _, c := range cases {
+		actual[c.section+" / "+c.row]++
+	}
+	if !reflect.DeepEqual(actual, expected) {
+		return fmt.Errorf("condition case inventory changed: got %v; want %v", actual, expected)
+	}
+	return nil
+}
+
+func TestConditionConformanceInventory(t *testing.T) {
+	if err := checkConditionInventory(conditionCases()); err != nil {
+		t.Fatal(err)
+	}
+	for _, family := range []string{"2.4 / IsSubSet", "known differences / coalesce"} {
+		t.Run("removed-"+family, func(t *testing.T) {
+			var remaining []conditionCase
+			for _, c := range conditionCases() {
+				if c.section+" / "+c.row != family {
+					remaining = append(remaining, c)
+				}
+			}
+			if err := checkConditionInventory(remaining); err == nil {
+				t.Fatal("removed case family was not detected")
+			}
+		})
+	}
+}
+
 func TestConditionConformanceMatrix(t *testing.T) {
+	if err := checkConditionInventory(conditionCases()); err != nil {
+		t.Fatal(err)
+	}
 	counts := map[string]map[string]map[string]int{}
 	sections := map[string]int{}
 	totals := map[string]int{}
