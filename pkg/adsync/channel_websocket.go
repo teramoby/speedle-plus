@@ -43,7 +43,7 @@ func (c *Channel) runWebSocket(ctx context.Context) wsOutcome {
 	dialCtx, cancel := context.WithTimeout(ctx, c.client.requestTimeout)
 	dialer := *c.dialer
 	if c.client.tlsMaterial != nil {
-		dialer.TLSClientConfig = c.client.tlsMaterial.configForHost(c.client.selectedBase().Hostname())
+		dialer.TLSClientConfig = c.client.tlsMaterial.configForHost(c.client.channelBase().Hostname())
 	}
 	conn, response, err := dialer.DialContext(dialCtx, c.channelURL(), header)
 	cancel()

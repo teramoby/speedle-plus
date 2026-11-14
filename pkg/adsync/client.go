@@ -172,6 +172,9 @@ type Client struct {
 	upstreamMu         sync.Mutex
 	upstreamCancel     context.CancelFunc
 	upstreamGeneration uint64
+	candidateBase      atomic.Pointer[url.URL]
+	selectedByChannel  atomic.Bool
+	dataReady          atomic.Bool
 	tlsMaterial        *clientTLS
 	apiKey             string
 	http               *http.Client
@@ -567,6 +570,9 @@ func (c *Client) Changes(ctx context.Context, serviceID, sourceID, epoch string,
 // get performs one idempotent GET, with retries for transport failures,
 // HTTP 408/429 and transient 5xx responses.
 func (c *Client) get(ctx context.Context, endpoint string, query url.Values, header http.Header, allowNotModified bool, dst any) (bool, error) {
+	if !c.selectionReady() {
+		return false, ErrUnavailable
+	}
 	var lastErr error
 	for attempt := 1; attempt <= c.retry.MaxAttempts; attempt++ {
 		reflect.ValueOf(dst).Elem().SetZero()

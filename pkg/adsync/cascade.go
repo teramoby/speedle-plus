@@ -116,6 +116,7 @@ func (c *Channel) runCascade(ctx context.Context) error {
 			}
 		}()
 		_ = c.runTransport(attemptCtx)
+		c.client.dataReady.Store(false)
 		cancel()
 		<-monitorDone
 		c.client.upstreamMu.Lock()
@@ -174,13 +175,13 @@ func (c *Channel) applyCascadeMetadata(ack *channelAck) error {
 			return fmt.Errorf("%w: chain_loop", ErrProtocol)
 		}
 	}
-	budget := time.Duration(0)
+	deadline := time.Time{}
 	if ack.UpstreamFreshForMs != nil {
-		budget = time.Duration(*ack.UpstreamFreshForMs) * time.Millisecond
+		deadline = time.Now().Add(time.Duration(*ack.UpstreamFreshForMs) * time.Millisecond)
 	}
 	if c.client.cascade() {
 		var err error
-		budget, err = c.inheritedBudget(ack)
+		deadline, err = c.inheritedDeadline(ack)
 		if err != nil {
 			return err
 		}
@@ -203,8 +204,8 @@ func (c *Channel) applyCascadeMetadata(ack *channelAck) error {
 		}
 	}
 	if ack.UpstreamState != "" {
-		c.machine.observeUpstream(ack.UpstreamState, budget)
-		if ack.UpstreamState != "live" || budget <= 0 {
+		remaining := c.machine.observeUpstreamUntil(ack.UpstreamState, deadline)
+		if ack.UpstreamState != "live" || remaining <= 0 {
 			return fmt.Errorf("%w: upstream_%s", ErrUnavailable, ack.UpstreamState)
 		}
 	}
@@ -287,16 +288,16 @@ func (c *Channel) recordSent(seq uint64) {
 // entire RTT therefore overestimates transit/queue time, conservatively; it
 // cannot extend an ancestor deadline and requires no synchronized wall clocks.
 // Repeated unsolicited acks keep aging the same reference until a new frame.
-func (c *Channel) inheritedBudget(ack *channelAck) (time.Duration, error) {
+func (c *Channel) inheritedDeadline(ack *channelAck) (time.Time, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if ack.AckSeq == nil || ack.UpstreamFreshForMs == nil {
-		return 0, fmt.Errorf("%w: cascade ack requires ackSeq and freshness", ErrProtocol)
+		return time.Time{}, fmt.Errorf("%w: cascade ack requires ackSeq and freshness", ErrProtocol)
 	}
 	seq := *ack.AckSeq
 	sent, ok := c.sentAt[seq]
 	if !ok || seq < c.lastAckSeq {
-		return 0, fmt.Errorf("%w: unknown or reordered ackSeq", ErrProtocol)
+		return time.Time{}, fmt.Errorf("%w: unknown or reordered ackSeq", ErrProtocol)
 	}
 	// Keep the current reference for unsolicited acks and discard older ones.
 	c.lastAckSeq = seq
@@ -305,13 +306,14 @@ func (c *Channel) inheritedBudget(ack *channelAck) (time.Duration, error) {
 			delete(c.sentAt, previous)
 		}
 	}
-	return max(time.Duration(0), time.Duration(*ack.UpstreamFreshForMs)*time.Millisecond-time.Since(sent)), nil
+	return sent.Add(time.Duration(*ack.UpstreamFreshForMs) * time.Millisecond), nil
 }
 
 func (c *Client) selectEndpoint(base *url.URL, cancel context.CancelFunc) {
 	c.upstreamMu.Lock()
 	defer c.upstreamMu.Unlock()
-	c.activeBase.Store(base)
+	c.candidateBase.Store(base)
+	c.dataReady.Store(false)
 	c.upstreamGeneration++
 	c.upstreamCancel = cancel
 }
@@ -322,4 +324,37 @@ func (c *Client) failUpstreamGeneration(generation uint64) {
 	if c.cascade() && generation == c.upstreamGeneration && c.upstreamCancel != nil {
 		c.upstreamCancel()
 	}
+}
+
+func (c *Client) channelBase() *url.URL {
+	if candidate := c.candidateBase.Load(); candidate != nil {
+		return candidate
+	}
+	return c.base
+}
+func (c *Client) selectionReady() bool {
+	return !c.cascade() || !c.selectedByChannel.Load() || c.dataReady.Load()
+}
+func (c *Client) approveCandidate() {
+	if !c.cascade() {
+		return
+	}
+	c.upstreamMu.Lock()
+	defer c.upstreamMu.Unlock()
+	if candidate := c.candidateBase.Load(); candidate != nil {
+		c.activeBase.Store(candidate)
+		c.dataReady.Store(true)
+	}
+}
+
+func (m *Machine) observeUpstreamUntil(state string, deadline time.Time) time.Duration {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	// Sample the machine clock first, then the remaining monotonic duration:
+	// lock/callback waits can only shorten the inherited absolute deadline.
+	now := m.clock.Now()
+	remaining := max(time.Duration(0), time.Until(deadline))
+	m.upstreamState = state
+	m.upstreamDeadline = now.Add(min(remaining, m.effectiveThresholdsLocked().StaleAfter))
+	return remaining
 }

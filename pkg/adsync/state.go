@@ -863,7 +863,28 @@ func validateAck(ack Ack) error {
 	return nil
 }
 
+// ValidateAck checks membership and effective cadence without changing state.
+// Channel uses it before committing ancestry or inherited freshness.
+func (m *Machine) ValidateAck(ack Ack) error {
+	if err := validateAck(ack); err != nil {
+		return err
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	_, _, _, err := m.candidateThresholdsLocked(ack)
+	return err
+}
+
 func (m *Machine) applyThresholdsLocked(ack Ack) error {
+	h, s, stop, err := m.candidateThresholdsLocked(ack)
+	if err != nil {
+		return err
+	}
+	m.cloudHeartbeat, m.cloudStale, m.cloudStop = h, s, stop
+	return nil
+}
+
+func (m *Machine) candidateThresholdsLocked(ack Ack) (time.Duration, time.Duration, time.Duration, error) {
 	cloudHeartbeat, cloudStale, cloudStop := m.cloudHeartbeat, m.cloudStale, m.cloudStop
 	if ack.HeartbeatInterval >= minHeartbeatInterval && ack.HeartbeatInterval <= maxHeartbeatInterval {
 		cloudHeartbeat = ack.HeartbeatInterval
@@ -876,10 +897,9 @@ func (m *Machine) applyThresholdsLocked(ack Ack) error {
 	}
 	thresholds := m.effectiveThresholds(cloudHeartbeat, cloudStale, cloudStop)
 	if thresholds.StaleAfter <= thresholds.HeartbeatInterval || thresholds.StopAfter <= thresholds.StaleAfter {
-		return fmt.Errorf("%w: source thresholds produce an impossible heartbeat cadence", ErrProtocol)
+		return 0, 0, 0, fmt.Errorf("%w: source thresholds produce an impossible heartbeat cadence", ErrProtocol)
 	}
-	m.cloudHeartbeat, m.cloudStale, m.cloudStop = cloudHeartbeat, cloudStale, cloudStop
-	return nil
+	return cloudHeartbeat, cloudStale, cloudStop, nil
 }
 
 func (m *Machine) effectiveThresholdsLocked() Thresholds {

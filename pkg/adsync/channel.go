@@ -350,6 +350,9 @@ func NewChannel(client *Client, options ChannelOptions) (*Channel, error) {
 		startedAt:          time.Now(),
 		current:            current,
 	}
+	if client.cascade() {
+		client.selectedByChannel.Store(true)
+	}
 	return channel, nil
 }
 
@@ -571,10 +574,12 @@ func (c *Channel) runLongPollLoop(ctx context.Context, probeAt time.Time) error 
 // applyAck feeds one confirming ack to the machine, reports a service-set
 // change and delivers commands. When cadence is non-nil, a confirmed ack also
 // signals that the source may have changed the heartbeat thresholds.
-func (c *Channel) applyAck(ack *channelAck, results chan<- channelCommandResult, cadence chan<- struct{}) error {
-	if err := c.applyCascadeMetadata(ack); err != nil {
-		return err
-	}
+func (c *Channel) applyAck(ack *channelAck, results chan<- channelCommandResult, cadence chan<- struct{}) (ackErr error) {
+	defer func() {
+		if ackErr != nil && c.client.cascade() {
+			c.client.dataReady.Store(false)
+		}
+	}()
 	heartbeat, err := parseChannelDuration(ack.HeartbeatInterval)
 	if err != nil {
 		return err
@@ -591,15 +596,18 @@ func (c *Channel) applyAck(ack *channelAck, results chan<- channelCommandResult,
 	for index := range ack.Services {
 		services[index] = ack.Services[index].service()
 	}
-	extraKnown := c.machineOnlyServices()
-	if err := c.machine.Ack(Ack{
-		Services:          services,
-		HeartbeatInterval: heartbeat,
-		StaleAfter:        staleAfter,
-		StopAfter:         stopAfter,
-	}); err != nil {
+	machineAck := Ack{Services: services, HeartbeatInterval: heartbeat, StaleAfter: staleAfter, StopAfter: stopAfter}
+	if err := c.machine.ValidateAck(machineAck); err != nil {
 		return err
 	}
+	if err := c.applyCascadeMetadata(ack); err != nil {
+		return err
+	}
+	extraKnown := c.machineOnlyServices()
+	if err := c.machine.Ack(machineAck); err != nil {
+		return err
+	}
+	c.client.approveCandidate()
 	if cadence != nil {
 		select {
 		case cadence <- struct{}{}:
@@ -870,7 +878,7 @@ func (c *Channel) heartbeatMessage(transport Transport) channelHeartbeat {
 }
 
 func (c *Channel) channelURL() string {
-	target := *c.client.selectedBase()
+	target := *c.client.channelBase()
 	target.Scheme = "wss"
 	if target.Scheme == "http" {
 		target.Scheme = "ws"
@@ -882,7 +890,7 @@ func (c *Channel) channelURL() string {
 }
 
 func (c *Channel) pollURL() string {
-	target := *c.client.selectedBase()
+	target := *c.client.channelBase()
 	target.Path = target.Path + APIPrefix + "/channel/poll"
 	seconds := int(c.pollWait / time.Second)
 	if seconds < 0 {

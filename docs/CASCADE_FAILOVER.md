@@ -2,43 +2,40 @@
 
 Design for #385 (builds on #380 and #383).
 
-- A cascade channel starts at the first configured HTTPS upstream. Connection,
-  TLS, protocol, stale and syncing failures advance through the ordered list.
-  Exhausting the list uses the existing bounded reconnect backoff. After one
-  minute on a healthy alternate, retry the preferred upstream. Authentication
-  failures are endpoint failures in cascade mode; direct API-key mode retains
-  its existing terminal-revocation behavior. Data and authorization requests
-  use the channel's selected endpoint. Selection is serialized with store sync
-  passes so a pass cannot combine responses from different upstreams.
-- Validate a candidate ack before changing membership, freshness or ancestry.
-  Within an epoch, a head below a retained copy or known head is rejected, as
-  is an equal-revision conflicting hash. Existing verified snapshot/change
-  validation remains the data-integrity and rollback guard. Epoch changes keep
-  the existing full-resynchronization contract.
+- Start at the first HTTPS upstream. Connection, TLS, protocol, authentication,
+  stale or syncing failures advance through the ordered list; exhausting it
+  uses bounded reconnect backoff. After one healthy minute on an alternate,
+  retry the preferred upstream. Direct API-key revocation behavior is unchanged.
+- Keep the channel candidate separate from the admitted data/authorization
+  endpoint. Before admission, validate the complete ack, effective heartbeat
+  cadence, ancestor chain, freshness and retained revision/hash floors,
+  including disk-cache floors after restart. An unadmitted or rejected candidate
+  cannot receive data or forwarded authorization requests. Endpoint selection
+  is serialized with store sync passes. Old in-flight forwarding failures are
+  bound to their originating selection generation; service-level errors do not
+  trigger node failover. Epoch changes retain the full-resynchronization contract.
 - Relay acks carry `upstreamState` (`live`, `syncing`, `stale`) and
-  `upstreamFreshForMs`, the remaining upstream freshness budget. A child keeps
-  an absolute local deadline, capped by its own stale window. Cascade hello and
-  heartbeat frames carry `seq`; every relay ack echoes the most recently
-  received sequence as `ackSeq`. The child subtracts the entire monotonic
-  round-trip time from that frame's send through ack receipt before installing
-  the budget. This conservatively includes server hold/queue time and needs no
-  synchronized clocks. Unsolicited acks keep aging the same reference; unknown
-  or reordered sequences are rejected. Another ack can
-  only renew the budget advertised by its parent. Relay output takes the
-  minimum of its direct-ack and inherited deadlines. Syncing ancestors prevent
-  data serving with `upstream_syncing`; exhausted freshness prevents serving
-  with `upstream_stale`. Channels can report these states without advertising
-  a temporarily withheld mirror as authoritative service removal.
-- Every relay ack advertises `chain`, its ordered ancestor UUIDs followed by
-  its own UUID. A direct root starts with its own UUID. A cascade client
-  validates UUIDs, uniqueness and absence of its own UUID before accepting an
-  ack, then updates its downstream server's runtime chain from that ack plus
-  itself. A server rejects ancestor/self hellos and polls with `chain_loop`;
-  ancestry updates also disconnect existing sessions that would close a loop.
-  There are no chain-depth, upstream-count, fan-out, size or CRL limits.
-- Heartbeats retain the existing distinct direct-child session count. Any valid
-  client certificate receives all relay services; no content signing is added.
+  `upstreamFreshForMs`, the minimum remaining direct-ack and inherited freshness
+  budget. Cascade hello/heartbeat frames carry `seq`; acks echo the latest
+  received sequence as `ackSeq`. Children conservatively subtract the entire
+  monotonic RTT, including holds and queues, without synchronized wall clocks.
+  Keep that absolute deadline across validation and callbacks; installation
+  waits never renew it. Unsolicited acks age the same reference until another
+  frame arrives. Unknown/reordered sequences fail validation. Local stale
+  windows can only tighten the budget. Exhausted freshness rejects data with
+  `upstream_stale`; a syncing ancestor yields `upstream_syncing`. Channels
+  propagate these states without applying withheld mirrors as service removals.
+- Every relay ack advertises `chain`: ancestor UUIDs followed by its own UUID.
+  A direct root starts with its own UUID. Validate uniqueness and UUID syntax,
+  and reject the receiving client's own UUID before installing the upstream
+  chain plus self as the downstream server's runtime `Config.Chain`. Reject
+  ancestor/self hellos and polls with `chain_loop`; topology updates also close
+  existing ancestor sessions and release held polls.
+- Heartbeats report distinct direct-child sessions. Any valid client certificate
+  gets all relay services. No fan-out, size, count, depth or CRL limit and no
+  content signing are added.
 
-Validation: failover and rollback unit tests, both channel transports, runtime
-chain updates, freshness deadline propagation and a three-level in-process
-chain; affected-package race tests and the full Go gate (coverage >=90.0%).
+Validation: ordered failover/recovery, rollback (including restart), both
+transports, delayed acks over three hops, blocked topology callbacks, admission,
+three-level evaluator/store synchronization, freshness recovery, loop guards,
+child counts, affected-package race tests and the full Go gate (>=90.0%).

@@ -165,6 +165,9 @@ func newFallbackStatusError(status int, body []byte) error {
 // could not be established, so a request that may have reached the upstream is
 // never repeated. HTTP 429 and 5xx responses are not retried.
 func (c *Client) ForwardFallback(ctx context.Context, operation FallbackOperation, body []byte) (*FallbackResponse, error) {
+	if !c.selectionReady() {
+		return nil, ErrUnavailable
+	}
 	if !operation.Valid() {
 		return nil, fmt.Errorf("%w: unknown fallback operation %q", ErrProtocol, operation)
 	}
@@ -195,11 +198,15 @@ func (c *Client) ForwardFallback(ctx context.Context, operation FallbackOperatio
 
 func (c *Client) forwardOnce(ctx context.Context, operation FallbackOperation, body []byte) (result *FallbackResponse, resultErr error) {
 	c.upstreamMu.Lock()
+	if !c.selectionReady() {
+		c.upstreamMu.Unlock()
+		return nil, ErrUnavailable
+	}
 	base := c.selectedBase()
 	generation := c.upstreamGeneration
 	c.upstreamMu.Unlock()
 	defer func() {
-		if resultErr != nil && ctx.Err() == nil {
+		if isUpstreamFailure(resultErr) && ctx.Err() == nil {
 			c.failUpstreamGeneration(generation)
 		}
 	}()
@@ -313,6 +320,9 @@ func (c *Client) fallbackRetrySequence() uint64 {
 // delay. An expired delay permits the next request, which can then restore
 // readiness after a successful response.
 func (c *Client) FallbackAvailable() bool {
+	if !c.selectionReady() {
+		return false
+	}
 	c.fallbackMu.Lock()
 	defer c.fallbackMu.Unlock()
 	return c.fallbackRetryAt.IsZero() || !c.now().Before(c.fallbackRetryAt)
@@ -367,4 +377,23 @@ func ReadFallbackResponse(body []byte, dst any) error {
 		return fmt.Errorf("%w: invalid fallback response: %v", ErrProtocol, err)
 	}
 	return nil
+}
+
+// Service-level rejections describe this request, not the health of the node.
+func isUpstreamFailure(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, ErrUnavailable) {
+		return true
+	}
+	var transport *fallbackTransportError
+	if errors.As(err, &transport) {
+		return true
+	}
+	var status *fallbackStatusError
+	if errors.As(err, &status) {
+		return status.status >= 500 || status.status == 408 || status.status == 425 || status.status == 429 || status.status == 401 || status.status == 403
+	}
+	return false
 }

@@ -221,6 +221,13 @@ func Open(ctx context.Context, options Options) (_ *Store, err error) {
 	for _, service := range syncer.CachedServices() {
 		if err := machine.Track(service.ID, service.Name); err != nil {
 			log.Warnf("policy-source store ignores cached service %q: %v", service.ID, err)
+			continue
+		}
+		if options.APIKey == "" {
+			// A retained head is a rollback floor, not an evaluator-installed copy.
+			if err := machine.ObserveHead(adsync.Head{ID: service.ID, Epoch: service.Epoch, Revision: service.Revision, StateHash: service.HeadStateHash}); err != nil {
+				return nil, err
+			}
 		}
 	}
 	if options.ServeDownstream {

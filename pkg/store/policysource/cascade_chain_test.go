@@ -22,9 +22,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/teramoby/speedle-plus/pkg/adsproxy"
 	"github.com/teramoby/speedle-plus/pkg/adsync"
 	"github.com/teramoby/speedle-plus/pkg/cfg"
 	"github.com/teramoby/speedle-plus/pkg/eval"
+	"sync/atomic"
 )
 
 type cascadeClock struct {
@@ -76,7 +78,12 @@ func chainCredentials(t *testing.T) (Options, tls.Certificate, *x509.CertPool) {
 
 func chainListener(t *testing.T, store *Store, cert tls.Certificate, roots *x509.CertPool) *httptest.Server {
 	t.Helper()
-	server := httptest.NewUnstartedServer(store.DownstreamHandler())
+	return chainProtocolListener(t, store.DownstreamHandler(), cert, roots)
+}
+
+func chainProtocolListener(t *testing.T, handler http.Handler, cert tls.Certificate, roots *x509.CertPool) *httptest.Server {
+	t.Helper()
+	server := httptest.NewUnstartedServer(handler)
 	server.TLS = &tls.Config{MinVersion: tls.VersionTLS12, Certificates: []tls.Certificate{cert}, ClientCAs: roots, ClientAuth: tls.RequireAndVerifyClientCert}
 	server.StartTLS()
 	t.Cleanup(server.Close)
@@ -213,5 +220,66 @@ func TestCascadeThreeLevelRuntimeChainAndFreshness(t *testing.T) {
 	response.Body.Close()
 	if response.StatusCode != 503 || !strings.Contains(string(body), "upstream_syncing") {
 		t.Fatalf("syncing data served: %d %s", response.StatusCode, body)
+	}
+}
+
+func TestCascadeRestartRejectsHeadBelowDiskCacheBeforePulling(t *testing.T) {
+	options, cert, roots := chainCredentials(t)
+	options.CacheDir = filepath.Join(t.TempDir(), "cache")
+	cache, err := adsync.NewCache(options.CacheDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	snapshot := adsync.Snapshot{Name: "books", Policies: []adsync.Policy{}, RolePolicies: []adsync.Policy{}}
+	hash := adsync.StateHash(snapshot)
+	retained := &adsync.ServiceState{ServiceID: testServiceID1, SourceID: testServiceID1, Epoch: testServiceID1, Revision: 2, StateHash: hash, CommitHash: hash, Snapshot: snapshot}
+	if err := cache.Save(retained); err != nil {
+		t.Fatal(err)
+	}
+	var olderPulls, newerPulls atomic.Int32
+	makeRelay := func(id string, revision uint64, pulls *atomic.Int32) *httptest.Server {
+		mirror, err := adsproxy.NewMirror(adsproxy.MirrorOptions{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := mirror.ApplySnapshot(&adsync.SnapshotResponse{ServiceID: testServiceID1, SourceID: testServiceID1, Epoch: testServiceID1, Revision: revision, StateHash: hash, CommitHash: hash, Snapshot: snapshot}); err != nil {
+			t.Fatal(err)
+		}
+		relay, err := adsproxy.NewServer(adsproxy.Config{InstanceID: id, Mirror: mirror})
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(relay.Close)
+		return chainProtocolListener(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if strings.HasSuffix(r.URL.Path, "/snapshot") {
+				pulls.Add(1)
+			}
+			relay.ServeHTTP(w, r)
+		}), cert, roots)
+	}
+	primary := makeRelay("0193a5c2-7d1e-7b3a-9f10-4c2d8e6a1b51", 1, &olderPulls)
+	backup := makeRelay("0193a5c2-7d1e-7b3a-9f10-4c2d8e6a1b52", 2, &newerPulls)
+	options.UpstreamURL = primary.URL
+	options.UpstreamURLs = []string{primary.URL, backup.URL}
+	child, err := Open(context.Background(), options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer child.Close()
+	engine, err := eval.NewWithStore(&cfg.Config{EnableWatch: true}, child)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer engine.(*eval.PolicyEvalImpl).Close()
+	e2eWaitFor(t, "cached floor to reject the first relay and confirm the backup", func() bool {
+		status, known := child.machine.Status("books")
+		return known && status.Service.State == adsync.SyncStateInSync && status.Service.Revision == 2
+	})
+	if olderPulls.Load() != 0 {
+		t.Fatal("lower-revision relay reached snapshot loading")
+	}
+	held, err := cache.Load(testServiceID1)
+	if err != nil || held.Revision != 2 {
+		t.Fatalf("retained cache changed: %+v %v", held, err)
 	}
 }

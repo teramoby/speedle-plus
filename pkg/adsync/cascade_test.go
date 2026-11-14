@@ -6,6 +6,7 @@ import (
 	"context"
 	"crypto/x509"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -361,6 +362,7 @@ func TestCascadeOldForwardFailureCannotCancelNewSelection(t *testing.T) {
 	client := mustCascadeClient(t, config)
 	var oldCanceled, newCanceled atomic.Bool
 	client.selectEndpoint(client.upstreams[0], func() { oldCanceled.Store(true) })
+	client.approveCandidate()
 	done := make(chan error, 1)
 	go func() {
 		_, err := client.ForwardFallback(context.Background(), FallbackIsAllowed, []byte(`{}`))
@@ -372,6 +374,7 @@ func TestCascadeOldForwardFailureCannotCancelNewSelection(t *testing.T) {
 		t.Fatal("old forward did not start")
 	}
 	client.selectEndpoint(client.upstreams[1], func() { newCanceled.Store(true) })
+	client.approveCandidate()
 	close(release)
 	if err := <-done; err == nil {
 		t.Fatal("old failure was accepted")
@@ -384,5 +387,118 @@ func TestCascadeOldForwardFailureCannotCancelNewSelection(t *testing.T) {
 	}
 	if !newCanceled.Load() {
 		t.Fatal("current failure did not request failover")
+	}
+}
+
+func TestCascadeCandidateCannotServeDataOrFallbackBeforeAdmission(t *testing.T) {
+	pki := newCascadePKI(t)
+	cert, _, _ := pki.issue(t, 61, x509.ExtKeyUsageServerAuth, "127.0.0.1", time.Now().Add(time.Hour))
+	var requests atomic.Int32
+	server := cascadeServer(t, pki, cert, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		w.WriteHeader(200)
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	client := mustCascadeClient(t, cascadeConfig(t, pki, server.URL))
+	machine := newChannelMachine(t)
+	channel := newTestChannel(t, client, machine, ChannelOptions{})
+	client.selectEndpoint(client.upstreams[0], func() {})
+	if client.FallbackAvailable() {
+		t.Fatal("unadmitted candidate reported fallback-ready")
+	}
+	if _, err := client.Services(context.Background()); !errors.Is(err, ErrUnavailable) {
+		t.Fatalf("candidate data error: %v", err)
+	}
+	if _, err := client.ForwardFallback(context.Background(), FallbackIsAllowed, []byte(`{}`)); !errors.Is(err, ErrUnavailable) {
+		t.Fatalf("candidate fallback error: %v", err)
+	}
+	if requests.Load() != 0 {
+		t.Fatal("unadmitted candidate received data/authorization traffic")
+	}
+	ack := cascadeAck(t, nil)
+	ack.Services = []channelAckService{}
+	channel.recordSent(*ack.AckSeq)
+	if err := channel.applyAck(&ack, nil, nil); err != nil {
+		t.Fatal(err)
+	}
+	if !client.FallbackAvailable() {
+		t.Fatal("valid ack did not admit the candidate")
+	}
+	if _, err := client.ForwardFallback(context.Background(), FallbackIsAllowed, []byte(`{}`)); err != nil {
+		t.Fatal(err)
+	}
+	if requests.Load() != 1 {
+		t.Fatal("admitted endpoint was not used")
+	}
+	// A later disqualifying ack immediately quarantines the endpoint.
+	ack.UpstreamState = "stale"
+	if err := channel.applyAck(&ack, nil, nil); err == nil {
+		t.Fatal("stale candidate accepted")
+	}
+	if client.FallbackAvailable() {
+		t.Fatal("rejected endpoint stayed eligible")
+	}
+}
+
+func TestCascadeCallbackWaitCannotExtendFreshness(t *testing.T) {
+	pki := newCascadePKI(t)
+	client := mustCascadeClient(t, cascadeConfig(t, pki, "https://relay.example"))
+	machine := newChannelMachine(t)
+	channel := newTestChannel(t, client, machine, ChannelOptions{OnChain: func([]string) error { time.Sleep(60 * time.Millisecond); return nil }})
+	ack := cascadeAck(t, nil)
+	ack.Services = []channelAckService{}
+	budget := int64(20)
+	ack.UpstreamFreshForMs = &budget
+	channel.recordSent(*ack.AckSeq)
+	if err := channel.applyAck(&ack, nil, nil); !errors.Is(err, ErrUnavailable) {
+		t.Fatalf("expired callback budget: %v", err)
+	}
+	if !machine.Instance().LastConfirmedAckAt.IsZero() {
+		t.Fatal("expired ack confirmed liveness")
+	}
+	if machine.upstreamDeadline.After(time.Now()) {
+		t.Fatal("callback wait renewed the deadline")
+	}
+}
+
+func TestCascadeInvalidCadenceCannotCommitTopology(t *testing.T) {
+	pki := newCascadePKI(t)
+	client := mustCascadeClient(t, cascadeConfig(t, pki, "https://relay.example"))
+	machine := newChannelMachine(t)
+	var topologyCalls int
+	channel := newTestChannel(t, client, machine, ChannelOptions{OnChain: func([]string) error { topologyCalls++; return nil }})
+	ack := cascadeAck(t, nil)
+	ack.StaleAfter = "15s"
+	channel.recordSent(*ack.AckSeq)
+	if err := channel.applyAck(&ack, nil, nil); !errors.Is(err, ErrProtocol) {
+		t.Fatalf("invalid cadence: %v", err)
+	}
+	if topologyCalls != 0 || machine.upstreamState != "" || !machine.Instance().LastConfirmedAckAt.IsZero() {
+		t.Fatal("rejected ack committed topology, freshness or liveness")
+	}
+}
+
+func TestCascadeServiceErrorsDoNotTriggerFailover(t *testing.T) {
+	pki := newCascadePKI(t)
+	cert, _, _ := pki.issue(t, 62, x509.ExtKeyUsageServerAuth, "127.0.0.1", time.Now().Add(time.Hour))
+	var status atomic.Int32
+	status.Store(404)
+	server := cascadeServer(t, pki, cert, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(int(status.Load())) }))
+	client := mustCascadeClient(t, cascadeConfig(t, pki, server.URL))
+	var canceled atomic.Bool
+	client.selectEndpoint(client.upstreams[0], func() { canceled.Store(true) })
+	client.approveCandidate()
+	if _, err := client.ForwardFallback(context.Background(), FallbackIsAllowed, []byte(`{}`)); !errors.Is(err, ErrServiceNotFound) {
+		t.Fatal(err)
+	}
+	if canceled.Load() {
+		t.Fatal("service-level error canceled a healthy node")
+	}
+	status.Store(503)
+	if _, err := client.ForwardFallback(context.Background(), FallbackIsAllowed, []byte(`{}`)); err == nil {
+		t.Fatal("503 accepted")
+	}
+	if !canceled.Load() {
+		t.Fatal("node-level failure did not trigger failover")
 	}
 }

@@ -35,9 +35,14 @@ queries and fragments are rejected. The downstream client starts at the first en
 candidates in order after connection, TLS, protocol, authentication, stale or
 syncing errors. After a minute on a healthy alternate it retries the first
 entry; exhausting the list uses bounded reconnect backoff. Data synchronization
-and authorization forwarding follow the selected endpoint. A stale candidate,
+and authorization forwarding use an endpoint only after its complete ack has
+passed cadence, ancestry, freshness and retained-head checks. Requests fail
+closed while no endpoint is admitted. A stale candidate,
 a lower head within the same epoch or an equal-revision conflicting hash cannot
-replace retained verified data. Epoch changes require full resynchronization. `ServeDownstream` enables relay serving: the process
+replace retained verified data, including a disk-cache floor after restart.
+Service-level forwarding errors do not trigger node failover; old in-flight
+failures cannot cancel a replacement selection. Epoch changes require full
+resynchronization. `ServeDownstream` enables relay serving: the process
 serves the policy-source protocol on the dedicated downstream mTLS listener
 configured by the `downstream-*` server settings.
 
@@ -138,7 +143,9 @@ Freshness is an end-to-end budget. A relay sends the minimum of its own
 confirming-ack window and its inherited remaining budget. Cascade frames carry
 `seq` and acks echo it as `ackSeq`; children subtract the full monotonic RTT
 (including a held poll and queues) before installing a local deadline, so delays
-cannot extend ancestor freshness. This conservative accounting can shorten the
+cannot extend ancestor freshness. The absolute deadline survives validation
+and topology-callback waits; installation never restarts the budget. This
+conservative accounting can shorten the
 usable window on slow links or long-held polls. Unsolicited acks keep aging their
 last echoed frame; a later frame supplies a newer reference. No wall-clock
 synchronization is required. A syncing ancestor answers data requests with 503
