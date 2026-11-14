@@ -391,10 +391,14 @@ func (m *clientTLS) verifyConnection(state tls.ConnectionState) error {
 		return err
 	}
 	expiry := generation.certificate.Leaf.NotAfter
-	var missingIssuer string
+	var (
+		missingIssuer string
+		sawRevocation bool
+	)
 	for _, chain := range chains {
 		chainExpiry := expiry
 		valid := true
+		revoked := false
 		for i, certificate := range chain {
 			if certificate.NotAfter.Before(chainExpiry) {
 				chainExpiry = certificate.NotAfter
@@ -422,7 +426,7 @@ func (m *clientTLS) verifyConnection(state tls.ConnectionState) error {
 				}
 				for _, entry := range crl.RevokedCertificateEntries {
 					if entry.SerialNumber.Cmp(certificate.SerialNumber) == 0 {
-						return fmt.Errorf("adsync: relay certificate is revoked")
+						revoked = true
 					}
 				}
 			}
@@ -436,6 +440,13 @@ func (m *clientTLS) verifyConnection(state tls.ConnectionState) error {
 					missingIssuer = issuer.Subject.String()
 				}
 			}
+		}
+		// A revoked certificate disqualifies this path only: another verified
+		// chain can use a different certificate, such as the unrevoked variant
+		// of a cross-signed intermediate.
+		if revoked {
+			sawRevocation = true
+			continue
 		}
 		if !valid {
 			continue
@@ -453,6 +464,9 @@ func (m *clientTLS) verifyConnection(state tls.ConnectionState) error {
 			connection.timer = time.AfterFunc(time.Until(chainExpiry), func() { connection.Close() })
 		}
 		return nil
+	}
+	if sawRevocation {
+		return fmt.Errorf("adsync: relay certificate is revoked")
 	}
 	if missingIssuer != "" {
 		return fmt.Errorf("adsync: relay certificate chain lacks fresh CRL coverage for issuer %q", missingIssuer)

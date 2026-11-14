@@ -190,6 +190,57 @@ func TestCascadeCRLRequiresTheChainLeafIssuer(t *testing.T) {
 	}
 }
 
+// newCrossSignedPKI carries parent's subject and public key but is signed by
+// signer, so a relay can present a second verified path to another root.
+func newCrossSignedPKI(t *testing.T, parent, signer *cascadePKI, serial int64) *cascadePKI {
+	t.Helper()
+	template := &x509.Certificate{
+		SerialNumber:          big.NewInt(serial),
+		Subject:               parent.ca.Subject,
+		NotBefore:             time.Now().Add(-time.Hour),
+		NotAfter:              time.Now().Add(time.Hour),
+		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageCRLSign,
+		IsCA:                  true,
+		BasicConstraintsValid: true,
+	}
+	der, err := x509.CreateCertificate(rand.Reader, template, signer.ca, parent.ca.PublicKey, signer.key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cross, err := x509.ParseCertificate(der)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return &cascadePKI{ca: cross, key: parent.key, pem: pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})}
+}
+
+// TestCascadeRevocationRejectsOnlyTheRevokedPath covers a relay that presents
+// a cross-signed intermediate: one verified chain uses the cross certificate
+// revoked by the other root's CRL, the other chain is valid. Revocation
+// disqualifies only the revoked path, so the connection succeeds.
+func TestCascadeRevocationRejectsOnlyTheRevokedPath(t *testing.T) {
+	root := newCascadePKI(t)
+	other := newCascadePKI(t)
+	cross := newCrossSignedPKI(t, root, other, 10)
+	now := time.Now().Truncate(time.Second)
+	leaf, _, _ := root.issue(t, 2, x509.ExtKeyUsageServerAuth, "127.0.0.1", now.Add(time.Hour))
+	leaf.Certificate = append(leaf.Certificate, cross.ca.Raw)
+	relay := cascadeServer(t, root, leaf, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		io.WriteString(w, `{"servicesVersion":1,"services":[]}`)
+	}))
+	config := cascadeConfig(t, root, relay.URL)
+	bundle := append(append([]byte{}, root.pem...), other.pem...)
+	config.CAFile = writeTestFile(t, filepath.Dir(config.CAFile), "roots.pem", bundle, 0600)
+	config.CRLFiles = []string{
+		writeTestFile(t, t.TempDir(), "root.crl", root.crl(t, 0, 1, now.Add(-time.Minute), now.Add(time.Hour), false), 0600),
+		writeTestFile(t, t.TempDir(), "other.crl", other.crl(t, 10, 1, now.Add(-time.Minute), now.Add(time.Hour), false), 0600),
+	}
+	client := mustCascadeClient(t, config)
+	if _, err := client.Services(context.Background()); err != nil {
+		t.Fatalf("valid alternate chain rejected as revoked: %v", err)
+	}
+}
+
 func TestCascadeCRLValidationAndReload(t *testing.T) {
 	pki := newCascadePKI(t)
 	certificate, _, _ := pki.issue(t, 2, x509.ExtKeyUsageServerAuth, "127.0.0.1", time.Now().Add(time.Hour))
