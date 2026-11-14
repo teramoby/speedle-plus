@@ -4,9 +4,8 @@
 package errors
 
 import (
+	stderrors "errors"
 	"fmt"
-
-	gerrs "github.com/pkg/errors"
 )
 
 // speedleError is the struct of speedle error
@@ -25,6 +24,11 @@ func (e *speedleError) Error() string {
 	return errMsg + ": " + e.cause.Error()
 }
 
+// Unwrap exposes the cause to the standard errors.Is and errors.As functions.
+func (e *speedleError) Unwrap() error {
+	return e.cause
+}
+
 func (e *speedleError) Cause() error {
 	return e.cause
 }
@@ -35,7 +39,20 @@ func (e *speedleError) Code() ErrorCode {
 
 // Cause returns the cause error of this error
 func Cause(err error) error {
-	return gerrs.Cause(err)
+	// Keep compatibility with callers implementing the historical Cause method,
+	// including its nil-cause behavior, and traverse standard %w wrappers too.
+	for err != nil {
+		if legacy, ok := err.(interface{ Cause() error }); ok {
+			err = legacy.Cause()
+			continue
+		}
+		if next := stderrors.Unwrap(err); next != nil {
+			err = next
+			continue
+		}
+		break
+	}
+	return err
 }
 
 // Code returns the error code
