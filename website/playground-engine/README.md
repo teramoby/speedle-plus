@@ -15,7 +15,7 @@ upstream deny-overrides combiner. It uses a single ephemeral service for each ru
 
 ## Rebuild the checked-in artifacts
 
-Requirements: Git, Go **1.27.4**, Bash, and Node 22 or later for tests. From the
+Requirements: Git, Go **1.27.4**, Python 3, Bash, and Node 22 or later for tests. From the
 repository root:
 
 ```sh
