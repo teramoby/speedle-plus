@@ -185,3 +185,11 @@ func TestPrintVersionInfo(t *testing.T) {
 	productVersion, goVersion, gitCommit = "1.0", "go1.26", "abc"
 	printVersionInfo()
 }
+
+func TestRunRejectsRemovedPolicySource(t *testing.T) {
+	conf := &cfg.Config{StoreConfig: &cfg.StoreConfig{StoreType: "policy-source"}}
+	err := run(insecureParams("127.0.0.1:0", ""), conf, nil)
+	if err == nil || !strings.Contains(err.Error(), "v1.8.0") || !strings.Contains(err.Error(), "policy-source") {
+		t.Fatalf("startup error = %v", err)
+	}
+}
