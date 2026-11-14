@@ -119,7 +119,7 @@ curl --fail --silent --show-error --retry 30 --retry-all-errors --retry-delay 1 
 {"ready":true,"servicesTotal":0,"servicesUsable":0}
 ```
 
-プロセスが実行されている間、`/healthz` は `200 {"status":"ok"}` を返します。`/readyz` は、ADS がリクエストを評価できる場合に `200` を返します。ファイルストアには分散状態がないため、サービスカウントはゼロのままになります。確認すべきフィールドは `ready` です。イメージにはシェルも `curl` もないため、これらのプローブはホスト上またはオーケストレーター内で公開されたポートに対して実行します。`http://localhost:6734/healthz` でも同じ公開ポートに到達します。
+プロセスが実行されている間、`/healthz` は `200 {"status":"ok"}` を返します。ローカル ADS の `/readyz` は `200` と `ready: true` を返し、サービスカウントはゼロです。イメージにはシェルも `curl` もないため、これらのプローブはホスト上またはオーケストレーター内で公開されたポートに対して実行します。`http://localhost:6734/healthz` でも同じ公開ポートに到達します。
 
 ## spctl によるポリシーの作成
 

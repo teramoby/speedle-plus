@@ -119,7 +119,7 @@ curl --fail --silent --show-error --retry 30 --retry-all-errors --retry-delay 1 
 {"ready":true,"servicesTotal":0,"servicesUsable":0}
 ```
 
-`/healthz` responde `200 {"status":"ok"}` mientras el proceso se está ejecutando. `/readyz` responde `200` cuando ADS puede evaluar una solicitud. Un almacén de archivos no tiene estado de distribución, por lo que el recuento de servicios se mantiene en cero; el campo que debe comprobarse es `ready`. La imagen no tiene shell ni `curl`, por lo que estas comprobaciones se ejecutan desde el host o desde otro contenedor.
+`/healthz` responde `200 {"status":"ok"}` mientras el proceso se está ejecutando. El ADS local responde a `/readyz` con `200`, `ready: true` y contadores de servicios en cero. La imagen no tiene shell ni `curl`, por lo que estas comprobaciones se ejecutan desde el host o desde otro contenedor.
 
 ## Añadir y comprobar una política
 

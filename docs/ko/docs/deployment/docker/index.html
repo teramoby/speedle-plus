@@ -249,7 +249,7 @@ docker run -d --name speedle-pms <span style="color:#f1fa8c">\
 curl --fail --silent --show-error --retry <span style="color:#bd93f9">30</span> --retry-all-errors --retry-delay <span style="color:#bd93f9">1</span> --connect-timeout <span style="color:#bd93f9">2</span> <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/readyz</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">{&#34;status&#34;:&#34;ok&#34;}
 {&#34;ready&#34;:true,&#34;servicesTotal&#34;:0,&#34;servicesUsable&#34;:0}</code></pre></div>
-<p>프로세스가 실행 중인 동안 <code>/healthz</code>는 <code>200 {&quot;status&quot;:&quot;ok&quot;}</code>를 응답합니다. ADS가 요청을 평가할 수 있을 때 <code>/readyz</code>는 <code>200</code>을 응답합니다. 파일 저장소에는 분산 상태가 없으므로 서비스 수는 0으로 유지됩니다. 확인해야 할 필드는 <code>ready</code>입니다. 이미지에는 셸과 <code>curl</code>이 없으므로 이러한 프로브는 호스트나 다른 컨테이너에서 실행됩니다.</p>
+<p>프로세스가 실행 중인 동안 <code>/healthz</code>는 <code>200 {&quot;status&quot;:&quot;ok&quot;}</code>를 응답합니다. 로컬 ADS의 <code>/readyz</code>는 <code>200</code>과 <code>ready: true</code>를 반환하며 서비스 수는 0입니다. 이미지에는 셸과 <code>curl</code>이 없으므로 이러한 프로브는 호스트나 다른 컨테이너에서 실행됩니다.</p>
 
 <h2 id="정책-추가-및-확인">정책 추가 및 확인</h2>
 

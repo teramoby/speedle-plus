@@ -249,7 +249,7 @@ docker run -d --name speedle-pms <span style="color:#f1fa8c">\
 curl --fail --silent --show-error --retry <span style="color:#bd93f9">30</span> --retry-all-errors --retry-delay <span style="color:#bd93f9">1</span> --connect-timeout <span style="color:#bd93f9">2</span> <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/readyz</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">{&#34;status&#34;:&#34;ok&#34;}
 {&#34;ready&#34;:true,&#34;servicesTotal&#34;:0,&#34;servicesUsable&#34;:0}</code></pre></div>
-<p>进程运行期间，<code>/healthz</code> 返回 <code>200 {&quot;status&quot;:&quot;ok&quot;}</code>。ADS 当前能够做授权判断时，<code>/readyz</code> 返回 <code>200</code>。文件存储没有策略分发状态，所以服务计数保持为零；要看的字段是 <code>ready</code>。镜像里没有 shell，也没有 <code>curl</code>，因此这些探测在宿主机或编排器上对已发布的端口执行。<code>http://localhost:6734/healthz</code> 访问的是同一个已发布端口。</p>
+<p>进程运行期间，<code>/healthz</code> 返回 <code>200 {&quot;status&quot;:&quot;ok&quot;}</code>。本地 ADS 的 <code>/readyz</code> 返回 <code>200</code>、<code>ready: true</code>，服务计数为零。镜像里没有 shell，也没有 <code>curl</code>，因此这些探测在宿主机或编排器上对已发布的端口执行。<code>http://localhost:6734/healthz</code> 访问的是同一个已发布端口。</p>
 
 <h2 id="用-spctl-创建策略">用 spctl 创建策略</h2>
 

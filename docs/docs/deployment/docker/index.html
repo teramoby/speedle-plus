@@ -249,7 +249,7 @@ docker run -d --name speedle-pms <span style="color:#f1fa8c">\
 curl --fail --silent --show-error --retry <span style="color:#bd93f9">30</span> --retry-all-errors --retry-delay <span style="color:#bd93f9">1</span> --connect-timeout <span style="color:#bd93f9">2</span> <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/readyz</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">{&#34;status&#34;:&#34;ok&#34;}
 {&#34;ready&#34;:true,&#34;servicesTotal&#34;:0,&#34;servicesUsable&#34;:0}</code></pre></div>
-<p><code>/healthz</code> answers <code>200 {&quot;status&quot;:&quot;ok&quot;}</code> while the process is running. <code>/readyz</code> answers <code>200</code> when ADS can evaluate a request. A file store has no distribution state, so the service counts stay zero; <code>ready</code> is the field to check. The image has no shell and no <code>curl</code>, so these probes run on the host, or in the orchestrator, against the published ports. <code>http://localhost:6734/healthz</code> reaches the same published port.</p>
+<p><code>/healthz</code> answers <code>200 {&quot;status&quot;:&quot;ok&quot;}</code> while the process is running. The local ADS answers <code>/readyz</code> with <code>200</code>, <code>ready: true</code> and zero service counters. The image has no shell and no <code>curl</code>, so these probes run on the host, or in the orchestrator, against the published ports. <code>http://localhost:6734/healthz</code> reaches the same published port.</p>
 
 <h2 id="create-a-policy-with-spctl">Create a policy with spctl</h2>
 
