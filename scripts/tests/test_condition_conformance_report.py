@@ -5,6 +5,7 @@ import io
 from pathlib import Path
 import tempfile
 import unittest
+from unittest import mock
 
 SCRIPT = Path(__file__).resolve().parents[1] / 'ci' / 'condition-conformance-report.py'
 spec = importlib.util.spec_from_file_location('condition_report', SCRIPT)
@@ -13,17 +14,22 @@ spec.loader.exec_module(reporter)
 
 
 class ConditionCoverageReportTest(unittest.TestCase):
-    def run_report(self, extra=''):
+    def run_report(self, extra='', omit=None):
         files = ['pkg/eval/condition/condition.go', 'pkg/eval/function/builtin_functions.go']
         files += [reporter.FORK + name for name in (
             'EvaluableExpression.go', 'parsing.go', 'stagePlanner.go',
             'evaluationStage.go', 'lexerState.go', 'lexerStream.go',
             'parameters.go', 'sanitizedParameters.go')]
+        annotations = ''.join(
+            f'github.com/teramoby/speedle-plus/{reporter.FORK}{file}:{span} {n} 0\n'
+            for file, blocks in reporter.UNREACHABLE.items() for span, n in blocks
+            if (file, span, n) != omit
+        )
         with tempfile.TemporaryDirectory() as directory:
             profile = Path(directory) / 'coverage.out'
             profile.write_text('mode: count\n' + ''.join(
                 f'github.com/teramoby/speedle-plus/{file}:1.1,1.2 1 1\n' for file in files
-            ) + extra)
+            ) + annotations + extra)
             output = io.StringIO()
             with contextlib.redirect_stdout(output):
                 failed = reporter.report(profile)
@@ -57,3 +63,22 @@ class ConditionCoverageReportTest(unittest.TestCase):
                 'github.com/teramoby/speedle-plus/pkg/eval/condition/condition.go:1.1,1.2 1 1\n')
             with contextlib.redirect_stdout(io.StringIO()):
                 self.assertTrue(reporter.report(profile))
+
+    def test_unmatched_annotation_fails(self):
+        failed, output = self.run_report(omit=('parsing.go', '49.4,50.1', 1))
+        self.assertTrue(failed)
+        self.assertIn('unmatched unreachable annotation', output)
+
+    def test_moved_block_is_not_excluded_by_start_line(self):
+        failed, output = self.run_report(
+            f'github.com/teramoby/speedle-plus/{reporter.FORK}parsing.go:49.4,51.1 1 0\n',
+            omit=('parsing.go', '49.4,50.1', 1))
+        self.assertTrue(failed)
+        self.assertIn('uncovered reachable block', output)
+        self.assertIn('unmatched unreachable annotation', output)
+
+    def test_changed_audited_source_fails(self):
+        with mock.patch.dict(reporter.AUDITED_SOURCE_SHA256, {'parsing.go': 'not-the-source-hash'}):
+            failed, output = self.run_report()
+        self.assertTrue(failed)
+        self.assertIn('audited source changed; re-audit required', output)

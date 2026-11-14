@@ -418,8 +418,12 @@ func TestConditionConformanceMatrix(t *testing.T) {
 }
 
 // Diagnose exposes the actual injected Go types, before govaluate sanitizes
-// integer values to float64. No PEP overrides are used in these assertions.
-func TestConditionConformanceInjectedTypes(t *testing.T) {
+// integer values to float64, and verifies values against the same injected
+// instant. Calendar built-ins derive from the ADS server clock; a PEP override
+// of request_time replaces only that attribute, not the calendar attributes.
+// No PEP overrides are used here, and deriving the calendar from the observed
+// Unix timestamp avoids midnight/hour rollover races between separate reads.
+func TestConditionConformanceInjectedTypesAndValues(t *testing.T) {
 	location := filepath.Join(t.TempDir(), "policies.json")
 	if err := os.WriteFile(location, []byte(`{"services":[{"name":"app","policies":[{"id":"p","effect":"grant"}]}]}`), 0600); err != nil {
 		t.Fatal(err)
@@ -430,14 +434,29 @@ func TestConditionConformanceInjectedTypes(t *testing.T) {
 	}
 	e := evaluator.(*eval.PolicyEvalImpl)
 	defer e.Close()
+	before := time.Now().Unix()
 	result, err := e.Diagnose(ads.RequestContext{ServiceName: "app", Resource: "book", Action: "read", Subject: &ads.Subject{Principals: []*ads.Principal{{Type: "user", Name: "alice"}, {Type: "group", Name: "staff"}, {Type: "entity", Name: "service"}}}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	for name, want := range map[string]interface{}{"request_user": "alice", "request_groups": []interface{}{"staff"}, "request_entity": "service", "request_resource": "book", "request_action": "read", "request_time": int64(0), "request_year": 0, "request_month": 0, "request_day": 0, "request_hour": 0, "request_weekday": time.Now().Weekday().String()} {
+	after := time.Now().Unix()
+	timestamp, ok := result.Attributes["request_time"].(int64)
+	if !ok {
+		t.Fatalf("request_time = %T, want int64", result.Attributes["request_time"])
+	}
+	if timestamp < before || timestamp > after {
+		t.Fatalf("request_time %d is outside request window [%d,%d]", timestamp, before, after)
+	}
+	instant := time.Unix(timestamp, 0).In(time.Local)
+	for name, want := range map[string]interface{}{
+		"request_user": "alice", "request_groups": []interface{}{"staff"}, "request_entity": "service",
+		"request_resource": "book", "request_action": "read", "request_time": timestamp,
+		"request_year": instant.Year(), "request_month": int(instant.Month()), "request_day": instant.Day(),
+		"request_hour": instant.Hour(), "request_weekday": instant.Weekday().String(),
+	} {
 		got, ok := result.Attributes[name]
-		if !ok || reflect.TypeOf(got) != reflect.TypeOf(want) {
-			t.Errorf("%s: %T (%v), want %T", name, got, got, want)
+		if !ok || !reflect.DeepEqual(got, want) {
+			t.Errorf("%s: %T (%v), want %T (%v)", name, got, got, want, want)
 		}
 	}
 }
