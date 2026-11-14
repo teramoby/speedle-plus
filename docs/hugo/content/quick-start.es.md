@@ -21,7 +21,7 @@ Continúe más abajo cuando esté listo para instalar y ejecutar Speedle localme
 
 ## Requisitos previos
 
-Use Linux o macOS con Bash, Git, curl y **Go 1.26.10 o Go 1.27.3** (o un parche más reciente de la misma rama). Speedle admite las versiones con parches de Go 1.26 y Go 1.27; esta guía está verificada con **Go 1.26.10 y Go 1.27.3**. Go 1.27.3 es la versión estable recomendada para este recorrido.
+Use Linux o macOS con Bash, Git, curl y **Go 1.27.4** (o un parche más reciente de Go 1.27). Compilar el código fuente actual requiere Go 1.27.4 o posterior; las versiones publicadas conservan sus propios requisitos de herramientas.
 
 Instale Go con las [instrucciones oficiales de instalación](https://go.dev/doc/install) y compruebe la versión instalada:
 

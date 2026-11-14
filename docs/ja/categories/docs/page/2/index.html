@@ -80,6 +80,20 @@
     
     <li>
   <h2 class="title2">
+    <a href="/ja/docs/overview/" itemprop="headline">Speedle 概要: きめ細かなアクセス制御のための認可エンジン</a>
+  </h2>
+  
+  <p itemprop="about">Speedle が一般的な認可用語（PAP、PDP、PEP、PIP、RBAC、ABAC、PBAC、XACML、ゼロトラスト、ID、IAM）とどのように対応するか。</p>
+  
+  
+  <p itemprop="about">認可とアクセス制御の語彙における Speedle の位置づけ</p>
+  
+  <hr />
+</li>
+
+    
+    <li>
+  <h2 class="title2">
     <a href="/ja/docs/pms/diagnosis/" itemprop="headline">認可診断</a>
   </h2>
   
@@ -94,13 +108,13 @@
     
     <li>
   <h2 class="title2">
-    <a href="/ja/docs/deployment/docker/" itemprop="headline">Docker イメージ</a>
+    <a href="/ja/docs/assertor/" itemprop="headline">トークンアサーター</a>
   </h2>
   
-  <p itemprop="about">公開されている Speedle イメージから speedle-pms、speedle-ads、spctl を実行</p>
+  <p itemprop="about">ID トークンを検証し、Speedle 認可リクエストに信頼できるプリンシパルとアイデンティティドメインを提供</p>
   
   
-  <p itemprop="about">Docker Hub と GHCR 上の同一イメージが、共有ファイルストアを使用してポリシーマネージャー、決定サービス、spctl を実行します。</p>
+  <p itemprop="about">評価リクエストには、ユーザーを表す ID トークンを含めることができます。この場合、評価エンジンはアサーターサービスを呼び出して、ユーザーの明示的なアイデンティティを取得できます</p>
   
   <hr />
 </li>
@@ -108,27 +122,13 @@
     
     <li>
   <h2 class="title2">
-    <a href="/ja/docs/sdks/go/" itemprop="headline">Go SDK</a>
+    <a href="/ja/docs/api/" itemprop="headline">API</a>
   </h2>
   
-  <p itemprop="about">Speedle Go SDK を追加し、ローカルの Speedle または Speedle Cloud に対して認可チェックを実行</p>
+  <p itemprop="about">Open API 仕様ドキュメント</p>
   
   
-  <p itemprop="about">go get で github.com/teramoby/speedle-sdk/go v0.2.0 を追加し、ローカルの Speedle または Speedle Cloud に対して IsAllowed と Check を呼び出します。</p>
-  
-  <hr />
-</li>
-
-    
-    <li>
-  <h2 class="title2">
-    <a href="/ja/docs/deployment/homebrew/" itemprop="headline">Homebrew でのインストール</a>
-  </h2>
-  
-  <p itemprop="about">Homebrew で speedle-spctl、speedle-pms、speedle-ads をインストールし、ローカルでデモを実行します。</p>
-  
-  
-  <p itemprop="about">Homebrew はコマンドラインツールと両方のサービスをインストールし、127.0.0.1 上で 1 つのポリシーファイルを共有して実行します。</p>
+  <p itemprop="about">Open API 仕様ドキュメント。API を使用して、シンプルおよび複雑なポリシーを宣言的にモデル化し、決定を取得し、ポリシーを動的に検出し、ポリシー評価をデバッグします。</p>
   
   <hr />
 </li>

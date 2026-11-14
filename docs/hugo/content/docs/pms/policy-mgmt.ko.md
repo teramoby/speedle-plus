@@ -63,7 +63,7 @@ grant (role designer, role dba) update db_design_doc
 
 ## 예제 실행 전 준비
 
-[빠른 시작](/quick-start/)의 설명에 따라 저장소 루트 아래의 `./bin/spctl`, `./bin/speedle-pms`, `./bin/speedle-ads`를 빌드합니다. Go 1.26.10 또는 Go 1.27.3(또는 동일 릴리스 브랜치의 최신 패치 버전), Bash, curl, Python 3이 필요합니다. 각 터미널은 저장소 루트에서 실행하십시오. 이 페이지를 위해 새 정책 파일을 사용합니다. 두 서비스가 모두 중지된 후에만 파일을 재설정하십시오.
+[빠른 시작](/quick-start/)의 설명에 따라 저장소 루트 아래의 `./bin/spctl`, `./bin/speedle-pms`, `./bin/speedle-ads`를 빌드합니다. Go 1.27.4(또는 동일 릴리스 브랜치의 최신 패치 버전), Bash, curl, Python 3이 필요합니다. 각 터미널은 저장소 루트에서 실행하십시오. 이 페이지를 위해 새 정책 파일을 사용합니다. 두 서비스가 모두 중지된 후에만 파일을 재설정하십시오.
 
 빈 정책 파일 초기화:
 
@@ -224,47 +224,6 @@ Alan에게 `manager` 역할을 할당합니다:
 {"allowed":true,"reason":0}
 ```
 
-## Speedle Cloud에서 정책 관리
-
-계정 API 키로 `spctl`에서 Cloud 서비스와 정책을 관리합니다.
-
-계정 API 키에는 고정 범위 하나를 지정합니다. `pms:read`는 서비스와 정책 읽기를, `pms:write`는 추가로 생성과 삭제를 허용합니다. 계정 내 서비스에 적용됩니다. `ads` 키로는 관리할 수 없으며 `403 insufficient_scope`입니다. 생성과 폐기는 [API 키](/ko/docs/cloud/tokens/)를 참조하세요.
-
-엔드포인트를 전역 플래그로 전달하고 `SPCTL_TOKEN`에서 API 키을 읽습니다. 대화형 셸에서 이를 사용하면 비밀 값이 명령 인수나 셸 기록에 남지 않습니다:
-
-<!-- deployment-template: cloud-token-environment -->
-```bash
-read -rsp 'API key: ' SPCTL_TOKEN; echo
-export SPCTL_TOKEN
-./bin/spctl --pms-endpoint https://cloud.speedle.io/policy-mgmt/v1 get service --all
-unset SPCTL_TOKEN
-```
-
-호환성을 위해 `--token` 플래그도 계속 지원되지만 환경 변수를 사용하면 명령 인수를 통한 API 키 유출을 방지할 수 있습니다. 모든 전역 플래그에는 환경 변수도 제공됩니다. 접두사 `SPCTL_`을 붙이고 플래그 이름을 대문자로 변환한 뒤 하이픈을 밑줄로 대체합니다. 예를 들어 `SPCTL_PMS_ENDPOINT`는 `pms-endpoint`를 설정하고 `SPCTL_SKIPVERIFY`는 `skipverify`를 설정합니다.
-
-구성을 저장하려면 `~/.speedle`을 사용합니다. 형식은 명령줄 플래그 이름과 동일한 한 줄당 하나의 `name=value` 쌍입니다:
-
-```ini
-pms-endpoint=https://cloud.speedle.io/policy-mgmt/v1
-token=<api-key>
-```
-
-명령 인수에 API 키을 포함하지 않고 이 파일을 생성하거나 업데이트합니다:
-
-<!-- deployment-template: cloud-token-config -->
-```bash
-read -rsp 'API key: ' SPCTL_TOKEN; echo
-printf '%s\n' "$SPCTL_TOKEN" | ./bin/spctl config token --stdin
-unset SPCTL_TOKEN
-```
-
-`spctl config token --stdin`은 권한 `0600`으로 `~/.speedle`을 작성합니다. 파일을 수동으로 편집하는 경우 `install -m 600 /dev/null ~/.speedle`로 생성하거나 나중에 `chmod 0600 ~/.speedle`을 실행하십시오. 그룹 또는 기타 접근을 허용하는 권한을 가진 파일에서 API 키을 읽으면 `spctl`은 표준 오류로 경고를 출력합니다. `spctl config --list`는 구성된 API 키을 `********`로 마스킹합니다.
-
-명시적인 명령줄 플래그는 환경 변수를 재정의하고, 환경 변수는 두 구성 파일을 모두 재정의합니다. 파일 간에는 `~/.speedle`이 `~/.spctlconfig`를 재정의합니다. `spctl config`로 API 키 이외의 키를 설정하면 해당 키는 `~/.spctlconfig`에 작성되고 `~/.speedle`에서 해당 복사본이 제거됩니다.
-
-API 키은 인증서 검증이 활성화된 HTTPS를 통해서만 `Authorization: Bearer` 자격 증명으로 전송됩니다. API 키을 사용한 일반 텍스트 HTTP는 `127.0.0.1`, `::1`, `localhost`와 같은 루프백 호스트에 대해서만 허용됩니다. `spctl`은 원격 HTTP 엔드포인트 및 HTTPS에서 HTTP로의 다운그레이드 리디렉션에 대해 자격 증명을 전송하기 전에 거부합니다. HTTPS 엔드포인트의 경우 `--skipverify=true`가 지정되면 API 키 전송도 거부됩니다. 대신 `--cacert`를 사용하여 사설 또는 자체 서명된 인증 기관을 신뢰하도록 설정하십시오. API 키은 일반 명령 출력이나 오류 메시지에 포함되지 않습니다.
-
-Cloud 오류는 0이 아닌 종료 코드를 생성합니다. `401` 후에는 API 키을 확인하고, `403 insufficient_scope` 후에는 범위를 확인하십시오. `404`는 존재하지 않는 리소스를 나타내며, `409 service_exists` 및 `409 policy_exists`는 중복을 나타냅니다. `429`의 경우 반환된 `Retry-After` 값을 준수하고 유계 백오프를 사용하십시오. `429 daily_quota_exceeded`이면 `Retry-After`에 따라 00:00 UTC까지 기다리세요. 서비스와 정책 한도는 `409 quota_exceeded`이며 시간으로 초기화되지 않습니다. 미사용 항목을 삭제하세요. API 키 자리는 키를 폐기하거나 만료를 기다려 확보합니다. [제한과 오류](/ko/docs/cloud/limits-and-errors/)를 참조하세요.
 
 ## 기타 인터페이스
 

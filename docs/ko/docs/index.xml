@@ -67,7 +67,7 @@
       
       <guid>https://engine.speedle.io/ko/docs/decisions/</guid>
       <description>인가 결정이란 무엇인가 Speedle은 지정된 서비스 내에서 주체, 작업 및 리소스를 평가하며 애플리케이션이 그 결과를 적용합니다. 평가 오류나 타임아웃은 일반적인 Deny(거부)와 구분하여 처리하고 오류 발생 시 접근을 기본적으로 차단(fail closed)해야 합니다. REST, gRPC, 임베디드 Go API는 데이터 표현 방식이 다르므로 각각의 API 계약을 따르십시오.
-예제 실행 전 준비 빠른 시작의 설명에 따라 저장소 루트에서 ./bin/spctl, ./bin/speedle-pms, ./bin/speedle-ads를 빌드합니다. Go 1.26.10 또는 Go 1.27.3(또는 동일 릴리스 브랜치의 최신 패치 버전), Bash, curl, Python 3이 필요합니다.</description>
+예제 실행 전 준비 빠른 시작의 설명에 따라 저장소 루트에서 ./bin/spctl, ./bin/speedle-pms, ./bin/speedle-ads를 빌드합니다. Go 1.27.4(또는 동일 릴리스 브랜치의 최신 패치 버전), Bash, curl, Python 3이 필요합니다.</description>
     </item>
     
     <item>
@@ -89,6 +89,16 @@
       <description>토큰 어서터의 역할 구성된 어서터는 토큰을 검증하고 신원 도메인을 포함한 명시적 주체를 반환합니다. Speedle은 해당 신원을 사용하여 정책을 평가합니다. 프로덕션 구현에서는 토큰 서명 또는 인트로스펙션 결과, 발급자, 대상, 유효 기간 및 공급자별 요구 사항을 검증해야 합니다. 웹훅 인터페이스의 존재 자체가 임의의 OAuth/OIDC 토큰과의 자동 호환성을 의미하지는 않습니다.
 토큰 어서션 API의 errCode는 정수형이며, 선택적 속성은 객체이며 유형화된 속성 배열이 아닙니다. asserterWebhookConfig.endpoint는 전체 URL입니다. 아래 예제에서는 /v1/assert를 사용합니다.
 결정론적 로컬 목(Mock) 실행 이 목은 githubtoken/github, googletoken/google, gitlabtoken/gitlab의 3개 입력 조합만 인식하며, 각각 해당 도메인의 user1을 나타냅니다.</description>
+    </item>
+    
+    <item>
+      <title>결정 서비스 확장</title>
+      <link>https://engine.speedle.io/ko/docs/extending-decision-service/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/extending-decision-service/</guid>
+      <description>store.StoreBuilder를 구현하고 store.Register로 고유한 이름을 등록한 뒤 실행 프로그램에서 패키지를 가져옵니다. GetStoreParams는 추가 플래그를 저장소 속성에 연결합니다. 자체 플래그는 시작 전에 파싱합니다. 라이브러리는 플래그를 파싱하거나 신호 처리기를 설치하지 않습니다.
+github.com/teramoby/speedle-plus/pkg/ads의 ads.Run(ctx, params, conf, options...)로 표준 ADS 시작을 재사용합니다. params는 *flags.Parameters, conf는 *cfg.Config이며 ctx 취소 시 두 서버가 중지됩니다. ads.WithGate(g)는 두 프로토콜의 게이트 탐색을 재정의하고 ads.WithGate(nil)은 비활성화합니다. ads.WithListeners(rest, rpc)는 미리 바인딩한 net.Listener를 받으며 nil은 설정된 엔드포인트를 사용합니다. Run은 시작 실패 시에도 리스너를 소유하고 닫습니다.</description>
     </item>
     
     <item>

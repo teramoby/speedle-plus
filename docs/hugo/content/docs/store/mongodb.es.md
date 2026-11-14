@@ -17,7 +17,7 @@ MongoDB debe ejecutarse como un **conjunto de réplicas o un clúster particiona
 
 ## 1. Compilar Speedle
 
-Prepare Bash, Git, curl, Docker y Go 1.26.10 o Go 1.27.3. Inicie Docker y luego compile los servicios nativos:
+Prepare Bash, Git, curl, Docker y Go 1.27.4. Inicie Docker y luego compile los servicios nativos:
 
 <!-- mongodb-step: build -->
 ```bash

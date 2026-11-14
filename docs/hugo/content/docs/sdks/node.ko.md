@@ -1,6 +1,6 @@
 +++
 title = "Node.js/TypeScript SDK"
-description = "Speedle Node.js/TypeScript SDK를 추가하고 로컬 Speedle 또는 Speedle Cloud에 대해 인가 확인 수행"
+description = "Speedle Node.js/TypeScript SDK를 추가하고 로컬 Speedle에 대해 인가 확인 수행"
 weight = 60
 aliases = ["/ko/docs/api/sdk-node/"]
 draft = false
@@ -8,7 +8,7 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "npm으로 @speedle/sdk를 설치하고 로컬 Speedle 또는 Speedle Cloud에 대해 isAllowed 및 check를 호출합니다."
+bref = "npm으로 @speedle/sdk를 설치하고 로컬 Speedle에 대해 isAllowed 및 check를 호출합니다."
 lastmod = 2026-11-10T09:48:45+08:00
 +++
 
@@ -71,54 +71,6 @@ alice get /docs/public: allowed=true
 alice delete /docs/public: allowed=false reason=NoApplicablePolicies
 ```
 
-## Speedle Cloud 호출
-
-> **Speedle Cloud는 출시 예정입니다.**
-
-프로그램은 `SPEEDLE_SERVICE`에서 서비스 이름을, `SPEEDLE_TOKEN`에서 `ads` 범위의 계정 API 키을 읽습니다. `SPEEDLE_ENDPOINT`는 기본 엔드포인트 `https://cloud.speedle.io`를 재정의합니다. `main.ts`를 다음과 같이 대체합니다:
-
-```typescript
-import { Auth, Reason, SpeedleClient, SpeedleError } from "@speedle/sdk";
-
-try {
-  const speedle = new SpeedleClient({
-    backend: "speedle-cloud",
-    endpoint: process.env.SPEEDLE_ENDPOINT ?? "https://cloud.speedle.io",
-    auth: Auth.bearer(process.env.SPEEDLE_TOKEN ?? ""),
-    serviceName: process.env.SPEEDLE_SERVICE ?? "",
-  });
-  try {
-    const allowed = await speedle.isAllowed("alice", "get", "/docs/public");
-    console.log(`alice get /docs/public: allowed=${allowed}`);
-
-    const d = await speedle.check("alice", "delete", "/docs/public");
-    console.log(`alice delete /docs/public: allowed=${d.allowed} reason=${Reason[d.reason] ?? d.reason}`);
-  } finally {
-    await speedle.close();
-  }
-} catch (e) {
-  if (!(e instanceof SpeedleError)) throw e;
-  console.error(`Speedle error: ${e.message}`);
-  process.exitCode = 1;
-}
-```
-
-환경 변수를 설정하고 실행합니다. `read -rs`를 사용하면 API 키이 셸 기록이나 화면에 노출되지 않습니다:
-
-```bash
-export SPEEDLE_SERVICE=docs
-read -rs SPEEDLE_TOKEN && export SPEEDLE_TOKEN
-node main.ts
-```
-
-서비스에 예제 정책이 있는 경우 출력:
-
-```text
-alice get /docs/public: allowed=true
-alice delete /docs/public: allowed=false reason=NoApplicablePolicies
-```
-
-API 키은 서버 측 비밀 값입니다. 브라우저, 모바일 앱 또는 데스크톱 클라이언트에 절대 배포하지 마십시오.
 
 ## Speedle MCP
 

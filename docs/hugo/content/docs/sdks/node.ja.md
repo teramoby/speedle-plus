@@ -1,6 +1,6 @@
 +++
 title = "Node.js/TypeScript SDK"
-description = "Speedle Node.js/TypeScript SDK を追加し、ローカルの Speedle または Speedle Cloud に対して認可チェックを実行"
+description = "Speedle Node.js/TypeScript SDK を追加し、ローカルの Speedle に対して認可チェックを実行"
 weight = 60
 aliases = ["/ja/docs/api/sdk-node/"]
 draft = false
@@ -8,7 +8,7 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "npm で @speedle/sdk をインストールし、ローカルの Speedle または Speedle Cloud に対して isAllowed と check を呼び出します。"
+bref = "npm で @speedle/sdk をインストールし、ローカルの Speedle に対して isAllowed と check を呼び出します。"
 lastmod = 2026-11-10T09:48:45+08:00
 +++
 
@@ -71,54 +71,6 @@ alice get /docs/public: allowed=true
 alice delete /docs/public: allowed=false reason=NoApplicablePolicies
 ```
 
-## Speedle Cloud の呼び出し
-
-> **Speedle Cloud はまもなく公開されます。**
-
-プログラムは `SPEEDLE_SERVICE` からサービス名を、`SPEEDLE_TOKEN` から`ads` スコープのアカウント API キーを読み取ります。`SPEEDLE_ENDPOINT` はデフォルトのエンドポイント `https://cloud.speedle.io` を上書きします。`main.ts` を以下に置き換えます:
-
-```typescript
-import { Auth, Reason, SpeedleClient, SpeedleError } from "@speedle/sdk";
-
-try {
-  const speedle = new SpeedleClient({
-    backend: "speedle-cloud",
-    endpoint: process.env.SPEEDLE_ENDPOINT ?? "https://cloud.speedle.io",
-    auth: Auth.bearer(process.env.SPEEDLE_TOKEN ?? ""),
-    serviceName: process.env.SPEEDLE_SERVICE ?? "",
-  });
-  try {
-    const allowed = await speedle.isAllowed("alice", "get", "/docs/public");
-    console.log(`alice get /docs/public: allowed=${allowed}`);
-
-    const d = await speedle.check("alice", "delete", "/docs/public");
-    console.log(`alice delete /docs/public: allowed=${d.allowed} reason=${Reason[d.reason] ?? d.reason}`);
-  } finally {
-    await speedle.close();
-  }
-} catch (e) {
-  if (!(e instanceof SpeedleError)) throw e;
-  console.error(`Speedle error: ${e.message}`);
-  process.exitCode = 1;
-}
-```
-
-環境変数を設定して実行します。`read -rs` を使用すると、API キーがシェルの履歴や画面に表示されません:
-
-```bash
-export SPEEDLE_SERVICE=docs
-read -rs SPEEDLE_TOKEN && export SPEEDLE_TOKEN
-node main.ts
-```
-
-サービスにサンプルポリシーが存在する場合の出力:
-
-```text
-alice get /docs/public: allowed=true
-alice delete /docs/public: allowed=false reason=NoApplicablePolicies
-```
-
-API キーはサーバー側のシークレットです。ブラウザ、モバイルアプリ、またはデスクトップクライアントには絶対に配布しないでください。
 
 ## Speedle MCP
 

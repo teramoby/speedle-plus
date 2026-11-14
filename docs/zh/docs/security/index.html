@@ -149,20 +149,8 @@
 </ul>
 
 </li>
-
-
-
-<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/zh/docs/cloud/">Speedle Cloud</a></span>
-<ul class="">
-<li data-docs-depth="1" class=""><a href="/zh/docs/cloud/getting-started/">快速入门</a></li>
-<li data-docs-depth="1" class=""><a href="/zh/docs/cloud/tokens/">API 密钥</a></li>
-<li data-docs-depth="1" class=""><a href="/zh/docs/cloud/authorization-api/">授权 API</a></li>
-<li data-docs-depth="1" class=""><a href="/zh/docs/cloud/api-reference/">API 参考</a></li>
-<li data-docs-depth="1" class=""><a href="/zh/docs/cloud/limits-and-errors/">限额与错误</a></li>
-</ul>
-
-</li>
 <li data-docs-depth="0" class="active"><a href="/zh/docs/security/" aria-current="page">安全</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/extending-decision-service/">扩展决策服务</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/logging/">日志</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/versions/">版本</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/custom-function/">自定义函数</a></li><li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">其他</span>
@@ -233,7 +221,7 @@
 
 <h2 id="生成本地测试证书">生成本地测试证书</h2>
 
-<p>先按<a href="/zh/quick-start/">快速入门</a>编译二进制，然后从仓库根目录使用 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）生成本地 CA、独立的服务端与客户端证书。服务端证书的 SAN 包括 <code>localhost</code>、<code>127.0.0.1</code>、<code>::1</code>，私钥权限为 0600。这些是<strong>有效期 24 小时的演示证书</strong>，不能作为生产凭据。工具拒绝覆盖已有文件；重新生成时使用新的输出目录。</p>
+<p>先按<a href="/zh/quick-start/">快速入门</a>编译二进制，然后从仓库根目录使用 Go 1.27.4（也可使用同一大版本的更新补丁版本）生成本地 CA、独立的服务端与客户端证书。服务端证书的 SAN 包括 <code>localhost</code>、<code>127.0.0.1</code>、<code>::1</code>，私钥权限为 0600。这些是<strong>有效期 24 小时的演示证书</strong>，不能作为生产凭据。工具拒绝覆盖已有文件；重新生成时使用新的输出目录。</p>
 
 <!-- docs-check: certificates -->
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go run ./website/tests/examples/certificates --out ./tls</code></pre></div>

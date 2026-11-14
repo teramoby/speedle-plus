@@ -83,11 +83,12 @@ XACML モデルに詳しい方であれば、ポリシー管理サービス (PMS
       
       <guid>https://engine.speedle.io/ja/docs/decisions/</guid>
       <description>認可決定とは？ Speedle は指定されたサービス内でサブジェクト、アクション、およびリソースを評価し、アプリケーションがその結果を適用します。評価エラーやタイムアウトは通常の Deny（拒否）とは区別して扱い、エラー時はアクセスを拒否（fail closed）してください。REST、gRPC、組み込み Go の各 API はデータ表現が異なるため、それぞれの API 契約 に従ってください。
-実行前の準備 クイックスタート に従ってリポジトリルートで ./bin/spctl、./bin/speedle-pms、./bin/speedle-ads をビルドします。Go 1.26.10 または Go 1.27.3（または同じリリースブランチの新しいパッチバージョン）、Bash、curl、Python 3 が必要です。各ターミナルはリポジトリのルートディレクトリから実行してください。このページ用には新しいポリシーファイルを使用し、両方のサービスを停止した後にのみリセットしてください。
+実行前の準備 クイックスタート に従ってリポジトリルートで ./bin/spctl、./bin/speedle-pms、./bin/speedle-ads をビルドします。Go 1.27.4（または同じリリースブランチの新しいパッチバージョン）、Bash、curl、Python 3 が必要です。各ターミナルはリポジトリのルートディレクトリから実行してください。このページ用には新しいポリシーファイルを使用し、両方のサービスを停止した後にのみリセットしてください。
 空のポリシーファイルを初期化します:
 printf &amp;#39;{} &amp;#39; &amp;gt; docs-policies.json ターミナル1で PMS を起動し、実行したままにします:
 ./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --grpc-endpoint 127.0.0.1:0 --insecure=true ターミナル2で ADS を起動し、実行したままにします:
-./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6734 --grpc-endpoint 127.0.0.1:0 --insecure=true 残りのコマンドはターミナル3で実行します。PMS と ADS はファイルを共有し、変更は非同期に反映されます。意図した更新が ADS に到達したことを確認してから依存してください。--insecure=true はこのループバックサンプルのためのものです。本番接続については セキュリティ を参照してください。明示的な PMS アドレスを指定することで ~/.spctlconfig の変更を回避できます。終了したら、両方のサーバーターミナルで Ctrl-C を押して停止します。</description>
+./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6734 --grpc-endpoint 127.0.0.1:0 --insecure=true 残りのコマンドはターミナル3で実行します。PMS と ADS はファイルを共有し、変更は非同期に反映されます。意図した更新が ADS に到達したことを確認してから依存してください。--insecure=true はこのループバックサンプルのためのものです。本番接続については セキュリティ を参照してください。明示的な PMS アドレスを指定することで ~/.spctlconfig の変更を回避できます。終了したら、両方のサーバーターミナルで Ctrl-C を押して停止します。
+再現可能なポリシーセットの作成 フィクスチャ は Alan に role1 と role2 を割り当て、role1 は /books/HarryPotter のダウンロードが許可されます。</description>
     </item>
     
     <item>
@@ -126,6 +127,17 @@ go run ./website/tests/examples/asserter // A deterministic mock for the token-a
       <description>両方の API トランスポートを保護 独立して動作する PMS と ADS は REST と gRPC を公開します。現在、両者とも同じ --insecure、--cert、--key、--client-cert、および --force-client-cert トランスポート設定を使用します。証明書または信頼設定が無効な場合、起動は失敗します。セキュアモードがプレーンテキストにフォールバックすることはありません。
 TLS は接続を暗号化し、サーバーを認証します。認証されたクライアントを要求するには、--client-cert でクライアント CA を提供し、かつ --force-client-cert=true を設定します。そのフラグがない場合、構成された CA はクライアントが証明書を提供した場合にのみクライアント証明書を検証します。TLS だけでは管理者の認可や Bearer トークンの検証は提供されません。管理、診断、および検出エンドポイントには、認証済みゲートウェイまたは同等のアクセス制御を使用してください。--enable-authz フラグは、組み込みのエンドポイント認可ポリシーを提供するものではありません。
 リッスンアドレスと互換性    サービス デフォルト REST アドレス デフォルト gRPC アドレス     PMS 0.0.0.0:6733 --grpc-endpoint が設定されるまで無効   ADS 0.0.0.0:6734 --grpc-endpoint が設定されるまで無効    REST と gRPC のリッスンアドレスは個別に構成されます。--endpoint のみを設定しても gRPC は有効になりません。PMS 用には --grpc-endpoint 127.0.0.1:50001、ADS 用には --grpc-endpoint 127.</description>
+    </item>
+    
+    <item>
+      <title>決定サービスの拡張</title>
+      <link>https://engine.speedle.io/ja/docs/extending-decision-service/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/extending-decision-service/</guid>
+      <description>store.StoreBuilder を実装し、store.Register で一意の名前を登録して、実行プログラムからパッケージをインポートします。GetStoreParams は追加フラグをストアのプロパティに対応付けます。独自フラグは起動前に解析します。ライブラリはフラグ解析やシグナルハンドラーの登録を行いません。
+github.com/teramoby/speedle-plus/pkg/ads の ads.Run(ctx, params, conf, options...) で標準 ADS 起動を再利用します。params は *flags.Parameters、conf は *cfg.Config です。ctx のキャンセルで両サーバーを停止します。ads.WithGate(g) は両プロトコルのゲート検出を上書きし、ads.WithGate(nil) は無効にします。ads.WithListeners(rest, rpc) はバインド済み net.Listener を受け取り、nil は設定済みエンドポイントを使います。Run は起動失敗時も含めてリスナーを所有し、閉じます。REST の TLS 設定と gRPC のサーバー認証情報は維持されます。ads.WithHTTPServer(func(*http.Server)) でハンドラーをラップし、ルートを追加できます。ads.WithGRPCOptions(...) でオプションを追加します。標準の panic 回復を維持するため、追加インターセプターには grpc.ChainUnaryInterceptor(...) を使います。
+プロトコルに依存しない pkg/svcs/gate.Gate は、Route(serviceName string) gate.Route で gate.Local、gate.Fallback、gate.Unavailable を選び、Forward(context.Context, gate.Operation, *ads.RequestContext) (*gate.Response, error) で型付き結果を返します。Local は通常の評価を続行します。Fallback は許可・拒否、ロール、権限を返せます。失敗時にローカル評価へ切り替わることはありません。Diagnose と Discover は Fallback では拒否されます。*gate.UnavailableError の公開理由コード以外のエラーと nil 応答は fallback_unavailable になります。REST は 503 と authorization_unavailable、理由、Cache-Control: no-store、Retry-After: 30 を返し、gRPC は Unavailable を返します。応答の ErrorMessage は評価エラーを表し、REST IsAllowed は通常の 200 エラー本文、他の REST 操作は 500、gRPC は Internal を返します。成功した後備応答には X-Speedle-Decision-Source: upstream が付きます（gRPC メタデータのキーは小文字）。任意の gate.</description>
     </item>
     
     <item>

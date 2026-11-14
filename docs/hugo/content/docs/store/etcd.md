@@ -15,7 +15,7 @@ This walkthrough uses an **external etcd v3.6.14** server with a persistent Dock
 
 ## 1. Build Speedle
 
-Prepare Bash, Git, curl, Docker and Go 1.26.10 or Go 1.27.3. Start Docker, then build the native services:
+Prepare Bash, Git, curl, Docker and Go 1.27.4. Start Docker, then build the native services:
 
 <!-- etcd-step: build -->
 ```bash

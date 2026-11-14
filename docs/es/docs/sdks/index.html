@@ -148,19 +148,7 @@
 </ul>
 
 </li>
-
-
-
-<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/es/docs/cloud/">Speedle Cloud</a></span>
-<ul class="">
-<li data-docs-depth="1" class=""><a href="/es/docs/cloud/getting-started/">Primeros pasos</a></li>
-<li data-docs-depth="1" class=""><a href="/es/docs/cloud/tokens/">Claves API</a></li>
-<li data-docs-depth="1" class=""><a href="/es/docs/cloud/authorization-api/">API de autorización</a></li>
-<li data-docs-depth="1" class=""><a href="/es/docs/cloud/api-reference/">Referencia de la API</a></li>
-<li data-docs-depth="1" class=""><a href="/es/docs/cloud/limits-and-errors/">Límites y errores</a></li>
-</ul>
-
-</li>
+<li data-docs-depth="0" class=""><a href="/es/docs/extending-decision-service/">Extender el servicio de decisiones</a></li>
 <li data-docs-depth="0" class=""><a href="/es/docs/security/">Seguridad</a></li>
 <li data-docs-depth="0" class=""><a href="/es/docs/logging/">Marco de registro</a></li>
 <li data-docs-depth="0" class=""><a href="/es/docs/versions/">Versiones</a></li>
@@ -181,7 +169,7 @@
   <h1>SDK</h1>
   <p></p>
 
-<p>Los SDK de Speedle son bibliotecas cliente para la API de decisiones <code>POST /authz-check/v1/is-allowed</code>. Funcionan tanto con un Speedle ADS autohospedado como con Speedle Cloud. Cada página de lenguaje muestra cómo agregar el paquete y proporciona un programa completo y probado para ambos entornos. El código fuente y la referencia completa se encuentran en <a href="https://github.com/teramoby/speedle-sdk">teramoby/speedle-sdk</a>. Para ejecutar PMS y ADS para estos ejemplos, consulte <a href="/es/docs/deployment/">Despliegue</a> y la <a href="/es/docs/deployment/docker/">Imagen de Docker</a>.</p>
+<p>Los SDK de Speedle son bibliotecas cliente para la API de decisiones <code>POST /authz-check/v1/is-allowed</code>. Funcionan con un Speedle ADS autohospedado. Cada página de lenguaje muestra cómo agregar el paquete y proporciona un programa completo y probado para el entorno autohospedado. El código fuente y la referencia completa se encuentran en <a href="https://github.com/teramoby/speedle-sdk">teramoby/speedle-sdk</a>. Para ejecutar PMS y ADS para estos ejemplos, consulte <a href="/es/docs/deployment/">Despliegue</a> y la <a href="/es/docs/deployment/docker/">Imagen de Docker</a>.</p>
 
 <h2 id="paquetes">Paquetes</h2>
 
@@ -221,11 +209,6 @@
 <td>Speedle ADS autohospedado</td>
 <td>Los seis SDK</td>
 </tr>
-
-<tr>
-<td>Speedle Cloud</td>
-<td>Próximamente</td>
-</tr>
 </tbody>
 </table>
 
@@ -239,8 +222,6 @@
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service docs
 ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c <span style="color:#f1fa8c">&#34;grant user alice get,list /docs/public&#34;</span> --service-name<span style="color:#ff79c6">=</span>docs</code></pre></div>
 <p>Los ejemplos locales se conectan a <code>http://localhost:6734</code> sin credenciales. Los SDK solo aceptan <code>http://</code> en texto plano para hosts de bucle invertido (loopback); utilice HTTPS para cualquier otro ADS.</p>
-
-<p>Los ejemplos de Speedle Cloud se conectan a <code>https://cloud.speedle.io</code> y leen el nombre del servicio y una clave API de cuenta con ámbito <code>ads</code> desde las variables de entorno <code>SPEEDLE_SERVICE</code> y <code>SPEEDLE_TOKEN</code>. Cree la misma política en ese servicio para obtener las mismas respuestas. La clave API es un secreto del lado del servidor: nunca la exponga en navegadores, aplicaciones móviles ni clientes de escritorio.</p>
 </div></main>
         </div>
     </div>

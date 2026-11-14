@@ -1,6 +1,6 @@
 +++
 title = "C#/.NET SDK"
-description = "Añada el SDK de Speedle para .NET y compruebe autorizaciones frente a un Speedle local o Speedle Cloud."
+description = "Añada el SDK de Speedle para .NET y compruebe autorizaciones frente a un Speedle local."
 weight = 40
 aliases = ["/es/docs/api/sdk-dotnet/"]
 draft = false
@@ -8,7 +8,7 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "Añada Speedle.Sdk 0.2.0 con dotnet add package, y luego llame a IsAllowedAsync y CheckAsync frente a un Speedle local o Speedle Cloud."
+bref = "Añada Speedle.Sdk 0.2.0 con dotnet add package, y luego llame a IsAllowedAsync y CheckAsync frente a un Speedle local."
 lastmod = 2026-11-07T19:43:15+08:00
 +++
 
@@ -70,55 +70,6 @@ alice get /docs/public: allowed=True
 alice delete /docs/public: allowed=False reason=NoApplicablePolicies
 ```
 
-## Llamar a Speedle Cloud
-
-> **Speedle Cloud estará disponible próximamente.**
-
-El programa lee el nombre del servicio desde `SPEEDLE_SERVICE` y una clave API de cuenta con ámbito `ads` desde `SPEEDLE_TOKEN`. `SPEEDLE_ENDPOINT` anula el endpoint predeterminado `https://cloud.speedle.io`. Sustituya `Program.cs` por:
-
-```csharp
-using Speedle.Sdk;
-
-try
-{
-    await using var speedle = new SpeedleClient(new SpeedleClientOptions
-    {
-        Backend = Backend.SpeedleCloud,
-        Endpoint = new Uri(Environment.GetEnvironmentVariable("SPEEDLE_ENDPOINT") ?? "https://cloud.speedle.io"),
-        Auth = Auth.Bearer(Environment.GetEnvironmentVariable("SPEEDLE_TOKEN") ?? ""),
-        ServiceName = Environment.GetEnvironmentVariable("SPEEDLE_SERVICE") ?? "",
-    });
-
-    bool allowed = await speedle.IsAllowedAsync("alice", "get", "/docs/public");
-    Console.WriteLine($"alice get /docs/public: allowed={allowed}");
-
-    Decision d = await speedle.CheckAsync("alice", "delete", "/docs/public");
-    Console.WriteLine($"alice delete /docs/public: allowed={d.Allowed} reason={d.Reason}");
-}
-catch (SpeedleException e)
-{
-    Console.Error.WriteLine($"Speedle error: {e.Message}");
-    return 1;
-}
-return 0;
-```
-
-Configure las variables de entorno y ejecútelo. `read -rs` evita que la clave API quede registrada en el historial de la terminal o en pantalla:
-
-```bash
-export SPEEDLE_SERVICE=docs
-read -rs SPEEDLE_TOKEN && export SPEEDLE_TOKEN
-dotnet run
-```
-
-Salida, cuando el servicio cuenta con la política de ejemplo:
-
-```text
-alice get /docs/public: allowed=True
-alice delete /docs/public: allowed=False reason=NoApplicablePolicies
-```
-
-La clave API es un secreto del lado del servidor. Nunca lo distribuya a navegadores, aplicaciones móviles o clientes de escritorio.
 
 ## Gestión de errores
 

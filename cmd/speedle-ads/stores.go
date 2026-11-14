@@ -11,5 +11,4 @@ import (
 	_ "github.com/teramoby/speedle-plus/pkg/store/file"
 	_ "github.com/teramoby/speedle-plus/pkg/store/mongodb"
 	_ "github.com/teramoby/speedle-plus/pkg/store/mysql"
-	_ "github.com/teramoby/speedle-plus/pkg/store/policysource"
 )

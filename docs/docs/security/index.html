@@ -149,19 +149,7 @@
 </ul>
 
 </li>
-
-
-
-<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/docs/cloud/">Speedle Cloud</a></span>
-<ul class="">
-<li data-docs-depth="1" class=""><a href="/docs/cloud/getting-started/">Getting started</a></li>
-<li data-docs-depth="1" class=""><a href="/docs/cloud/tokens/">API keys</a></li>
-<li data-docs-depth="1" class=""><a href="/docs/cloud/authorization-api/">Authorization API</a></li>
-<li data-docs-depth="1" class=""><a href="/docs/cloud/api-reference/">API reference</a></li>
-<li data-docs-depth="1" class=""><a href="/docs/cloud/limits-and-errors/">Limits and errors</a></li>
-</ul>
-
-</li>
+<li data-docs-depth="0" class=""><a href="/docs/extending-decision-service/">Extending the decision service</a></li>
 <li data-docs-depth="0" class="active"><a href="/docs/security/" aria-current="page">Security</a></li>
 <li data-docs-depth="0" class=""><a href="/docs/logging/">Logging Framework</a></li>
 <li data-docs-depth="0" class=""><a href="/docs/versions/">Versions</a></li>
@@ -233,7 +221,7 @@
 
 <h2 id="generate-certificates-for-a-local-test">Generate certificates for a local test</h2>
 
-<p>Build the binaries using the <a href="/quick-start/">quick start</a>. From the repository root, use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch) to generate a local CA plus separate server/client certificates. The server certificate has SANs for <code>localhost</code>, <code>127.0.0.1</code> and <code>::1</code>; private keys use mode 0600. These <strong>24-hour demonstration certificates</strong> are not production credentials. The generator refuses to overwrite existing files: choose a new output directory when regenerating.</p>
+<p>Build the binaries using the <a href="/quick-start/">quick start</a>. From the repository root, use Go 1.27.4 (or a newer patch on the same release branch) to generate a local CA plus separate server/client certificates. The server certificate has SANs for <code>localhost</code>, <code>127.0.0.1</code> and <code>::1</code>; private keys use mode 0600. These <strong>24-hour demonstration certificates</strong> are not production credentials. The generator refuses to overwrite existing files: choose a new output directory when regenerating.</p>
 
 <!-- docs-check: certificates -->
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go run ./website/tests/examples/certificates --out ./tls</code></pre></div>

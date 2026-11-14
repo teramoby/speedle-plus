@@ -23,7 +23,7 @@ Utilice el [modo integrado](/es/docs/deployment/embedded/) para ejecutar el eval
 
 ## Compilar con la versión actual de Go
 
-Utilice Go 1.26.10 o Go 1.27.3 (o un parche más reciente en la misma rama de lanzamiento) (se recomienda Go 1.27.3), Git y un shell en Linux o macOS. Utilice módulos de Go; el repositorio clonado puede ubicarse en cualquier directorio con permisos de escritura. No se requiere una configuración personalizada de `GOROOT`, `GOPATH`, `dep` ni una estructura de fuentes especial de GOPATH.
+Utilice Go 1.27.4 (o un parche más reciente en la misma rama de lanzamiento) (se recomienda Go 1.27.4), Git y un shell en Linux o macOS. Utilice módulos de Go; el repositorio clonado puede ubicarse en cualquier directorio con permisos de escritura. No se requiere una configuración personalizada de `GOROOT`, `GOPATH`, `dep` ni una estructura de fuentes especial de GOPATH.
 
 <!-- deployment-check: source-build -->
 ```bash

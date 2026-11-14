@@ -1,6 +1,6 @@
 +++
 title = "Rust SDK"
-description = "Speedle Rust SDK를 추가하고 로컬 Speedle 또는 Speedle Cloud에 대해 인가 확인 수행"
+description = "Speedle Rust SDK를 추가하고 로컬 Speedle에 대해 인가 확인 수행"
 weight = 50
 aliases = ["/ko/docs/api/sdk-rust/"]
 draft = false
@@ -8,7 +8,7 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "cargo add로 speedle 0.2.0 크레이트를 추가하고 로컬 Speedle 또는 Speedle Cloud에 대해 is_allowed 및 check를 호출합니다."
+bref = "cargo add로 speedle 0.2.0 크레이트를 추가하고 로컬 Speedle에 대해 is_allowed 및 check를 호출합니다."
 lastmod = 2026-11-07T19:43:15+08:00
 +++
 
@@ -66,56 +66,6 @@ alice get /docs/public: allowed=true
 alice delete /docs/public: allowed=false reason=NoApplicablePolicies
 ```
 
-## Speedle Cloud 호출
-
-> **Speedle Cloud는 출시 예정입니다.**
-
-프로그램은 `SPEEDLE_SERVICE`에서 서비스 이름을, `SPEEDLE_TOKEN`에서 `ads` 범위의 계정 API 키을 읽습니다. `SPEEDLE_ENDPOINT`는 기본 엔드포인트 `https://cloud.speedle.io`를 재정의합니다. `src/main.rs`를 다음과 같이 대체합니다:
-
-```rust
-use std::env;
-
-use speedle::blocking::Client;
-use speedle::{Auth, Backend};
-
-fn main() {
-    if let Err(e) = run() {
-        eprintln!("Speedle error: {e}");
-        std::process::exit(1);
-    }
-}
-
-fn run() -> Result<(), speedle::Error> {
-    let endpoint = env::var("SPEEDLE_ENDPOINT").unwrap_or_else(|_| "https://cloud.speedle.io".to_string());
-    let token = env::var("SPEEDLE_TOKEN").unwrap_or_default();
-    let service = env::var("SPEEDLE_SERVICE").unwrap_or_default();
-    let speedle = Client::builder(Backend::SpeedleCloud, &endpoint, Auth::bearer(token), service).build()?;
-
-    let allowed = speedle.is_allowed(&"alice".into(), "get", "/docs/public", &[])?;
-    println!("alice get /docs/public: allowed={allowed}");
-
-    let d = speedle.check(&"alice".into(), "delete", "/docs/public", &[])?;
-    println!("alice delete /docs/public: allowed={} reason={:?}", d.allowed, d.reason);
-    Ok(())
-}
-```
-
-환경 변수를 설정하고 실행합니다. `read -rs`를 사용하면 API 키이 셸 기록이나 화면에 노출되지 않습니다:
-
-```bash
-export SPEEDLE_SERVICE=docs
-read -rs SPEEDLE_TOKEN && export SPEEDLE_TOKEN
-cargo run
-```
-
-서비스에 예제 정책이 있는 경우 출력:
-
-```text
-alice get /docs/public: allowed=true
-alice delete /docs/public: allowed=false reason=NoApplicablePolicies
-```
-
-API 키은 서버 측 비밀 값입니다. 브라우저, 모바일 앱 또는 데스크톱 클라이언트에 절대 배포하지 마십시오.
 
 ## 오류 처리
 

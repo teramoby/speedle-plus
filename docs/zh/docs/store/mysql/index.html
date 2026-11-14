@@ -149,20 +149,8 @@
 </ul>
 
 </li>
-
-
-
-<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/zh/docs/cloud/">Speedle Cloud</a></span>
-<ul class="">
-<li data-docs-depth="1" class=""><a href="/zh/docs/cloud/getting-started/">快速入门</a></li>
-<li data-docs-depth="1" class=""><a href="/zh/docs/cloud/tokens/">API 密钥</a></li>
-<li data-docs-depth="1" class=""><a href="/zh/docs/cloud/authorization-api/">授权 API</a></li>
-<li data-docs-depth="1" class=""><a href="/zh/docs/cloud/api-reference/">API 参考</a></li>
-<li data-docs-depth="1" class=""><a href="/zh/docs/cloud/limits-and-errors/">限额与错误</a></li>
-</ul>
-
-</li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/security/">安全</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/extending-decision-service/">扩展决策服务</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/logging/">日志</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/versions/">版本</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/custom-function/">自定义函数</a></li><li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">其他</span>
@@ -199,7 +187,7 @@
 
 <h2 id="1-编译包含-mysql-后端的-speedle">1. 编译包含 MySQL 后端的 Speedle</h2>
 
-<p>准备 Git、Bash、curl、已启动的 Docker，以及支持的 Go 工具链（Go 1.26.10 或 Go 1.27.3）。从当前源码编译，确保两个服务都包含 <code>mysql</code> 后端；已安装的旧版本可能没有该后端。</p>
+<p>准备 Git、Bash、curl、已启动的 Docker，以及支持的 Go 工具链（Go 1.27.4）。从当前源码编译，确保两个服务都包含 <code>mysql</code> 后端；已安装的旧版本可能没有该后端。</p>
 
 <!-- mysql-step: build -->
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">git clone --depth <span style="color:#bd93f9">1</span> https://github.com/teramoby/speedle-plus.git

@@ -1,6 +1,6 @@
 +++
 title = "Rust SDK"
-description = "添加 Speedle Rust SDK，向本地 Speedle 或 Speedle Cloud 发起授权检查。"
+description = "添加 Speedle Rust SDK，向本地 Speedle 发起授权检查。"
 weight = 50
 aliases = ["/zh/docs/api/sdk-rust/"]
 draft = false
@@ -8,7 +8,7 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "用 cargo add 添加 speedle 0.2.0，再向本地 Speedle 或 Speedle Cloud 调用 is_allowed 与 check。"
+bref = "用 cargo add 添加 speedle 0.2.0，再向本地 Speedle 调用 is_allowed 与 check。"
 lastmod = 2026-11-08T11:21:16+08:00
 +++
 
@@ -66,56 +66,6 @@ alice get /docs/public: allowed=true
 alice delete /docs/public: allowed=false reason=NoApplicablePolicies
 ```
 
-## 调用 Speedle Cloud
-
-> **Speedle Cloud 即将上线。**
-
-程序从 `SPEEDLE_SERVICE` 读取服务名，从 `SPEEDLE_TOKEN` 读取具有 `ads` 权限范围的账号 API 密钥。`SPEEDLE_ENDPOINT` 可覆盖默认端点 `https://cloud.speedle.io`。将 `src/main.rs` 替换为：
-
-```rust
-use std::env;
-
-use speedle::blocking::Client;
-use speedle::{Auth, Backend};
-
-fn main() {
-    if let Err(e) = run() {
-        eprintln!("Speedle error: {e}");
-        std::process::exit(1);
-    }
-}
-
-fn run() -> Result<(), speedle::Error> {
-    let endpoint = env::var("SPEEDLE_ENDPOINT").unwrap_or_else(|_| "https://cloud.speedle.io".to_string());
-    let token = env::var("SPEEDLE_TOKEN").unwrap_or_default();
-    let service = env::var("SPEEDLE_SERVICE").unwrap_or_default();
-    let speedle = Client::builder(Backend::SpeedleCloud, &endpoint, Auth::bearer(token), service).build()?;
-
-    let allowed = speedle.is_allowed(&"alice".into(), "get", "/docs/public", &[])?;
-    println!("alice get /docs/public: allowed={allowed}");
-
-    let d = speedle.check(&"alice".into(), "delete", "/docs/public", &[])?;
-    println!("alice delete /docs/public: allowed={} reason={:?}", d.allowed, d.reason);
-    Ok(())
-}
-```
-
-设置环境变量后运行。`read -rs` 不会把API 密钥写入 shell 历史，也不会显示在屏幕上：
-
-```bash
-export SPEEDLE_SERVICE=docs
-read -rs SPEEDLE_TOKEN && export SPEEDLE_TOKEN
-cargo run
-```
-
-服务中已有示例策略时，输出为：
-
-```text
-alice get /docs/public: allowed=true
-alice delete /docs/public: allowed=false reason=NoApplicablePolicies
-```
-
-API 密钥是服务端密钥，切勿放进浏览器、移动应用或桌面客户端。
 
 ## 错误处理
 

@@ -21,16 +21,15 @@ type route struct {
 
 type routes []route
 
-func initRouters(evaluator eval.InternalEvaluator) (*routes, error) {
-	restService, err := NewRESTServiceWithEvaluator(evaluator)
+func initRouters(evaluator eval.InternalEvaluator, options ...Option) (*routes, error) {
+	restService, err := NewRESTServiceWithEvaluator(evaluator, options...)
 	if err != nil {
 		return nil, err
 	}
 	return initRoutersForService(restService), nil
 }
 
-// initRoutersForService builds the route table around one service. Tests use
-// it to supply a gate without a real policy source.
+// initRoutersForService builds the route table around one service.
 func initRoutersForService(restService *RESTService) *routes {
 	return &routes{
 		route{
@@ -84,8 +83,8 @@ func initRoutersForService(restService *RESTService) *routes {
 	}
 }
 
-func NewRouter(evaluator eval.InternalEvaluator) (*mux.Router, error) {
-	routes, err := initRouters(evaluator)
+func NewRouter(evaluator eval.InternalEvaluator, options ...Option) (*mux.Router, error) {
+	routes, err := initRouters(evaluator, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +98,5 @@ func NewRouter(evaluator eval.InternalEvaluator) (*mux.Router, error) {
 			Name(route.Name).
 			Handler(handler)
 	}
-	// The downstream policy-source protocol is served only by the dedicated
-	// downstream mTLS listener, never by the application listener.
 	return router, nil
 }

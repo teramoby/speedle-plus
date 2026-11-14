@@ -17,7 +17,7 @@ MongoDB must run as a **replica set or sharded cluster**. ADS watches the databa
 
 ## 1. Build Speedle
 
-Prepare Bash, Git, curl, Docker and Go 1.26.10 or Go 1.27.3. Start Docker, then build the native services:
+Prepare Bash, Git, curl, Docker and Go 1.27.4. Start Docker, then build the native services:
 
 <!-- mongodb-step: build -->
 ```bash

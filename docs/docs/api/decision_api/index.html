@@ -155,19 +155,7 @@
 </ul>
 
 </li>
-
-
-
-<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/docs/cloud/">Speedle Cloud</a></span>
-<ul class="">
-<li data-docs-depth="1" class=""><a href="/docs/cloud/getting-started/">Getting started</a></li>
-<li data-docs-depth="1" class=""><a href="/docs/cloud/tokens/">API keys</a></li>
-<li data-docs-depth="1" class=""><a href="/docs/cloud/authorization-api/">Authorization API</a></li>
-<li data-docs-depth="1" class=""><a href="/docs/cloud/api-reference/">API reference</a></li>
-<li data-docs-depth="1" class=""><a href="/docs/cloud/limits-and-errors/">Limits and errors</a></li>
-</ul>
-
-</li>
+<li data-docs-depth="0" class=""><a href="/docs/extending-decision-service/">Extending the decision service</a></li>
 <li data-docs-depth="0" class=""><a href="/docs/security/">Security</a></li>
 <li data-docs-depth="0" class=""><a href="/docs/logging/">Logging Framework</a></li>
 <li data-docs-depth="0" class=""><a href="/docs/versions/">Versions</a></li>
@@ -223,9 +211,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <h2 id="health-endpoints">Health endpoints</h2>
 
-<p><code>GET /healthz</code> reports process liveness and always answers <code>200 {&quot;status&quot;:&quot;ok&quot;}</code> while the process runs. It does not restart a stopped instance.</p>
+<p><code>GET /healthz</code> reports process liveness and always answers <code>200 {&quot;status&quot;:&quot;ok&quot;}</code> while the process runs.</p>
 
-<p><code>GET /readyz</code> reports whether the instance can currently answer an authorization request: <code>200</code> when ready, <code>503</code> otherwise. The endpoint is unauthenticated and returns aggregate counts only, so it does not expose service identities, revisions, stop reasons or revocation state. A store without distribution support is always ready.</p>
+<p><code>GET /readyz</code> is unauthenticated and returns <code>200 {&quot;ready&quot;:true,&quot;servicesTotal&quot;:0,&quot;servicesUsable&quot;:0}</code> for the local decision service. The counters remain zero; the probe does not enumerate stored services.</p>
 </div>
 </div>
 </main>

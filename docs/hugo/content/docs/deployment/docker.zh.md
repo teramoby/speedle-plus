@@ -119,7 +119,7 @@ curl --fail --silent --show-error --retry 30 --retry-all-errors --retry-delay 1 
 {"ready":true,"servicesTotal":0,"servicesUsable":0}
 ```
 
-进程运行期间，`/healthz` 返回 `200 {"status":"ok"}`。ADS 当前能够做授权判断时，`/readyz` 返回 `200`。文件存储没有策略分发状态，所以服务计数保持为零；要看的字段是 `ready`。镜像里没有 shell，也没有 `curl`，因此这些探测在宿主机或编排器上对已发布的端口执行。`http://localhost:6734/healthz` 访问的是同一个已发布端口。
+进程运行期间，`/healthz` 返回 `200 {"status":"ok"}`。本地 ADS 的 `/readyz` 返回 `200`、`ready: true`，服务计数为零。镜像里没有 shell，也没有 `curl`，因此这些探测在宿主机或编排器上对已发布的端口执行。`http://localhost:6734/healthz` 访问的是同一个已发布端口。
 
 ## 用 spctl 创建策略
 

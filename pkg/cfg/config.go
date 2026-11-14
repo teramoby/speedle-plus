@@ -29,18 +29,6 @@ type ServerConfig struct {
 	CertPath        string `json:"certPath,omitempty"`
 	ClientCertPath  string `json:"clientCertPath,omitempty"`
 	ForceClientCert bool   `json:"forceClientCert,omitempty"`
-
-	// Downstream listener of a relay. It is a separate mutual-TLS listener and
-	// is enabled by the policy-source store property ServeDownstream.
-	DownstreamEndpoint           string   `json:"downstreamEndpoint,omitempty"`
-	DownstreamCertPath           string   `json:"downstreamCertPath,omitempty"`
-	DownstreamKeyPath            string   `json:"downstreamKeyPath,omitempty"`
-	DownstreamClientCAPath       string   `json:"downstreamClientCAPath,omitempty"`
-	DownstreamCRLFiles           []string `json:"downstreamCRLFiles,omitempty"`
-	DownstreamCRLURLs            []string `json:"downstreamCRLURLs,omitempty"`
-	DownstreamCRLRefreshInterval string   `json:"downstreamCRLRefreshInterval,omitempty"`
-	DownstreamCRLMaxAge          string   `json:"downstreamCRLMaxAge,omitempty"`
-	DownstreamReloadInterval     string   `json:"downstreamReloadInterval,omitempty"`
 }
 
 type Config struct {

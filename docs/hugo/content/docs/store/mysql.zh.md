@@ -15,7 +15,7 @@ lastmod = 2026-10-31T22:36:36+08:00
 
 ## 1. 编译包含 MySQL 后端的 Speedle
 
-准备 Git、Bash、curl、已启动的 Docker，以及支持的 Go 工具链（Go 1.26.10 或 Go 1.27.3）。从当前源码编译，确保两个服务都包含 `mysql` 后端；已安装的旧版本可能没有该后端。
+准备 Git、Bash、curl、已启动的 Docker，以及支持的 Go 工具链（Go 1.27.4）。从当前源码编译，确保两个服务都包含 `mysql` 后端；已安装的旧版本可能没有该后端。
 
 <!-- mysql-step: build -->
 ```bash

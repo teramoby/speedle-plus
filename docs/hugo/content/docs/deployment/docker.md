@@ -119,7 +119,7 @@ curl --fail --silent --show-error --retry 30 --retry-all-errors --retry-delay 1 
 {"ready":true,"servicesTotal":0,"servicesUsable":0}
 ```
 
-`/healthz` answers `200 {"status":"ok"}` while the process is running. `/readyz` answers `200` when ADS can evaluate a request. A file store has no distribution state, so the service counts stay zero; `ready` is the field to check. The image has no shell and no `curl`, so these probes run on the host, or in the orchestrator, against the published ports. `http://localhost:6734/healthz` reaches the same published port.
+`/healthz` answers `200 {"status":"ok"}` while the process is running. The local ADS answers `/readyz` with `200`, `ready: true` and zero service counters. The image has no shell and no `curl`, so these probes run on the host, or in the orchestrator, against the published ports. `http://localhost:6734/healthz` reaches the same published port.
 
 ## Create a policy with spctl
 

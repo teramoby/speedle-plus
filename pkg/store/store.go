@@ -62,7 +62,7 @@ func StoreBuilders() []string {
 	return list
 }
 
-//The return map expect param's command line flag name as key, and storeProps key in config file as value
+// The return map expect param's command line flag name as key, and storeProps key in config file as value
 func GetAllStoreParams() map[string]string {
 	storeBuildersMu.RLock()
 	defer storeBuildersMu.RUnlock()
@@ -81,6 +81,9 @@ func NewStore(storeType string, storeConfig map[string]interface{}) (pms.PolicyS
 	storeBuilder, ok := storeBuilders[storeType]
 	storeBuildersMu.RUnlock()
 	if !ok {
+		if storeType == "policy-source" {
+			return nil, errors.New(errors.ConfigError, "store type \"policy-source\" was removed in v1.8.0; configure a supported policy store")
+		}
 		return nil, errors.Errorf(errors.ConfigError, "unknown store type %q (forgotten import?)", storeType)
 	}
 	return storeBuilder.NewStore(storeConfig)

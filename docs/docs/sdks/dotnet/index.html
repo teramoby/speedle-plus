@@ -11,7 +11,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1"><title>C#/.NET SDK · Speedle Engine</title>
-<meta name="description" content="Add the Speedle .NET SDK and check authorization against a local Speedle or Speedle Cloud.">
+<meta name="description" content="Add the Speedle .NET SDK and check authorization against a local Speedle.">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/docs/sdks/dotnet/">
@@ -26,7 +26,7 @@
 <meta property="article:modified_time" content="2026-11-07T19:43:15&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="C#/.NET SDK · Speedle Engine">
-<meta property="og:description" content="Add the Speedle .NET SDK and check authorization against a local Speedle or Speedle Cloud.">
+<meta property="og:description" content="Add the Speedle .NET SDK and check authorization against a local Speedle.">
 <meta property="og:url" content="https://engine.speedle.io/docs/sdks/dotnet/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta property="og:image:width" content="1200">
@@ -35,11 +35,11 @@
 <meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="C#/.NET SDK · Speedle Engine">
-<meta name="twitter:description" content="Add the Speedle .NET SDK and check authorization against a local Speedle or Speedle Cloud.">
+<meta name="twitter:description" content="Add the Speedle .NET SDK and check authorization against a local Speedle.">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/sdks/dotnet/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-07T19:43:15+08:00","description":"Add the Speedle .NET SDK and check authorization against a local Speedle or Speedle Cloud.","headline":"C#/.NET SDK","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/sdks/dotnet/","@type":"WebPage"},"name":"C#/.NET SDK","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/sdks/dotnet/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/sdks/dotnet/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-07T19:43:15+08:00","description":"Add the Speedle .NET SDK and check authorization against a local Speedle.","headline":"C#/.NET SDK","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/sdks/dotnet/","@type":"WebPage"},"name":"C#/.NET SDK","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/sdks/dotnet/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/sdks/dotnet/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/","name":"Home","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/docs/","name":"Documentation","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/docs/sdks/","name":"SDKs","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/docs/sdks/dotnet/","name":"C#/.NET SDK","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -149,19 +149,7 @@
 </ul>
 
 </li>
-
-
-
-<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/docs/cloud/">Speedle Cloud</a></span>
-<ul class="">
-<li data-docs-depth="1" class=""><a href="/docs/cloud/getting-started/">Getting started</a></li>
-<li data-docs-depth="1" class=""><a href="/docs/cloud/tokens/">API keys</a></li>
-<li data-docs-depth="1" class=""><a href="/docs/cloud/authorization-api/">Authorization API</a></li>
-<li data-docs-depth="1" class=""><a href="/docs/cloud/api-reference/">API reference</a></li>
-<li data-docs-depth="1" class=""><a href="/docs/cloud/limits-and-errors/">Limits and errors</a></li>
-</ul>
-
-</li>
+<li data-docs-depth="0" class=""><a href="/docs/extending-decision-service/">Extending the decision service</a></li>
 <li data-docs-depth="0" class=""><a href="/docs/security/">Security</a></li>
 <li data-docs-depth="0" class=""><a href="/docs/logging/">Logging Framework</a></li>
 <li data-docs-depth="0" class=""><a href="/docs/versions/">Versions</a></li>
@@ -182,7 +170,7 @@
 <div id="main">
 
   <h1>C#/.NET SDK</h1>
-  <p class="docs-lead">Add Speedle.Sdk 0.2.0 with dotnet add package, then call IsAllowedAsync and CheckAsync against a local Speedle or Speedle Cloud.</p>
+  <p class="docs-lead">Add Speedle.Sdk 0.2.0 with dotnet add package, then call IsAllowedAsync and CheckAsync against a local Speedle.</p>
 
 
 
@@ -237,46 +225,6 @@ dotnet add package Speedle.Sdk --version <span style="color:#bd93f9">0</span>.2.
 <p>Output:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">alice get /docs/public: allowed=True
 alice delete /docs/public: allowed=False reason=NoApplicablePolicies</code></pre></div>
-<h2 id="call-speedle-cloud">Call Speedle Cloud</h2>
-
-<blockquote>
-<p><strong>Speedle Cloud is coming soon.</strong></p>
-</blockquote>
-
-<p>The program reads the service name from <code>SPEEDLE_SERVICE</code> and an account API key with the <code>ads</code> scope from <code>SPEEDLE_TOKEN</code>. <code>SPEEDLE_ENDPOINT</code> overrides the default endpoint <code>https://cloud.speedle.io</code>. Replace <code>Program.cs</code> with:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#ff79c6">using</span> Speedle.Sdk;
-
-<span style="color:#ff79c6">try</span>
-{
-    <span style="color:#ff79c6">await</span> <span style="color:#ff79c6">using</span> var speedle = <span style="color:#ff79c6">new</span> SpeedleClient(<span style="color:#ff79c6">new</span> SpeedleClientOptions
-    {
-        Backend = Backend.SpeedleCloud,
-        Endpoint = <span style="color:#ff79c6">new</span> Uri(Environment.GetEnvironmentVariable(<span style="color:#f1fa8c">&#34;SPEEDLE_ENDPOINT&#34;</span>) ?? <span style="color:#f1fa8c">&#34;https://cloud.speedle.io&#34;</span>),
-        Auth = Auth.Bearer(Environment.GetEnvironmentVariable(<span style="color:#f1fa8c">&#34;SPEEDLE_TOKEN&#34;</span>) ?? <span style="color:#f1fa8c">&#34;&#34;</span>),
-        ServiceName = Environment.GetEnvironmentVariable(<span style="color:#f1fa8c">&#34;SPEEDLE_SERVICE&#34;</span>) ?? <span style="color:#f1fa8c">&#34;&#34;</span>,
-    });
-
-    <span style="color:#8be9fd">bool</span> allowed = <span style="color:#ff79c6">await</span> speedle.IsAllowedAsync(<span style="color:#f1fa8c">&#34;alice&#34;</span>, <span style="color:#f1fa8c">&#34;get&#34;</span>, <span style="color:#f1fa8c">&#34;/docs/public&#34;</span>);
-    Console.WriteLine(<span style="color:#f1fa8c">$&#34;alice get /docs/public: allowed={allowed}&#34;</span>);
-
-    Decision d = <span style="color:#ff79c6">await</span> speedle.CheckAsync(<span style="color:#f1fa8c">&#34;alice&#34;</span>, <span style="color:#f1fa8c">&#34;delete&#34;</span>, <span style="color:#f1fa8c">&#34;/docs/public&#34;</span>);
-    Console.WriteLine(<span style="color:#f1fa8c">$&#34;alice delete /docs/public: allowed={d.Allowed} reason={d.Reason}&#34;</span>);
-}
-<span style="color:#ff79c6">catch</span> (SpeedleException e)
-{
-    Console.Error.WriteLine(<span style="color:#f1fa8c">$&#34;Speedle error: {e.Message}&#34;</span>);
-    <span style="color:#ff79c6">return</span> <span style="color:#bd93f9">1</span>;
-}
-<span style="color:#ff79c6">return</span> <span style="color:#bd93f9">0</span>;</code></pre></div>
-<p>Set the environment and run it. <code>read -rs</code> keeps the API key out of your shell history and screen:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">export</span> <span style="color:#8be9fd;font-style:italic">SPEEDLE_SERVICE</span><span style="color:#ff79c6">=</span>docs
-<span style="color:#8be9fd;font-style:italic">read</span> -rs SPEEDLE_TOKEN <span style="color:#ff79c6">&amp;&amp;</span> <span style="color:#8be9fd;font-style:italic">export</span> SPEEDLE_TOKEN
-dotnet run</code></pre></div>
-<p>Output, when the service has the example policy:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">alice get /docs/public: allowed=True
-alice delete /docs/public: allowed=False reason=NoApplicablePolicies</code></pre></div>
-<p>The API key is a server-side secret. Never ship it to browsers, mobile apps or desktop clients.</p>
-
 <h2 id="error-handling">Error handling</h2>
 
 <p>A denied request is not an error: <code>IsAllowedAsync</code> returns <code>false</code>, and <code>CheckAsync</code> returns a <code>Decision</code> with <code>Allowed</code> false and the reason, as in the <code>delete</code> call above. With the default settings, when a call cannot return a decision, the SDK throws <code>SpeedleException</code>. The examples catch it, print <code>Speedle error: &lt;message&gt;</code> to standard error and return exit code 1.</p>

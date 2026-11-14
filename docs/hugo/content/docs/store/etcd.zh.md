@@ -15,7 +15,7 @@ lastmod = 2026-11-08T11:21:16+08:00
 
 ## 1. 编译 Speedle
 
-准备 Bash、Git、curl、已启动的 Docker，以及 Go 1.26.10 或 Go 1.27.3，然后从源码编译：
+准备 Bash、Git、curl、已启动的 Docker，以及 Go 1.27.4，然后从源码编译：
 
 <!-- etcd-step: build -->
 ```bash

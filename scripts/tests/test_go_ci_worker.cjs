@@ -13,7 +13,7 @@ const pool = ['self-hosted', 'Linux', 'X64', 'speedle-linux'];
 const anyRunner = ['self-hosted', 'speedle-runner'];
 const fiona = ['self-hosted', 'fiona-speedle'];
 // Build needs the Linux pool and weekly uses fiona to reduce benchmark noise.
-const routeFor = mode => mode === 'build' ? pool : mode === 'weekly' ? fiona : anyRunner;
+const routeFor = mode => mode === 'quick' ? 'ubuntu-latest' : mode === 'build' ? pool : mode === 'weekly' ? fiona : anyRunner;
 const repository = 'teramoby/speedle-plus';
 function step(name) {
   const parts = source.split(`      - name: ${name}\n`);
@@ -31,30 +31,31 @@ function script(name) {
   }
   return lines.join('\n').trimEnd();
 }
-function route(github, inputs) {
+function route(github, inputs, vars = {}) {
   const expression = source.match(/runs-on: >-\n\s+\$\{\{ ([^\n]+) \}\}/)?.[1];
   assert.ok(expression, 'Missing protected routing predicate');
   assert.doesNotMatch(expression.split(' && fromJSON(')[0], /inputs/);
   const lookup = name => {
-    let value = {github, inputs};
-    for (const key of name.split('.')) {
-      if (value == null || typeof value !== 'object' || !Object.hasOwn(value, key)) return '';
-      value = value[key];
+    function walk(value, keys) {
+      if (!keys.length) return value ?? '';
+      const [key, ...tail] = keys;
+      if (key === '*') return (Array.isArray(value) ? value : []).map(item => walk(item, tail));
+      return walk(value?.[key], tail);
     }
-    return value ?? '';
+    return walk({github, inputs, vars}, name.split('.'));
   };
   // Restrict evaluation to the actual predicate's string/boolean/fromJSON subset.
-  const tokens = /\s+|'(?:[^']|'')*'|github(?:\.[A-Za-z_][\w-]*)+|inputs\.mode|fromJSON|true|false|null|==|!=|&&|\|\||[(),!]/gy;
+  const tokens = /\s+|'(?:[^']|'')*'|(?:github|vars)(?:\.(?:[A-Za-z_][\w-]*|\*))+|inputs\.mode|fromJSON|contains|true|false|null|==|!=|&&|\|\||[(),!]/gy;
   let translated = '', offset = 0;
   while (offset < expression.length) {
     tokens.lastIndex = offset; const match = tokens.exec(expression);
     assert.ok(match, `Unsupported predicate near ${expression.slice(offset)}`);
     const token = match[0]; offset = tokens.lastIndex;
     if (token.startsWith("'")) translated += JSON.stringify(token.slice(1, -1).replaceAll("''", "'"));
-    else if (token.startsWith('github.') || token === 'inputs.mode') translated += `lookup(${JSON.stringify(token)})`;
+    else if (token.startsWith('github.') || token.startsWith('vars.') || token === 'inputs.mode') translated += `lookup(${JSON.stringify(token)})`;
     else translated += token;
   }
-  return JSON.parse(JSON.stringify(vm.runInNewContext(translated, {lookup, inputs, fromJSON: JSON.parse}, {timeout: 100})));
+  return JSON.parse(JSON.stringify(vm.runInNewContext(translated, {lookup, inputs, fromJSON: JSON.parse, contains: (values, value) => values.includes(value)}, {timeout: 100})));
 }
 function context(eventName, head = repository, repo = repository) {
   return {repository: repo, event_name: eventName,
@@ -62,7 +63,7 @@ function context(eventName, head = repository, repo = repository) {
     event: {sender: {type: 'User'}, pull_request: {head: {repo: {full_name: head}}, user: {type: 'User'}}}};
 }
 const testModes = ['test', 'nightly', 'weekly', 'regression'];
-const allModes = ['lint', 'build', ...testModes];
+const allModes = ['quick', 'lint', 'build', ...testModes];
 test('worker owns runner selection and exposes only the mode input, never a caller checkout ref', () => {
   const inputBlock = source.split('\npermissions:', 1)[0];
   assert.match(inputBlock, /^  workflow_call:$/m);
@@ -73,7 +74,7 @@ test('worker owns runner selection and exposes only the mode input, never a call
   assert.match(step('Checkout code'), /ref: \$\{\{ github.sha \}\}/);
   assert.match(step('Checkout code'), /persist-credentials: false/);
   assert.match(step('Setup Go'), /uses: actions\/setup-go@[a-f0-9]{40}(?:\s|$)/);
-  assert.match(step('Setup Go'), /go-version: '1\.26'/);
+  assert.match(step('Setup Go'), /go-version-file: go\.mod/);
   assert.doesNotMatch(source, /secrets:|secrets\.inherit|\$\{\{\s*inputs\.(?:ref|sha|runner|store_type)/);
 });
 test('trusted events send weekly to fiona, build to Linux and other tasks to any Speedle runner', () => {
@@ -168,10 +169,11 @@ test('build caches the locked browser and makes the axe contrast gate mandatory'
   }
 });
 function testEnvironment(mode) {
-  const block = step('Run Go tests').split('        env:\n')[1]?.split('        run:', 1)[0];
+  const block = step(mode === 'quick' ? 'Test changed packages without integration services' : 'Run Go tests').split('        env:\n')[1]?.split('        run:', 1)[0];
   assert.ok(block, 'Missing sanitized test environment');
   const env = {};
   for (const line of block.trimEnd().split('\n')) {
+    if (line.trim().startsWith('#')) continue;
     const match = line.match(/^          ([A-Z_]+): (.*)$/); assert.ok(match, `Unexpected environment entry ${line}`);
     env[match[1]] = match[2] === "''" ? '' : match[2].replace('${{ inputs.mode }}', mode);
   }
@@ -235,7 +237,7 @@ const fail=process.env.FIXTURE_FAIL;process.exit(fail&&a.join(' ').includes(fail
     const result = spawnSync('bash', ['-c', script('Run Go tests')], {cwd: repoRoot, encoding: 'utf8', env: {
       ...process.env, ...inherited, GOPATH: '/fixture-inherited-gopath',
       PMS_ENDPOINT: 'https://fixture.invalid/pms', ADS_ENDPOINT: 'https://fixture.invalid/ads', ...testEnvironment(mode),
-      RESULTS_DIR: path.join(work, 'results'),
+      RESULTS_DIR: path.join(work, 'results'), DOCKER_CONFIG: path.join(directory, 'docker-config'),
       GITHUB_EVENT_NAME: mysqlOnly ? 'workflow_dispatch' : 'push', GITHUB_EVENT_PATH: event,
       PATH: `${directory}${path.delimiter}${process.env.PATH}`, FIXTURE_CALLS: calls,
       FIXTURE_GOPATH: directory, FIXTURE_LIST_EXIT: String(listExit), FIXTURE_FAIL: failMatching, FIXTURE_DOCKER: docker, FIXTURE_REAL_BASH: realBash,
@@ -317,7 +319,7 @@ test('package discovery failure cannot turn a partial package list into a green 
   }
 });
 test('nightly runs every suite even after a failure, records checks and fails at the end', () => {
-  const {result, records, checks} = runSuite('nightly', {failMatching: 'go1.26.11'});
+  const {result, records, checks} = runSuite('nightly', {failMatching: 'go1.27.4'});
   assert.equal(result.status, 1);
   assert.equal(goTests(records).length, 0, 'every backend runs through the shared regression engine');
   const file = records.find(r => r.tool === 'python3' && r.args[0] === 'scripts/ci/run-store-tests.py');
@@ -326,8 +328,8 @@ test('nightly runs every suite even after a failure, records checks and fails at
     assert.ok(records.some(r => r.tool === 'bash' && r.args[0] === launcher), launcher);
   }
   for (const backend of ['file', 'etcd', 'mysql', 'mongodb']) assert.match(checks, new RegExp(`^${backend}-full=0:${backend}-full\\.log$`, 'm'));
-  for (const toolchain of ['go1.26.11', 'go1.27.4']) assert.match(checks, new RegExp(`quick-start-${toolchain}=\\d+:`));
-  assert.match(checks, /quick-start-go1\.26\.11=7:/); assert.match(checks, /quick-start-go1\.27\.4=0:/);
+  for (const toolchain of ['go1.27.4']) assert.match(checks, new RegExp(`quick-start-${toolchain}=\\d+:`));
+  assert.match(checks, /quick-start-go1\.27\.4=7:/);
   assert.match(checks, /mysql-full=0:mysql-full\.log/);
   assert.match(checks, /^etcd-docs=0:etcd-docs\.log$/m);
   assert.match(checks, /^mongodb-docs=0:mongodb-docs\.log$/m);
@@ -374,7 +376,7 @@ test('Docker guide checks use the account docker group the runner process lacks'
   const none = runSuite('nightly', {docker: 'none'});
   assert.ok(!none.records.some(r => r.tool === 'sg'), 'without the docker group, the guide runs and reports its own error');
 });
-test('weekly tests the other supported Go releases, compares benchmarks with the baseline and runs staticcheck', () => {
+test('weekly tests the current supported Go release, compares benchmarks with the baseline and runs staticcheck', () => {
   const {result, records, checks} = runSuite('weekly'); assert.equal(result.status, 0, result.stderr);
   assert.equal(goTests(records)[0].env.GOTOOLCHAIN, 'go1.27.4');
   assert.ok(goTests(records).some(r => r.args.includes('feature_stress') && r.args.includes('^TestFeatureLargePolicyRoleSets$')));
@@ -442,4 +444,109 @@ test('SO_REUSEADDR allows a recently closed test connection instead of mistaking
   } finally {await close(listener);}
   const ports = await freePorts([port]); ports[2] = port;
   const result = guard(ports); assert.equal(result.status, 0, result.stderr);
+});
+
+test('queue runner overrides retain trusted eligibility and replace task defaults only for the head', () => {
+  for (const mode of allModes) {
+    for (const event of ['pull_request', 'push', 'schedule', 'workflow_dispatch']) {
+      for (const label of ['', 'full-ci', 'merge-head']) {
+        for (const configured of ['', '["self-hosted","reserved"]', '"ubuntu-latest"']) {
+          const c = context(event); c.ref = 'refs/heads/master';
+          c.event.pull_request.labels = label ? [{name: label}] : [];
+          const vars = {HEAD_RUNS_ON: configured, QUICK_RUNS_ON: '["self-hosted","fiona-speedle"]'};
+          const expected = mode === 'quick' ? ['self-hosted', 'fiona-speedle'] :
+            event === 'pull_request' && label === 'merge-head' && configured ? JSON.parse(configured) : routeFor(mode);
+          assert.deepEqual(route(c, {mode}, vars), expected);
+          c.event.pull_request.head.repo.full_name = 'outsider/fork';
+          if (event === 'pull_request') assert.equal(route(c, {mode}, vars), 'ubuntu-latest');
+          c.repository = 'outsider/copy';
+          assert.equal(route(c, {mode}, vars), 'ubuntu-latest');
+        }
+      }
+    }
+  }
+});
+test('quick steps support macOS Bash without Docker or Linux-only tooling', () => {
+  for (const name of ['Select changed packages', 'Check changed Go formatting', 'Test changed packages without integration services', 'Check container dispatcher without Docker']) {
+    assert.match(step(name), /if: inputs\.mode == 'quick'/);
+    assert.doesNotMatch(script(name), /docker|flock|mapfile|readarray|xargs|grep -P|sed -i/);
+  }
+  const identity = spawnSync('/bin/bash', ['-c', script('Verify self-hosted runner identity')], {
+    encoding: 'utf8', env: {...process.env, RUNNER_NAME: 'fiona-speedle', RUNNER_OS: 'macOS', RUNNER_ARCH: 'ARM64', CI_TASK: 'quick'},
+  });
+  assert.equal(identity.status, 0, identity.stderr);
+  assert.match(step('Checkout code'), /inputs\.mode == 'quick'/);
+  for (const name of ['go vet', 'go mod tidy check', 'Build']) assert.match(step(name), /inputs\.mode == 'quick'/);
+});
+test('quick clears inherited integration configuration so MySQL tests use their no-DSN skip', () => {
+  const env = testEnvironment('quick');
+  assert.equal(env.STORE_TYPE, 'file');
+  assert.equal(env.PMS_ENDPOINT, 'http://127.0.0.1:0');
+  assert.equal(env.ADS_ENDPOINT, 'http://127.0.0.1:0');
+  for (const key of [...cleanKeys, 'SPEEDLE_TEST_STORE_PROPS', 'SPEEDLE_MYSQL_TEST_DSN', 'SPEEDLE_REQUIRE_MYSQL',
+    'SPEEDLE_TEST_EXTERNAL_SERVICES', 'SPEEDLE_MYSQL_EXTERNAL', 'SPEEDLE_CLI_COVERPROFILE']) {
+    assert.equal(env[key], '', key);
+  }
+});
+
+test('unlabeled content build selects documentation checks and propagates walkthrough failures', () => {
+  const selection = step('Select quick content checks');
+  assert.match(selection, /inputs.mode == 'build'/);
+  assert.match(selection, /github.event_name == 'pull_request'/);
+  for (const label of ['full-ci', 'merge-head']) assert.ok(selection.includes(`!contains(github.event.pull_request.labels.*.name, '${label}')`));
+  assert.match(step('Verify quick documentation walkthroughs'), /steps.content.outputs.changed == 'true'/);
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-content-'));
+  try {
+    fs.mkdirSync(path.join(dir, 'bin'));
+    fs.writeFileSync(path.join(dir, 'bin/git'), `#!${process.execPath}\nprocess.stdout.write(process.env.CHANGED.split('|').join('\\0'));\n`);
+    fs.chmodSync(path.join(dir, 'bin/git'), 0o755);
+    const output = path.join(dir, 'output');
+    const env = {...process.env, PATH: path.join(dir, 'bin') + path.delimiter + process.env.PATH, PR_BASE: 'base', GITHUB_SHA: 'head', GITHUB_OUTPUT: output};
+    for (const [files, selected] of [['docs/page.md', true], ['website/tests/check_docs.py', true], ['docs/deleted.md|website/page.html', true], ['pkg/eval/x.go', false], ['docs-like/x.md', false], ['', false]]) {
+      fs.writeFileSync(output, '');
+      const result = spawnSync('bash', ['-c', script('Select quick content checks')], {cwd: dir, env: {...env, CHANGED: files}, encoding: 'utf8'});
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal(fs.readFileSync(output, 'utf8'), `changed=${selected}\n`);
+    }
+    // Intercept commands, retaining the actual shell's fail-fast behavior.
+    for (const tool of ['go', 'python3']) {
+      fs.writeFileSync(path.join(dir, 'bin', tool), `#!${process.execPath}\nconst args=process.argv.slice(2);require('node:fs').appendFileSync(process.env.RECORD,JSON.stringify(args)+'\\n');if(args[0]==='env')process.stdout.write('go1.26.11\\n');process.exit(args.includes(process.env.FAIL_COMMAND)?7:0);\n`);
+      fs.chmodSync(path.join(dir, 'bin', tool), 0o755);
+    }
+    const record = path.join(dir, 'calls');
+    const commands = ['website/tests/check_quick_start.py', 'website/tests/check_embedded.py', './website/tests/docscheck', 'website/tests/check_docs.py'];
+    for (const failure of ['', ...commands]) {
+      fs.writeFileSync(record, '');
+      const result = spawnSync('bash', ['-c', script('Verify quick documentation walkthroughs')], {cwd: dir, env: {...env, RECORD: record, FAIL_COMMAND: failure}, encoding: 'utf8'});
+      assert.equal(result.status, failure ? 7 : 0, result.stderr);
+      const calls = fs.readFileSync(record, 'utf8').trim().split('\n').map(JSON.parse);
+      assert.deepEqual(calls[0], ['env', 'GOVERSION']);
+      assert.equal(calls.length, failure ? commands.indexOf(failure) + 2 : 5);
+      if (!failure) {
+        assert.deepEqual(calls.slice(1), [
+          [commands[0], '--toolchain', 'go1.26.11'], [commands[1], '--toolchain', 'go1.26.11', '--candidate'],
+          ['test', '-count=1', commands[2]], [commands[3]],
+        ]);
+      }
+    }
+  } finally {fs.rmSync(dir, {recursive: true, force: true});}
+});
+
+test('quick dispatcher check vets and builds natively and propagates each failure', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-quick-dispatch-'));
+  try {
+    fs.writeFileSync(path.join(dir, 'go'), `#!${process.execPath}\nrequire('node:fs').appendFileSync(process.env.RECORD,JSON.stringify(process.argv.slice(2))+'\\n');process.exit(process.argv[2]===process.env.FAIL_COMMAND?7:0);\n`);
+    fs.chmodSync(path.join(dir, 'go'), 0o755);
+    for (const FAIL_COMMAND of ['', 'vet', 'build']) {
+      const RECORD = path.join(dir, 'calls-' + (FAIL_COMMAND || 'ok'));
+      const result = spawnSync('/bin/bash', ['-c', script('Check container dispatcher without Docker')], {
+        cwd: dir, encoding: 'utf8', env: {...process.env, FAIL_COMMAND, RECORD, RUNNER_TEMP: dir, PATH: dir + path.delimiter + process.env.PATH},
+      });
+      assert.equal(result.status, FAIL_COMMAND ? 7 : 0, result.stderr);
+      const calls = fs.readFileSync(RECORD, 'utf8').trim().split('\n').map(JSON.parse);
+      assert.deepEqual(calls[0], ['vet', './deployment/container/dispatch']);
+      if (FAIL_COMMAND === 'vet') assert.equal(calls.length, 1);
+      else assert.deepEqual(calls[1], ['build', '-o', path.join(dir, 'quick-dispatch'), './deployment/container/dispatch']);
+    }
+  } finally {fs.rmSync(dir, {recursive: true, force: true});}
 });

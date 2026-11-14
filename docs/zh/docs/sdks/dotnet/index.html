@@ -11,7 +11,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1"><title>C#/.NET SDK · Speedle Engine</title>
-<meta name="description" content="添加 Speedle .NET SDK，向本地 Speedle 或 Speedle Cloud 发起授权检查。">
+<meta name="description" content="添加 Speedle .NET SDK，向本地 Speedle 发起授权检查。">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/zh/docs/sdks/dotnet/">
@@ -26,7 +26,7 @@
 <meta property="article:modified_time" content="2026-11-08T11:21:16&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="C#/.NET SDK · Speedle Engine">
-<meta property="og:description" content="添加 Speedle .NET SDK，向本地 Speedle 或 Speedle Cloud 发起授权检查。">
+<meta property="og:description" content="添加 Speedle .NET SDK，向本地 Speedle 发起授权检查。">
 <meta property="og:url" content="https://engine.speedle.io/zh/docs/sdks/dotnet/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-zh.png">
 <meta property="og:image:width" content="1200">
@@ -35,11 +35,11 @@
 <meta property="og:image:alt" content="Speedle Engine — 快速、简单的权限控制">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="C#/.NET SDK · Speedle Engine">
-<meta name="twitter:description" content="添加 Speedle .NET SDK，向本地 Speedle 或 Speedle Cloud 发起授权检查。">
+<meta name="twitter:description" content="添加 Speedle .NET SDK，向本地 Speedle 发起授权检查。">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-zh.png">
 <meta name="twitter:image:alt" content="Speedle Engine — 快速、简单的权限控制">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/sdks/dotnet/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T11:21:16+08:00","description":"添加 Speedle .NET SDK，向本地 Speedle 或 Speedle Cloud 发起授权检查。","headline":"C#/.NET SDK","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/sdks/dotnet/","@type":"WebPage"},"name":"C#/.NET SDK","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/sdks/dotnet/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/sdks/dotnet/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T11:21:16+08:00","description":"添加 Speedle .NET SDK，向本地 Speedle 发起授权检查。","headline":"C#/.NET SDK","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/sdks/dotnet/","@type":"WebPage"},"name":"C#/.NET SDK","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/sdks/dotnet/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/sdks/dotnet/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/zh/","name":"首页","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/","name":"文档","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/sdks/","name":"SDK","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/sdks/dotnet/","name":"C#/.NET SDK","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -149,20 +149,8 @@
 </ul>
 
 </li>
-
-
-
-<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/zh/docs/cloud/">Speedle Cloud</a></span>
-<ul class="">
-<li data-docs-depth="1" class=""><a href="/zh/docs/cloud/getting-started/">快速入门</a></li>
-<li data-docs-depth="1" class=""><a href="/zh/docs/cloud/tokens/">API 密钥</a></li>
-<li data-docs-depth="1" class=""><a href="/zh/docs/cloud/authorization-api/">授权 API</a></li>
-<li data-docs-depth="1" class=""><a href="/zh/docs/cloud/api-reference/">API 参考</a></li>
-<li data-docs-depth="1" class=""><a href="/zh/docs/cloud/limits-and-errors/">限额与错误</a></li>
-</ul>
-
-</li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/security/">安全</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/extending-decision-service/">扩展决策服务</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/logging/">日志</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/versions/">版本</a></li>
 <li data-docs-depth="0" class=""><a href="/zh/docs/custom-function/">自定义函数</a></li><li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">其他</span>
@@ -182,7 +170,7 @@
 <div id="main">
 
   <h1>C#/.NET SDK</h1>
-  <p class="docs-lead">用 dotnet add package 添加 Speedle.Sdk 0.2.0，再向本地 Speedle 或 Speedle Cloud 调用 IsAllowedAsync 与 CheckAsync。</p>
+  <p class="docs-lead">用 dotnet add package 添加 Speedle.Sdk 0.2.0，再向本地 Speedle 调用 IsAllowedAsync 与 CheckAsync。</p>
 
 
 
@@ -237,46 +225,6 @@ dotnet add package Speedle.Sdk --version <span style="color:#bd93f9">0</span>.2.
 <p>输出：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">alice get /docs/public: allowed=True
 alice delete /docs/public: allowed=False reason=NoApplicablePolicies</code></pre></div>
-<h2 id="调用-speedle-cloud">调用 Speedle Cloud</h2>
-
-<blockquote>
-<p><strong>Speedle Cloud 即将上线。</strong></p>
-</blockquote>
-
-<p>程序从 <code>SPEEDLE_SERVICE</code> 读取服务名，从 <code>SPEEDLE_TOKEN</code> 读取具有 <code>ads</code> 权限范围的账号 API 密钥。<code>SPEEDLE_ENDPOINT</code> 可覆盖默认端点 <code>https://cloud.speedle.io</code>。将 <code>Program.cs</code> 替换为：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-csharp" data-lang="csharp"><span style="color:#ff79c6">using</span> Speedle.Sdk;
-
-<span style="color:#ff79c6">try</span>
-{
-    <span style="color:#ff79c6">await</span> <span style="color:#ff79c6">using</span> var speedle = <span style="color:#ff79c6">new</span> SpeedleClient(<span style="color:#ff79c6">new</span> SpeedleClientOptions
-    {
-        Backend = Backend.SpeedleCloud,
-        Endpoint = <span style="color:#ff79c6">new</span> Uri(Environment.GetEnvironmentVariable(<span style="color:#f1fa8c">&#34;SPEEDLE_ENDPOINT&#34;</span>) ?? <span style="color:#f1fa8c">&#34;https://cloud.speedle.io&#34;</span>),
-        Auth = Auth.Bearer(Environment.GetEnvironmentVariable(<span style="color:#f1fa8c">&#34;SPEEDLE_TOKEN&#34;</span>) ?? <span style="color:#f1fa8c">&#34;&#34;</span>),
-        ServiceName = Environment.GetEnvironmentVariable(<span style="color:#f1fa8c">&#34;SPEEDLE_SERVICE&#34;</span>) ?? <span style="color:#f1fa8c">&#34;&#34;</span>,
-    });
-
-    <span style="color:#8be9fd">bool</span> allowed = <span style="color:#ff79c6">await</span> speedle.IsAllowedAsync(<span style="color:#f1fa8c">&#34;alice&#34;</span>, <span style="color:#f1fa8c">&#34;get&#34;</span>, <span style="color:#f1fa8c">&#34;/docs/public&#34;</span>);
-    Console.WriteLine(<span style="color:#f1fa8c">$&#34;alice get /docs/public: allowed={allowed}&#34;</span>);
-
-    Decision d = <span style="color:#ff79c6">await</span> speedle.CheckAsync(<span style="color:#f1fa8c">&#34;alice&#34;</span>, <span style="color:#f1fa8c">&#34;delete&#34;</span>, <span style="color:#f1fa8c">&#34;/docs/public&#34;</span>);
-    Console.WriteLine(<span style="color:#f1fa8c">$&#34;alice delete /docs/public: allowed={d.Allowed} reason={d.Reason}&#34;</span>);
-}
-<span style="color:#ff79c6">catch</span> (SpeedleException e)
-{
-    Console.Error.WriteLine(<span style="color:#f1fa8c">$&#34;Speedle error: {e.Message}&#34;</span>);
-    <span style="color:#ff79c6">return</span> <span style="color:#bd93f9">1</span>;
-}
-<span style="color:#ff79c6">return</span> <span style="color:#bd93f9">0</span>;</code></pre></div>
-<p>设置环境变量后运行。<code>read -rs</code> 不会把API 密钥写入 shell 历史，也不会显示在屏幕上：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">export</span> <span style="color:#8be9fd;font-style:italic">SPEEDLE_SERVICE</span><span style="color:#ff79c6">=</span>docs
-<span style="color:#8be9fd;font-style:italic">read</span> -rs SPEEDLE_TOKEN <span style="color:#ff79c6">&amp;&amp;</span> <span style="color:#8be9fd;font-style:italic">export</span> SPEEDLE_TOKEN
-dotnet run</code></pre></div>
-<p>服务中已有示例策略时，输出为：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">alice get /docs/public: allowed=True
-alice delete /docs/public: allowed=False reason=NoApplicablePolicies</code></pre></div>
-<p>API 密钥是服务端密钥，切勿放进浏览器、移动应用或桌面客户端。</p>
-
 <h2 id="错误处理">错误处理</h2>
 
 <p>授权请求返回 Deny 并不代表调用出错：<code>IsAllowedAsync</code> 返回 <code>false</code>，<code>CheckAsync</code> 返回 <code>Allowed</code> 为 false 的 <code>Decision</code> 及原因，如上文的 <code>delete</code> 调用。在默认设置下，调用无法得出授权结果时，SDK 抛出 <code>SpeedleException</code>。示例捕获该异常，向标准错误输出 <code>Speedle error: &lt;消息&gt;</code>，并返回退出码 1。</p>

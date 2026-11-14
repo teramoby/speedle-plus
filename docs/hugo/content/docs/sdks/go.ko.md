@@ -1,6 +1,6 @@
 +++
 title = "Go SDK"
-description = "Speedle Go SDK를 추가하고 로컬 Speedle 또는 Speedle Cloud에 대해 인가 확인 수행"
+description = "Speedle Go SDK를 추가하고 로컬 Speedle에 대해 인가 확인 수행"
 weight = 30
 aliases = ["/ko/docs/api/sdk-go/"]
 draft = false
@@ -8,7 +8,7 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "go get으로 github.com/teramoby/speedle-sdk/go v0.2.0을 추가하고 로컬 Speedle 또는 Speedle Cloud에 대해 IsAllowed 및 Check를 호출합니다."
+bref = "go get으로 github.com/teramoby/speedle-sdk/go v0.2.0을 추가하고 로컬 Speedle에 대해 IsAllowed 및 Check를 호출합니다."
 lastmod = 2026-11-07T19:43:15+08:00
 +++
 
@@ -83,73 +83,6 @@ alice get /docs/public: allowed=true
 alice delete /docs/public: allowed=false reason=NO_APPLICABLE_POLICIES
 ```
 
-## Speedle Cloud 호출
-
-> **Speedle Cloud는 출시 예정입니다.**
-
-프로그램은 `SPEEDLE_SERVICE`에서 서비스 이름을, `SPEEDLE_TOKEN`에서 `ads` 범위의 계정 API 키을 읽습니다. `SPEEDLE_ENDPOINT`는 기본 엔드포인트 `https://cloud.speedle.io`를 재정의합니다. `main.go`를 다음과 같이 대체합니다:
-
-```go
-package main
-
-import (
-	"context"
-	"fmt"
-	"os"
-
-	speedle "github.com/teramoby/speedle-sdk/go"
-)
-
-func main() {
-	endpoint := os.Getenv("SPEEDLE_ENDPOINT")
-	if endpoint == "" {
-		endpoint = "https://cloud.speedle.io"
-	}
-	client, err := speedle.NewClient(speedle.Config{
-		Backend:     speedle.BackendSpeedleCloud,
-		Endpoint:    endpoint,
-		Auth:        speedle.BearerToken(os.Getenv("SPEEDLE_TOKEN")),
-		ServiceName: os.Getenv("SPEEDLE_SERVICE"),
-	})
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Speedle error:", err)
-		os.Exit(1)
-	}
-	defer client.Close()
-
-	ctx := context.Background()
-	allowed, err := client.IsAllowed(ctx, speedle.User("alice"), "get", "/docs/public", nil)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Speedle error:", err)
-		os.Exit(1)
-	}
-	fmt.Printf("alice get /docs/public: allowed=%t\n", allowed)
-
-	d, err := client.Check(ctx, speedle.User("alice"), "delete", "/docs/public", nil)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Speedle error:", err)
-		os.Exit(1)
-	}
-	fmt.Printf("alice delete /docs/public: allowed=%t reason=%s\n", d.Allowed, d.Reason)
-}
-```
-
-환경 변수를 설정하고 실행합니다. `read -rs`를 사용하면 API 키이 셸 기록이나 화면에 노출되지 않습니다:
-
-```bash
-export SPEEDLE_SERVICE=docs
-read -rs SPEEDLE_TOKEN && export SPEEDLE_TOKEN
-go run .
-```
-
-서비스에 예제 정책이 있는 경우 출력:
-
-```text
-alice get /docs/public: allowed=true
-alice delete /docs/public: allowed=false reason=NO_APPLICABLE_POLICIES
-```
-
-API 키은 서버 측 비밀 값입니다. 브라우저, 모바일 앱 또는 데스크톱 클라이언트에 절대 배포하지 마십시오.
 
 ## 오류 처리
 

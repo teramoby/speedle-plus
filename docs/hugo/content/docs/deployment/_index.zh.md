@@ -23,7 +23,7 @@ Speedle 可以嵌入 Go 应用，也可以用一个已发布的容器镜像运�
 
 ## 使用当前 Go 版本构建
 
-在 Linux 或 macOS 上准备 Go 1.26.10 或 Go 1.27.3（也可使用同一大版本的更新补丁版本）（推荐 Go 1.27.3）、Git 和命令行 shell。使用 Go modules，源码可放在任意可写目录，无需手工配置 `GOROOT`、`GOPATH`、`dep` 或 GOPATH 源码路径。
+在 Linux 或 macOS 上准备 Go 1.27.4（也可使用同一大版本的更新补丁版本）（推荐 Go 1.27.4）、Git 和命令行 shell。使用 Go modules，源码可放在任意可写目录，无需手工配置 `GOROOT`、`GOPATH`、`dep` 或 GOPATH 源码路径。
 
 <!-- deployment-check: source-build -->
 ```bash

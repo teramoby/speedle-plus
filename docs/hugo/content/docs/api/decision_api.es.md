@@ -16,6 +16,6 @@ Referencia para su ADS configurado. Los atributos de solicitud son matrices tipa
 
 ## Endpoints de comprobación de estado
 
-`GET /healthz` informa sobre la vitalidad del proceso y siempre responde `200 {"status":"ok"}` mientras el proceso se encuentra en ejecución. No reinicia una instancia detenida.
+`GET /healthz` informa sobre la vitalidad del proceso y siempre responde `200 {"status":"ok"}` mientras el proceso se encuentra en ejecución.
 
-`GET /readyz` informa si la instancia puede responder actualmente a una solicitud de autorización: `200` cuando está lista, `503` en caso contrario. El endpoint no requiere autenticación y solo devuelve recuentos agregados, por lo que no expone identidades de servicio, revisiones, motivos de parada o estado de revocación. Un almacenamiento sin soporte de distribución siempre está listo.
+`GET /readyz` no requiere autenticación y devuelve `200 {"ready":true,"servicesTotal":0,"servicesUsable":0}` para el servicio de decisiones local. Los contadores permanecen en cero; la sonda no enumera los servicios almacenados.
