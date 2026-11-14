@@ -25,14 +25,14 @@ Services and authorization policies A service scopes its policies. An authorizat
       <title>Rust SDK</title>
       <link>https://engine.speedle.io/docs/sdks/rust/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-
+      
       <guid>https://engine.speedle.io/docs/sdks/rust/</guid>
       <description>The Rust SDK needs Rust 1.75 or later. It is async on tokio and reqwest (rustls); the blocking feature adds the blocking client used below. Crate: speedle 0.2.0 on crates.io. Reference: speedle-sdk/rust.
 The examples check the policy described in the SDKs overview.
 Add the dependency In a new package:
 cargo new speedle-example cd speedle-example cargo add speedle@0.2.0 --features blocking Call a local Speedle Start Speedle and create the example policy as described in the SDKs overview.</description>
     </item>
-
+    
     <item>
       <title>Usecases</title>
       <link>https://engine.speedle.io/docs/usecases/</link>
@@ -103,7 +103,7 @@ REST APIs These are reference contracts for your configured PMS/ADS or asserter 
       
       <guid>https://engine.speedle.io/docs/decisions/</guid>
       <description>What is an authorization decision? Speedle evaluates a subject, action and resource within a service. The application must enforce the result. Treat an evaluation error or timeout separately from a normal Deny and fail closed. REST, gRPC and embedded Go APIs have different wire representations; use their respective contracts.
-Before running the examples Build ./bin/spctl, ./bin/speedle-pms and ./bin/speedle-ads using the quick start. Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch), Bash, curl and Python 3.</description>
+Before running the examples Build ./bin/spctl, ./bin/speedle-pms and ./bin/speedle-ads using the quick start. Use Go 1.27.4 (or a newer patch on the same release branch), Bash, curl and Python 3.</description>
     </item>
     
     <item>
@@ -200,7 +200,7 @@ MongoDB must run as a replica set or sharded cluster. ADS watches the database w
       
       <guid>https://engine.speedle.io/docs/store/mysql/</guid>
       <description>This guide uses MySQL 8.4 LTS and two native Speedle processes: PMS writes policies, and ADS reads the same database with a separate read-only account. The local example uses Docker and plain HTTP on loopback. For a remote deployment, use your existing MySQL server and the Security guide.
-1. Build Speedle with the MySQL backend Install Git, Bash, curl, Docker and a supported Go toolchain (Go 1.26.10 or Go 1.</description>
+1. Build Speedle with the MySQL backend Install Git, Bash, curl, Docker and a supported Go toolchain (Go 1.27.4). Docker must be running.</description>
     </item>
     
     <item>
@@ -272,8 +272,8 @@ python3 -m venv .venv . .venv/bin/activate pip install speedle==0.2.0 Or with uv
       
       <guid>https://engine.speedle.io/docs/store/etcd/</guid>
       <description>This walkthrough uses an external etcd v3.6.14 server with a persistent Docker volume. PMS writes policies and ADS watches the same key prefix. The single-node example listens on loopback and uses plain HTTP for local development. Production TLS and cluster configuration follow the walkthrough.
-1. Build Speedle Prepare Bash, Git, curl, Docker and Go 1.26.10 or Go 1.27.3. Start Docker, then build the native services:
-git clone --depth 1 https://github.</description>
+1. Build Speedle Prepare Bash, Git, curl, Docker and Go 1.27.4. Start Docker, then build the native services:
+git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o .</description>
     </item>
     
     <item>
@@ -382,13 +382,13 @@ REST and gRPC APIs Manage services, policies and roles through the Policy Manage
       <title>Policy Management API</title>
       <link>https://engine.speedle.io/docs/api/management_api/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-
+      
       <guid>https://engine.speedle.io/docs/api/management_api/</guid>
       <description>Reference for your configured PMS. Requests and responses are JSON; policy IDs are strings and responses are flat objects.
 Security and endpoint configuration. This is a contract reference, not a backend hosted by speedle.io. Try it out is disabled because this specification has no server host, so a request would otherwise be sent to this documentation site.
    document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/swagger/policy-manage.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.</description>
     </item>
-
+    
     <item>
       <title>Token Assertion Plugin API</title>
       <link>https://engine.speedle.io/docs/api/asserter_api/</link>

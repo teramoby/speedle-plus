@@ -1,0 +1,173 @@
+{
+  "baseline": "f2591e6b1e11af7bcc1747d08112edcdc7433612",
+  "records": {
+    "text": [
+      {
+        "msg": "[AUDIT][gRPC]IsAllowed",
+        "response": "succeeded",
+        "responseValue": "{true 0 }"
+      },
+      {
+        "msg": "[AUDIT][gRPC]GetAllGrantedRoles",
+        "response": "succeeded",
+        "responseValue": "[admin]"
+      },
+      {
+        "msg": "[AUDIT][gRPC]GetAllGrantedPermissions",
+        "response": "succeeded",
+        "responseValue": "[resource:\"res1\" actions:\"read\"  resource:\"res2\" actions:\"write\" ]"
+      },
+      {
+        "msg": "[AUDIT][gRPC]Diagnose",
+        "response": "succeeded",
+        "responseValue": "allowed:true reason:\"GRANT_POLICY_FOUND\" requestContext:<subject:<principals:<type:\"user\" name:\"alice\" > > serviceName:\"app\" resource:\"res1\" action:\"read\" attributes:<key:\"edge\" value:\"quote\\\"\\\\\\n\\t\\001\\344\\270\\255\" > attributes:<key:\"level\" value:\"high\" > > grantedRoles:\"admin\" rolePolicies:<Status:\"takeEffect\" ID:\"rp1\" Name:\"rp1\" Effect:\"grant\" Roles:\"admin\" Principals:\"user:alice\" > policies:<Status:\"takeEffect\" ID:\"p1\" Name:\"p1\" Effect:\"grant\" permissions:<resource:\"res1\" actions:\"read\" > Principals:\"user:alice\" > "
+      },
+      {
+        "msg": "[AUDIT][gRPC]IsAllowed",
+        "response": "succeeded",
+        "responseValue": "{false 3 }"
+      },
+      {
+        "msg": "[AUDIT][gRPC]Diagnose",
+        "response": "succeeded",
+        "responseValue": "reason:\"NO_APPLICABLE_POLICIES\" requestContext:<subject:<principals:<type:\"user\" name:\"bob\" > > serviceName:\"app\" resource:\"res1\" action:\"read\" attributes:<key:\"edge\" value:\"quote\\\"\\\\\\n\\t\\001\\344\\270\\255\" > attributes:<key:\"level\" value:\"high\" > > "
+      },
+      {
+        "msg": "[AUDIT][gRPC]Discovery",
+        "response": "succeeded",
+        "responseValue": null
+      }
+    ],
+    "json": [
+      {
+        "msg": "[AUDIT][gRPC]IsAllowed",
+        "response": "succeeded",
+        "responseValue": {
+          "allowed": true
+        }
+      },
+      {
+        "msg": "[AUDIT][gRPC]GetAllGrantedRoles",
+        "response": "succeeded",
+        "responseValue": [
+          "admin"
+        ]
+      },
+      {
+        "msg": "[AUDIT][gRPC]GetAllGrantedPermissions",
+        "response": "succeeded",
+        "responseValue": [
+          {
+            "resource": "res1",
+            "actions": [
+              "read"
+            ]
+          },
+          {
+            "resource": "res2",
+            "actions": [
+              "write"
+            ]
+          }
+        ]
+      },
+      {
+        "msg": "[AUDIT][gRPC]Diagnose",
+        "response": "succeeded",
+        "responseValue": {
+          "allowed": true,
+          "reason": "GRANT_POLICY_FOUND",
+          "requestContext": {
+            "subject": {
+              "principals": [
+                {
+                  "type": "user",
+                  "name": "alice"
+                }
+              ]
+            },
+            "serviceName": "app",
+            "resource": "res1",
+            "action": "read",
+            "attributes": {
+              "edge": "quote\"\\\n\t\u0001中",
+              "level": "high"
+            }
+          },
+          "grantedRoles": [
+            "admin"
+          ],
+          "rolePolicies": [
+            {
+              "Status": "takeEffect",
+              "ID": "rp1",
+              "Name": "rp1",
+              "Effect": "grant",
+              "Roles": [
+                "admin"
+              ],
+              "Principals": [
+                "user:alice"
+              ]
+            }
+          ],
+          "policies": [
+            {
+              "Status": "takeEffect",
+              "ID": "p1",
+              "Name": "p1",
+              "Effect": "grant",
+              "permissions": [
+                {
+                  "resource": "res1",
+                  "actions": [
+                    "read"
+                  ]
+                }
+              ],
+              "Principals": [
+                "user:alice"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "msg": "[AUDIT][gRPC]IsAllowed",
+        "response": "succeeded",
+        "responseValue": {
+          "reason": 3
+        }
+      },
+      {
+        "msg": "[AUDIT][gRPC]Diagnose",
+        "response": "succeeded",
+        "responseValue": {
+          "reason": "NO_APPLICABLE_POLICIES",
+          "requestContext": {
+            "subject": {
+              "principals": [
+                {
+                  "type": "user",
+                  "name": "bob"
+                }
+              ]
+            },
+            "serviceName": "app",
+            "resource": "res1",
+            "action": "read",
+            "attributes": {
+              "edge": "quote\"\\\n\t\u0001中",
+              "level": "high"
+            }
+          }
+        }
+      },
+      {
+        "msg": "[AUDIT][gRPC]Discovery",
+        "response": "succeeded",
+        "responseValue": null
+      }
+    ]
+  }
+}

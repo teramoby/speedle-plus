@@ -15,14 +15,22 @@ jobs:
     name: execute
     # The runner group accepts only this callee at refs/heads/master. Never
     # derive runner eligibility or checkout revision from caller inputs.
-    # Every task but build and weekly goes to any Speedle runner
+    # Quick uses QUICK_RUNS_ON (hosted Ubuntu by default). It starts no
+    # integration services and supports Linux x64 and macOS ARM64.
+    # Every other task but build and weekly goes to any Speedle runner
     # (speedle-runner: both charming instances and fiona). Build needs the
-    # Linux Hugo release, so it stays on the charming pool. Weekly stays on
+    # Linux Hugo release, so its default is the Linux pool. Weekly stays on
     # fiona to reduce timing noise in its benchmark comparison. The identity
     # check also accepts donkey-speedle (Linux x64) for every task but weekly.
+    # merge-head may reserve HEAD_RUNS_ON (a JSON string or labels array)
+    # for full jobs, including build. That pool must supply an approved Linux
+    # runner; identity checks still reject build on macOS. Scheduled weekly
+    # jobs never use the PR-only override.
+    # Without it, retain the existing task pools. Labels only select scheduling;
+    # the trusted-event predicate and runner identity checks still apply.
     # The host lock below keeps fixed-port tests from overlapping on the charming host.
     runs-on: >-
-      ${{ github.repository == 'teramoby/speedle-plus' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && github.ref == 'refs/heads/master') || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.event.sender.type == 'User' || github.event.sender.type == 'Bot')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.user.type == 'User' || github.event.pull_request.user.type == 'Bot'))) && fromJSON(inputs.mode == 'build' && '["self-hosted","Linux","X64","speedle-linux"]' || inputs.mode == 'weekly' && '["self-hosted","fiona-speedle"]' || '["self-hosted","speedle-runner"]') || 'ubuntu-latest' }}
+      ${{ github.repository == 'teramoby/speedle-plus' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && github.ref == 'refs/heads/master') || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.event.sender.type == 'User' || github.event.sender.type == 'Bot')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.user.type == 'User' || github.event.pull_request.user.type == 'Bot'))) && fromJSON(inputs.mode == 'quick' && (vars.QUICK_RUNS_ON || '"ubuntu-latest"') || github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'merge-head') && vars.HEAD_RUNS_ON || inputs.mode == 'build' && '["self-hosted","Linux","X64","speedle-linux"]' || inputs.mode == 'weekly' && '["self-hosted","fiona-speedle"]' || '["self-hosted","speedle-runner"]') || 'ubuntu-latest' }}
     # test can wait on the host lock behind a nightly on the other charming runner.
     timeout-minutes: ${{ (inputs.mode == 'nightly' || inputs.mode == 'weekly' || inputs.mode == 'regression' || inputs.mode == 'test') && 150 || 30 }}
     steps:
@@ -31,7 +39,7 @@ jobs:
           CI_TASK: ${{ inputs.mode }}
         run: |
           set -euo pipefail
-          case "${CI_TASK}" in lint|test|build|nightly|weekly|regression) ;; *) echo 'Invalid CI task.' >&2; exit 1 ;; esac
+          case "${CI_TASK}" in quick|lint|test|build|nightly|weekly|regression) ;; *) echo 'Invalid CI task.' >&2; exit 1 ;; esac
 
       - name: Verify self-hosted runner identity
         if: runner.environment == 'self-hosted'
@@ -55,22 +63,106 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
-          fetch-depth: ${{ inputs.mode == 'build' && '0' || '1' }}
+          fetch-depth: ${{ (inputs.mode == 'build' || inputs.mode == 'quick') && '0' || '1' }}
 
       - name: Setup Go
         uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
-          go-version: '1.26'
+          go-version-file: go.mod
           # This persistent host already retains the Go caches. Restoring an
           # archive over read-only module files causes noisy extraction failures.
           cache: ${{ runner.environment != 'self-hosted' }}
 
+      - name: Select changed packages
+        if: inputs.mode == 'quick'
+        env:
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          python3 - <<'PYTHON'
+          import os
+          from pathlib import Path
+          import subprocess
+
+          def output(*args):
+              return subprocess.check_output(args).decode()
+
+          root = Path.cwd()
+          changed = output('git', 'diff', '--name-only', '-z', os.environ['PR_BASE'], os.environ['GITHUB_SHA'], '--').split('\0')
+          # Shared test fixtures and module changes can affect every package.
+          all_packages = any(p in ('go.mod', 'go.sum') or p.startswith(('testutil/', '3rdparty/')) for p in changed)
+          directories = output('go', 'list', '-f', '{{.Dir}}', './pkg/...', './cmd/...', './api/...', './deployment/...').splitlines()
+          package_dirs = [Path(d).resolve().relative_to(root).as_posix() for d in directories]
+          selected = set(package_dirs) if all_packages else set()
+          for file in changed:
+              # Attribute nested fixtures and deleted files to their nearest
+              # surviving package, without also selecting ancestor packages.
+              owners = [d for d in package_dirs if file.startswith(d + '/')]
+              if owners:
+                  selected.add(max(owners, key=len))
+          packages = ['./' + d for d in sorted(selected)]
+          Path('quick-packages.txt').write_text(''.join(p + '\n' for p in packages))
+          files = [p for p in changed if p.endswith('.go') and Path(p).is_file() and not p.startswith(('3rdparty/', 'docs/'))]
+          Path('quick-go-files.txt').write_text(''.join(p + '\0' for p in files))
+          print('Changed packages:', packages)
+          PYTHON
+
+      - name: Check changed Go formatting
+        if: inputs.mode == 'quick'
+        run: |
+          set -euo pipefail
+          while IFS= read -r -d '' file; do
+            formatted=$(gofmt -l "${file}" 2>&1) || { printf 'gofmt failed for %q: %q\n' "${file}" "${formatted}" >&2; exit 1; }
+            if [[ -n "${formatted}" ]]; then
+              printf 'Run gofmt on %q\n' "${file}" >&2
+              exit 1
+            fi
+          done < quick-go-files.txt
+
+      - name: Test changed packages without integration services
+        if: inputs.mode == 'quick'
+        env:
+          STORE_TYPE: file
+          SPEEDLE_TEST_STORE_PROPS: ''
+          SPEEDLE_MYSQL_TEST_DSN: ''
+          SPEEDLE_REQUIRE_MYSQL: ''
+          SPEEDLE_TEST_EXTERNAL_SERVICES: ''
+          SPEEDLE_MYSQL_EXTERNAL: ''
+          SPEEDLE_CLI_COVERPROFILE: ''
+          SP_APP_NAME: ''
+          PMS_ADMIN_TOKEN: ''
+          ADS_ADMIN_TOKEN: ''
+          CA_LOCATION: ''
+          CERT_LOCATION: ''
+          KEY_LOCATION: ''
+          # Tests needing PMS install their own ephemeral httptest fixture.
+          # Fail closed if a test accidentally uses the inherited endpoints;
+          # never connect to another job's fixed-port services.
+          PMS_ENDPOINT: http://127.0.0.1:0
+          ADS_ENDPOINT: http://127.0.0.1:0
+        run: |
+          set -euo pipefail
+          while IFS= read -r package; do
+            case "${package}" in
+              ./pkg/store/etcd|./pkg/store/mongodb)
+                echo "Compile only: ${package}; service-backed tests run in full CI."
+                go test -c -o "${RUNNER_TEMP}/quick-${package##*/}.test" "${package}" ;;
+              *) go test -count=1 -timeout 300s "${package}" ;;
+            esac
+          done < quick-packages.txt
+
+      - name: Check container dispatcher without Docker
+        if: inputs.mode == 'quick'
+        run: |
+          set -euo pipefail
+          go vet ./deployment/container/dispatch
+          go build -o "${RUNNER_TEMP}/quick-dispatch" ./deployment/container/dispatch
+
       - name: go vet
-        if: inputs.mode == 'lint'
+        if: inputs.mode == 'lint' || inputs.mode == 'quick'
         run: go vet -composites=false ./pkg/... ./cmd/... ./api/...
 
       - name: go mod tidy check
-        if: inputs.mode == 'lint'
+        if: inputs.mode == 'lint' || inputs.mode == 'quick'
         run: go mod tidy -diff
 
       - name: Setup Node for scheduled checks
@@ -164,8 +256,37 @@ jobs:
           if-no-files-found: warn
 
       - name: Build
-        if: inputs.mode == 'build'
+        if: inputs.mode == 'build' || inputs.mode == 'quick'
         run: go build ./cmd/speedle-pms/... ./cmd/speedle-ads/... ./cmd/spctl/...
+
+      # Unlabeled content PRs keep the existing docs and site checks without
+      # starting the full integration/coverage suite. Full test mode already
+      # runs these walkthroughs, so do not duplicate them on labeled runs.
+      - name: Select quick content checks
+        id: content
+        if: inputs.mode == 'build' && github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'full-ci') && !contains(github.event.pull_request.labels.*.name, 'merge-head')
+        env:
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          python3 - <<'PYTHON'
+          import os
+          from pathlib import Path
+          import subprocess
+          changed = subprocess.check_output(['git', 'diff', '--name-only', '-z', os.environ['PR_BASE'], os.environ['GITHUB_SHA'], '--']).decode().split('\0')
+          content = any(p.startswith(('docs/', 'website/')) for p in changed)
+          with Path(os.environ['GITHUB_OUTPUT']).open('a') as output:
+              output.write('changed=' + str(content).lower() + '\n')
+          PYTHON
+
+      - name: Verify quick documentation walkthroughs
+        if: inputs.mode == 'build' && steps.content.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          toolchain=$(go env GOVERSION)
+          python3 website/tests/check_quick_start.py --toolchain "${toolchain}"
+          python3 website/tests/check_embedded.py --toolchain "${toolchain}" --candidate
+          go test -count=1 ./website/tests/docscheck
+          python3 website/tests/check_docs.py
 
       # The default-branch worker keeps scheduling policy outside PR control.
       - name: Setup pinned Playground Go

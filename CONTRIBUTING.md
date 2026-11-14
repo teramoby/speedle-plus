@@ -54,6 +54,63 @@ with write permission can request `@reviewbot review`, `@reviewbot recheck` or
 `@reviewbot explain` in PR comments. See [ReviewBot](docs/REVIEWBOT.md) for its
 commands, configuration and data boundaries.
 
+## CI and the merge queue
+
+Unlabeled pull requests run quick checks: formatting, vet, module tidiness,
+build (including the container dispatcher without Docker), and tests for changed
+Go packages under `pkg`, `cmd`, `api` and `deployment`. Quick checks use the file store,
+compile service-backed store packages without starting services, and do not
+apply the coverage gate. Changes under `docs/` or `website/` also run the
+existing site build, browser/a11y checks and documentation walkthroughs in the
+Linux build worker. Container, command and release paths retain image smoke
+without a label: `deployment/container/**`, `cmd/**`,
+`.github/workflows/release.yml`, `.github/workflows/image-smoke.yml` and
+`scripts/release-smoke.sh`. Either full-CI label always runs image smoke.
+DCO and automated review retain their own workflows.
+
+Maintainers add `full-ci` or `merge-head` to run the full Go gate, integration
+services, the 90.0% coverage gate, build and image smoke. Full test coverage is
+independent of changed-file classification. Pushes to `master` always run full
+CI; nightly and weekly schedules are unchanged. The stable `CI` check reports
+the selected route, so a quick pass alone is not approval to merge. There is
+currently no branch protection. The manual `full-ci`/`merge-head` procedure below
+enforces full validation before merge; a green `CI` check alone does not enforce
+that procedure, even if it is later configured as required.
+
+Runner variables contain a JSON runner string or label array. `QUICK_RUNS_ON`
+defaults to `"ubuntu-latest"` and supports Linux x64 or macOS ARM64 without
+Docker. `HEAD_RUNS_ON`, when set, routes full jobs on a PR carrying `merge-head`
+to that pool, including build; otherwise the existing task pools apply.
+`HEAD_RUNS_ON` must therefore select approved Linux runners, as build's identity
+check rejects macOS. Weekly schedules never use this PR-only override and keep
+their approved runner. Labels are scheduling
+hints, not a security boundary. All Go jobs use the allow-listed reusable worker
+at `@master`, retaining trusted-event and runner-identity checks. A PR changing
+that worker cannot exercise the new worker implementation until it reaches
+`master`; runner routing tests validate those expressions locally meanwhile.
+Image smoke runs on GitHub-hosted Ubuntu.
+
+Adding either queue label cancels the preceding run in the same PR concurrency
+group and starts full CI. Other label additions start no jobs and use an ignored
+group. Removing a label starts no run and does not cancel or replace results.
+The next push selects its route from the labels then present.
+
+Maintainers merge in this order:
+
+1. Update the queue-head branch with current `master` and resolve conflicts.
+2. Add `full-ci` and `merge-head`; keep `merge-head` on only one PR at a time.
+3. Wait for full CI, image smoke, DCO and review on the exact final head SHA.
+4. Squash-merge with that head SHA matched (for example, `gh pr merge <PR>
+   --squash --match-head-commit <SHA>`).
+5. Delete the branch and remove the queue label. When handing over the head,
+   explicitly cancel any unfinished old-head runs and wait for their runner
+   slots to release; removing the label alone does not stop them.
+
+Before changing routing, run `actionlint` on the modified workflows and
+`node --test scripts/tests/test_ci_scope.cjs scripts/tests/test_go_ci_worker.cjs`.
+Workflow and script changes also run these routing tests in the hosted
+`changes` job on both the quick and full routes.
+
 The nightly suite runs the same full regression, every Go package plus the
 tagged ADS authorization/cache tests against native PMS/ADS, once each with the
 file, etcd, MySQL and MongoDB stores; pull request CI does not run MySQL or

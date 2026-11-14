@@ -17,10 +17,10 @@
       
       <guid>https://engine.speedle.io/ja/docs/store/mysql/</guid>
       <description>このガイドでは、MySQL 8.4 LTS と 2 つのネイティブ Speedle プロセスを使用します。PMS はポリシーを書き込み、ADS は個別の読み取り専用アカウントで同じデータベースを読み取ります。ローカルの例では Docker とループバック上の平文 HTTP を使用します。リモートデプロイの場合は、既存の MySQL サーバーと セキュリティガイド を使用してください。
-1. MySQL バックエンドを含む Speedle のビルド Git、Bash、curl、Docker、およびサポートされている Go ツールチェーン（Go 1.26.10 または Go 1.27.3）をインストールします。Docker が実行されている必要があります。両方のバイナリに mysql ストアが含まれるように、最新のソースからビルドします。以前インストールされた古いリリースには含まれていない可能性があります。
+1. MySQL バックエンドを含む Speedle のビルド Git、Bash、curl、Docker、およびサポートされている Go ツールチェーン（Go 1.27.4）をインストールします。Docker が実行されている必要があります。両方のバイナリに mysql ストアが含まれるように、最新のソースからビルドします。以前インストールされた古いリリースには含まれていない可能性があります。
 git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads 残りのコマンドはこの speedle-plus ディレクトリから実行します。ポート 3306、6733、6734 を解放しておくか、以下のすべてのコマンドおよび構成で対応するアドレスを変更してください。
 2. MySQL 8.4 の起動 以下の固定パスワードはローカルデモ用の認証情報です。デプロイ時には独自の認証情報とシークレット配信メカニズムを使用してください。名前付き Docker ボリュームは、このコンテナが停止または再作成された場合でもデータベースを保持します。
-docker run --name speedle-mysql --detach \  --publish 127.</description>
+docker run --name speedle-mysql --detach \  --publish 127.0.0.1:3306:3306 \  --volume speedle-mysql-data:/var/lib/mysql \  --env MYSQL_ROOT_PASSWORD=SpeedleDemoRoot84 \  mysql:8.</description>
     </item>
     
   </channel>

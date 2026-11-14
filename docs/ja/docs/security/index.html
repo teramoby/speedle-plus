@@ -223,7 +223,7 @@
 
 <h2 id="ローカルテスト用証明書の生成">ローカルテスト用証明書の生成</h2>
 
-<p><a href="/ja/quick-start/">クイックスタート</a> に従ってバイナリをビルドします。リポジトリのルートから、Go 1.26.10 または Go 1.27.3（または同じリリースブランチの新しいパッチバージョン）を使用してローカル CA と個別のサーバー/クライアント証明書を生成します。サーバー証明書には <code>localhost</code>、<code>127.0.0.1</code>、および <code>::1</code> の SAN が含まれます。秘密鍵の権限は 0600 です。これらは <strong>24時間有効なデモ用証明書</strong> であり、本番用の資格情報ではありません。ジェネレーターは既存のファイルの上書きを拒否します。再生成する場合は新しい出力ディレクトリを選択してください。</p>
+<p><a href="/ja/quick-start/">クイックスタート</a> に従ってバイナリをビルドします。リポジトリのルートから、Go 1.27.4（または同じリリースブランチの新しいパッチバージョン）を使用してローカル CA と個別のサーバー/クライアント証明書を生成します。サーバー証明書には <code>localhost</code>、<code>127.0.0.1</code>、および <code>::1</code> の SAN が含まれます。秘密鍵の権限は 0600 です。これらは <strong>24時間有効なデモ用証明書</strong> であり、本番用の資格情報ではありません。ジェネレーターは既存のファイルの上書きを拒否します。再生成する場合は新しい出力ディレクトリを選択してください。</p>
 
 <!-- docs-check: certificates -->
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go run ./website/tests/examples/certificates --out ./tls</code></pre></div>

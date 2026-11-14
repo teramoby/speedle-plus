@@ -19,10 +19,10 @@
       <guid>https://engine.speedle.io/zh/docs/store/mongodb/</guid>
       <description>本指南使用 MongoDB 7.0.16 单节点副本集和 Docker 持久化卷。PMS 写入策略，ADS 通过 change stream 跟踪同一个数据库。本地示例只监听回环地址且不开启身份认证，用于开发环境；生产环境的身份认证、TLS 与副本集配置见后文。
 MongoDB 必须以副本集或分片集群方式运行：ADS 使用 change stream 监听数据库，整体替换策略存储时使用事务，独立运行的 mongod 两者都不支持。开发环境使用单节点副本集即可。
-1. 编译 Speedle 准备 Bash、Git、curl、已启动的 Docker，以及 Go 1.26.10 或 Go 1.27.3，然后从源码编译：
+1. 编译 Speedle 准备 Bash、Git、curl、已启动的 Docker，以及 Go 1.27.4，然后从源码编译：
 git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads 后续命令均在这个代码目录执行。确认 27017、6733、6734 端口可用；修改端口时要同步修改命令和配置。
 2. 启动 MongoDB 命名卷保存 MongoDB 数据。--replSet 让 mongod 作为副本集 speedle-rs 的成员启动；只把数据库端口发布到宿主机的回环地址。
-docker run --name speedle-mongodb --detach \  --publish 127.</description>
+docker run --name speedle-mongodb --detach \  --publish 127.0.0.1:27017:27017 \  --volume speedle-mongodb-data:/data/db \  mongo:7.</description>
     </item>
     
     <item>
@@ -32,7 +32,7 @@ docker run --name speedle-mongodb --detach \  --publish 127.</description>
       
       <guid>https://engine.speedle.io/zh/docs/store/mysql/</guid>
       <description>本指南使用 MySQL 8.4 LTS，分别启动 PMS 和 ADS：PMS 写入策略，ADS 使用独立的只读账号读取同一个数据库。本地演示使用 Docker，HTTP 服务只监听本机回环地址。远程部署可使用已有的 MySQL，并参考安全配置。
-1. 编译包含 MySQL 后端的 Speedle 准备 Git、Bash、curl、已启动的 Docker，以及支持的 Go 工具链（Go 1.26.10 或 Go 1.27.3）。从当前源码编译，确保两个服务都包含 mysql 后端；已安装的旧版本可能没有该后端。
+1. 编译包含 MySQL 后端的 Speedle 准备 Git、Bash、curl、已启动的 Docker，以及支持的 Go 工具链（Go 1.27.4）。从当前源码编译，确保两个服务都包含 mysql 后端；已安装的旧版本可能没有该后端。
 git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads 后续命令都在这个 speedle-plus 目录执行。确认 3306、6733、6734 端口未被占用；若修改端口，需同步修改下文的命令和配置。
 2. 启动 MySQL 8.4 下列固定密码仅为本地演示凭据。部署时请使用自己的凭据与密钥交付方式。命名卷会在容器停止或重建后保留数据库。
 docker run --name speedle-mysql --detach \  --publish 127.0.0.1:3306:3306 \  --volume speedle-mysql-data:/var/lib/mysql \  --env MYSQL_ROOT_PASSWORD=SpeedleDemoRoot84 \  mysql:8.</description>
@@ -45,10 +45,10 @@ docker run --name speedle-mysql --detach \  --publish 127.0.0.1:3306:3306 \  --v
       
       <guid>https://engine.speedle.io/zh/docs/store/etcd/</guid>
       <description>本指南使用独立的 etcd v3.6.14 和 Docker 持久化卷。PMS 写入策略，ADS 监听同一个 key prefix。本地单节点示例通过回环地址提供 HTTP 服务；生产环境的 TLS 与集群配置见后文。
-1. 编译 Speedle 准备 Bash、Git、curl、已启动的 Docker，以及 Go 1.26.10 或 Go 1.27.3，然后从源码编译：
+1. 编译 Speedle 准备 Bash、Git、curl、已启动的 Docker，以及 Go 1.27.4，然后从源码编译：
 git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads 后续命令均在这个代码目录执行。确认 2379、6733、6734 端口可用；修改端口时要同步修改命令和配置。
 2. 启动独立 etcd 服务 命名卷保存 etcd 数据。这里只把客户端端口发布到宿主机，单节点内部通信使用的 peer 端口保留在容器内。
-docker run --name speedle-etcd --detach \  --publish 127.0.0.1:2379:2379 \  --volume speedle-etcd-data:/etcd-data \  gcr.</description>
+docker run --name speedle-etcd --detach \  --publish 127.0.0.1:2379:2379 \  --volume speedle-etcd-data:/etcd-data \  gcr.io/etcd-development/etcd:v3.6.14 \  /usr/local/bin/etcd \  --name speedle-local \  --data-dir /etcd-data \  --listen-client-urls http://0.</description>
     </item>
     
     <item>

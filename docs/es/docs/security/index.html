@@ -223,7 +223,7 @@
 
 <h2 id="generar-certificados-para-una-prueba-local">Generar certificados para una prueba local</h2>
 
-<p>Compile los binarios mediante el <a href="/es/quick-start/">inicio rápido</a>. Desde la raíz del repositorio, utilice Go 1.26.10 o Go 1.27.3 (o un parche más reciente de la misma rama de lanzamiento) para generar una CA local y certificados independientes para servidor y cliente. El certificado de servidor contiene SANs para <code>localhost</code>, <code>127.0.0.1</code> y <code>::1</code>; las claves privadas utilizan permisos 0600. Estos <strong>certificados de demostración de 24 horas</strong> no son credenciales para producción. El generador rechaza sobrescribir archivos existentes: seleccione un nuevo directorio de salida si vuelve a generar.</p>
+<p>Compile los binarios mediante el <a href="/es/quick-start/">inicio rápido</a>. Desde la raíz del repositorio, utilice Go 1.27.4 (o un parche más reciente de la misma rama de lanzamiento) para generar una CA local y certificados independientes para servidor y cliente. El certificado de servidor contiene SANs para <code>localhost</code>, <code>127.0.0.1</code> y <code>::1</code>; las claves privadas utilizan permisos 0600. Estos <strong>certificados de demostración de 24 horas</strong> no son credenciales para producción. El generador rechaza sobrescribir archivos existentes: seleccione un nuevo directorio de salida si vuelve a generar.</p>
 
 <!-- docs-check: certificates -->
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go run ./website/tests/examples/certificates --out ./tls</code></pre></div>

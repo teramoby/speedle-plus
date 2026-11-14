@@ -78,7 +78,7 @@ Continue below when you are ready to install and run Speedle locally.
 
 ### Prerequisites
 
-Use Linux or macOS with Bash, Git, curl and **Go 1.26.10 or Go 1.27.3** (or a newer patch on the same release branch). Speedle supports patched Go 1.26 and Go 1.27 releases; this guide is verified with **Go 1.26.10 and Go 1.27.3**. Go 1.27.3 is the recommended stable release for this walkthrough.
+Use Linux or macOS with Bash, Git, curl and **Go 1.27.4** (or a newer patch on the Go 1.27 release branch). Building the current source requires Go 1.27.4 or newer; published releases retain their own toolchain requirements.
 
 Install Go using the [official installation instructions](https://go.dev/doc/install), then check the installed version:
 
@@ -905,7 +905,7 @@ Speedle evaluates a subject, action and resource within a service. The applicati
 
 ### Before running the examples
 
-Build `./bin/spctl`, `./bin/speedle-pms` and `./bin/speedle-ads` using the [quick start](https://engine.speedle.io/quick-start/). Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch), Bash, curl and Python 3. Run each terminal from the repository root. Use a fresh policy file for this page; reset it only after stopping both services.
+Build `./bin/spctl`, `./bin/speedle-pms` and `./bin/speedle-ads` using the [quick start](https://engine.speedle.io/quick-start/). Use Go 1.27.4 (or a newer patch on the same release branch), Bash, curl and Python 3. Run each terminal from the repository root. Use a fresh policy file for this page; reset it only after stopping both services.
 
 Initialize an empty policy file:
 
@@ -1079,7 +1079,7 @@ See [SPDL](https://engine.speedle.io/docs/spdl/) for grammar and [RBAC](https://
 
 ### Before running the examples
 
-Build `./bin/spctl`, `./bin/speedle-pms` and `./bin/speedle-ads` using the [quick start](https://engine.speedle.io/quick-start/). Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch), Bash, curl and Python 3. Run each terminal from the repository root. Use a fresh policy file for this page; reset it only after stopping both services.
+Build `./bin/spctl`, `./bin/speedle-pms` and `./bin/speedle-ads` using the [quick start](https://engine.speedle.io/quick-start/). Use Go 1.27.4 (or a newer patch on the same release branch), Bash, curl and Python 3. Run each terminal from the repository root. Use a fresh policy file for this page; reset it only after stopping both services.
 
 Initialize an empty policy file:
 
@@ -1145,7 +1145,7 @@ Only global **role policies** are supported. A global role assignment does not i
 
 ### Before running the examples
 
-Build `./bin/spctl`, `./bin/speedle-pms` and `./bin/speedle-ads` using the [quick start](https://engine.speedle.io/quick-start/). Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch), Bash, curl and Python 3. Run each terminal from the repository root. Use a fresh policy file for this page; reset it only after stopping both services.
+Build `./bin/spctl`, `./bin/speedle-pms` and `./bin/speedle-ads` using the [quick start](https://engine.speedle.io/quick-start/). Use Go 1.27.4 (or a newer patch on the same release branch), Bash, curl and Python 3. Run each terminal from the repository root. Use a fresh policy file for this page; reset it only after stopping both services.
 
 Initialize an empty policy file:
 
@@ -1295,7 +1295,7 @@ Diagnosis exposes policy definitions and request context. Restrict it to trusted
 
 ### Before running the examples
 
-Build `./bin/spctl`, `./bin/speedle-pms` and `./bin/speedle-ads` using the [quick start](https://engine.speedle.io/quick-start/). Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch), Bash, curl and Python 3. Run each terminal from the repository root. Use a fresh policy file for this page; reset it only after stopping both services.
+Build `./bin/spctl`, `./bin/speedle-pms` and `./bin/speedle-ads` using the [quick start](https://engine.speedle.io/quick-start/). Use Go 1.27.4 (or a newer patch on the same release branch), Bash, curl and Python 3. Run each terminal from the repository root. Use a fresh policy file for this page; reset it only after stopping both services.
 
 Initialize an empty policy file:
 
@@ -1542,7 +1542,7 @@ func main() {
 
 ### Before running the examples
 
-Build `./bin/spctl`, `./bin/speedle-pms` and `./bin/speedle-ads` using the [quick start](https://engine.speedle.io/quick-start/). Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch), Bash, curl and Python 3. Run each terminal from the repository root. Use a fresh policy file for this page; reset it only after stopping both services.
+Build `./bin/spctl`, `./bin/speedle-pms` and `./bin/speedle-ads` using the [quick start](https://engine.speedle.io/quick-start/). Use Go 1.27.4 (or a newer patch on the same release branch), Bash, curl and Python 3. Run each terminal from the repository root. Use a fresh policy file for this page; reset it only after stopping both services.
 
 Initialize an empty policy file:
 
@@ -1700,7 +1700,7 @@ func main() {
 
 ### Before running the examples
 
-Build `./bin/spctl`, `./bin/speedle-pms` and `./bin/speedle-ads` using the [quick start](https://engine.speedle.io/quick-start/). Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch), Bash, curl and Python 3. Run each terminal from the repository root. Use a fresh policy file for this page; reset it only after stopping both services.
+Build `./bin/spctl`, `./bin/speedle-pms` and `./bin/speedle-ads` using the [quick start](https://engine.speedle.io/quick-start/). Use Go 1.27.4 (or a newer patch on the same release branch), Bash, curl and Python 3. Run each terminal from the repository root. Use a fresh policy file for this page; reset it only after stopping both services.
 
 Initialize an empty policy file:
 
@@ -1819,7 +1819,7 @@ A policy with `from github` matches that domain only. Omitting `from` matches th
 
 ### Before running the examples
 
-Build `./bin/spctl`, `./bin/speedle-pms` and `./bin/speedle-ads` using the [quick start](https://engine.speedle.io/quick-start/). Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch), Bash, curl and Python 3. Run each terminal from the repository root. Use a fresh policy file for this page; reset it only after stopping both services.
+Build `./bin/spctl`, `./bin/speedle-pms` and `./bin/speedle-ads` using the [quick start](https://engine.speedle.io/quick-start/). Use Go 1.27.4 (or a newer patch on the same release branch), Bash, curl and Python 3. Run each terminal from the repository root. Use a fresh policy file for this page; reset it only after stopping both services.
 
 Initialize an empty policy file:
 
@@ -2487,7 +2487,7 @@ Use [embedded mode](https://engine.speedle.io/docs/deployment/embedded/) to run 
 
 ### Build with current Go
 
-Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch) (Go 1.27.3 is recommended), Git and a shell on Linux or macOS. Use Go modules; the checkout can be anywhere writable. No custom `GOROOT`, `GOPATH`, `dep` or GOPATH source layout is needed.
+Use Go 1.27.4 (or a newer patch on the same release branch) (Go 1.27.4 is recommended), Git and a shell on Linux or macOS. Use Go modules; the checkout can be anywhere writable. No custom `GOROOT`, `GOPATH`, `dep` or GOPATH source layout is needed.
 
 
 ```bash
@@ -2646,7 +2646,7 @@ To try basic policies before writing code, open the [Playground](https://engine.
 
 ### Prerequisites
 
-Use Linux or macOS with a shell and **Go 1.26.10 or Go 1.27.3** (or a newer patch on the same release branch), matching [Quick Start](https://engine.speedle.io/quick-start/). This walkthrough uses Go modules and the published **Speedle v1.6.0** release. Go 1.27.3 is the recommended toolchain; the example is verified with Go 1.26.10 and Go 1.27.3.
+Use Linux or macOS with a shell and **Go 1.27.4** (or a newer patch on the same release branch), matching [Quick Start](https://engine.speedle.io/quick-start/). This walkthrough uses Go modules and the published **Speedle v1.6.0** release.
 
 Install Go using the [official installation instructions](https://go.dev/doc/install), then check your version:
 
@@ -3303,8 +3303,7 @@ use your existing MySQL server and the [Security guide](https://engine.speedle.i
 
 ### 1. Build Speedle with the MySQL backend
 
-Install Git, Bash, curl, Docker and a supported Go toolchain (Go 1.26.10 or
-Go 1.27.3). Docker must be running. Build from current source so both binaries
+Install Git, Bash, curl, Docker and a supported Go toolchain (Go 1.27.4). Docker must be running. Build from current source so both binaries
 contain the `mysql` store; an older installed release may not contain it.
 
 
@@ -3565,7 +3564,7 @@ This walkthrough uses an **external etcd v3.6.14** server with a persistent Dock
 
 ### 1. Build Speedle
 
-Prepare Bash, Git, curl, Docker and Go 1.26.10 or Go 1.27.3. Start Docker, then build the native services:
+Prepare Bash, Git, curl, Docker and Go 1.27.4. Start Docker, then build the native services:
 
 
 ```bash
@@ -3807,7 +3806,7 @@ MongoDB must run as a **replica set or sharded cluster**. ADS watches the databa
 
 ### 1. Build Speedle
 
-Prepare Bash, Git, curl, Docker and Go 1.26.10 or Go 1.27.3. Start Docker, then build the native services:
+Prepare Bash, Git, curl, Docker and Go 1.27.4. Start Docker, then build the native services:
 
 
 ```bash
@@ -4069,7 +4068,7 @@ Configuration precedence is command line, then `SPDL_*` environment variables, t
 
 ### Generate certificates for a local test
 
-Build the binaries using the [quick start](https://engine.speedle.io/quick-start/). From the repository root, use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch) to generate a local CA plus separate server/client certificates. The server certificate has SANs for `localhost`, `127.0.0.1` and `::1`; private keys use mode 0600. These **24-hour demonstration certificates** are not production credentials. The generator refuses to overwrite existing files: choose a new output directory when regenerating.
+Build the binaries using the [quick start](https://engine.speedle.io/quick-start/). From the repository root, use Go 1.27.4 (or a newer patch on the same release branch) to generate a local CA plus separate server/client certificates. The server certificate has SANs for `localhost`, `127.0.0.1` and `::1`; private keys use mode 0600. These **24-hour demonstration certificates** are not production credentials. The generator refuses to overwrite existing files: choose a new output directory when regenerating.
 
 
 ```bash

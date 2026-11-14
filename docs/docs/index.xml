@@ -69,7 +69,7 @@ First ask me which open-source authorization projects I want to compare with Spe
       
       <guid>https://engine.speedle.io/docs/decisions/</guid>
       <description>What is an authorization decision? Speedle evaluates a subject, action and resource within a service. The application must enforce the result. Treat an evaluation error or timeout separately from a normal Deny and fail closed. REST, gRPC and embedded Go APIs have different wire representations; use their respective contracts.
-Before running the examples Build ./bin/spctl, ./bin/speedle-pms and ./bin/speedle-ads using the quick start. Use Go 1.26.10 or Go 1.27.3 (or a newer patch on the same release branch), Bash, curl and Python 3.</description>
+Before running the examples Build ./bin/spctl, ./bin/speedle-pms and ./bin/speedle-ads using the quick start. Use Go 1.27.4 (or a newer patch on the same release branch), Bash, curl and Python 3.</description>
     </item>
     
     <item>
@@ -96,12 +96,12 @@ The Token Assertion Plugin API uses integer errCode and an optional attribute ob
       <title>Extending the decision service</title>
       <link>https://engine.speedle.io/docs/extending-decision-service/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-
+      
       <guid>https://engine.speedle.io/docs/extending-decision-service/</guid>
       <description>Implement store.StoreBuilder, register a unique name with store.Register, and import the package from your executable. GetStoreParams maps extra flags to store properties. Parse your own flags before starting the server; the Engine library does not parse flags or install signal handlers.
 Use ads.Run(ctx, params, conf, options...) from github.com/teramoby/speedle-plus/pkg/ads to reuse the standard ADS startup. params is *flags.Parameters, conf is *cfg.Config, and cancelling ctx stops both servers. ads.WithGate(g) overrides gate discovery on both transports; ads.</description>
     </item>
-
+    
     <item>
       <title>Security</title>
       <link>https://engine.speedle.io/docs/security/</link>
