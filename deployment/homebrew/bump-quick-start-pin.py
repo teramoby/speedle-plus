@@ -12,6 +12,7 @@ Usage:
     python3 bump-quick-start-pin.py --paths [repo]
 """
 
+import html
 import re
 import sys
 from datetime import datetime
@@ -27,7 +28,20 @@ AUTHORED = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2}
 
 def guide_paths(root):
     """Discover the default guide and every locale, including future additions."""
-    return sorted((Path(root) / "docs/hugo/content").glob("quick-start*.md"))
+    directory = Path(root) / "docs/hugo/content"
+    guides = sorted(directory.glob("quick-start*.md"))
+    if guides and not (directory / "quick-start.md").is_file():
+        raise SystemExit("default Quick Start guide is required: quick-start.md")
+    config = Path(root) / "docs/hugo/config.toml"
+    if guides and config.is_file():
+        settings = config.read_text()
+        default = re.search(r'^defaultContentLanguage\s*=\s*"([^"\n]+)"', settings, re.M)
+        default = default[1] if default else "en"
+        for locale in re.findall(r"^\[languages\.([A-Za-z0-9_-]+)\]", settings, re.M):
+            name = "quick-start.md" if locale == default else f"quick-start.{locale}.md"
+            if not (directory / name).is_file():
+                raise SystemExit(f"configured Quick Start locale is missing: {name}")
+    return guides
 
 
 def outputs(root, guide):
@@ -52,28 +66,66 @@ def tracked_paths(root):
     return sorted(path.relative_to(root) for path in paths if path.is_file())
 
 
-def bump_text(text, version, plain=False):
-    """Repair the command and its following release-tag description independently.
+TAG = re.compile(r"v[0-9]+\.[0-9]+\.[0-9]+")
+CODE_TAG = re.compile(r"`(v[0-9]+\.[0-9]+\.[0-9]+)`|<code>(v[0-9]+\.[0-9]+\.[0-9]+)</code>")
 
-    A previous attempt may have updated just the command. RSS summaries use a
-    plain release tag; the source and HTML use Markdown/HTML code spans.
-    """
-    match = INSTALL.search(text)
-    if match is None:
-        return text, False
-    prefix = text[:match.start()]
-    body = INSTALL.sub(lambda pin: pin.group(1) + version, text[match.start():])
-    # Start after the first command, so its pin cannot mask a stale description.
-    command = INSTALL.search(body)
-    after = body[command.end():]
-    if plain:
-        pattern = r"(?<![A-Za-z0-9_./-])v[0-9]+\.[0-9]+\.[0-9]+(?![A-Za-z0-9_]|\.[0-9])"
-        after = re.sub(pattern, lambda _: version, after, count=1)
+
+def release_note(text):
+    """Locate only the paragraph immediately after the first install block."""
+    command = INSTALL.search(text)
+    if command is None:
+        return None
+    tail = text[command.end():]
+    if text.rfind("<pre", 0, command.start()) > text.rfind("</pre>", 0, command.start()):
+        note = re.search(r"</pre>\s*(?:</div>\s*)?<p>(.*?)</p>", tail, re.S)
     else:
-        pattern = r"`v[0-9]+\.[0-9]+\.[0-9]+`|<code>v[0-9]+\.[0-9]+\.[0-9]+</code>"
-        after = re.sub(pattern, lambda tag: f"`{version}`" if tag.group().startswith("`")
-                       else f"<code>{version}</code>", after, count=1)
-    updated = prefix + body[:command.end()] + after
+        note = re.search(r"\n```[ \t]*\n\s*\n([^\n]+(?:\n(?!\s*\n)[^\n]+)*)", tail)
+    if note is None:
+        return None
+    return command.end() + note.start(1), command.end() + note.end(1)
+
+
+def bump_text(text, version, plain=False, note=None):
+    """Repair the first install command and its own release-note paragraph.
+
+    For RSS, use the source paragraph's text before its release tag as context.
+    A removed/reordered note cannot redirect a replacement into another example.
+    """
+    command = INSTALL.search(text)
+    if command is None:
+        return text, False
+    updated = INSTALL.sub(lambda pin: pin.group(1) + version, text, count=1)
+    if plain:
+        if note is not None:
+            # Hugo's RSS summary strips inline code and XML-escapes text.
+            reference = html.escape(note.replace("`", ""), quote=False)
+            tag = TAG.search(reference)
+            if tag:
+                def context(value):
+                    return "".join(r"\s+" if part.isspace() else re.escape(part)
+                                   for part in re.split(r"(\s+)", value))
+
+                prefix, suffix = reference[:tag.start()], reference[tag.end():]
+                if not (prefix.strip() or suffix.strip()):
+                    raise SystemExit("RSS release note needs surrounding text; regenerate the site")
+                pattern = re.compile(context(prefix) + r"(?P<tag>v[0-9]+\.[0-9]+\.[0-9]+)"
+                                     + context(suffix))
+                # Match the complete source note, not another version in an item.
+                pin = INSTALL.search(updated)
+                tail = updated[pin.end():]
+                match = pattern.search(tail)
+                if match:
+                    tail = tail[:match.start("tag")] + version + tail[match.end("tag"):]
+                elif TAG.search(tail):
+                    raise SystemExit("RSS release note differs from source; regenerate the site")
+                updated = updated[:pin.end()] + tail
+    else:
+        span = release_note(updated)
+        if span:
+            paragraph = updated[span[0]:span[1]]
+            paragraph = CODE_TAG.sub(lambda tag: f"`{version}`" if tag.group().startswith("`")
+                                     else f"<code>{version}</code>", paragraph, count=1)
+            updated = updated[:span[0]] + paragraph + updated[span[1]:]
     return updated, updated != text
 
 
@@ -96,8 +148,11 @@ def bump_tree(root, version):
         if feed.is_file():
             # Restrict replacements to the item containing the install command.
             original = feed.read_text()
+            source = guide.read_text()
+            span = release_note(source)
+            note = source[span[0]:span[1]] if span else None
             text = re.sub(r"<item>[\s\S]*?</item>",
-                          lambda item: bump_text(item.group(), version, plain=True)[0], original)
+                          lambda item: bump_text(item.group(), version, plain=True, note=note)[0], original)
             if text != original:
                 feed.write_text(text)
                 changed = True

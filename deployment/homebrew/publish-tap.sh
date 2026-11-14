@@ -174,10 +174,15 @@ if [[ "${pin_status}" == *"Quick Start install pin set to ${VERSION}"* && -f doc
   python3 website/generate-llms.py --output docs
 fi
 git add -- deployment/homebrew/Formula deployment/homebrew/README.md
+# Capture the exit status before consuming the path list: process substitution
+# would hide a discovery error and leave changed documentation unstaged.
+doc_paths_text=$(python3 "${script_dir}/bump-quick-start-pin.py" --paths .)
 doc_paths=()
 while IFS= read -r path; do
-  doc_paths+=("${path}")
-done < <(python3 "${script_dir}/bump-quick-start-pin.py" --paths .)
+  if [[ -n "${path}" ]]; then
+    doc_paths+=("${path}")
+  fi
+done <<< "${doc_paths_text}"
 if [[ ${#doc_paths[@]} -gt 0 ]]; then
   git add -- "${doc_paths[@]}"
 fi
@@ -191,7 +196,9 @@ if ! git diff --cached --quiet; then
     author_date=$(git log -1 --format=%aI)
     committer_date=$(git log -1 --format=%cI)
     python3 "${script_dir}/bump-quick-start-pin.py" --stamp "${author_date}" .
-    git add -- "${doc_paths[@]}"
+    if [[ ${#doc_paths[@]} -gt 0 ]]; then
+      git add -- "${doc_paths[@]}"
+    fi
     if ! git diff --cached --quiet; then
       GIT_AUTHOR_DATE="${author_date}" GIT_COMMITTER_DATE="${committer_date}" git commit --amend --no-edit
     fi
