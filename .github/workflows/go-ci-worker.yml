@@ -13,7 +13,8 @@ permissions:
 jobs:
   execute:
     name: execute
-    # The runner group accepts only this callee at refs/heads/master. Never
+    # Group members accept only this callee at refs/heads/master; repository-level
+    # fiona is outside that workflow allowlist (see docs/RUNNERS.md). Never
     # derive runner eligibility or checkout revision from caller inputs.
     # Every task but build and weekly goes to any Speedle runner
     # (speedle-runner: both charming instances and fiona). Build needs the
@@ -42,7 +43,7 @@ jobs:
           case "${RUNNER_NAME}/${RUNNER_OS}/${RUNNER_ARCH}" in
             charming-speedle/Linux/X64|charming-speedle-2/Linux/X64|donkey-speedle/Linux/X64)
               case "${CI_TASK}" in weekly) echo "Task ${CI_TASK} runs only on fiona-speedle." >&2; exit 1 ;; esac ;;
-            fiona-speedle/macOS/ARM64)
+            fiona-speedle/macOS/ARM64|fiona/macOS/ARM64)
               case "${CI_TASK}" in build) echo "Task ${CI_TASK} needs a Linux runner." >&2; exit 1 ;; esac ;;
             *) echo 'Unexpected runner.' >&2; exit 1 ;;
           esac

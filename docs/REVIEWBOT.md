@@ -21,7 +21,7 @@ GitHub's persistent PR head ref (including fork PRs), and verifies that checkout
 equals the event's captured immutable head before constructing a merge-base diff. It does not
 execute, build or test PR code. By default, human- and bot-authored same-repository PRs run
 on any self-hosted Speedle runner via `speedle-runner` (`charming-speedle`,
-`charming-speedle-2` and `fiona-speedle`), while `REVIEWBOT_RUNS_ON` can override the
+`charming-speedle-2`, `fiona-speedle` and, after label assignment, `fiona`), while `REVIEWBOT_RUNS_ON` can override the
 runner labels of only the two model-calling jobs (`Analyze pull request` and
 `Analyze ReviewBot command`). Fork PRs and unknown author types always use GitHub-hosted
 `ubuntu-24.04`. Review publication, regression dispatch and comment-command
