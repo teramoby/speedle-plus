@@ -195,11 +195,12 @@ type Client struct {
 	// fallbackMu guards the bounded retry hint used by the request gate.
 	// fallbackRetrySeq counts the deadlines set, so a response can tell
 	// whether one was set while it was in flight.
-	fallbackMu       sync.Mutex
-	fallbackRetryAt  time.Time
-	fallbackRetrySeq uint64
-	fallbackBackoff  time.Duration
-	now              func() time.Time
+	fallbackMu              sync.Mutex
+	fallbackRetryAt         time.Time
+	fallbackRetryByUpstream map[string]time.Time
+	fallbackRetrySeq        uint64
+	fallbackBackoff         time.Duration
+	now                     func() time.Time
 }
 
 // NewClient validates the configuration and builds the HTTP transport.

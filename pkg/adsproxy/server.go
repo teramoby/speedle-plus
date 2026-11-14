@@ -46,6 +46,7 @@ type Config struct {
 	// endpoint) or one of its ancestors — and is refused.
 	Chain []string
 	// Upstream reports the relay's end-to-end freshness and synchronization state.
+	// Nil fails closed: channels report syncing and data requests are refused.
 	Upstream func() adsync.UpstreamStatus
 	// Mirror holds the verified copies served downstream. It is required.
 	Mirror *Mirror

@@ -64,9 +64,9 @@ func (s *Store) startRuntime() error {
 			defer s.syncMu.Unlock()
 			selectEndpoint()
 		},
-		OnChain: func(chain []string) error {
+		OnChain: func(chain []string, deadline time.Time) error {
 			if s.downstream != nil {
-				return s.downstream.server.SetChain(chain)
+				return s.downstream.server.SetChainUntil(chain, deadline)
 			}
 			return nil
 		},

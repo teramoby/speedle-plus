@@ -19,7 +19,7 @@ import (
 // verified client certificate, and no handler runs.
 func TestDownstreamHandlerRequiresVerifiedClientCertificate(t *testing.T) {
 	authzCalls := 0
-	server, err := NewServer(Config{InstanceID: testProxyID, Mirror: newTestMirror(t, nil)})
+	server, err := NewServer(Config{Upstream: testLiveUpstream, InstanceID: testProxyID, Mirror: newTestMirror(t, nil)})
 	if err != nil {
 		t.Fatal(err)
 	}

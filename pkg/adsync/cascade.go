@@ -202,7 +202,7 @@ func (c *Channel) applyCascadeMetadata(ack *channelAck) error {
 		return fmt.Errorf("%w: upstream_stale", ErrUnavailable)
 	}
 	if c.onChain != nil {
-		if err := c.onChain(append(append([]string(nil), ack.Chain...), self)); err != nil {
+		if err := c.onChain(append(append([]string(nil), ack.Chain...), self), deadline); err != nil {
 			return err
 		}
 	}
@@ -315,13 +315,18 @@ func (c *Channel) inheritedDeadline(ack *channelAck) (time.Time, error) {
 func (c *Client) selectEndpoint(base *url.URL, cancel context.CancelFunc) {
 	c.upstreamMu.Lock()
 	defer c.upstreamMu.Unlock()
+	previous := c.channelBase()
+	c.fallbackMu.Lock()
+	if c.fallbackRetryByUpstream == nil {
+		c.fallbackRetryByUpstream = make(map[string]time.Time)
+	}
+	c.fallbackRetryByUpstream[previous.String()] = c.fallbackRetryAt
+	c.fallbackRetryAt = c.fallbackRetryByUpstream[base.String()]
+	c.fallbackRetrySeq++
+	c.fallbackMu.Unlock()
 	c.candidateBase.Store(base)
 	c.dataReady.Store(false)
 	c.upstreamGeneration++
-	c.fallbackMu.Lock()
-	c.fallbackRetryAt = time.Time{}
-	c.fallbackRetrySeq++
-	c.fallbackMu.Unlock()
 	c.upstreamCancel = cancel
 }
 

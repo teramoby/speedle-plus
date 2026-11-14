@@ -66,7 +66,7 @@ func TestDataResponsesSerializeWithDistributionStop(t *testing.T) {
 			t.Run(transition+route, func(t *testing.T) {
 				mirror, books, _ := newPopulatedMirror(t)
 				var paused atomic.Bool
-				server, err := NewServer(Config{InstanceID: testProxyID, Mirror: mirror, Paused: paused.Load})
+				server, err := NewServer(Config{Upstream: testLiveUpstream, InstanceID: testProxyID, Mirror: mirror, Paused: paused.Load})
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -151,7 +151,7 @@ func TestDataResponsesSerializeWithDistributionStop(t *testing.T) {
 func TestAuthorizationRevocationDiscardsPreparedResponse(t *testing.T) {
 	mirror, _, _ := newPopulatedMirror(t)
 	var paused atomic.Bool
-	server, err := NewServer(Config{InstanceID: testProxyID, Mirror: mirror, Paused: paused.Load})
+	server, err := NewServer(Config{Upstream: testLiveUpstream, InstanceID: testProxyID, Mirror: mirror, Paused: paused.Load})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -244,7 +244,7 @@ func TestAvailabilityFlipDoesNotWaitForASlowPeer(t *testing.T) {
 		t.Run(transition, func(t *testing.T) {
 			mirror, _, _ := newPopulatedMirror(t)
 			var paused atomic.Bool
-			server, err := NewServer(Config{InstanceID: testProxyID, Mirror: mirror, Paused: paused.Load})
+			server, err := NewServer(Config{Upstream: testLiveUpstream, InstanceID: testProxyID, Mirror: mirror, Paused: paused.Load})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -490,7 +490,7 @@ func TestStopTransitionWaitsForAConfirmingWrite(t *testing.T) {
 		t.Fatalf("new machine: %v", err)
 	}
 	mirror, _, _ := newPopulatedMirror(t)
-	server, err := NewServer(Config{
+	server, err := NewServer(Config{Upstream: testLiveUpstream,
 		InstanceID: testProxyID,
 		Mirror:     mirror,
 		Paused: func() bool {

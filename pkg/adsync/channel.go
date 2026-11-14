@@ -157,7 +157,8 @@ type ChannelOptions struct {
 	// reconcile every service against every ack. It should return quickly.
 	OnAck func()
 	// OnChain installs validated ancestry before accepting an upstream ack.
-	OnChain func([]string) error
+	// The deadline must be rechecked under the owner's topology commit lock.
+	OnChain func([]string, time.Time) error
 	// SelectUpstream serializes selection with the owner's data synchronization.
 	SelectUpstream func(selectEndpoint func())
 	// OnCommand is called for every delivered command. A source may repeat a
@@ -237,7 +238,7 @@ type Channel struct {
 	onNotify           func(Notify)
 	onServiceSetChange func(ServiceSetChange)
 	onAck              func()
-	onChain            func([]string) error
+	onChain            func([]string, time.Time) error
 	selectUpstream     func(func())
 	healthySince       time.Time
 	failbackInterval   time.Duration

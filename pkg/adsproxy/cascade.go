@@ -7,17 +7,27 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/teramoby/speedle-plus/pkg/adsync"
 	"slices"
+	"time"
 )
 
 // SetChain installs the runtime equivalent of Config.Chain. It also closes
 // existing channels which became ancestors after an upstream change.
-func (s *Server) SetChain(chain []string) error {
+func (s *Server) SetChain(chain []string) error { return s.SetChainUntil(chain, time.Time{}) }
+
+// SetChainUntil commits only while the upstream ack remains fresh. A zero
+// deadline is for static/direct-root topology and imposes no freshness check.
+func (s *Server) SetChainUntil(chain []string, deadline time.Time) error {
 	guard, err := validateChain(chain, s.instanceID)
 	if err != nil {
 		return err
 	}
 	s.availabilityMu.Lock()
 	s.mu.Lock()
+	if !deadline.IsZero() && !time.Now().Before(deadline) {
+		s.mu.Unlock()
+		s.availabilityMu.Unlock()
+		return fmt.Errorf("%w: upstream_stale", adsync.ErrUnavailable)
+	}
 	if !slices.Equal(s.chain, chain) {
 		close(s.chainChangedCh)
 		s.chainChangedCh = make(chan struct{})
@@ -60,7 +70,7 @@ func (s *Server) upstreamStatus() adsync.UpstreamStatus {
 	if s.upstream != nil {
 		return s.upstream()
 	}
-	return adsync.UpstreamStatus{State: "live", FreshFor: s.stale}
+	return adsync.UpstreamStatus{State: "syncing"}
 }
 
 func (s *Server) chainChangeSignal() <-chan struct{} {

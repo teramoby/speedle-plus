@@ -3,8 +3,10 @@
 package adsproxy
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -121,10 +123,66 @@ func TestRelayFreshnessGuardsDataAndPropagatesOnIdleChannels(t *testing.T) {
 		if response.StatusCode != http.StatusServiceUnavailable || !strings.Contains(string(body), tc.code) {
 			t.Fatalf("%s: %d %s", tc.state, response.StatusCode, body)
 		}
+		for _, operation := range []string{"is-allowed", "all-granted-roles", "all-granted-permissions"} {
+			response, body := server.post(server.defaultClient(), adsync.AuthzCheckAPIPrefix+operation, []byte(`{}`))
+			if response.StatusCode != 503 || !strings.Contains(string(body), tc.code) {
+				t.Fatalf("%s %s: %d %s", tc.state, operation, response.StatusCode, body)
+			}
+		}
 	}
 	state.Store(&adsync.UpstreamStatus{State: "live", FreshFor: 20 * time.Second})
 	response, _ := server.get(server.defaultClient(), adsync.APIPrefix+"/services", nil)
 	if response.StatusCode != 200 {
 		t.Fatalf("recovered data: %d", response.StatusCode)
+	}
+}
+
+func TestRuntimeChainDeadlineExpiresWhileWaitingForCommit(t *testing.T) {
+	mirror, _, _ := newPopulatedMirror(t)
+	server := newTestServer(t, mirror, nil)
+	conn, _, err := server.dial(server.pki.clientCertFile, server.pki.clientKeyFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.Close()
+	writeJSONFrame(t, conn, helloFrame(testClientInstanceID))
+	readChannelFrame(t, conn)
+	server.server.availabilityMu.Lock()
+	deadline := time.Now().Add(30 * time.Millisecond)
+	done := make(chan error, 1)
+	go func() { done <- server.server.SetChainUntil([]string{testClientInstanceID, testProxyID}, deadline) }()
+	// Hold the actual confirming-response lock until the candidate expires.
+	timer := time.NewTimer(time.Until(deadline) + time.Millisecond)
+	<-timer.C
+	server.server.availabilityMu.Unlock()
+	if err := <-done; !errors.Is(err, adsync.ErrUnavailable) {
+		t.Fatalf("expired topology commit: %v", err)
+	}
+	if server.server.chainLoop(testClientInstanceID) {
+		t.Fatal("expired candidate changed ancestry")
+	}
+	writeJSONFrame(t, conn, heartbeatFrame(testClientInstanceID))
+	if kind, _ := readChannelFrame(t, conn); kind != "ack" {
+		t.Fatal("expired candidate evicted an existing child")
+	}
+}
+
+func TestRelayWithoutFreshnessProviderFailsClosed(t *testing.T) {
+	mirror, _, _ := newPopulatedMirror(t)
+	server, err := NewServer(Config{InstanceID: testProxyID, Mirror: mirror})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer server.Close()
+	recorder := httptest.NewRecorder()
+	if server.dataAvailable(recorder) {
+		t.Fatal("unwired server admitted data")
+	}
+	if recorder.Code != 503 || !strings.Contains(recorder.Body.String(), "upstream_syncing") {
+		t.Fatalf("unwired data response: %d %s", recorder.Code, recorder.Body.String())
+	}
+	ack := server.ack()
+	if ack.UpstreamState != "syncing" || ack.UpstreamFreshForMs != 0 {
+		t.Fatalf("unwired ack advertised freshness: %+v", ack)
 	}
 }

@@ -89,7 +89,7 @@ func TestDownstreamHandlerRejectsAnUnverifiedConnection(t *testing.T) {
 	// The listener requires a client certificate. This checks the handler's
 	// own defense-in-depth answer if it were ever mounted without mTLS.
 	mirror, _, _ := newPopulatedMirror(t)
-	server, err := NewServer(Config{InstanceID: testProxyID, Mirror: mirror})
+	server, err := NewServer(Config{Upstream: testLiveUpstream, InstanceID: testProxyID, Mirror: mirror})
 	if err != nil {
 		t.Fatalf("new server: %v", err)
 	}
@@ -325,7 +325,7 @@ func TestServerConfigValidation(t *testing.T) {
 			t.Errorf("case %d: configuration was accepted", index)
 		}
 	}
-	server, err := NewServer(Config{InstanceID: testProxyID, Mirror: mirror})
+	server, err := NewServer(Config{Upstream: testLiveUpstream, InstanceID: testProxyID, Mirror: mirror})
 	if err != nil {
 		t.Fatalf("valid configuration: %v", err)
 	}
@@ -334,7 +334,7 @@ func TestServerConfigValidation(t *testing.T) {
 
 func TestDownstreamHandlerValidation(t *testing.T) {
 	mirror := newTestMirror(t, nil)
-	server, err := NewServer(Config{InstanceID: testProxyID, Mirror: mirror})
+	server, err := NewServer(Config{Upstream: testLiveUpstream, InstanceID: testProxyID, Mirror: mirror})
 	if err != nil {
 		t.Fatalf("new server: %v", err)
 	}

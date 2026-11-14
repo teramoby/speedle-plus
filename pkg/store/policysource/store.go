@@ -134,6 +134,9 @@ func Open(ctx context.Context, options Options) (_ *Store, err error) {
 	if err := validateUpstream(&options); err != nil {
 		return nil, err
 	}
+	if options.APIKey == "" && len(options.UpstreamURLs) > 1 && !options.StartRuntime {
+		return nil, errors.New(errors.ConfigError, "ordered upstream failover requires StartRuntime")
+	}
 	if err := validateCredentials(options); err != nil {
 		return nil, err
 	}

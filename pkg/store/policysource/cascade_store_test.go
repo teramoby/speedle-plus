@@ -154,3 +154,12 @@ func TestCascadeStoreWarnsWithoutCRLSources(t *testing.T) {
 		t.Fatalf("revocation-enabled startup warned that it was disabled: %s", enabledLogs.String())
 	}
 }
+
+func TestCascadeMultipleUpstreamsRequireOwnedRuntime(t *testing.T) {
+	options := cascadeStoreOptions(t)
+	options.UpstreamURLs = []string{options.UpstreamURL, "https://another-relay.example"}
+	options.StartRuntime = false
+	if _, err := Open(context.Background(), options); err == nil || !strings.Contains(err.Error(), "requires StartRuntime") {
+		t.Fatalf("manual multi-upstream mode: %v", err)
+	}
+}

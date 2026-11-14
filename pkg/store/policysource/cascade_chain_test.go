@@ -245,7 +245,7 @@ func TestCascadeRestartRejectsHeadBelowDiskCacheBeforePulling(t *testing.T) {
 		if err := mirror.ApplySnapshot(&adsync.SnapshotResponse{ServiceID: testServiceID1, SourceID: testServiceID1, Epoch: testServiceID1, Revision: revision, StateHash: hash, CommitHash: hash, Snapshot: snapshot}); err != nil {
 			t.Fatal(err)
 		}
-		relay, err := adsproxy.NewServer(adsproxy.Config{InstanceID: id, Mirror: mirror})
+		relay, err := adsproxy.NewServer(adsproxy.Config{InstanceID: id, Mirror: mirror, Upstream: func() adsync.UpstreamStatus { return adsync.UpstreamStatus{State: "live", FreshFor: time.Minute} }})
 		if err != nil {
 			t.Fatal(err)
 		}

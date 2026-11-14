@@ -447,7 +447,7 @@ func TestCascadeCallbackWaitCannotExtendFreshness(t *testing.T) {
 	pki := newCascadePKI(t)
 	client := mustCascadeClient(t, cascadeConfig(t, pki, "https://relay.example"))
 	machine := newChannelMachine(t)
-	channel := newTestChannel(t, client, machine, ChannelOptions{OnChain: func([]string) error { time.Sleep(60 * time.Millisecond); return nil }})
+	channel := newTestChannel(t, client, machine, ChannelOptions{OnChain: func([]string, time.Time) error { time.Sleep(60 * time.Millisecond); return nil }})
 	ack := cascadeAck(t, nil)
 	ack.Services = []channelAckService{}
 	budget := int64(20)
@@ -469,7 +469,7 @@ func TestCascadeInvalidCadenceCannotCommitTopology(t *testing.T) {
 	client := mustCascadeClient(t, cascadeConfig(t, pki, "https://relay.example"))
 	machine := newChannelMachine(t)
 	var topologyCalls int
-	channel := newTestChannel(t, client, machine, ChannelOptions{OnChain: func([]string) error { topologyCalls++; return nil }})
+	channel := newTestChannel(t, client, machine, ChannelOptions{OnChain: func([]string, time.Time) error { topologyCalls++; return nil }})
 	ack := cascadeAck(t, nil)
 	ack.StaleAfter = "15s"
 	channel.recordSent(*ack.AckSeq)
@@ -510,7 +510,7 @@ func TestCascadeExpiredAckCannotCommitTopology(t *testing.T) {
 	pki := newCascadePKI(t)
 	client := mustCascadeClient(t, cascadeConfig(t, pki, "https://relay.example"))
 	var topologyCalls int
-	channel := newTestChannel(t, client, newChannelMachine(t), ChannelOptions{OnChain: func([]string) error { topologyCalls++; return nil }})
+	channel := newTestChannel(t, client, newChannelMachine(t), ChannelOptions{OnChain: func([]string, time.Time) error { topologyCalls++; return nil }})
 	ack := cascadeAck(t, nil)
 	channel.recordSent(*ack.AckSeq)
 	channel.mu.Lock()
@@ -521,5 +521,39 @@ func TestCascadeExpiredAckCannotCommitTopology(t *testing.T) {
 	}
 	if topologyCalls != 0 {
 		t.Fatal("expired live ack committed topology")
+	}
+}
+
+func TestCascadeRetryAfterSurvivesReturnToSameUpstream(t *testing.T) {
+	pki := newCascadePKI(t)
+	cert, _, _ := pki.issue(t, 71, x509.ExtKeyUsageServerAuth, "127.0.0.1", time.Now().Add(time.Hour))
+	server := cascadeServer(t, pki, cert, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Header().Set("Retry-After", "60"); w.WriteHeader(429) }))
+	config := cascadeConfig(t, pki, server.URL)
+	config.UpstreamURLs = []string{server.URL, "https://alternate.example"}
+	client := mustCascadeClient(t, config)
+	client.selectEndpoint(client.upstreams[0], func() {})
+	client.approveCandidate()
+	if _, err := client.ForwardFallback(context.Background(), FallbackIsAllowed, []byte(`{}`)); !errors.Is(err, ErrRateLimited) {
+		t.Fatal(err)
+	}
+	if client.FallbackAvailable() {
+		t.Fatal("Retry-After was not retained")
+	}
+	// A single-upstream reconnect must honor its own hint.
+	client.selectEndpoint(client.upstreams[0], func() {})
+	client.approveCandidate()
+	if client.FallbackAvailable() {
+		t.Fatal("same-address reconnect discarded Retry-After")
+	}
+	// Another endpoint gets its own readiness; returning restores the first hint.
+	client.selectEndpoint(client.upstreams[1], func() {})
+	client.approveCandidate()
+	if !client.FallbackAvailable() {
+		t.Fatal("first endpoint's hint suppressed the alternate")
+	}
+	client.selectEndpoint(client.upstreams[0], func() {})
+	client.approveCandidate()
+	if client.FallbackAvailable() {
+		t.Fatal("returning to an address discarded its hint")
 	}
 }

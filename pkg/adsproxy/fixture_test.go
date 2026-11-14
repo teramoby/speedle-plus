@@ -437,6 +437,9 @@ func newTestServer(t *testing.T, mirror *Mirror, options *testServerOptions) *te
 	if options == nil {
 		options = &testServerOptions{}
 	}
+	if options.upstream == nil {
+		options.upstream = testLiveUpstream
+	}
 	pki := newTestPKI(t)
 	server, err := NewServer(Config{
 		InstanceID:     testProxyID,
@@ -766,4 +769,10 @@ func heartbeatFrame(instanceID string) map[string]any {
 		"transport":       "websocket",
 		"downstreamCount": nil,
 	}
+}
+
+// These fixture mirrors are authoritative sources. Production relays wire the
+// state machine callback; a nil callback deliberately fails closed.
+func testLiveUpstream() adsync.UpstreamStatus {
+	return adsync.UpstreamStatus{State: "live", FreshFor: time.Minute}
 }

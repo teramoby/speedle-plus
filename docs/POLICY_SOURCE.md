@@ -152,3 +152,14 @@ synchronization is required. A syncing ancestor answers data requests with 503
 `upstream_syncing`; an exhausted budget answers with 503 `upstream_stale`.
 Channels propagate those states without treating temporarily withheld services
 as authoritative removals. Direct-child counts remain part of heartbeats.
+
+An embedded `adsproxy.Server` without `Config.Upstream` fails closed: its acks
+report `syncing` with no freshness budget and data requests are refused. The
+policy-source store always supplies the state machine callback. Embedded
+authoritative sources must supply their own truthful freshness provider.
+
+The configured store builder always enables its owned notification runtime.
+Embedded callers using `policysource.Open` must set `StartRuntime` for an ordered
+upstream list; multi-upstream manual mode is rejected instead of silently
+using only its first address. Low-level `adsync.Client` endpoint selection is
+driven by its `Channel.Run` owner.

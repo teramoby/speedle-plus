@@ -44,7 +44,7 @@ func TestAckFrameFitsTheLargestServiceSet(t *testing.T) {
 		t.Fatalf("advertised services = %d, want %d", got, maxTombstones)
 	}
 
-	server, err := NewServer(Config{InstanceID: testProxyID, Mirror: mirror})
+	server, err := NewServer(Config{Upstream: testLiveUpstream, InstanceID: testProxyID, Mirror: mirror})
 	if err != nil {
 		t.Fatalf("new server: %v", err)
 	}

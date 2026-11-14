@@ -133,7 +133,7 @@ func TestNormalizeThresholdsErrors(t *testing.T) {
 		{name: "stop below minimum", stop: time.Second},
 		{name: "stop not above stale", stale: 60 * time.Second, stop: 60 * time.Second},
 	} {
-		_, err := NewServer(Config{
+		_, err := NewServer(Config{Upstream: testLiveUpstream,
 			InstanceID:        testProxyID,
 			Mirror:            mirror,
 			HeartbeatInterval: testCase.heartbeat,
@@ -156,12 +156,12 @@ func TestNewServerRejectsInvalidChain(t *testing.T) {
 		{name: "invalid entry", chain: []string{"not-a-uuid", testProxyID}},
 		{name: "repeated entry", chain: []string{testProxyID, testProxyID}},
 	} {
-		_, err := NewServer(Config{InstanceID: testProxyID, Chain: testCase.chain, Mirror: mirror})
+		_, err := NewServer(Config{Upstream: testLiveUpstream, InstanceID: testProxyID, Chain: testCase.chain, Mirror: mirror})
 		if !errors.Is(err, ErrConfig) {
 			t.Errorf("%s: %v, want ErrConfig", testCase.name, err)
 		}
 	}
-	server, err := NewServer(Config{
+	server, err := NewServer(Config{Upstream: testLiveUpstream,
 		InstanceID: testProxyID,
 		Chain:      []string{testUpstreamID, testProxyID},
 		Mirror:     mirror,

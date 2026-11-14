@@ -13,14 +13,16 @@ Design for #385 (builds on #380 and #383).
   cannot receive data or forwarded authorization requests. Endpoint selection
   is serialized with store sync passes. Old in-flight forwarding failures are
   bound to their originating selection generation; service-level errors do not
-  trigger node failover. Epoch changes retain the full-resynchronization contract.
+  trigger node failover. Retry hints remain associated with their upstream URL,
+  including reconnects; obsolete generations cannot overwrite them. Epoch changes
+  retain the full-resynchronization contract.
 - Relay acks carry `upstreamState` (`live`, `syncing`, `stale`) and
   `upstreamFreshForMs`, the minimum remaining direct-ack and inherited freshness
   budget. Cascade hello/heartbeat frames carry `seq`; acks echo the latest
   received sequence as `ackSeq`. Children conservatively subtract the entire
   monotonic RTT, including holds and queues, without synchronized wall clocks.
   Keep that absolute deadline across validation and callbacks; installation
-  waits never renew it. Unsolicited acks age the same reference until another
+  waits never renew it, and the topology commit rechecks expiry under its locks. Unsolicited acks age the same reference until another
   frame arrives. Unknown/reordered sequences fail validation. Local stale
   windows can only tighten the budget. Exhausted freshness rejects data with
   `upstream_stale`; a syncing ancestor yields `upstream_syncing`. Channels
@@ -38,4 +40,4 @@ Design for #385 (builds on #380 and #383).
 Validation: ordered failover/recovery, rollback (including restart), both
 transports, delayed acks over three hops, blocked topology callbacks, admission,
 three-level evaluator/store synchronization, freshness recovery, loop guards,
-child counts, affected-package race tests and the full Go gate (>=90.0%).
+child counts, fail-closed missing freshness providers, affected-package race tests and the full Go gate (>=90.0%).
