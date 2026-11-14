@@ -168,6 +168,11 @@ class PublishTapRetryTest(unittest.TestCase):
         # unrelated, even if it contains a version-like token.
         text = "```bash\ngo install github.com/teramoby/speedle-plus/cmd/...@v1.8.0\n```\n\nInstall done.\n\nHistorical `v0.9.0`."
         self.assertEqual(bump_pin.bump_text(text, "v1.8.0"), (text, False))
+        # A heading between the first install block and a later legacy block
+        # must stop HTML note matching rather than finding the later </pre>.
+        text = "<pre>go install github.com/teramoby/speedle-plus/cmd/...@v1.8.0</pre>"
+        text += "<h2>Older release</h2><pre>cmd/...@v0.9.0</pre><p><code>v0.9.0</code> is older.</p>"
+        self.assertEqual(bump_pin.bump_text(text, "v1.8.0"), (text, False))
         rss = "go install github.com/teramoby/speedle-plus/cmd/...@v1.8.0 Historical v0.9.0."
         self.assertEqual(bump_pin.bump_text(rss, "v1.8.0", plain=True, note="Install done."), (rss, False))
         with self.assertRaisesRegex(SystemExit, "RSS release note differs from source"):

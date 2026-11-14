@@ -76,13 +76,18 @@ def release_note(text):
     if command is None:
         return None
     tail = text[command.end():]
+    offset = command.end()
     if text.rfind("<pre", 0, command.start()) > text.rfind("</pre>", 0, command.start()):
-        note = re.search(r"</pre>\s*(?:</div>\s*)?<p>(.*?)</p>", tail, re.S)
+        block = re.search(r"</pre>\s*(?:</div>\s*)?", tail)
+        if block is None:
+            return None
+        offset += block.end()
+        note = re.match(r"<p>(.*?)</p>", tail[block.end():], re.S)
     else:
         note = re.search(r"\n```[ \t]*\n\s*\n([^\n]+(?:\n(?!\s*\n)[^\n]+)*)", tail)
     if note is None:
         return None
-    return command.end() + note.start(1), command.end() + note.end(1)
+    return offset + note.start(1), offset + note.end(1)
 
 
 def bump_text(text, version, plain=False, note=None):
