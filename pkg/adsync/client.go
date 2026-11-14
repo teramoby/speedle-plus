@@ -570,14 +570,24 @@ func (c *Client) Changes(ctx context.Context, serviceID, sourceID, epoch string,
 
 // get performs one idempotent GET, with retries for transport failures,
 // HTTP 408/429 and transient 5xx responses.
-func (c *Client) get(ctx context.Context, endpoint string, query url.Values, header http.Header, allowNotModified bool, dst any) (bool, error) {
+func (c *Client) get(ctx context.Context, endpoint string, query url.Values, header http.Header, allowNotModified bool, dst any) (unchanged bool, getErr error) {
 	if !c.selectionReady() {
 		return false, ErrUnavailable
 	}
+	c.upstreamMu.Lock()
+	generation := c.upstreamGeneration
+	c.upstreamMu.Unlock()
+	retryableFailure := false
+	defer func() {
+		if getErr != nil && ctx.Err() == nil && (retryableFailure || isUpstreamFailure(getErr)) {
+			c.failUpstreamGeneration(generation)
+		}
+	}()
 	var lastErr error
 	for attempt := 1; attempt <= c.retry.MaxAttempts; attempt++ {
 		reflect.ValueOf(dst).Elem().SetZero()
 		notModified, retryable, err := c.getOnce(ctx, endpoint, query, header, allowNotModified, dst)
+		retryableFailure = retryable
 		if err == nil {
 			return notModified, nil
 		}

@@ -293,8 +293,6 @@ func TestCascadeUpstreamURLValidation(t *testing.T) {
 			t.Fatalf("accepted %v", urls)
 		}
 	}
-	client := &Client{}
-	client.FailUpstream()
 }
 
 // A real delayed ACK at each hop must shorten, never extend, the root lease.
@@ -555,5 +553,79 @@ func TestCascadeRetryAfterSurvivesReturnToSameUpstream(t *testing.T) {
 	client.approveCandidate()
 	if client.FallbackAvailable() {
 		t.Fatal("returning to an address discarded its hint")
+	}
+}
+
+func TestCascadeReconnectBackoffResetsAfterAdmission(t *testing.T) {
+	pki := newCascadePKI(t)
+	cert, _, _ := pki.issue(t, 81, x509.ExtKeyUsageServerAuth, "127.0.0.1", time.Now().Add(time.Hour))
+	ack := cascadeAck(t, nil)
+	ack.Services = []channelAckService{}
+	var requests atomic.Int32
+	admitted, next := make(chan time.Time, 1), make(chan time.Time, 1)
+	server := cascadeServer(t, pki, cert, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		count := requests.Add(1)
+		if count == 5 {
+			next <- time.Now()
+		}
+		if count != 4 {
+			w.WriteHeader(503)
+			return
+		}
+		conn, err := channelUpgrader.Upgrade(w, r, nil)
+		if err != nil {
+			return
+		}
+		defer conn.Close()
+		_, payload, err := conn.ReadMessage()
+		if err != nil {
+			return
+		}
+		var frame struct {
+			Seq uint64 `json:"seq"`
+		}
+		if json.Unmarshal(payload, &frame) != nil {
+			return
+		}
+		ack.AckSeq = &frame.Seq
+		if err := conn.WriteJSON(ack); err != nil {
+			return
+		}
+		admitted <- time.Now()
+	}))
+	client := mustCascadeClient(t, cascadeConfig(t, pki, server.URL))
+	channel := newTestChannel(t, client, newChannelMachine(t), ChannelOptions{Transport: TransportWebSocket})
+	channel.backoff = Backoff{Initial: 100 * time.Millisecond, Max: 800 * time.Millisecond, Jitter: 0.2, Rand: func() float64 { return 0.5 }}
+	runChannel(t, channel)
+	var start, finish time.Time
+	select {
+	case start = <-admitted:
+	case <-time.After(5 * time.Second):
+		t.Fatal("source did not admit after startup failures")
+	}
+	select {
+	case finish = <-next:
+	case <-time.After(2 * time.Second):
+		t.Fatal("no reconnect after admitted channel ended")
+	}
+	if gap := finish.Sub(start); gap >= 600*time.Millisecond {
+		t.Fatalf("successful admission did not reset startup backoff: %s", gap)
+	}
+}
+
+func TestCascadeDownstreamSyncingDoesNotChangeHealthyLocalService(t *testing.T) {
+	machine := newChannelMachine(t)
+	mustAck(t, machine, ackWith(testAckService(testServiceID1, "books", 1), testAckService(testServiceID2, "orders", 1)))
+	mustApply(t, machine, testServiceState(testServiceID1, "books", 1))
+	if got := machine.Upstream(); got.State != "syncing" {
+		t.Fatalf("partial relay state: %+v", got)
+	}
+	status, known := machine.Status("books")
+	if !known || status.Service.State != SyncStateInSync || status.Instance.Liveness != LivenessLive {
+		t.Fatalf("pending sibling changed healthy local service: %+v", status)
+	}
+	mustApply(t, machine, testServiceState(testServiceID2, "orders", 1))
+	if got := machine.Upstream(); got.State != "live" {
+		t.Fatalf("complete relay state: %+v", got)
 	}
 }

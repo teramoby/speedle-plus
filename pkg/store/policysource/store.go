@@ -289,17 +289,12 @@ func (s *Store) RequireWatch() bool { return true }
 // Sync is safe for concurrent use; passes are serialized. The notification
 // channel can call it whenever a revision is announced and after a confirmed
 // ack.
-func (s *Store) Sync(ctx context.Context) (syncErr error) {
+func (s *Store) Sync(ctx context.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
 	s.syncMu.Lock()
 	defer s.syncMu.Unlock()
-	defer func() {
-		if syncErr != nil && ctx.Err() == nil {
-			s.client.FailUpstream()
-		}
-	}()
 
 	var selected []adsync.Service
 	if s.runtimeChannel() {

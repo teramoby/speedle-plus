@@ -13,7 +13,9 @@ Design for #385 (builds on #380 and #383).
   cannot receive data or forwarded authorization requests. Endpoint selection
   is serialized with store sync passes. Old in-flight forwarding failures are
   bound to their originating selection generation; service-level errors do not
-  trigger node failover. Retry hints remain associated with their upstream URL,
+  trigger node failover. Data failures are classified at the HTTP boundary, so
+  local cache/compilation/integrity failures never rotate the endpoint. Successful
+  admission resets outage backoff. Retry hints remain associated with their upstream URL,
   including reconnects; obsolete generations cannot overwrite them. Epoch changes
   retain the full-resynchronization contract.
 - Relay acks carry `upstreamState` (`live`, `syncing`, `stale`) and

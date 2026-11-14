@@ -53,19 +53,6 @@ func (c *Client) selectedBase() *url.URL {
 	return c.base
 }
 
-// FailUpstream interrupts the selected cascade channel after a data failure.
-// Store synchronization calls it before releasing its selection lock.
-func (c *Client) FailUpstream() {
-	if !c.cascade() {
-		return
-	}
-	c.upstreamMu.Lock()
-	defer c.upstreamMu.Unlock()
-	if c.upstreamCancel != nil {
-		c.upstreamCancel()
-	}
-}
-
 // runCascade owns endpoint selection. A transport loop returns after its first
 // failure in cascade mode; automatic WS-to-poll fallback remains per endpoint.
 func (c *Channel) runCascade(ctx context.Context) error {
@@ -124,6 +111,12 @@ func (c *Channel) runCascade(ctx context.Context) error {
 		c.client.upstreamMu.Unlock()
 		if ctx.Err() != nil {
 			return ctx.Err()
+		}
+		c.mu.Lock()
+		admitted := c.acked
+		c.mu.Unlock()
+		if admitted {
+			rounds = 0
 		}
 		if preferred {
 			index = 0

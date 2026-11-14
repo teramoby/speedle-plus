@@ -392,7 +392,11 @@ func isUpstreamFailure(err error) bool {
 	}
 	var status *fallbackStatusError
 	if errors.As(err, &status) {
-		return status.status >= 500 || status.status == 408 || status.status == 425 || status.status == 429 || status.status == 401 || status.status == 403
+		return nodeHTTPStatus(status.status)
+	}
+	var dataStatus *statusError
+	if errors.As(err, &dataStatus) {
+		return nodeHTTPStatus(dataStatus.status)
 	}
 	return false
 }
@@ -406,4 +410,8 @@ func (c *Client) recordSelectedFallbackOutcome(err error, started, generation ui
 		return
 	}
 	c.recordFallbackOutcome(err, started)
+}
+
+func nodeHTTPStatus(status int) bool {
+	return status >= 500 || status == 408 || status == 425 || status == 429 || status == 401 || status == 403
 }

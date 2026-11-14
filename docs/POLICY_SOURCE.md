@@ -163,3 +163,15 @@ Embedded callers using `policysource.Open` must set `StartRuntime` for an ordere
 upstream list; multi-upstream manual mode is rejected instead of silently
 using only its first address. Low-level `adsync.Client` endpoint selection is
 driven by its `Channel.Run` owner.
+
+Relay freshness is instance-wide: any member service awaiting a verified,
+evaluator-installed copy makes the downstream channel report `syncing`. This
+keeps a temporarily withheld service from being mistaken for an authoritative
+removal. Other healthy services can still evaluate locally on that relay.
+Only endpoint-level data-request failures trigger upstream rotation; local
+cache, policy-compilation, integrity and service-not-found errors stay isolated.
+
+Endpoint selection serializes with an in-flight synchronization pass so one
+pass cannot combine endpoints. Request stall timeouts remain in force; a
+continuously progressing large transfer can delay selection until that pass
+finishes. No total download-duration or payload-size limit is introduced.

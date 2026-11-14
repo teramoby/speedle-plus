@@ -283,3 +283,88 @@ func TestCascadeRestartRejectsHeadBelowDiskCacheBeforePulling(t *testing.T) {
 		t.Fatalf("retained cache changed: %+v %v", held, err)
 	}
 }
+
+// Local cache writes and service errors must stay isolated; a network-level
+// snapshot failure must still rotate the selected endpoint.
+func TestCascadeSyncRotatesOnlyForEndpointFailures(t *testing.T) {
+	for _, failure := range []string{"service404", "integrity", "cache-write", "http503"} {
+		t.Run(failure, func(t *testing.T) {
+			options, cert, roots := chainCredentials(t)
+			options.ServeDownstream = false
+			options.CacheDir = filepath.Join(t.TempDir(), "cache")
+			snapshot := adsync.Snapshot{Name: "books", Policies: []adsync.Policy{}, RolePolicies: []adsync.Policy{}}
+			hash := adsync.StateHash(snapshot)
+			response := &adsync.SnapshotResponse{ServiceID: testServiceID1, SourceID: testServiceID1, Epoch: testServiceID1, Revision: 1, StateHash: hash, CommitHash: hash, Snapshot: snapshot}
+			var primarySnapshots atomic.Int32
+			makeRelay := func(id string, primary bool) (*httptest.Server, *adsproxy.Server) {
+				mirror, err := adsproxy.NewMirror(adsproxy.MirrorOptions{})
+				if err != nil {
+					t.Fatal(err)
+				}
+				if err := mirror.ApplySnapshot(response); err != nil {
+					t.Fatal(err)
+				}
+				relay, err := adsproxy.NewServer(adsproxy.Config{InstanceID: id, Mirror: mirror, Upstream: func() adsync.UpstreamStatus { return adsync.UpstreamStatus{State: "live", FreshFor: time.Minute} }})
+				if err != nil {
+					t.Fatal(err)
+				}
+				t.Cleanup(relay.Close)
+				handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					if primary && strings.HasSuffix(r.URL.Path, "/snapshot") {
+						primarySnapshots.Add(1)
+						switch failure {
+						case "service404":
+							w.WriteHeader(404)
+							return
+						case "http503":
+							w.WriteHeader(503)
+							return
+						case "integrity":
+							corrupt := *response
+							corrupt.StateHash = adsync.Hash{1}
+							_ = json.NewEncoder(w).Encode(corrupt)
+							return
+						}
+					}
+					relay.ServeHTTP(w, r)
+				})
+				return chainProtocolListener(t, handler, cert, roots), relay
+			}
+			primary, primaryRelay := makeRelay("0193a5c2-7d1e-7b3a-9f10-4c2d8e6a1b61", true)
+			backup, backupRelay := makeRelay("0193a5c2-7d1e-7b3a-9f10-4c2d8e6a1b62", false)
+			options.UpstreamURL = primary.URL
+			options.UpstreamURLs = []string{primary.URL, backup.URL}
+			child, err := Open(context.Background(), options)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer child.Close()
+			if failure == "cache-write" {
+				// Startup validated the cache; block the final service-file rename now.
+				if err := os.Mkdir(filepath.Join(options.CacheDir, "service-"+testServiceID1+".json"), 0700); err != nil {
+					t.Fatal(err)
+				}
+			}
+			engine, err := eval.NewWithStore(&cfg.Config{EnableWatch: true}, child)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer engine.(*eval.PolicyEvalImpl).Close()
+			e2eWaitFor(t, "the primary snapshot failure", func() bool { return primarySnapshots.Load() > 0 })
+			if failure == "http503" {
+				e2eWaitFor(t, "endpoint failure to select and sync the backup", func() bool {
+					status, ok := child.machine.Status("books")
+					return backupRelay.DownstreamCount() == 1 && ok && status.Service.State == adsync.SyncStateInSync
+				})
+			} else {
+				// Drive and wait for a complete pass after the observed failure. The old
+				// blanket Sync defer canceled the primary here for every one of these.
+				_ = child.Sync(context.Background())
+				time.Sleep(100 * time.Millisecond)
+				if primaryRelay.DownstreamCount() != 1 || backupRelay.DownstreamCount() != 0 {
+					t.Fatalf("%s rotated a healthy endpoint: primary=%d backup=%d", failure, primaryRelay.DownstreamCount(), backupRelay.DownstreamCount())
+				}
+			}
+		})
+	}
+}
