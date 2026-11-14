@@ -6,7 +6,7 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/armon/go-radix v1.0.0
 	github.com/docker/go-plugins-helpers v0.0.0-20240701071450-45e2431495c8
-	github.com/fsnotify/fsnotify v1.4.7
+	github.com/fsnotify/fsnotify v1.10.1
 	github.com/go-sql-driver/mysql v1.10.1
 	github.com/golang/protobuf v1.5.4
 	github.com/gorilla/handlers v1.5.2
@@ -15,7 +15,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cobra v1.10.2
-	github.com/spf13/pflag v1.0.10
+	github.com/spf13/pflag v1.1.0
 	go.etcd.io/etcd/client/pkg/v3 v3.6.14
 	go.etcd.io/etcd/client/v3 v3.6.14
 	go.etcd.io/etcd/server/v3 v3.6.14
