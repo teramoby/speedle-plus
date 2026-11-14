@@ -239,7 +239,7 @@ test('image smoke unions original paths with full labels and isolates ignored ev
       assert.equal(result.status, 0, result.stderr);
       return fs.readFileSync(output, 'utf8').trim() === 'smoke=true';
     };
-    for (const file of ['deployment/container/Dockerfile', 'deployment/container/dispatch/main.go', 'cmd/spctl/main.go',
+    for (const file of ['deployment/container/Dockerfile', 'deployment/container/dispatch/main.go', 'deployment/helm/speedle/Chart.yaml', 'deployment/helm/render-check.sh', 'cmd/spctl/main.go',
       '.github/workflows/release.yml', '.github/workflows/image-smoke.yml', 'scripts/release-smoke.sh']) assert.equal(select([file]), true, file);
     for (const files of [[], ['docs/page.md'], ['pkg/eval/eval.go'], ['cmd-like/main.go'], ['scripts/release-smoke.sh.bak']]) {
       assert.equal(select(files), false, files.join(','));
