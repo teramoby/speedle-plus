@@ -143,6 +143,15 @@ func Open(ctx context.Context, options Options) (_ *Store, err error) {
 	if options.CacheDir == "" && options.InstanceID == "" {
 		log.Warn("policy-source store has no CacheDir: the instance ID is not persisted, so every restart registers a new instance")
 	}
+	// The authentication mode follows the credentials: an APIKey selects
+	// direct mode, and complete mTLS material without one selects cascade.
+	// Log the selected mode so a missing or restored secret is visible at
+	// startup rather than only in request failures.
+	if options.APIKey == "" {
+		log.Info("policy-source: cascade mTLS mode; requests carry no bearer credential and the relay is verified against CAFile only")
+	} else {
+		log.Info("policy-source: direct mode; requests carry the API key")
+	}
 
 	client, err := adsync.NewClientContext(ctx, adsync.Config{
 		BaseURL:            options.UpstreamURL,

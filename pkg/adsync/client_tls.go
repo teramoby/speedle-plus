@@ -534,7 +534,9 @@ func (c *Client) WatchTLS(ctx context.Context, signals <-chan struct{}) {
 		case <-ticker.C:
 		}
 		if err := c.tlsMaterial.reload(ctx); err != nil {
-			log.Warn("policy-source TLS reload failed; retaining the last valid generation")
+			// The cause names the file or issuer involved and never holds a
+			// credential or policy content.
+			log.Warnf("policy-source TLS reload failed; retaining the last valid generation: %v", err)
 		}
 	}
 }
