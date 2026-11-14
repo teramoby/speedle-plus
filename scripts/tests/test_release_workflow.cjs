@@ -387,7 +387,9 @@ test('container smoke selects the host spctl binary and native container image o
 test('pull requests build both image architectures, load the host image and run the shared smoke script', () => {
   const workflow = fs.readFileSync(path.resolve(__dirname, '../../.github/workflows/image-smoke.yml'), 'utf8');
   assert.match(workflow, /pull_request:/);
-  for (const pathFilter of ['deployment/container/**', '.github/workflows/release.yml', '.github/workflows/image-smoke.yml', 'scripts/release-smoke.sh', 'cmd/**']) {
+  // Paths are classified inside the workflow so full-CI labels can select smoke too.
+  // test_ci_scope.cjs executes that selector against matching and unrelated paths.
+  for (const pathFilter of ['deployment/container/', '.github/workflows/release.yml', '.github/workflows/image-smoke.yml', 'scripts/release-smoke.sh', 'cmd/']) {
     assert.ok(workflow.includes(pathFilter), pathFilter);
   }
   assert.match(workflow, /runs-on: ubuntu-latest/);
