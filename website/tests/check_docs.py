@@ -90,6 +90,11 @@ def fresh_port():
     with socket.socket() as probe:
         probe.bind(('127.0.0.1',0));return probe.getsockname()[1]
 
+def remap_ports(command,ports):
+    # Replace once: an ephemeral port can equal another documented port.
+    return re.sub(r'127\.0\.0\.1:(\d+)',lambda match:
+                  '127.0.0.1:'+str(ports.get(int(match[1]),int(match[1]))),command)
+
 def wait(process,url,client=CLIENT):
     end=time.monotonic()+30
     while time.monotonic()<end:
@@ -145,8 +150,7 @@ def verify_page(page,locale,binaries,env,parent,isolated):
         (work/'bin').symlink_to(binaries,target_is_directory=True)
         commands=steps(page,locale);secure=page=='security';tlsclient=None
         def local(command):
-            for original,replacement in ports.items():
-                command=command.replace(f'127.0.0.1:{original}',f'127.0.0.1:{replacement}')
+            command=remap_ports(command,ports)
             # Ephemeral gRPC addresses in normal docs become known owned test ports.
             if command.startswith('./bin/speedle-pms'):command=command.replace('127.0.0.1:0',f'127.0.0.1:{ports[50001]}')
             if command.startswith('./bin/speedle-ads'):command=command.replace('127.0.0.1:0',f'127.0.0.1:{ports[50002]}')
