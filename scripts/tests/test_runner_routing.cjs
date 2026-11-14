@@ -96,7 +96,7 @@ function script(block, name) {
 }
 
 test('review and command jobs retain their explicit runner policies and isolated Speedle label', () => {
-  assert.deepEqual(Object.keys(job.ci), ['changes', 'lint', 'test', 'build']);
+  assert.deepEqual(Object.keys(job.ci), ['changes', 'lint', 'test', 'build', 'quick', 'summary']);
   assert.doesNotMatch(sources.ci.replace(/^\s*#.*$/gm, ''), /mysql|mongo|check_etcd/i, 'database backends run nightly, not per PR');
   assert.deepEqual(Object.keys(job.review), ['diff-regression', 'review', 'publish', 'automerge-dependabot']);
   assert.deepEqual(Object.keys(job.commands), ['prepare', 'analyze', 'publish']);
@@ -197,19 +197,22 @@ function workerInputs(block, id) {
 }
 test('Go CI caller delegates only the task mode to the protected default-branch worker', () => {
   assert.match(sources.ci, /^permissions:\n  contents: read$/m);
-  assert.match(sources.ci, /^on:\n(?:  #.*\n)*  push:\n    branches: \[master\]\n  pull_request:\n  workflow_dispatch:\n/m);
-  for (const id of ['lint', 'test', 'build']) assert.deepEqual(workerInputs(job.ci[id], id), {mode: id});
+  assert.match(sources.ci, /^on:\n(?:  #.*\n)*  push:\n    branches: \[master\]\n  pull_request:\n    types: \[opened, synchronize, reopened, labeled\]\n  workflow_dispatch:\n/m);
+  for (const id of ['lint', 'test', 'build', 'quick']) assert.deepEqual(workerInputs(job.ci[id], id), {mode: id});
   assert.match(job.ci.test, /name: test$/m);
   assert.equal(route(job.ci.changes), 'ubuntu-latest');
   assert.doesNotMatch(job.ci.changes, /secrets\.|uses: teramoby/);
   // The site checks run in the worker's build (verify.sh) for docs changes too.
   assert.match(value(job.ci.build, 'if'), /needs\.changes\.outputs\.docs == 'true'/);
 });
-test('every test job runs on the Speedle runners; only classification and reporting are hosted', () => {
-  const hosted = {ci: ['changes'], nightly: ['report'], weekly: ['report'], postMerge: ['report']};
+test('every Go task uses the protected worker; only classification and reporting jobs run directly on hosted runners', () => {
+  const hosted = {ci: ['changes', 'summary'], nightly: ['report'], weekly: ['report'], postMerge: ['report']};
   for (const [kind, ids] of Object.entries(hosted)) {
     for (const [id, block] of Object.entries(job[kind])) {
-      if (ids.includes(id)) continue;
+      if (ids.includes(id)) {
+        assert.equal(route(block), 'ubuntu-latest', `${kind}.${id}`);
+        continue;
+      }
       assert.equal(value(block, 'uses'), worker, `${kind}.${id} must run through the protected worker`);
     }
   }
