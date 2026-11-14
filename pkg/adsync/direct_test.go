@@ -126,7 +126,7 @@ func testConcurrentInstanceIDCreation(t *testing.T, link func(string, string) er
 			t.Fatalf("persisted id = %q, %v, %v; want %q", persisted, created, err, first.id)
 		}
 		entries, err := os.ReadDir(dir)
-		if err != nil || len(entries) != 1 || entries[0].Name() != InstanceIDFile {
+		if err != nil || len(entries) != 2 || entries[0].Name() != instanceIDLockFile || entries[1].Name() != InstanceIDFile {
 			t.Fatalf("temporary files left behind: %v, %v", entries, err)
 		}
 	}

@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"syscall"
 	"testing"
 	"time"
@@ -45,7 +46,7 @@ func TestInstanceIDLinkFallback(t *testing.T) {
 				}
 			}
 			entries, err := os.ReadDir(dir)
-			if err != nil || len(entries) != 1 || entries[0].Name() != InstanceIDFile {
+			if err != nil || len(entries) != 2 || entries[0].Name() != instanceIDLockFile || entries[1].Name() != InstanceIDFile {
 				t.Fatalf("temporary files left behind: %v, %v", entries, err)
 			}
 		})
@@ -127,23 +128,103 @@ func TestInstanceIDLinkFailure(t *testing.T) {
 		t.Fatalf("link I/O error = %v", err)
 	}
 	entries, err := os.ReadDir(dir)
-	if err != nil || len(entries) != 0 {
+	if err != nil || len(entries) != 1 || entries[0].Name() != instanceIDLockFile {
 		t.Fatalf("failed publication left files: %v, %v", entries, err)
 	}
 }
 
-func TestInstanceIDEmptyFileIsNotReplaced(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, InstanceIDFile)
-	if err := os.WriteFile(path, nil, 0o600); err != nil {
-		t.Fatal(err)
+func TestInstanceIDRepairsPartialFile(t *testing.T) {
+	for _, partial := range []string{"", testInstanceID[:10], testInstanceID[:35]} {
+		t.Run(partial, func(t *testing.T) {
+			dir := t.TempDir()
+			writeTestFile(t, dir, InstanceIDFile, []byte(partial), 0o600)
+			id, created, err := loadOrCreateInstanceID(dir, func(string, string) error { return syscall.ENOTSUP })
+			if err != nil || !created || !ValidInstanceID(id) {
+				t.Fatalf("repair = %q, %v, %v", id, created, err)
+			}
+			again, created, err := LoadOrCreateInstanceID(dir)
+			if err != nil || created || again != id {
+				t.Fatalf("repair persistence = %q, %v, %v; want %q", again, created, err, id)
+			}
+		})
 	}
-	if _, _, err := LoadOrCreateInstanceID(dir); !errors.Is(err, ErrCacheCorrupt) {
-		t.Fatalf("empty file error = %v", err)
+}
+
+func TestInstanceIDRejectsUnsafePartialFile(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Unix permissions")
+	}
+	dir := t.TempDir()
+	path := writeTestFile(t, dir, InstanceIDFile, []byte(testInstanceID[:10]), 0o644)
+	if _, _, err := LoadOrCreateInstanceID(dir); !errors.Is(err, ErrUnsafeCache) {
+		t.Fatalf("unsafe partial error = %v", err)
 	}
 	data, err := os.ReadFile(path)
-	if err != nil || len(data) != 0 {
-		t.Fatalf("empty file replaced: %q, %v", data, err)
+	if err != nil || string(data) != testInstanceID[:10] {
+		t.Fatalf("unsafe partial replaced: %q, %v", data, err)
+	}
+}
+
+func TestInstanceIDRechecksPartialPublicationSafety(t *testing.T) {
+	for _, change := range []string{"size", "mode"} {
+		t.Run(change, func(t *testing.T) {
+			if change == "mode" && runtime.GOOS == "windows" {
+				t.Skip("Unix permissions")
+			}
+			dir := t.TempDir()
+			path := writeTestFile(t, dir, InstanceIDFile, nil, 0o600)
+			done := make(chan error, 1)
+			time.AfterFunc(20*time.Millisecond, func() {
+				if change == "mode" {
+					done <- os.Chmod(path, 0o644)
+				} else {
+					done <- os.WriteFile(path, []byte(strings.Repeat("a", 129)), 0o600)
+				}
+			})
+			_, _, err := LoadOrCreateInstanceID(dir)
+			if writeErr := <-done; writeErr != nil {
+				t.Fatal(writeErr)
+			}
+			want := ErrCacheCorrupt
+			if change == "mode" {
+				want = ErrUnsafeCache
+			}
+			if !errors.Is(err, want) {
+				t.Fatalf("changed %s error = %v", change, err)
+			}
+			data, readErr := os.ReadFile(path)
+			if readErr != nil || (change == "size" && len(data) != 129) || (change == "mode" && len(data) != 0) {
+				t.Fatalf("unsafe file changed: %q, %v", data, readErr)
+			}
+		})
+	}
+}
+
+func TestConcurrentInstanceIDRepair(t *testing.T) {
+	for _, partial := range []string{"", testInstanceID[:10]} {
+		t.Run(partial, func(t *testing.T) {
+			dir := t.TempDir()
+			writeTestFile(t, dir, InstanceIDFile, []byte(partial), 0o600)
+			type result struct {
+				id      string
+				created bool
+				err     error
+			}
+			results := make(chan result, 2)
+			start := make(chan struct{})
+			for range 2 {
+				go func() {
+					<-start
+					id, created, err := loadOrCreateInstanceID(dir, func(string, string) error { return syscall.ENOTSUP })
+					results <- result{id, created, err}
+				}()
+			}
+			close(start)
+			first, second := <-results, <-results
+			if first.err != nil || second.err != nil || !ValidInstanceID(first.id) || first.id != second.id || first.created == second.created {
+				t.Fatalf("concurrent repair = %+v, %+v", first, second)
+			}
+		})
 	}
 }
 
