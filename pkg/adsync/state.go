@@ -398,8 +398,14 @@ func (m *Machine) Ack(ack Ack) error {
 		return err
 	}
 
+	var warnings []revisionWarning
 	m.mu.Lock()
-	defer m.mu.Unlock()
+	defer func() {
+		m.mu.Unlock()
+		for _, warning := range warnings {
+			warning.log()
+		}
+	}()
 	now := m.clock.Now()
 	m.advanceLocked(now)
 	if err := m.applyThresholdsLocked(ack); err != nil {
@@ -409,7 +415,7 @@ func (m *Machine) Ack(ack Ack) error {
 	if m.stopped {
 		m.ackSinceStop = true
 	}
-	m.applySetLocked(ack.Services, true)
+	warnings = m.applySetLocked(ack.Services, true)
 	if m.stopped {
 		m.tryRecoverLocked(now)
 	}
@@ -426,10 +432,16 @@ func (m *Machine) Discover(services []Service) error {
 	if err := validateAck(Ack{Services: services}); err != nil {
 		return err
 	}
+	var warnings []revisionWarning
 	m.mu.Lock()
-	defer m.mu.Unlock()
+	defer func() {
+		m.mu.Unlock()
+		for _, warning := range warnings {
+			warning.log()
+		}
+	}()
 	m.advanceLocked(m.clock.Now())
-	m.applySetLocked(services, false)
+	warnings = m.applySetLocked(services, false)
 	return nil
 }
 
@@ -448,14 +460,20 @@ func (m *Machine) ObserveHead(head Head) error {
 		return fmt.Errorf("%w: invalid epoch %q", ErrProtocol, head.Epoch)
 	}
 
+	var warning *revisionWarning
 	m.mu.Lock()
-	defer m.mu.Unlock()
+	defer func() {
+		m.mu.Unlock()
+		if warning != nil {
+			warning.log()
+		}
+	}()
 	m.advanceLocked(m.clock.Now())
 	record := m.records[head.ID]
 	if record == nil || (m.setKnown && !record.setMember) || record.state == SyncStateRemoved {
 		return nil
 	}
-	m.updateRecordHeadLocked(record, head.Epoch, head.Revision, head.StateHash, false, "notification")
+	warning = m.updateRecordHeadLocked(record, head.Epoch, head.Revision, head.StateHash, false, "notification")
 	m.recomputeRecordLocked(record)
 	return nil
 }
@@ -464,27 +482,30 @@ func (m *Machine) ObserveHead(head Head) error {
 // invalidates every attempt that began under the previous epoch: a result
 // fetched from replaced policy must not be publishable afterwards, not even
 // when a delayed message moves the head back to the old epoch.
-func (m *Machine) updateRecordHeadLocked(record *serviceRecord, epoch string, revision uint64, stateHash Hash, confirmed bool, source string) {
+func (m *Machine) updateRecordHeadLocked(record *serviceRecord, epoch string, revision uint64, stateHash Hash, confirmed bool, source string) *revisionWarning {
 	// Notifications may omit the epoch, in which case updateHead retains the
 	// known one. Compare only revisions belonging to that same effective epoch.
 	effectiveEpoch := epoch
 	if effectiveEpoch == "" {
 		effectiveEpoch = record.epoch
 	}
-	var localRevision uint64
+	var localRevision, knownHead uint64
 	if record.headKnown && record.epoch == effectiveEpoch {
-		localRevision = record.headRevision
+		knownHead = record.headRevision
 	}
-	if record.hasLocal && record.localEpoch == effectiveEpoch && record.localRevision > localRevision {
+	if record.hasLocal && record.localEpoch == effectiveEpoch {
 		localRevision = record.localRevision
 	}
-	if revision < localRevision {
-		revisionWarnings.warn(record.id, effectiveEpoch, revision, localRevision, source)
+	var warning *revisionWarning
+	if revision < localRevision || revision < knownHead {
+		warning = &revisionWarning{serviceID: record.id, epoch: effectiveEpoch, source: source,
+			upstream: revision, local: localRevision, head: knownHead}
 	}
 	if record.headKnown && epoch != "" && record.epoch != "" && epoch != record.epoch {
 		m.invalidateAttemptsLocked(record)
 	}
 	record.updateHead(epoch, revision, stateHash, confirmed)
+	return warning
 }
 
 // BeginSync returns the attempt a caller passes to ApplyAttempt for a fetch of
@@ -881,7 +902,8 @@ func (m *Machine) effectiveThresholds(cloudHeartbeat, cloudStale, cloudStop time
 	return thresholds
 }
 
-func (m *Machine) applySetLocked(services []Service, confirmed bool) {
+func (m *Machine) applySetLocked(services []Service, confirmed bool) []revisionWarning {
+	var warnings []revisionWarning
 	m.setKnown = true
 	for _, record := range m.records {
 		record.setMember = false
@@ -918,12 +940,15 @@ func (m *Machine) applySetLocked(services []Service, confirmed bool) {
 		if confirmed {
 			source = "ack"
 		}
-		m.updateRecordHeadLocked(record, service.Epoch, service.Revision, service.HeadStateHash, confirmed, source)
+		if warning := m.updateRecordHeadLocked(record, service.Epoch, service.Revision, service.HeadStateHash, confirmed, source); warning != nil {
+			warnings = append(warnings, *warning)
+		}
 	}
 	for _, record := range m.records {
 		m.recomputeRecordLocked(record)
 	}
 	m.evictRemovedLocked()
+	return warnings
 }
 
 func (m *Machine) newRecordLocked(id, name string) *serviceRecord {

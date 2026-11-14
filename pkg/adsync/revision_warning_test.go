@@ -103,6 +103,57 @@ func TestLowerAckWarnsForLocalCopyBeforeFirstHead(t *testing.T) {
 	requireRevisionWarning(t, buffer, testServiceID1, testServiceID1, "ack", 4, 5)
 }
 
+func TestLowerHeadWarningReportsAppliedRevision(t *testing.T) {
+	for _, localRevision := range []uint64{0, 3, 8} {
+		t.Run(fmt.Sprint(localRevision), func(t *testing.T) {
+			buffer, _ := captureRevisionWarnings(t)
+			machine, _ := newTestMachine(t)
+			mustAck(t, machine, ackWith(testAckService(testServiceID1, "books", 5)))
+			if localRevision != 0 {
+				mustApply(t, machine, testServiceState(testServiceID1, "books", localRevision))
+			}
+			mustAck(t, machine, ackWith(testAckService(testServiceID1, "books", 4)))
+			requireRevisionWarning(t, buffer, testServiceID1, testServiceID1, "ack", 4, localRevision)
+			var entry map[string]any
+			if err := json.Unmarshal(bytes.TrimSpace(buffer.Bytes()), &entry); err != nil {
+				t.Fatal(err)
+			}
+			if entry["known_head_revision"] != float64(5) {
+				t.Fatalf("known_head_revision = %v, want 5", entry["known_head_revision"])
+			}
+		})
+	}
+}
+
+func TestLowerDiscoveryRevisionWarnsForDiskCacheOnStartup(t *testing.T) {
+	buffer, _ := captureRevisionWarnings(t)
+	service := newFixtureService(testServiceID1, "books")
+	staleService := newFixtureService(testServiceID1, "books")
+	for range 4 {
+		service.publish(t, Change{Op: "upsert", Kind: "service", ID: service.ID, Name: stringPointer("books")})
+	}
+	fixture := newFixture(t, service)
+	cacheDir := t.TempDir()
+	initial := syncFixtureService(t, fixture.newSyncer(cacheDir, nil), "books")
+	fixture.source.configure(func(source *fixtureSource) { source.services[service.ID] = staleService })
+	// A restarted syncer knows only the disk cache; no machine has received
+	// its newer revision. It still warns and keeps the verified cached copy.
+	syncer := fixture.newSyncer(cacheDir, nil)
+	if _, found := syncer.State(service.ID); found {
+		t.Fatal("new syncer already holds an in-memory copy")
+	}
+	for range 3 {
+		state := syncFixtureService(t, syncer, "books")
+		if !reflect.DeepEqual(state, initial) {
+			t.Fatalf("lower discovery revision replaced disk-cache copy: %+v", state)
+		}
+	}
+	if count := fixture.requestCount(service.ID + "/snapshot"); count != 1 {
+		t.Fatalf("snapshots = %d, want only the initial snapshot", count)
+	}
+	requireRevisionWarning(t, buffer, service.ID, service.Epoch, "discovery", 1, 5)
+}
+
 func TestLowerSnapshotRevisionWarnsAndKeepsProtocolError(t *testing.T) {
 	buffer, _ := captureRevisionWarnings(t)
 	service := newFixtureService(testServiceID1, "books")
@@ -116,8 +167,8 @@ func TestLowerSnapshotRevisionWarnsAndKeepsProtocolError(t *testing.T) {
 	if err := syncer.store(local); err != nil {
 		t.Fatal(err)
 	}
-	service.Revision = 6
 	fixture.source.configure(func(source *fixtureSource) {
+		service.Revision = 6
 		response := fixtureSnapshot(service)
 		response.Revision = 4
 		source.snapshotOverride = response
@@ -183,26 +234,26 @@ func TestRevisionWarningBudgetSharedAcrossSourcesAndServicesIndependent(t *testi
 	machine, _ := newTestMachine(t)
 	mustAck(t, machine, ackWith(testAckService(testServiceID1, "books", 5), testAckService(testServiceID2, "orders", 5)))
 	mustAck(t, machine, ackWith(testAckService(testServiceID1, "books", 4), testAckService(testServiceID2, "orders", 5)))
-	requireRevisionWarning(t, buffer, testServiceID1, testServiceID1, "ack", 4, 5)
+	requireRevisionWarning(t, buffer, testServiceID1, testServiceID1, "ack", 4, 0)
 	buffer.Reset()
 	clock.Advance(time.Minute - time.Nanosecond)
 	if err := machine.ObserveHead(Head{ID: testServiceID1, Epoch: testServiceID1, Revision: 3}); err != nil {
 		t.Fatal(err)
 	}
-	revisionWarnings.warn(testServiceID1, testServiceID1, 3, 5, "snapshot")
+	revisionWarnings.warn(testServiceID1, testServiceID1, 3, 5, 5, "snapshot")
 	if buffer.Len() != 0 {
 		t.Fatalf("same service warned twice within a minute: %s", buffer.String())
 	}
 	if err := machine.ObserveHead(Head{ID: testServiceID2, Epoch: testServiceID2, Revision: 3}); err != nil {
 		t.Fatal(err)
 	}
-	requireRevisionWarning(t, buffer, testServiceID2, testServiceID2, "notification", 3, 5)
+	requireRevisionWarning(t, buffer, testServiceID2, testServiceID2, "notification", 3, 0)
 	buffer.Reset()
 	clock.Advance(time.Nanosecond)
-	revisionWarnings.warn(testServiceID1, testServiceID1, 3, 5, "snapshot")
+	revisionWarnings.warn(testServiceID1, testServiceID1, 3, 5, 5, "snapshot")
 	requireRevisionWarning(t, buffer, testServiceID1, testServiceID1, "snapshot", 3, 5)
 	clock.Advance(time.Minute)
-	revisionWarnings.warn(testServiceID1, testServiceID1, 3, 5, "snapshot")
+	revisionWarnings.warn(testServiceID1, testServiceID1, 3, 5, 5, "snapshot")
 	if len(revisionWarnings.last) != 1 {
 		t.Fatalf("expired service warning entries retained: %v", revisionWarnings.last)
 	}
@@ -212,8 +263,63 @@ func TestConcurrentRevisionWarningsAreRateLimited(t *testing.T) {
 	buffer, _ := captureRevisionWarnings(t)
 	var wg sync.WaitGroup
 	for range 50 {
-		wg.Go(func() { revisionWarnings.warn(testServiceID1, testServiceID1, 4, 5, "snapshot") })
+		wg.Go(func() { revisionWarnings.warn(testServiceID1, testServiceID1, 4, 5, 5, "snapshot") })
 	}
 	wg.Wait()
 	requireRevisionWarning(t, buffer, testServiceID1, testServiceID1, "snapshot", 4, 5)
+}
+
+type blockedRevisionLog struct {
+	started chan struct{}
+	release chan struct{}
+}
+
+func (w *blockedRevisionLog) Write(p []byte) (int, error) {
+	close(w.started)
+	<-w.release
+	return len(p), nil
+}
+
+func TestRevisionWarningDoesNotHoldMachineLock(t *testing.T) {
+	for _, source := range []string{"ack", "discovery", "notification"} {
+		t.Run(source, func(t *testing.T) {
+			captureRevisionWarnings(t)
+			machine, _ := newTestMachine(t)
+			mustAck(t, machine, ackWith(testAckService(testServiceID1, "books", 5)))
+			writer := &blockedRevisionLog{started: make(chan struct{}), release: make(chan struct{})}
+			log.SetOutput(writer)
+			done := make(chan error, 1)
+			t.Cleanup(func() {
+				close(writer.release)
+				if err := <-done; err != nil {
+					t.Error(err)
+				}
+			})
+			go func() {
+				switch source {
+				case "ack":
+					done <- machine.Ack(ackWith(testAckService(testServiceID1, "books", 4)))
+				case "discovery":
+					done <- machine.Discover([]Service{testAckService(testServiceID1, "books", 4)})
+				default:
+					done <- machine.ObserveHead(Head{ID: testServiceID1, Epoch: testServiceID1, Revision: 4})
+				}
+			}()
+			select {
+			case <-writer.started:
+			case <-time.After(5 * time.Second):
+				t.Fatal("warning did not reach the blocked sink")
+			}
+			statusDone := make(chan Status, 1)
+			go func() { status, _ := machine.Status("books"); statusDone <- status }()
+			select {
+			case status := <-statusDone:
+				if status.Service.Head != 5 {
+					t.Fatalf("head = %d, want 5", status.Service.Head)
+				}
+			case <-time.After(5 * time.Second):
+				t.Fatal("blocked log sink held the machine lock")
+			}
+		})
+	}
 }

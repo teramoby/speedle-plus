@@ -20,7 +20,20 @@ type revisionWarningLimiter struct {
 	lastCleanup time.Time
 }
 
-func (l *revisionWarningLimiter) warn(serviceID, epoch string, upstream, local uint64, source string) {
+// Capture values under the machine lock and emit only after releasing it: a
+// slow log sink must not block other readers or updates of the state machine.
+type revisionWarning struct {
+	serviceID, epoch, source string
+	upstream, local, head    uint64
+}
+
+func (w revisionWarning) log() {
+	revisionWarnings.warn(w.serviceID, w.epoch, w.upstream, w.local, w.head, w.source)
+}
+
+// local is the verified copy's revision (zero without a copy); head is the
+// separately known upstream head, which may be ahead of the verified copy.
+func (l *revisionWarningLimiter) warn(serviceID, epoch string, upstream, local, head uint64, source string) {
 	l.mu.Lock()
 	now := l.clock.Now()
 	if last, ok := l.last[serviceID]; ok && now.Sub(last) < time.Minute {
@@ -44,10 +57,11 @@ func (l *revisionWarningLimiter) warn(serviceID, epoch string, upstream, local u
 	l.mu.Unlock()
 
 	log.WithFields(log.Fields{
-		"service_id":        serviceID,
-		"epoch":             epoch,
-		"upstream_revision": upstream,
-		"local_revision":    local,
-		"source":            source,
-	}).Warn("policy-source revision is lower than local revision in the same epoch; ignoring rollback")
+		"service_id":          serviceID,
+		"epoch":               epoch,
+		"upstream_revision":   upstream,
+		"local_revision":      local,
+		"known_head_revision": head,
+		"source":              source,
+	}).Warn("policy-source revision is lower than a locally held revision in the same epoch; ignoring rollback")
 }

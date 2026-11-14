@@ -199,6 +199,9 @@ func (s *Syncer) SyncAtLeast(ctx context.Context, service Service, minRevision u
 		return s.loadSnapshot(ctx, service, local)
 	}
 	if local.Epoch == service.Epoch && local.Revision > service.Revision {
+		// This may be the first sight of a newer disk-cache copy: the machine
+		// has not necessarily learned its revision when it processes the ack.
+		revisionWarnings.warn(service.ID, service.Epoch, service.Revision, local.Revision, service.Revision, "discovery")
 		if fromCache {
 			if err := s.store(local); err != nil {
 				return nil, err
@@ -306,7 +309,7 @@ func (s *Syncer) loadSnapshot(ctx context.Context, service Service, local *Servi
 	}
 	if local != nil && local.Epoch == response.Epoch {
 		if response.Revision < local.Revision {
-			revisionWarnings.warn(service.ID, response.Epoch, response.Revision, local.Revision, "snapshot")
+			revisionWarnings.warn(service.ID, response.Epoch, response.Revision, local.Revision, service.Revision, "snapshot")
 			return nil, fmt.Errorf("%w: snapshot revision %d would roll back local revision %d",
 				ErrProtocol, response.Revision, local.Revision)
 		}
