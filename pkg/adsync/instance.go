@@ -106,7 +106,7 @@ func loadOrCreateInstanceIDWithLock(dir string, link func(string, string) error,
 		defer unlockInstanceID(lock)
 	} else {
 		instanceIDLockWarning.Do(func() {
-			log.WithError(err).Warn("adsync: instance id creation lock unavailable; continuing with exclusive publication, partial-file repair disabled")
+			log.WithError(err).WithField("directory", dir).Warn("adsync: instance id creation lock unavailable; continuing with exclusive publication, partial-file repair disabled")
 		})
 	}
 	cleanupInstanceIDTemps(dir)
@@ -128,6 +128,7 @@ func loadOrCreateInstanceIDWithLock(dir string, link func(string, string) error,
 			if err := os.Remove(path); err != nil && !errors.Is(err, fs.ErrNotExist) {
 				return "", false, fmt.Errorf("adsync: remove partial instance id: %w", err)
 			}
+			log.WithField("directory", dir).Warn("adsync: removed stale partial instance id for repair; stop older releases using this directory before upgrading")
 		} else if !errors.Is(err, fs.ErrNotExist) {
 			return "", false, err
 		}

@@ -6,6 +6,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -380,6 +381,47 @@ func TestInstanceIDLockWarningOnce(t *testing.T) {
 	}
 }
 
+func TestInstanceIDRepairWarning(t *testing.T) {
+	if os.Getenv("SPEEDLE_INSTANCE_ID_REPAIR_WARNING_TEST") == "" {
+		command := exec.Command(os.Args[0], "-test.run=^TestInstanceIDRepairWarning$")
+		command.Env = append(os.Environ(), "SPEEDLE_INSTANCE_ID_REPAIR_WARNING_TEST=1")
+		if output, err := command.CombinedOutput(); err != nil {
+			t.Fatalf("repair warning process: %v\n%s", err, output)
+		}
+		return
+	}
+	requireInstanceIDRepairLock(t)
+	var output bytes.Buffer
+	previousOutput, previousFormatter := log.StandardLogger().Out, log.StandardLogger().Formatter
+	log.SetOutput(&output)
+	log.SetFormatter(&log.JSONFormatter{})
+	defer log.SetOutput(previousOutput)
+	defer log.SetFormatter(previousFormatter)
+	for _, partial := range []string{"", testInstanceID[:10]} {
+		output.Reset()
+		dir := t.TempDir()
+		writeStaleInstanceID(t, dir, partial)
+		id, created, err := LoadOrCreateInstanceID(dir)
+		if err != nil || !created || !ValidInstanceID(id) {
+			t.Fatalf("repair = %q, %v, %v", id, created, err)
+		}
+		if again, created, err := LoadOrCreateInstanceID(dir); err != nil || created || again != id {
+			t.Fatalf("repair persistence = %q, %v, %v", again, created, err)
+		}
+		// Every repaired directory must identify itself and explain the
+		// upgrade restriction; ordinary reuse must not emit another warning.
+		var warning struct {
+			Directory string `json:"directory"`
+			Level     string `json:"level"`
+			Message   string `json:"msg"`
+		}
+		if err := json.Unmarshal(output.Bytes(), &warning); err != nil || warning.Directory != dir ||
+			warning.Level != "warning" || !strings.Contains(warning.Message, "stop older releases") {
+			t.Fatalf("expected one operator-visible repair warning for %s: %s (%v)", dir, &output, err)
+		}
+	}
+}
+
 func TestInstanceIDFrozenLockHolder(t *testing.T) {
 	requireInstanceIDRepairLock(t)
 	for _, state := range []string{"create", "winner", "partial"} {
@@ -640,19 +682,20 @@ func TestInstanceIDRepairAcrossProcesses(t *testing.T) {
 	dir := t.TempDir()
 	writeStaleInstanceID(t, dir, testInstanceID[:10])
 	var output [2]bytes.Buffer
+	var diagnostics [2]bytes.Buffer
 	var commands [2]*exec.Cmd
 	for i := range commands {
 		commands[i] = exec.Command(os.Args[0], "-test.run=^TestInstanceIDRepairProcessHelper$")
 		commands[i].Env = append(os.Environ(), "SPEEDLE_INSTANCE_ID_TEST_DIR="+dir)
 		commands[i].Stdout = &output[i]
-		commands[i].Stderr = &output[i]
+		commands[i].Stderr = &diagnostics[i]
 		if err := commands[i].Start(); err != nil {
 			t.Fatal(err)
 		}
 	}
 	for i, command := range commands {
 		if err := command.Wait(); err != nil {
-			t.Fatalf("repair process: %v\n%s", err, &output[i])
+			t.Fatalf("repair process: %v\n%s\n%s", err, &output[i], &diagnostics[i])
 		}
 	}
 	first, second := strings.Fields(output[0].String()), strings.Fields(output[1].String())
