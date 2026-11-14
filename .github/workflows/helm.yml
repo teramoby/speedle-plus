@@ -1,7 +1,7 @@
 name: Helm
 
 # Lint the chart, render each policy store, and install it on a throwaway
-# kind cluster. The install uses the published speedle/speedle image at the
+# kind cluster. The install builds this commit as speedle/speedle at the
 # chart appVersion, writes one policy with spctl from that image, and requires
 # ADS to allow the request.
 on:
@@ -71,39 +71,34 @@ jobs:
           kind create cluster --name speedle-helm --image "${node_image}" --wait 180s
           kubectl wait -n local-path-storage --for=condition=Available deployment/local-path-provisioner --timeout=180s
 
-      - name: Load the published image
+      - name: Setup Go
+        uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      # Release preparation bumps appVersion before that image is published.
+      # Test the candidate source instead of depending on a future release.
+      - name: Build and load the candidate image
         run: |
           set -euo pipefail
           tag=$(awk '/^appVersion:/ { gsub(/"/, "", $2); print $2; exit }' deployment/helm/speedle/Chart.yaml)
           image="speedle/speedle:${tag}"
-          pull() {
-            local image=$1
-            local attempt
-            for attempt in 1 2 3 4 5; do
-              if docker pull --platform linux/amd64 "${image}"; then
-                return 0
-              fi
-              echo "docker pull failed (${attempt}/5): ${image}" >&2
-              sleep 20
-            done
-            return 1
-          }
-          pull "docker.io/${image}"
-          # The published image is a multi-arch index with provenance and an
-          # SBOM. docker save leaves those attestation blobs out, and kind
-          # imports with ctr --all-platforms, which then fails looking up the
-          # missing digest. Rebuild one platform with both left off.
+          host_arch=$(go env GOHOSTARCH)
           ctx=$(mktemp -d)
-          docker build \
-            --platform linux/amd64 \
-            --provenance=false \
-            --sbom=false \
-            --tag "${image}" \
-            --file - \
-            "${ctx}" <<EOF
-          FROM docker.io/${image}
-          EOF
-          rm -rf "${ctx}"
+          trap 'rm -rf "${ctx}"' EXIT
+          mkdir -p "${ctx}/data"
+          : > "${ctx}/data/.keep"
+          cp /etc/ssl/certs/ca-certificates.crt "${ctx}/ca-certificates.crt"
+          for command in spctl speedle-pms speedle-ads; do
+            CGO_ENABLED=0 GOOS=linux GOARCH="${host_arch}" go build -trimpath \
+              -o "${ctx}/${command}-linux-${host_arch}" "./cmd/${command}"
+          done
+          CGO_ENABLED=0 GOOS=linux GOARCH="${host_arch}" go build -trimpath \
+            -o "${ctx}/dispatch-linux-${host_arch}" ./deployment/container/dispatch
+          docker build --platform "linux/${host_arch}" \
+            --provenance=false --sbom=false \
+            --file deployment/container/Dockerfile --tag "${image}" "${ctx}"
           kind load docker-image "${image}" --name speedle-helm
           echo "IMAGE=${image}" >> "${GITHUB_ENV}"
 
