@@ -192,7 +192,11 @@ const fullConfig = `{
  "storeConfig": {"storeType": "etcd", "storeProps": {"etcdEndpoint": "e:2379", "insecure": true, "keyPrefix": 3, "other": 1.5}},
  "enableWatch": true,
  "serverConfig": {"endpoint": "1.2.3.4:5", "insecure": "true", "enableAuthz": "true", "keyPath": "k", "certPath": "c",
-   "clientCertPath": "cc", "forceClientCert": true},
+   "clientCertPath": "cc", "forceClientCert": true,
+   "downstreamEndpoint": "0.0.0.0:7443", "downstreamCertPath": "dc", "downstreamKeyPath": "dk",
+   "downstreamClientCAPath": "dca", "downstreamCRLFiles": ["f1", "f2"],
+   "downstreamCRLURLs": ["https://crl.example/clients.crl"],
+   "downstreamCRLRefreshInterval": "30m", "downstreamCRLMaxAge": "12h", "downstreamReloadInterval": "10s"},
  "logConfig": {"level": "warn", "formatter": "text", "setReportCaller": true,
    "rotationConfig": {"filename": "a.log", "maxsize": 1, "maxage": 2, "maxbackups": 3, "compress": true, "localtime": true}},
  "auditLogConfig": {"level": "info", "formatter": "json", "setReportCaller": true,
@@ -219,6 +223,11 @@ func TestParseFlagsFromConfigFile(t *testing.T) {
 		{params.Endpoint.Value, "1.2.3.4:5"}, {params.Insecure.Value, "true"}, {params.EnableAuthz.Value, "true"},
 		{params.KeyPath.Value, "k"}, {params.CertPath.Value, "c"}, {params.ClientCertPath.Value, "cc"},
 		{params.ForceClientCert.Value, "true"}, {params.StoreType.Value, "etcd"}, {params.StoreWatchEnabled.Value, "true"},
+		{params.DownstreamEndpoint.Value, "0.0.0.0:7443"}, {params.DownstreamCert.Value, "dc"},
+		{params.DownstreamKey.Value, "dk"}, {params.DownstreamClientCA.Value, "dca"},
+		{params.DownstreamCRLFiles.Value, "f1,f2"}, {params.DownstreamCRLURLs.Value, "https://crl.example/clients.crl"},
+		{params.DownstreamCRLRefreshInterval.Value, "30m"}, {params.DownstreamCRLMaxAge.Value, "12h"},
+		{params.DownstreamReloadInterval.Value, "10s"},
 		{params.LogConf.LogLevel.Value, "warn"}, {params.LogConf.LogFormatter.Value, "text"},
 		{params.LogConf.LogReportCaller.Value, "true"}, {params.LogConf.LogFileName.Value, "a.log"},
 		{params.LogConf.LogMaxSize.Value, "1"}, {params.LogConf.LogMaxAge.Value, "2"}, {params.LogConf.LogMaxBackups.Value, "3"},
@@ -574,5 +583,58 @@ func TestPolicySourceConfigOnlyPropertiesSurviveFlags(t *testing.T) {
 				t.Fatal("secret flag registered")
 			}
 		})
+	}
+}
+
+func TestDownstreamListenerConfig(t *testing.T) {
+	params := &Parameters{}
+	params.DownstreamEndpoint.Value = "0.0.0.0:7443"
+	params.DownstreamCert.Value = "server.pem"
+	params.DownstreamKey.Value = "server-key.pem"
+	params.DownstreamClientCA.Value = "clients-ca.pem"
+	params.DownstreamCRLFiles.Value = "a.crl, b.crl"
+	params.DownstreamCRLURLs.Value = "https://crl.example/clients.crl"
+	params.DownstreamCRLRefreshInterval.Value = "30m"
+	params.DownstreamCRLMaxAge.Value = "12h"
+	params.DownstreamReloadInterval.Value = "10s"
+	config, err := params.DownstreamListenerConfig()
+	if err != nil {
+		t.Fatalf("config: %v", err)
+	}
+	if config.Endpoint != "0.0.0.0:7443" || config.CertPath != "server.pem" ||
+		config.KeyPath != "server-key.pem" || config.ClientCAPath != "clients-ca.pem" {
+		t.Errorf("listener config = %+v", config)
+	}
+	if len(config.CRLFiles) != 2 || config.CRLFiles[0] != "a.crl" || config.CRLFiles[1] != "b.crl" {
+		t.Errorf("CRL files = %v", config.CRLFiles)
+	}
+	if len(config.CRLURLs) != 1 || config.CRLRefreshInterval != 30*time.Minute ||
+		config.CRLMaxAge != 12*time.Hour || config.ReloadInterval != 10*time.Second {
+		t.Errorf("CRL config = %+v", config)
+	}
+
+	for name, mutate := range map[string]func(*Parameters){
+		"empty CRL entry":   func(params *Parameters) { params.DownstreamCRLFiles.Value = "a.crl,,b.crl" },
+		"empty URL entry":   func(params *Parameters) { params.DownstreamCRLURLs.Value = " , " },
+		"invalid duration":  func(params *Parameters) { params.DownstreamCRLRefreshInterval.Value = "soon" },
+		"negative duration": func(params *Parameters) { params.DownstreamReloadInterval.Value = "-1s" },
+	} {
+		t.Run(name, func(t *testing.T) {
+			broken := *params
+			mutate(&broken)
+			if _, err := broken.DownstreamListenerConfig(); err == nil {
+				t.Fatal("invalid configuration was accepted")
+			}
+		})
+	}
+
+	empty := &Parameters{}
+	config, err = empty.DownstreamListenerConfig()
+	if err != nil {
+		t.Fatalf("empty config: %v", err)
+	}
+	if config.Endpoint != "" || len(config.CRLFiles) != 0 || len(config.CRLURLs) != 0 ||
+		config.CRLRefreshInterval != 0 || config.CRLMaxAge != 0 || config.ReloadInterval != 0 {
+		t.Errorf("empty config = %+v", config)
 	}
 }

@@ -20,8 +20,9 @@ func TestBuilderRejectsInvalidConfiguration(t *testing.T) {
 	cases := map[string]interface{}{
 		UpstreamURLKey: 42, APIKeyKey: []string{"secret"}, RequestTimeoutKey: "soon",
 		HeartbeatIntervalKey: "30", StopAfterKey: "-1s", FallbackWhileSyncingKey: "perhaps",
-		TransportKey: "sse", ServeDownstreamKey: true, MaxDownstreamKey: "many", MaxConnectionsKey: 1.5,
-		CacheDirKey: 42, CAFileKey: false,
+		TransportKey: "sse", MaxDownstreamKey: "many", MaxConnectionsKey: 1.5,
+		MaxChainDepthKey: 3, DownstreamCredentialsKey: "/tmp/credentials",
+		ServeDownstreamKey: "perhaps", CacheDirKey: 42, CAFileKey: false,
 	}
 	for key, value := range cases {
 		t.Run(key, func(t *testing.T) {
@@ -94,9 +95,6 @@ func TestOpenValidatesOptions(t *testing.T) {
 		}),
 		"ULID instance id": with(func(options *Options) {
 			options.InstanceID = testServiceID1
-		}),
-		"serve downstream": with(func(options *Options) {
-			options.ServeDownstream = true
 		}),
 		"heartbeat out of range": with(func(options *Options) {
 			options.HeartbeatInterval = 5 * time.Second

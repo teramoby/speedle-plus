@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/teramoby/speedle-plus/pkg/adsync"
 )
@@ -27,15 +28,11 @@ func TestHashPassThroughToDownstreamClient(t *testing.T) {
 		t.Fatalf("apply changes: %v", err)
 	}
 
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, nil, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
+	server := newTestServer(t, mirror, nil)
 
 	// A downstream ADS that only trusts the Cloud public key must verify both
 	// the snapshot and every commit, and end at the proxy's revision.
-	client := server.newClient(token)
+	client := server.newClient(testClientInstanceID)
 	syncer, err := adsync.NewSyncer(client, "")
 	if err != nil {
 		t.Fatalf("new syncer: %v", err)
@@ -51,8 +48,8 @@ func TestHashPassThroughToDownstreamClient(t *testing.T) {
 	}
 
 	// The exact signed bytes are observable over HTTP as well.
-	response, body := server.get(
-		adsync.APIPrefix+"/services/"+testServiceID1+"/snapshot", token, nil)
+	response, body := server.get(server.defaultClient(),
+		adsync.APIPrefix+"/services/"+testServiceID1+"/snapshot", nil)
 	if response.StatusCode != 200 {
 		t.Fatalf("snapshot: status %d body %s", response.StatusCode, body)
 	}
@@ -81,12 +78,8 @@ func TestDownstreamChangesPagesVerify(t *testing.T) {
 		t.Fatalf("apply changes: %v", err)
 	}
 
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, nil, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
-	client := server.newClient(token)
+	server := newTestServer(t, mirror, nil)
+	client := server.newClient(testClientInstanceID)
 	ctx := context.Background()
 
 	first, err := client.Changes(ctx, testServiceID1, service.ID, service.Epoch, 1, initial.CommitHash, 1)
@@ -133,12 +126,8 @@ func TestDownstreamRecoversFromEpochChange(t *testing.T) {
 		t.Fatalf("apply changes: %v", err)
 	}
 
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, nil, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
-	client := server.newClient(token)
+	server := newTestServer(t, mirror, nil)
+	client := server.newClient(testClientInstanceID)
 	syncer, err := adsync.NewSyncer(client, "")
 	if err != nil {
 		t.Fatalf("new syncer: %v", err)
@@ -173,12 +162,61 @@ func TestDownstreamRecoversFromEpochChange(t *testing.T) {
 	}
 
 	// The proxy advertises the new identity and version.
-	response, body := server.get(adsync.APIPrefix+"/services", token, nil)
+	response, body := server.get(server.defaultClient(), adsync.APIPrefix+"/services", nil)
 	if response.StatusCode != 200 {
 		t.Fatalf("services: status %d", response.StatusCode)
 	}
 	services := decodeBody[adsync.ServicesResponse](t, body)
 	if len(services.Services) != 1 || services.Services[0].Epoch != replacement.Epoch {
 		t.Errorf("services after epoch change = %+v", services.Services)
+	}
+}
+
+// TestChannelTransportEndToEnd proves the relay accepts the frames its own
+// adsync client sends: a real channel completes hello, ack, heartbeat and ack
+// over WebSocket and long polling, so the wire schema is shared, not just
+// hand-written fixtures.
+func TestChannelTransportEndToEnd(t *testing.T) {
+	mirror, _, _ := newPopulatedMirror(t)
+	server := newTestServer(t, mirror, nil)
+	for _, transport := range []adsync.Transport{adsync.TransportWebSocket, adsync.TransportLongPoll} {
+		t.Run(string(transport), func(t *testing.T) {
+			machine, err := adsync.NewMachine(adsync.MachineOptions{})
+			if err != nil {
+				t.Fatalf("new machine: %v", err)
+			}
+			options := adsync.ChannelOptions{
+				Machine:           machine,
+				AgentVersion:      "test",
+				Transport:         transport,
+				HeartbeatInterval: 200 * time.Millisecond,
+			}
+			if transport == adsync.TransportLongPoll {
+				options.PollWait = time.Second
+			}
+			channel, err := adsync.NewChannel(server.newClient(testClientInstanceID), options)
+			if err != nil {
+				t.Fatalf("new channel: %v", err)
+			}
+			ctx, cancel := context.WithCancel(context.Background())
+			done := make(chan error, 1)
+			go func() { done <- channel.Run(ctx) }()
+			waitFor(t, 10*time.Second, "the channel to receive a confirming ack", func() bool {
+				return !machine.Instance().LastConfirmedAckAt.IsZero()
+			})
+			first := machine.Instance().LastConfirmedAckAt
+			waitFor(t, 10*time.Second, "a subsequent heartbeat ack", func() bool {
+				return machine.Instance().LastConfirmedAckAt.After(first)
+			})
+			if services := machine.Services(); len(services) != 2 {
+				t.Errorf("acknowledged services = %+v", services)
+			}
+			cancel()
+			select {
+			case <-done:
+			case <-time.After(5 * time.Second):
+				t.Fatal("the channel did not stop")
+			}
+		})
 	}
 }

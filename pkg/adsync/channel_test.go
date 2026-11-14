@@ -1433,7 +1433,7 @@ func TestChannelHeartbeatReportsTopology(t *testing.T) {
 	channel, err := NewChannel(client, ChannelOptions{
 		AgentVersion:    "test-1.0",
 		Machine:         machine,
-		DownstreamCount: &downstreams,
+		DownstreamCount: func() uint64 { return downstreams },
 		Fallback: func() FallbackState {
 			return FallbackState{
 				Active:      true,

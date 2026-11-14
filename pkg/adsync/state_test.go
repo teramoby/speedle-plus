@@ -1160,3 +1160,25 @@ func TestAppliedBeforeTheFirstAckHasNoCountLimit(t *testing.T) {
 	}
 	requireServiceState(t, machine, "service-1", SyncStateInSync, "")
 }
+
+// TestStopHookWrapsTheTransition covers the wrapper a caller installs to
+// serialize a stop with the work it confirms.
+func TestStopHookWrapsTheTransition(t *testing.T) {
+	machine, err := NewMachine(MachineOptions{})
+	if err != nil {
+		t.Fatalf("new machine: %v", err)
+	}
+	wrapped := false
+	machine.SetStopHook(func(apply func()) {
+		wrapped = true
+		apply()
+	})
+	machine.Stop(ReasonStoppedByCommand)
+	if !wrapped {
+		t.Fatal("the stop hook did not run")
+	}
+	status := machine.Instance()
+	if status.Liveness != LivenessStopped || status.Reason != ReasonStoppedByCommand {
+		t.Fatalf("instance after the hooked stop = %+v", status)
+	}
+}

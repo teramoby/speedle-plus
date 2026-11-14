@@ -5,6 +5,7 @@ package adsproxy
 import (
 	"encoding/json"
 	"net/http"
+	"net/http/httptest"
 	"sync/atomic"
 	"testing"
 
@@ -35,104 +36,89 @@ func decodeBody[T any](t *testing.T, body []byte) T {
 	return value
 }
 
-func TestServerAuthentication(t *testing.T) {
+func TestDownstreamRouteTable(t *testing.T) {
 	mirror, _, _ := newPopulatedMirror(t)
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, nil, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
+	server := newTestServer(t, mirror, nil)
+	client := server.defaultClient()
 
-	response, body := server.get(adsync.APIPrefix+"/services", "", nil)
-	if response.StatusCode != http.StatusUnauthorized {
-		t.Fatalf("no credential: status %d", response.StatusCode)
-	}
-	if string(body) != `{"error":"unauthorized"}` {
-		t.Errorf("no credential body = %s", body)
+	// The policy-source protocol is mounted.
+	response, body := server.get(client, adsync.APIPrefix+"/services", nil)
+	if response.StatusCode != http.StatusOK {
+		t.Fatalf("services: status %d body %s", response.StatusCode, body)
 	}
 	if response.Header.Get("Cache-Control") != "no-store" {
 		t.Error("missing Cache-Control: no-store")
-	}
-
-	response, body = server.get(adsync.APIPrefix+"/services", testToken(testDownstreamB, 9), nil)
-	if response.StatusCode != http.StatusUnauthorized {
-		t.Fatalf("unknown credential: status %d", response.StatusCode)
-	}
-	if string(body) != `{"error":"unauthorized"}` {
-		t.Errorf("unknown credential body = %s", body)
-	}
-
-	response, body = server.get(adsync.APIPrefix+"/services", token, nil)
-	if response.StatusCode != http.StatusOK {
-		t.Fatalf("valid credential: status %d body %s", response.StatusCode, body)
 	}
 	services := decodeBody[adsync.ServicesResponse](t, body)
 	if services.ServicesVersion <= 0 || len(services.Services) != 2 {
 		t.Errorf("services = %+v", services)
 	}
+
+	// The three authorization operations are mounted for POST only.
+	for _, operation := range []string{"is-allowed", "all-granted-roles", "all-granted-permissions"} {
+		response, body = server.post(client, "/authz-check/v1/"+operation, []byte(`{}`))
+		if response.StatusCode != http.StatusOK {
+			t.Errorf("%s: status %d body %s", operation, response.StatusCode, body)
+		}
+		response, _ = server.get(client, "/authz-check/v1/"+operation, nil)
+		if response.StatusCode != http.StatusMethodNotAllowed {
+			t.Errorf("GET %s: status %d", operation, response.StatusCode)
+		}
+	}
+	if server.authz.calls != 3 {
+		t.Errorf("authorization operations reached the handler %d times, want 3", server.authz.calls)
+	}
+
+	// Policy management, diagnostics and unrelated paths are not mounted.
+	for _, path := range []string{
+		"/authz-check/v1/diagnose",
+		"/authz-check/v1/discover",
+		"/policy-mgmt/v1/services",
+		"/healthz",
+		adsync.APIPrefix + "/nope",
+		"/",
+	} {
+		response, _ = server.get(client, path, nil)
+		if response.StatusCode != http.StatusNotFound {
+			t.Errorf("%s: status %d, want 404", path, response.StatusCode)
+		}
+	}
 }
 
-func TestServiceSubsetRejectsLikeUnknown(t *testing.T) {
+func TestDownstreamHandlerRejectsAnUnverifiedConnection(t *testing.T) {
+	// The listener requires a client certificate. This checks the handler's
+	// own defense-in-depth answer if it were ever mounted without mTLS.
 	mirror, _, _ := newPopulatedMirror(t)
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, nil, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-		services:     []string{testServiceID1},
+	server, err := NewServer(Config{InstanceID: testProxyID, Mirror: mirror})
+	if err != nil {
+		t.Fatalf("new server: %v", err)
+	}
+	defer server.Close()
+	authz := &authzStub{}
+	handler, err := DownstreamHandler(server, AuthzHandlers{
+		IsAllowed:             http.HandlerFunc(authz.isAllowed),
+		AllGrantedRoles:       http.HandlerFunc(authz.allGrantedRoles),
+		AllGrantedPermissions: http.HandlerFunc(authz.allGrantedPermissions),
 	})
-
-	response, body := server.get(adsync.APIPrefix+"/services", token, nil)
-	if response.StatusCode != http.StatusOK {
-		t.Fatalf("services: status %d", response.StatusCode)
+	if err != nil {
+		t.Fatalf("handler: %v", err)
 	}
-	services := decodeBody[adsync.ServicesResponse](t, body)
-	if len(services.Services) != 1 || services.Services[0].ID != testServiceID1 {
-		t.Errorf("subset services = %+v", services.Services)
+	recorder := httptest.NewRecorder()
+	handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, adsync.APIPrefix+"/services", nil))
+	if recorder.Code != http.StatusForbidden {
+		t.Fatalf("unverified request: status %d body %s", recorder.Code, recorder.Body.String())
 	}
-
-	endpoints := []string{"state", "snapshot", "changes?since=1"}
-	for _, endpoint := range endpoints {
-		response, subsetBody := server.get(adsync.APIPrefix+"/services/"+testServiceID2+"/"+endpoint, token, nil)
-		if response.StatusCode != http.StatusNotFound {
-			t.Errorf("%s outside subset: status %d body %s", endpoint, response.StatusCode, subsetBody)
-		}
-		response, unknownBody := server.get(adsync.APIPrefix+"/services/"+testUnknownID+"/"+endpoint, token, nil)
-		if response.StatusCode != http.StatusNotFound {
-			t.Errorf("%s unknown service: status %d body %s", endpoint, response.StatusCode, unknownBody)
-		}
-		if string(subsetBody) != string(unknownBody) {
-			t.Errorf("%s: subset body %s differs from unknown body %s", endpoint, subsetBody, unknownBody)
-		}
-		if string(subsetBody) != `{"error":"service_not_found"}` {
-			t.Errorf("%s: body = %s", endpoint, subsetBody)
-		}
-	}
-
-	// A credential with * sees the second service.
-	allToken := testToken(testDownstreamB, 2)
-	allServer := newTestServer(t, mirror, nil, testCredential{
-		downstreamID: testDownstreamB,
-		token:        allToken,
-	})
-	response, body = allServer.get(adsync.APIPrefix+"/services/"+testServiceID2+"/snapshot", allToken, nil)
-	if response.StatusCode != http.StatusOK {
-		t.Fatalf("all-services snapshot: status %d body %s", response.StatusCode, body)
-	}
-	snapshot := decodeBody[adsync.SnapshotResponse](t, body)
-	if snapshot.ServiceID != testServiceID2 || snapshot.Snapshot.Name != "orders" {
-		t.Errorf("snapshot = %+v", snapshot)
+	if recorder.Body.String() != `{"error":"unauthorized"}` {
+		t.Errorf("unverified body = %s", recorder.Body.String())
 	}
 }
 
 func TestSnapshotETag(t *testing.T) {
 	mirror, books, _ := newPopulatedMirror(t)
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, nil, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
+	server := newTestServer(t, mirror, nil)
+	client := server.defaultClient()
 	path := adsync.APIPrefix + "/services/" + testServiceID1 + "/snapshot"
-	response, body := server.get(path, token, nil)
+	response, body := server.get(client, path, nil)
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("snapshot: status %d", response.StatusCode)
 	}
@@ -147,7 +133,7 @@ func TestSnapshotETag(t *testing.T) {
 
 	header := http.Header{}
 	header.Set("If-None-Match", etag)
-	response, body = server.get(path, token, header)
+	response, body = server.get(client, path, header)
 	if response.StatusCode != http.StatusNotModified {
 		t.Fatalf("matching If-None-Match: status %d", response.StatusCode)
 	}
@@ -156,7 +142,7 @@ func TestSnapshotETag(t *testing.T) {
 	}
 
 	header.Set("If-None-Match", `"stale-tag"`)
-	response, _ = server.get(path, token, header)
+	response, _ = server.get(client, path, header)
 	if response.StatusCode != http.StatusOK {
 		t.Errorf("stale If-None-Match: status %d", response.StatusCode)
 	}
@@ -164,7 +150,7 @@ func TestSnapshotETag(t *testing.T) {
 	// A wildcard is not an exact identity tuple and must not suppress a new
 	// snapshot, even though generic HTTP caching often gives it that meaning.
 	header.Set("If-None-Match", "*")
-	response, _ = server.get(path, token, header)
+	response, _ = server.get(client, path, header)
 	if response.StatusCode != http.StatusOK {
 		t.Errorf("wildcard If-None-Match: status %d, want 200", response.StatusCode)
 	}
@@ -176,12 +162,9 @@ func TestStateEndpoint(t *testing.T) {
 	if err := mirror.ApplyChanges(pageFor(t, books, 1, 100)); err != nil {
 		t.Fatalf("apply changes: %v", err)
 	}
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, nil, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
-	response, body := server.get(adsync.APIPrefix+"/services/"+testServiceID1+"/state", token, nil)
+	server := newTestServer(t, mirror, nil)
+	response, body := server.get(server.defaultClient(),
+		adsync.APIPrefix+"/services/"+testServiceID1+"/state", nil)
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("state: status %d", response.StatusCode)
 	}
@@ -202,14 +185,11 @@ func TestChangesPaging(t *testing.T) {
 			t.Fatalf("apply commit %d: %v", index, err)
 		}
 	}
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, nil, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
+	server := newTestServer(t, mirror, nil)
+	client := server.defaultClient()
 	path := adsync.APIPrefix + "/services/" + testServiceID1 + "/changes"
 
-	response, body := server.get(path+"?since=1&limit=2", token, nil)
+	response, body := server.get(client, path+"?since=1&limit=2", nil)
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("page one: status %d body %s", response.StatusCode, body)
 	}
@@ -221,7 +201,7 @@ func TestChangesPaging(t *testing.T) {
 		t.Fatalf("page one commits = %d", len(page.Commits))
 	}
 
-	response, body = server.get(path+"?since=3&limit=2", token, nil)
+	response, body = server.get(client, path+"?since=3&limit=2", nil)
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("page two: status %d body %s", response.StatusCode, body)
 	}
@@ -238,36 +218,33 @@ func TestChangesPaging(t *testing.T) {
 		"?since=1&since=2", "?since=1&limit=2&limit=3", "?since=1&unknown=1",
 		"?since=01", "?since=1&limit=01", "?since=1&limit=",
 	} {
-		response, body := server.get(path+query, token, nil)
+		response, body := server.get(client, path+query, nil)
 		if response.StatusCode != http.StatusBadRequest {
 			t.Errorf("%q: status %d body %s", query, response.StatusCode, body)
 		}
 	}
 
-	response, body = server.get(path+"?since=0", token, nil)
+	response, body = server.get(client, path+"?since=0", nil)
 	if response.StatusCode != http.StatusGone || string(body) != `{"error":"snapshot_required","reason":"history_unavailable"}` {
 		t.Errorf("history unavailable: status %d body %s", response.StatusCode, body)
 	}
-	response, body = server.get(path+"?since=99", token, nil)
+	response, body = server.get(client, path+"?since=99", nil)
 	if response.StatusCode != http.StatusGone {
 		t.Errorf("since after head: status %d body %s", response.StatusCode, body)
 	}
 }
 
 func TestServerNeedsSnapshotAndRemovedMapping(t *testing.T) {
-	mirror, books, _ := newPopulatedMirror(t)
+	mirror, _, _ := newPopulatedMirror(t)
 	mirror.RemoveService(testServiceID2)
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, nil, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
+	server := newTestServer(t, mirror, nil)
+	client := server.defaultClient()
 
-	response, body := server.get(adsync.APIPrefix+"/services/"+testServiceID2+"/snapshot", token, nil)
+	response, body := server.get(client, adsync.APIPrefix+"/services/"+testServiceID2+"/snapshot", nil)
 	if response.StatusCode != http.StatusGone || string(body) != `{"error":"snapshot_required","reason":"source_gone"}` {
 		t.Errorf("removed service: status %d body %s", response.StatusCode, body)
 	}
-	response, body = server.get(adsync.APIPrefix+"/services", token, nil)
+	response, body = server.get(client, adsync.APIPrefix+"/services", nil)
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("services: status %d", response.StatusCode)
 	}
@@ -275,47 +252,35 @@ func TestServerNeedsSnapshotAndRemovedMapping(t *testing.T) {
 	if len(services.Services) != 1 || services.Services[0].ID != testServiceID1 {
 		t.Errorf("services after removal = %+v", services.Services)
 	}
-	_ = books
 }
 
 func TestDistributionPaused(t *testing.T) {
 	mirror, _, _ := newPopulatedMirror(t)
-	token := testToken(testDownstreamID, 1)
 	var paused atomic.Bool
-	server := newTestServer(t, mirror, &testServerOptions{
-		paused: paused.Load,
-	}, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
+	server := newTestServer(t, mirror, &testServerOptions{paused: paused.Load})
+	client := server.defaultClient()
 
-	response, _ := server.get(adsync.APIPrefix+"/services", token, nil)
+	response, _ := server.get(client, adsync.APIPrefix+"/services", nil)
 	if response.StatusCode != http.StatusOK {
 		t.Fatalf("services before pause: status %d", response.StatusCode)
 	}
 
-	conn, _, err := server.dial(token)
+	conn, _, err := server.dial(server.pki.clientCertFile, server.pki.clientKeyFile)
 	if err != nil {
 		t.Fatalf("dial before pause: %v", err)
 	}
 	defer conn.Close()
-	writeJSONFrame(t, conn, helloMessage{
-		Type:         "hello",
-		InstanceID:   testDownstreamID,
-		Services:     []helloService{},
-		Chain:        []string{testProxyID, testDownstreamID},
-		AgentVersion: "test",
-	})
+	writeJSONFrame(t, conn, helloFrame(testClientInstanceID))
 	if kind, _ := readChannelFrame(t, conn); kind != "ack" {
 		t.Fatalf("first frame = %q", kind)
 	}
 
 	paused.Store(true)
-	response, body := server.get(adsync.APIPrefix+"/services", token, nil)
+	response, body := server.get(client, adsync.APIPrefix+"/services", nil)
 	if response.StatusCode != http.StatusServiceUnavailable || string(body) != `{"error":"distribution_paused"}` {
 		t.Errorf("services while paused: status %d body %s", response.StatusCode, body)
 	}
-	lateConn, response, err := server.dial(token)
+	lateConn, response, err := server.dial(server.pki.clientCertFile, server.pki.clientKeyFile)
 	if err == nil {
 		lateConn.Close()
 		t.Fatal("paused server accepted a new channel")
@@ -324,15 +289,8 @@ func TestDistributionPaused(t *testing.T) {
 		t.Errorf("new channel while paused: status %v", response)
 	}
 
-	// An existing channel ends at its next heartbeat.
-	writeJSONFrame(t, conn, heartbeatMessage{
-		Type:     "heartbeat",
-		Seq:      1,
-		Services: []heartbeatService{},
-		Liveness: "live",
-		Chain:    []string{testProxyID, testDownstreamID},
-		Fallback: fallbackMessage{Services: []string{}},
-	})
+	// An existing channel is closed when distribution stops, without waiting
+	// for the downstream's next heartbeat.
 	code, reason := readClose(t, conn)
 	if code != websocket.ClosePolicyViolation || reason != "distribution_paused" {
 		t.Errorf("paused channel close = %d %q", code, reason)
@@ -341,16 +299,13 @@ func TestDistributionPaused(t *testing.T) {
 
 func TestServerUnknownPathAndMethod(t *testing.T) {
 	mirror, _, _ := newPopulatedMirror(t)
-	token := testToken(testDownstreamID, 1)
-	server := newTestServer(t, mirror, nil, testCredential{
-		downstreamID: testDownstreamID,
-		token:        token,
-	})
-	response, _ := server.get(adsync.APIPrefix+"/nope", token, nil)
+	server := newTestServer(t, mirror, nil)
+	client := server.defaultClient()
+	response, _ := server.get(client, adsync.APIPrefix+"/nope", nil)
 	if response.StatusCode != http.StatusNotFound {
 		t.Errorf("unknown path: status %d", response.StatusCode)
 	}
-	response, _ = server.get(adsync.APIPrefix+"/channel/poll", token, nil)
+	response, _ = server.get(client, adsync.APIPrefix+"/channel/poll", nil)
 	if response.StatusCode != http.StatusMethodNotAllowed {
 		t.Errorf("GET poll: status %d", response.StatusCode)
 	}
@@ -358,51 +313,45 @@ func TestServerUnknownPathAndMethod(t *testing.T) {
 
 func TestServerConfigValidation(t *testing.T) {
 	mirror := newTestMirror(t, nil)
-	credentials, err := NewCredentialSet([]Credential{{DownstreamID: "edge", Token: "token", Services: []string{"*"}}})
-	if err != nil {
-		t.Fatalf("credentials: %v", err)
-	}
 	cases := []Config{
-		{Mirror: mirror, Credentials: credentials},
-		{InstanceID: "not-a-ulid", Mirror: mirror, Credentials: credentials},
-		{InstanceID: testProxyID, Credentials: credentials},
-		{InstanceID: testProxyID, Mirror: mirror},
-		{InstanceID: testProxyID, Mirror: mirror, Credentials: credentials, MaxChainDepth: 4},
-		{InstanceID: testProxyID, Mirror: mirror, Credentials: credentials, MaxDownstream: 101},
-		{InstanceID: testProxyID, Mirror: mirror, Credentials: credentials,
-			Chain: []string{testUpstreamID}},
-		{InstanceID: testProxyID, Mirror: mirror, Credentials: credentials, MaxChainDepth: 1,
-			Chain: []string{testUpstreamID, testDownstreamB, testProxyID}},
+		{Mirror: mirror},
+		{InstanceID: "not-a-uuid", Mirror: mirror},
+		{InstanceID: testProxyID},
+		{InstanceID: testProxyID, Mirror: mirror, HeartbeatInterval: 1},
+		{InstanceID: testProxyID, Mirror: mirror, StaleAfter: 10, StopAfter: 20},
 	}
 	for index, config := range cases {
 		if _, err := NewServer(config); err == nil {
 			t.Errorf("case %d: configuration was accepted", index)
 		}
 	}
-	if _, err := NewServer(Config{InstanceID: testProxyID, Mirror: mirror, Credentials: credentials}); err != nil {
-		t.Errorf("valid configuration: %v", err)
+	server, err := NewServer(Config{InstanceID: testProxyID, Mirror: mirror})
+	if err != nil {
+		t.Fatalf("valid configuration: %v", err)
 	}
+	server.Close()
 }
 
-func TestBearerTokenParsing(t *testing.T) {
-	cases := []struct {
-		header string
-		want   string
-		ok     bool
-	}{
-		{"Bearer abc", "abc", true},
-		{"bearer abc", "abc", true},
-		{"BEARER abc", "abc", true},
-		{"Bearer", "", false},
-		{"Bearer ", "", false},
-		{"Basic abc", "", false},
-		{"", "", false},
+func TestDownstreamHandlerValidation(t *testing.T) {
+	mirror := newTestMirror(t, nil)
+	server, err := NewServer(Config{InstanceID: testProxyID, Mirror: mirror})
+	if err != nil {
+		t.Fatalf("new server: %v", err)
 	}
-	for _, testCase := range cases {
-		token, ok := bearerToken(testCase.header)
-		if token != testCase.want || ok != testCase.ok {
-			t.Errorf("%q: token %q ok %v", testCase.header, token, ok)
-		}
+	defer server.Close()
+	authz := &authzStub{}
+	if _, err := DownstreamHandler(nil, AuthzHandlers{
+		IsAllowed:             http.HandlerFunc(authz.isAllowed),
+		AllGrantedRoles:       http.HandlerFunc(authz.allGrantedRoles),
+		AllGrantedPermissions: http.HandlerFunc(authz.allGrantedPermissions),
+	}); err == nil {
+		t.Error("nil data handler was accepted")
+	}
+	if _, err := DownstreamHandler(server, AuthzHandlers{IsAllowed: http.HandlerFunc(authz.isAllowed)}); err == nil {
+		t.Error("partial authorization handlers were accepted")
+	}
+	if _, err := DownstreamHandler(http.NotFoundHandler(), AuthzHandlers{}); err == nil {
+		t.Error("a data handler without an availability guard was accepted")
 	}
 }
 

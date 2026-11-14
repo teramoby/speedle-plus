@@ -4,25 +4,27 @@ package adsproxy
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strconv"
 	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
-	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/pkg/adsync"
 )
 
 const (
 	// maxChannelFrameBytes is the application-level bound on one channel frame.
-	maxChannelFrameBytes = 64 << 10
+	// An ack carries every advertised service, and the mirror holds at most
+	// maxTombstones services; one worst-case entry (36-byte id, 64-byte name,
+	// two 20-digit revisions, 36-byte epoch and a 64-character state hash) is
+	// under 320 bytes, so a full ack stays well under this bound. It matches
+	// the one-megabyte response-page bound of the protocol.
+	maxChannelFrameBytes = 1 << 20
 	// maxPollWait is the longest hold a long-poll request may ask for.
 	maxPollWait = 30 * time.Second
 	// defaultPollWait matches the contract's wait=25 default.
@@ -40,14 +42,11 @@ const (
 
 // helloMessage is the downstream's first WebSocket frame.
 type helloMessage struct {
-	Type         string         `json:"type"`
-	InstanceID   string         `json:"instanceId"`
-	CredentialID string         `json:"credentialId,omitempty"`
-	Services     []helloService `json:"services"`
-	Chain        []string       `json:"chain"`
-	AgentVersion string         `json:"agentVersion"`
-	StartedAt    int64          `json:"startedAt,omitempty"`
-	Transport    string         `json:"transport,omitempty"`
+	Type         string           `json:"type"`
+	InstanceID   string           `json:"instanceId"`
+	Services     []helloService   `json:"services"`
+	AgentVersion string           `json:"agentVersion"`
+	Host         *adsync.HostInfo `json:"host"`
 }
 
 type helloService struct {
@@ -60,17 +59,16 @@ type helloService struct {
 // heartbeatMessage is a heartbeat frame and, in long-poll mode, the body of
 // every poll request.
 type heartbeatMessage struct {
-	Type               string             `json:"type"`
-	Seq                uint64             `json:"seq"`
-	Services           []heartbeatService `json:"services"`
-	Liveness           string             `json:"liveness"`
-	Chain              []string           `json:"chain"`
-	Fallback           fallbackMessage    `json:"fallback"`
-	AgentVersion       string             `json:"agentVersion"`
-	StartedAt          int64              `json:"startedAt"`
-	Transport          string             `json:"transport"`
-	UpstreamInstanceID *string            `json:"upstreamInstanceId,omitempty"`
-	DownstreamCount    *uint64            `json:"downstreamCount,omitempty"`
+	Type            string             `json:"type"`
+	InstanceID      string             `json:"instanceId"`
+	Host            *adsync.HostInfo   `json:"host,omitempty"`
+	Seq             uint64             `json:"seq"`
+	Services        []heartbeatService `json:"services"`
+	Liveness        string             `json:"liveness"`
+	Fallback        fallbackMessage    `json:"fallback"`
+	AgentVersion    string             `json:"agentVersion"`
+	Transport       string             `json:"transport"`
+	DownstreamCount *uint64            `json:"downstreamCount,omitempty"`
 }
 
 type heartbeatService struct {
@@ -109,7 +107,8 @@ type ackService struct {
 	HeadStateHash adsync.Hash `json:"headStateHash"`
 }
 
-// commandMessage is part of the ack wire format. A proxy never sends commands.
+// commandMessage is part of the ack wire format. A downstream relay never
+// sends commands.
 type commandMessage struct {
 	ID        string `json:"id"`
 	Action    string `json:"action"`
@@ -123,16 +122,13 @@ type notifyMessage struct {
 	Head      uint64 `json:"head"`
 }
 
-func (s *Server) ack(credential *Credential) ackMessage {
+func (s *Server) ack() ackMessage {
 	// The service list and the version it belongs to must come from one read,
 	// or a downstream that records the version could skip a refresh that was
 	// already reflected in a different list.
 	services, version := s.mirror.ServicesVersion()
 	entries := make([]ackService, 0, len(services))
 	for _, service := range services {
-		if !credential.Allows(service.ID) {
-			continue
-		}
 		entries = append(entries, ackService{
 			ID:            service.ID,
 			Name:          service.Name,
@@ -141,9 +137,6 @@ func (s *Server) ack(credential *Credential) ackMessage {
 			Epoch:         service.Epoch,
 			HeadStateHash: service.HeadStateHash,
 		})
-		if len(entries) == MaxServices {
-			break
-		}
 	}
 	return ackMessage{
 		Type:              "ack",
@@ -164,39 +157,24 @@ func formatChannelDuration(duration time.Duration) string {
 	return strconv.Itoa(int(duration/time.Millisecond)) + "ms"
 }
 
-// handleChannel serves one instance channel over WebSocket. The credential and
-// the fan-out limit are checked before the upgrade so the downstream sees an
-// HTTP error there; chain problems can only be seen after the hello frame and
-// close the connection with a policy-violation code.
-func (s *Server) handleChannel(w http.ResponseWriter, r *http.Request, credential *Credential) {
+// handleChannel serves one instance channel over WebSocket. The client
+// certificate is verified during the TLS handshake; the hello frame supplies
+// the self-reported UUID that completes the session identity.
+func (s *Server) handleChannel(w http.ResponseWriter, r *http.Request) {
+	identity, ok := clientIdentity(r)
+	if !ok {
+		writeError(w, http.StatusForbidden, "unauthorized", "")
+		return
+	}
 	if _, ok := strictQuery(r.URL.RawQuery); !ok {
 		writeError(w, http.StatusBadRequest, "invalid_request", "")
 		return
 	}
-	// Reserve the connection slot before the upgrade: a WebSocket that never
-	// sends its hello frame still holds a socket, so it must count against the
-	// fan-out limits. The reservation moves to the subscription below.
-	if err := s.hub.Acquire(credential.DownstreamID); err != nil {
-		writeHubError(w, err)
-		return
-	}
-	reserved := true
-	defer func() {
-		if reserved {
-			s.hub.Release(credential.DownstreamID)
-		}
-	}()
 	conn, err := s.upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		// The upgrader already wrote the HTTP error.
 		return
 	}
-	if !s.track(conn, credential) {
-		closeWithReason(conn, websocket.CloseGoingAway, "server shutting down")
-		_ = conn.Close()
-		return
-	}
-	defer s.untrack(conn)
 	defer conn.Close()
 	conn.SetReadLimit(maxChannelFrameBytes)
 
@@ -214,17 +192,33 @@ func (s *Server) handleChannel(w http.ResponseWriter, r *http.Request, credentia
 		closeWithReason(conn, websocket.CloseProtocolError, "invalid hello")
 		return
 	}
-	if err := s.validateHello(credential, &hello); err != nil {
-		closeWithReason(conn, closeCode(err), closeReason(err))
+	if err := validateHello(&hello); err != nil {
+		closeWithReason(conn, websocket.CloseProtocolError, "invalid hello")
 		return
+	}
+	if s.chainLoop(hello.InstanceID) {
+		closeWithReason(conn, websocket.ClosePolicyViolation, "chain_loop")
+		return
+	}
+	identity.uuid = hello.InstanceID
+	previous, admitted := s.beginChannelSession(identity, conn)
+	if !admitted {
+		closeWithReason(conn, websocket.CloseGoingAway, "server shutting down")
+		return
+	}
+	defer s.endChannelSession(identity, conn)
+	if previous != nil {
+		// A reconnect for the same session identity supersedes the old
+		// channel. Closing it keeps one live channel per session.
+		closeWithReason(previous, websocket.CloseGoingAway, "session replaced")
+		_ = previous.Close()
 	}
 
-	subscriber, err := s.hub.SubscribeReserved(credential.DownstreamID, credential.Allows)
+	subscriber, err := s.hub.Subscribe()
 	if err != nil {
-		closeWithReason(conn, websocket.CloseTryAgainLater, "fanout_limit")
+		closeWithReason(conn, websocket.CloseGoingAway, "server shutting down")
 		return
 	}
-	reserved = false
 	defer s.hub.Unsubscribe(subscriber)
 
 	readTimeout := heartbeatFrameSlack * s.heartbeat
@@ -239,7 +233,7 @@ func (s *Server) handleChannel(w http.ResponseWriter, r *http.Request, credentia
 	writer.Add(1)
 	go func() {
 		defer writer.Done()
-		s.channelWriter(conn, credential, subscriber, acks, stop)
+		s.channelWriter(conn, subscriber, acks, stop)
 	}()
 	defer func() {
 		close(stop)
@@ -273,14 +267,16 @@ func (s *Server) handleChannel(w http.ResponseWriter, r *http.Request, credentia
 				closeWithReason(conn, websocket.CloseProtocolError, "invalid heartbeat")
 				return
 			}
-			if s.distributionPaused() {
-				// An existing channel ends at the next message after a pause;
-				// the downstream reconnects once distribution resumes.
-				closeWithReason(conn, websocket.ClosePolicyViolation, "distribution_paused")
+			if heartbeat.InstanceID != identity.uuid {
+				// A session identity cannot change on a live channel.
+				closeWithReason(conn, websocket.CloseProtocolError, "instance_changed")
 				return
 			}
-			if err := s.validateChain(heartbeat.Chain, ""); err != nil {
-				closeWithReason(conn, closeCode(err), closeReason(err))
+			if s.distributionUnavailable() {
+				// The availability watcher also closes an established channel;
+				// this covers a heartbeat that arrives between its ticks. The
+				// downstream reconnects once distribution resumes.
+				closeWithReason(conn, websocket.ClosePolicyViolation, "distribution_paused")
 				return
 			}
 			select {
@@ -289,7 +285,7 @@ func (s *Server) handleChannel(w http.ResponseWriter, r *http.Request, credentia
 				// An ack is already queued and will carry the current heads.
 			}
 		case "command_result":
-			// A proxy never sends commands, so a result is ignored.
+			// A relay never sends commands, so a result is ignored.
 		case "hello":
 			closeWithReason(conn, websocket.CloseProtocolError, "duplicate hello")
 			return
@@ -304,15 +300,13 @@ func (s *Server) handleChannel(w http.ResponseWriter, r *http.Request, credentia
 // before entering the loop: a downstream initializes its service state from
 // that ack, so a notification that raced ahead of it would make the client
 // reject an unknown head.
-func (s *Server) channelWriter(conn *websocket.Conn, credential *Credential, subscriber *Subscriber, acks <-chan struct{}, stop <-chan struct{}) {
-	// Pause can start while the connection waits for its hello frame; the
-	// initial ack must not go out as if distribution were still active.
-	if s.distributionPaused() {
-		closeWithReason(conn, websocket.ClosePolicyViolation, "distribution_paused")
-		_ = conn.Close()
-		return
-	}
-	if err := s.writeChannelAck(conn, credential); err != nil {
+func (s *Server) channelWriter(conn *websocket.Conn, subscriber *Subscriber, acks <-chan struct{}, stop <-chan struct{}) {
+	// Distribution can stop while the connection waits for its hello frame;
+	// the initial ack must not go out as if it were still active.
+	if err := s.writeChannelAck(conn); err != nil {
+		if errors.Is(err, errDistributionStopped) {
+			closeWithReason(conn, websocket.ClosePolicyViolation, "distribution_paused")
+		}
 		_ = conn.Close()
 		return
 	}
@@ -323,14 +317,28 @@ func (s *Server) channelWriter(conn *websocket.Conn, credential *Credential, sub
 		case <-stop:
 			return
 		case <-acks:
-			if err := s.writeChannelAck(conn, credential); err != nil {
+			// The availability watcher closes the connection when the state
+			// flips; the write itself is serialized with the flip, so an ack
+			// never confirms distribution while the relay is paused or no
+			// longer live.
+			if err := s.writeChannelAck(conn); err != nil {
+				if errors.Is(err, errDistributionStopped) {
+					closeWithReason(conn, websocket.ClosePolicyViolation, "distribution_paused")
+				}
 				_ = conn.Close()
 				return
 			}
 		case notification := <-subscriber.C():
-			// A reload may have replaced the grant; a notification for a
-			// service the new grant forbids must not go out.
-			if err := s.writeChannelNotification(conn, credential, notification); err != nil {
+			if s.distributionUnavailable() {
+				closeWithReason(conn, websocket.ClosePolicyViolation, "distribution_paused")
+				_ = conn.Close()
+				return
+			}
+			if err := writeChannelJSON(conn, notifyMessage{
+				Type:      "notify",
+				ServiceID: notification.ServiceID,
+				Head:      notification.Head,
+			}); err != nil {
 				_ = conn.Close()
 				return
 			}
@@ -341,31 +349,6 @@ func (s *Server) channelWriter(conn *websocket.Conn, credential *Credential, sub
 			}
 		}
 	}
-}
-
-// writeChannelAck pins the connection's grant across the ack, so a credential
-// reload cannot replace it between validation and the frame write. It reports
-// an error when the grant is no longer current.
-func (s *Server) writeChannelAck(conn *websocket.Conn, credential *Credential) error {
-	if !s.credentials.BeginRequest(credential) {
-		return fmt.Errorf("%w: credential replaced", ErrUnauthorized)
-	}
-	defer s.credentials.EndRequest()
-	return writeChannelJSON(conn, s.ack(credential))
-}
-
-// writeChannelNotification pins the connection's grant across the notification,
-// so a reload cannot replace it between the check and the frame write.
-func (s *Server) writeChannelNotification(conn *websocket.Conn, credential *Credential, notification Notify) error {
-	if !s.credentials.BeginRequest(credential) {
-		return fmt.Errorf("%w: credential replaced", ErrUnauthorized)
-	}
-	defer s.credentials.EndRequest()
-	return writeChannelJSON(conn, notifyMessage{
-		Type:      "notify",
-		ServiceID: notification.ServiceID,
-		Head:      notification.Head,
-	})
 }
 
 func writeChannelJSON(conn *websocket.Conn, value any) error {
@@ -384,19 +367,12 @@ func writeChannelJSON(conn *websocket.Conn, value any) error {
 // response is an ack. The request is held up to wait so a head advance reaches
 // the downstream without a full round trip, and it is answered immediately
 // when a notification is available.
-func (s *Server) handlePoll(w http.ResponseWriter, r *http.Request, credential *Credential) {
-	// A poll holds its connection slot from admission to the answer, including
-	// while it waits.
-	if err := s.hub.Acquire(credential.DownstreamID); err != nil {
-		writeHubError(w, err)
+func (s *Server) handlePoll(w http.ResponseWriter, r *http.Request) {
+	certificate, ok := clientIdentity(r)
+	if !ok {
+		writeError(w, http.StatusForbidden, "unauthorized", "")
 		return
 	}
-	reserved := true
-	defer func() {
-		if reserved {
-			s.hub.Release(credential.DownstreamID)
-		}
-	}()
 	query, ok := strictQuery(r.URL.RawQuery, "wait")
 	if !ok {
 		writeError(w, http.StatusBadRequest, "invalid_request", "")
@@ -425,29 +401,42 @@ func (s *Server) handlePoll(w http.ResponseWriter, r *http.Request, credential *
 		return
 	}
 	var heartbeat heartbeatMessage
-	if err := decodeStrict(body, &heartbeat); err != nil || heartbeat.Type != "heartbeat" {
+	if err := decodeStrict(body, &heartbeat); err != nil || heartbeat.Type != "heartbeat" ||
+		!adsync.ValidInstanceID(heartbeat.InstanceID) {
 		writeError(w, http.StatusBadRequest, "invalid_request", "")
 		return
 	}
-	if err := s.validateChain(heartbeat.Chain, ""); err != nil {
-		writeChainError(w, err)
+	// A long-poll client never sends a hello frame, so the loop guard applies
+	// to every poll body.
+	if s.chainLoop(heartbeat.InstanceID) {
+		writeError(w, http.StatusForbidden, "chain_loop", "")
 		return
 	}
+	identity := sessionIdentity{fingerprint: certificate.fingerprint, uuid: heartbeat.InstanceID}
+	if !s.beginPollSession(identity) {
+		writeError(w, http.StatusServiceUnavailable, "source_unavailable", "")
+		return
+	}
+	defer s.endPollSession(identity)
 
-	subscriber, err := s.hub.SubscribeReserved(credential.DownstreamID, credential.Allows)
+	subscriber, err := s.hub.Subscribe()
 	if err != nil {
-		writeHubError(w, err)
+		writeError(w, http.StatusServiceUnavailable, "source_unavailable", "")
 		return
 	}
-	reserved = false
 	defer s.hub.Unsubscribe(subscriber)
 
 	if wait > 0 {
+		// Captured before the hold: a flip to unavailable closes it, so a
+		// paused or no-longer-live relay does not keep the poll held until
+		// its timeout.
+		unavailable := s.unavailableSignal()
 		timer := time.NewTimer(wait)
 		defer timer.Stop()
 		select {
 		case <-subscriber.C():
 		case <-timer.C:
+		case <-unavailable:
 		case <-s.done:
 			// The server is closing; do not keep the request held.
 			writeError(w, http.StatusServiceUnavailable, "source_unavailable", "")
@@ -456,26 +445,28 @@ func (s *Server) handlePoll(w http.ResponseWriter, r *http.Request, credential *
 			return
 		}
 	}
-	// Distribution may have been paused while the request was held.
-	if s.distributionPaused() {
-		writeError(w, http.StatusServiceUnavailable, "distribution_paused", "")
-		return
+	// Distribution may have been paused while the request was held, and a poll
+	// that was already held must not answer successfully after Close. The
+	// availability read lock makes the stop check and the ack atomic against a
+	// flip, so a poll that answers was current when it did.
+	s.availabilityMu.RLock()
+	closed := s.isClosed()
+	stopped := s.distributionUnavailable()
+	if !closed && !stopped {
+		// The availability read lock is held across the write so a flip waits
+		// for it; bound the write so a stalled client cannot hold the flip up.
+		_ = http.NewResponseController(w).SetWriteDeadline(time.Now().Add(channelWriteTimeout))
+		writeJSON(w, http.StatusOK, s.ack())
 	}
-	// A reload may have replaced the grant while the request was held. Pin the
-	// grant across the check and the response, so a reload cannot complete
-	// between them and the ack cannot reveal the new service set to a revoked
-	// or narrowed credential.
-	if !s.credentials.BeginRequest(credential) {
-		writeError(w, http.StatusUnauthorized, "unauthorized", "")
-		return
-	}
-	defer s.credentials.EndRequest()
-	// A poll that was already held must not answer successfully after Close.
-	if s.isClosed() {
+	s.availabilityMu.RUnlock()
+	if closed {
 		writeError(w, http.StatusServiceUnavailable, "source_unavailable", "")
 		return
 	}
-	writeJSON(w, http.StatusOK, s.ack(credential))
+	if stopped {
+		writeError(w, http.StatusServiceUnavailable, "distribution_paused", "")
+		return
+	}
 }
 
 // parsePollWait parses the documented 0..30 second wait. The bound is checked
@@ -493,20 +484,12 @@ func parsePollWait(text string) (time.Duration, bool) {
 	return time.Duration(seconds) * time.Second, true
 }
 
-func (s *Server) validateHello(credential *Credential, hello *helloMessage) error {
+func validateHello(hello *helloMessage) error {
 	if hello.Type != "hello" {
 		return fmt.Errorf("%w: expected hello", adsync.ErrProtocol)
 	}
-	if !validEntityID(hello.InstanceID) {
+	if !adsync.ValidInstanceID(hello.InstanceID) {
 		return fmt.Errorf("%w: invalid instance id %q", adsync.ErrProtocol, hello.InstanceID)
-	}
-	if hello.InstanceID == s.instanceID {
-		// A downstream claiming to be this instance is a loop or an
-		// impersonation; either way it must not be served.
-		return fmt.Errorf("%w: downstream claims this proxy's instance id", ErrChainLoop)
-	}
-	if err := s.validateChain(hello.Chain, hello.InstanceID); err != nil {
-		return err
 	}
 	seen := make(map[string]struct{}, len(hello.Services))
 	for _, service := range hello.Services {
@@ -517,120 +500,13 @@ func (s *Server) validateHello(credential *Credential, hello *helloMessage) erro
 			return fmt.Errorf("%w: duplicate service id %q", adsync.ErrProtocol, service.ID)
 		}
 		seen[service.ID] = struct{}{}
-		if !credential.Allows(service.ID) {
-			return fmt.Errorf("%w: downstream subscribes to a service outside its subset", ErrConfig)
-		}
 	}
 	return nil
-}
-
-// validateChain enforces the cooperative depth and loop rules. The chain lists
-// the instances from Cloud to the sender, inclusive of the sender when it is
-// known. A repeated instance, this proxy placed anywhere except as the sender's
-// immediate upstream, or one of this proxy's own ancestors claiming to be a
-// downstream is a loop.
-func (s *Server) validateChain(chain []string, senderID string) error {
-	if len(chain) > s.maxDepth+1 {
-		return fmt.Errorf("%w: %d entries", ErrChainTooDeep, len(chain))
-	}
-	seen := make(map[string]struct{}, len(chain))
-	for _, instanceID := range chain {
-		if !validEntityID(instanceID) {
-			return fmt.Errorf("%w: invalid chain entry %q", ErrChainLoop, instanceID)
-		}
-		if _, duplicate := seen[instanceID]; duplicate {
-			return fmt.Errorf("%w: repeated instance %q", ErrChainLoop, instanceID)
-		}
-		seen[instanceID] = struct{}{}
-	}
-
-	position := -1
-	for index, instanceID := range chain {
-		if instanceID == s.instanceID {
-			position = index
-			break
-		}
-	}
-	if senderID == "" && len(chain) > 0 {
-		// A heartbeat carries no separate instance id. The contract's inclusive
-		// chain ends with the sender whether or not this proxy appears in it,
-		// so the last entry names the sender. Inferring it here, before the
-		// position check, keeps the ancestor test below effective for a chain
-		// that omits this proxy.
-		senderID = chain[len(chain)-1]
-	}
-	if senderID != "" {
-		// The sender cannot be one of the instances this proxy itself
-		// synchronizes from: that would be a cycle.
-		for _, ancestor := range s.chain[:len(s.chain)-1] {
-			if ancestor == senderID {
-				return fmt.Errorf("%w: downstream %q is one of this proxy's ancestors", ErrChainLoop, senderID)
-			}
-		}
-	}
-
-	if position < 0 {
-		// The sender's chain does not mention this proxy. Without a claimed
-		// position there is nothing to check, and an empty chain is legitimate
-		// for a locally keyed proxy.
-		return nil
-	}
-	switch {
-	case position == len(chain)-1:
-		// The sender listed its upstream, excluding itself.
-		return nil
-	case position == len(chain)-2:
-		if senderID == "" || chain[len(chain)-1] == senderID {
-			return nil
-		}
-		return fmt.Errorf("%w: chain does not end at the sender", ErrChainLoop)
-	default:
-		return fmt.Errorf("%w: this proxy is not the sender's immediate upstream", ErrChainLoop)
-	}
-}
-
-func closeCode(err error) int {
-	switch {
-	case errors.Is(err, ErrChainTooDeep), errors.Is(err, ErrChainLoop), errors.Is(err, ErrConfig):
-		return websocket.ClosePolicyViolation
-	default:
-		return websocket.CloseProtocolError
-	}
-}
-
-func closeReason(err error) string {
-	switch {
-	case errors.Is(err, ErrChainTooDeep):
-		return "chain_too_deep"
-	case errors.Is(err, ErrChainLoop):
-		return "chain_loop"
-	case errors.Is(err, ErrConfig):
-		return "forbidden"
-	default:
-		return "protocol_error"
-	}
 }
 
 func closeWithReason(conn *websocket.Conn, code int, reason string) {
 	_ = conn.WriteControl(websocket.CloseMessage,
 		websocket.FormatCloseMessage(code, reason), time.Now().Add(channelWriteTimeout))
-}
-
-func writeHubError(w http.ResponseWriter, err error) {
-	if errors.Is(err, ErrFanoutLimit) {
-		w.Header().Set("Retry-After", "30")
-		writeError(w, http.StatusServiceUnavailable, "fanout_limit", "")
-		return
-	}
-	writeError(w, http.StatusServiceUnavailable, "source_unavailable", "")
-}
-
-func writeChainError(w http.ResponseWriter, err error) {
-	if errors.Is(err, ErrChainTooDeep) {
-		writeError(w, http.StatusForbidden, "chain_too_deep", "")
-		return
-	}
-	writeError(w, http.StatusForbidden, "chain_loop", "")
 }
 
 // decodeStrict decodes exactly one JSON value and rejects unknown fields, so a
@@ -647,29 +523,4 @@ func decodeStrict(data []byte, value any) error {
 		return fmt.Errorf("trailing data after JSON value")
 	}
 	return nil
-}
-
-// WatchReload reloads the downstream credential file for every signal received.
-// The process wires signal.Notify for SIGHUP (and any other reload signal) and
-// runs this in a goroutine; a failed reload is logged and the previous
-// credentials stay in force.
-func (s *Server) WatchReload(ctx context.Context, signals <-chan os.Signal) {
-	if signals == nil {
-		return
-	}
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case _, ok := <-signals:
-			if !ok {
-				return
-			}
-			if err := s.ReloadCredentials(); err != nil {
-				log.Warnf("adsproxy: reload downstream credentials: %v", err)
-				continue
-			}
-			log.Info("adsproxy: downstream credentials reloaded")
-		}
-	}
 }

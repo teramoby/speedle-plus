@@ -12,6 +12,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/pkg/adsproxy"
 	"github.com/teramoby/speedle-plus/pkg/adsync"
 	"github.com/teramoby/speedle-plus/pkg/errors"
 	"github.com/teramoby/speedle-plus/pkg/pdl"
@@ -54,6 +55,10 @@ type Store struct {
 	publishedCopies  map[string]*serviceCopy
 	publishedRemoved map[string]string
 	pendingRemoved   map[string]string
+	// removals counts the authoritative removals per service. A fetch that
+	// started before a removal must not publish its result afterwards; the
+	// count is distinct from pendingRemoved, which also guards renamed names.
+	removals map[string]uint64
 	// installed is the fingerprint of the assembly the evaluator most
 	// recently acknowledged; hasInstalled is false until the first one.
 	installed    string
@@ -77,6 +82,18 @@ type Store struct {
 	// hookMu guards the test-only hooks below. Production leaves them nil.
 	hookMu         sync.Mutex
 	beforeDiscover func()
+
+	// downstream serves the verified copies to direct children when
+	// ServeDownstream is enabled. It is nil otherwise.
+	downstream *downstreamServing
+}
+
+// downstreamServing is the relay side of a policy-source store: the mirror
+// that holds verified copies for downstream instances and the protocol server
+// that serves them.
+type downstreamServing struct {
+	mirror *adsproxy.Mirror
+	server *adsproxy.Server
 }
 
 // serviceCopy is one verified service, parsed and ready to publish.
@@ -116,11 +133,6 @@ func Open(ctx context.Context, options Options) (_ *Store, err error) {
 	}
 	if options.APIKey == "" {
 		return nil, errors.New(errors.ConfigError, "configure item APIKey is required")
-	}
-	if options.ServeDownstream {
-		// Serving downstream instances needs the relay identity of the
-		// cascade design; until then a relay cannot be configured.
-		return nil, errors.New(errors.ConfigError, "ServeDownstream is not supported yet")
 	}
 	if options.InstanceID != "" && !adsync.ValidInstanceID(options.InstanceID) {
 		return nil, errors.New(errors.ConfigError, "policy source InstanceID must be a UUIDv7")
@@ -167,12 +179,28 @@ func Open(ctx context.Context, options Options) (_ *Store, err error) {
 		fallback:       !options.DisableFallback,
 		copies:         make(map[string]*serviceCopy),
 		pendingRemoved: make(map[string]string),
+		removals:       make(map[string]uint64),
 		integrity:      make(map[string]integrityRetry),
 	}
+	// A stop can be driven by the owned channel (an upstream 401 or 403
+	// revokes the instance) as well as by the store, so route every explicit
+	// stop through the downstream availability lock.
+	machine.SetStopHook(func(apply func()) { store.changeDistribution(apply) })
 	for _, service := range syncer.CachedServices() {
 		if err := machine.Track(service.ID, service.Name); err != nil {
 			log.Warnf("policy-source store ignores cached service %q: %v", service.ID, err)
 		}
+	}
+	if options.ServeDownstream {
+		downstream, err := newDownstreamServing(client, machine, options)
+		if err != nil {
+			return nil, err
+		}
+		store.downstream = downstream
+		syncer.SetObserver(adsync.SyncObserver{
+			OnSnapshot: store.observeDownstreamSnapshot,
+			OnChanges:  store.observeDownstreamChanges,
+		})
 	}
 	if options.StartRuntime {
 		return store, nil
@@ -254,6 +282,11 @@ func (s *Store) Sync(ctx context.Context) error {
 	removed := s.dropUnselected(selectedIDs)
 	s.keepIntegrityRetries(selectedIDs)
 	for _, serviceID := range removed {
+		// A service dropped from the authoritative set must leave the
+		// downstream mirror before the next downstream request, not only from
+		// the local copies: otherwise a child keeps pulling policy the source
+		// no longer assigns to this relay.
+		s.removeDownstream(serviceID)
 		if err := s.syncer.Forget(serviceID); err != nil {
 			errs = append(errs, fmt.Errorf("service %q: %w", serviceID, err))
 		}
@@ -340,8 +373,18 @@ func (s *Store) syncService(ctx context.Context, service adsync.Service) error {
 	if status, known := s.machineService(service.ID); known {
 		minRevision = status.Head
 	}
+	// A removal while the fetch is in flight invalidates its result: the
+	// generation is compared under s.mu before the mirror publish.
+	generation := s.removalGeneration(service.ID)
+	// Withhold the mirror before the fetch unless it already serves the
+	// effective head, which may be a notified revision newer than the last
+	// ack. A snapshot or change page the synchronizer observes while the fetch
+	// runs is then invisible to downstream instances until publishDownstream
+	// confirms the head after the whole attempt succeeded.
+	s.withholdDownstreamUnlessCurrent(service, minRevision)
 	state, err := s.syncer.SyncAtLeast(ctx, service, minRevision)
 	if err != nil {
+		s.withholdDownstream(service.ID)
 		if !stderrors.Is(err, adsync.ErrUnauthorized) && !stderrors.Is(err, adsync.ErrForbidden) {
 			s.machine.SyncFailed(service.ID, err)
 		}
@@ -354,17 +397,20 @@ func (s *Store) syncService(ctx context.Context, service adsync.Service) error {
 		return fmt.Errorf("service %q: %w", service.Name, err)
 	}
 	s.clearIntegrityRetry(service.ID)
-	return s.installFetched(service, state, attempt)
+	return s.installFetched(service, state, attempt, generation)
 }
 
 // installFetched parses a fetched copy and stores it for the next publish,
 // unless the attempt became stale while the fetch was in flight.
-func (s *Store) installFetched(service adsync.Service, state *adsync.ServiceState, attempt adsync.SyncAttempt) error {
+func (s *Store) installFetched(service adsync.Service, state *adsync.ServiceState, attempt adsync.SyncAttempt, generation uint64) error {
 	if s.afterFetch != nil {
 		s.afterFetch(service.ID)
 	}
 	compiled, err := compileService(state)
 	if err != nil {
+		// The fetched copy may already have reached the mirror; it was never
+		// confirmed here, so it must not be served.
+		s.withholdDownstream(service.ID)
 		return fmt.Errorf("service %q: %w", service.Name, err)
 	}
 	compiled.attempt = attempt
@@ -373,6 +419,7 @@ func (s *Store) installFetched(service adsync.Service, state *adsync.ServiceStat
 	// drops it, or invalidates the attempt before the copy is stored.
 	if !s.machine.AttemptCurrent(attempt) {
 		s.mu.Unlock()
+		s.withholdDownstream(service.ID)
 		return nil
 	}
 	// Defense in depth: a rename may have landed while the fetch was in
@@ -380,6 +427,22 @@ func (s *Store) installFetched(service adsync.Service, state *adsync.ServiceStat
 	// the renamed one, even if its attempt was taken after the rename.
 	if status, known := s.machineService(service.ID); !known || status.Name != compiled.service.Name {
 		s.mu.Unlock()
+		s.withholdDownstream(service.ID)
+		return nil
+	}
+	// A channel ack can remove the service from the authoritative set while
+	// the fetch is in flight. A removal increments the service's removal
+	// generation; publishing then would revive a service the source no longer
+	// assigns to this relay. The check and the mirror publish happen under
+	// s.mu, which every removal path also takes, so a removal either precedes
+	// the check or follows the publish and removes the copy again. The
+	// pending-removal names are deliberately not used here: they also guard
+	// renamed names, and a legitimate rename back must recover.
+	if s.removals[service.ID] != generation {
+		s.mu.Unlock()
+		// Keep the removal guard: a downstream asking for the service must see
+		// it as removed, not as one that needs a fresh snapshot.
+		s.removeDownstream(service.ID)
 		return nil
 	}
 	s.copies[service.ID] = compiled
@@ -387,30 +450,173 @@ func (s *Store) installFetched(service adsync.Service, state *adsync.ServiceStat
 	// the assembly that replaces the old copy. Deleting it here would let the
 	// previous name route locally again while the old assembly is still
 	// installed.
-	s.mu.Unlock()
+	//
 	// A parsed copy is not yet visible to the evaluator. ApplyAttempt is
 	// deferred until the exact published generation has completed its
-	// FULL_RELOAD.
+	// FULL_RELOAD. The mirror publish runs under s.mu so it cannot interleave
+	// with a removal.
+	s.publishDownstream(state)
+	s.mu.Unlock()
 	return nil
+}
+
+// observeDownstreamSnapshot feeds an accepted snapshot to the downstream
+// mirror, so the mirror is anchored to the exact bytes the source served. The
+// service is withheld from serving before the snapshot is applied: the pass
+// that fetched it has not verified or published it yet, so a copy that
+// advances the mirror must not become servable even when the mirror served
+// the previous head when the fetch started. publishDownstream restores
+// availability after the pass confirms the verified state.
+func (s *Store) observeDownstreamSnapshot(response *adsync.SnapshotResponse) {
+	if s.downstream == nil || response == nil {
+		return
+	}
+	// One call: a removal that races the observation must not interleave
+	// between the withhold and the apply.
+	if err := s.downstream.mirror.ApplySnapshotWithheld(response); err != nil {
+		log.Warnf("policy-source could not mirror service %q for downstream instances: %v", response.ServiceID, err)
+		s.downstream.mirror.MarkUnavailable(response.ServiceID)
+	}
+}
+
+// observeDownstreamChanges feeds an accepted change page to the downstream
+// mirror, so downstream instances can resume incrementally. As with a
+// snapshot, the service is withheld before the page is applied, so no
+// intermediate revision is served before the pass verifies the head.
+func (s *Store) observeDownstreamChanges(page *adsync.ChangesResponse) {
+	if s.downstream == nil || page == nil {
+		return
+	}
+	s.downstream.mirror.MarkUnavailable(page.ServiceID)
+	if err := s.downstream.mirror.ApplyChanges(page); err != nil {
+		log.Warnf("policy-source could not mirror changes for service %q: %v", page.ServiceID, err)
+		s.downstream.mirror.MarkUnavailable(page.ServiceID)
+	}
+}
+
+// publishDownstream mirrors one verified copy for downstream instances. When
+// the observer already fed the mirror to this exact revision, the existing
+// change log is kept instead of replacing it with a snapshot. The service is
+// made servable only when the mirror ends at exactly the verified identity: a
+// snapshot the mirror ignores (stale or from a retired identity) must not
+// clear a withhold for a copy the pass did not confirm.
+func (s *Store) publishDownstream(state *adsync.ServiceState) {
+	if s.downstream == nil || state == nil {
+		return
+	}
+	if s.downstreamMirrorMatches(state) {
+		s.downstream.mirror.MarkAvailable(state.ServiceID)
+		return
+	}
+	response := &adsync.SnapshotResponse{
+		ServiceID:  state.ServiceID,
+		SourceID:   state.SourceID,
+		Epoch:      state.Epoch,
+		Revision:   state.Revision,
+		StateHash:  state.StateHash,
+		CommitHash: state.CommitHash,
+		Snapshot:   state.Snapshot,
+	}
+	if err := s.downstream.mirror.ApplySnapshot(response); err != nil {
+		log.Warnf("policy-source could not mirror service %q for downstream instances: %v", state.ServiceID, err)
+		s.downstream.mirror.MarkUnavailable(state.ServiceID)
+		return
+	}
+	if !s.downstreamMirrorMatches(state) {
+		s.downstream.mirror.MarkUnavailable(state.ServiceID)
+		return
+	}
+	s.downstream.mirror.MarkAvailable(state.ServiceID)
+}
+
+// downstreamMirrorMatches reports whether the mirror holds exactly the identity
+// and revision of one verified state. The commit hash is part of the identity:
+// the mirror rejects a second commit history at the same state hash, so a copy
+// anchored to a different history must not be made servable for this state.
+func (s *Store) downstreamMirrorMatches(state *adsync.ServiceState) bool {
+	info, found := s.downstream.mirror.CurrentInfo(state.ServiceID)
+	return found && info.SourceID == state.SourceID && info.Epoch == state.Epoch &&
+		info.Revision == state.Revision && info.StateHash == state.StateHash &&
+		info.CommitHash == state.CommitHash
+}
+
+// changeDistribution runs a state-machine transition while no confirming
+// downstream response can be in flight, so a pause, stop or revocation takes
+// effect before any ack or held-poll answer written from an earlier check.
+func (s *Store) changeDistribution(change func()) {
+	if s.downstream != nil {
+		s.downstream.server.DistributionChange(change)
+		return
+	}
+	change()
+}
+
+// withholdDownstream stops serving one service to downstream instances while
+// the local copy is not confirmed at the advertised head.
+func (s *Store) withholdDownstream(serviceID string) {
+	if s.downstream != nil {
+		s.downstream.mirror.MarkUnavailable(serviceID)
+	}
+}
+
+// withholdDownstreamUnlessCurrent withholds a service from downstream serving
+// before a synchronization attempt, unless the mirror already serves the
+// effective head. minRevision is the newer of the acknowledged and a notified
+// head, so a catch-up triggered only by a notification is withheld too: the
+// change pages it applies must not be visible before the pass verifies the
+// notified head. Applying a candidate revision while it is withheld does not
+// publish it; publishDownstream makes the service servable again only after
+// the attempt reached and verified the head.
+func (s *Store) withholdDownstreamUnlessCurrent(service adsync.Service, minRevision uint64) {
+	if s.downstream == nil {
+		return
+	}
+	if info, found := s.downstream.mirror.CurrentInfo(service.ID); found &&
+		info.Epoch == service.Epoch && info.Revision >= minRevision &&
+		(info.Revision != service.Revision || info.StateHash == service.HeadStateHash) {
+		return
+	}
+	s.downstream.mirror.MarkUnavailable(service.ID)
+}
+
+// removalGeneration returns the number of authoritative removals recorded for
+// one service. A fetch captures it before the fetch and compares it before
+// publishing, so a removal that landed meanwhile cannot be undone by the
+// fetched copy.
+func (s *Store) removalGeneration(serviceID string) uint64 {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.removals[serviceID]
+}
+
+// removeDownstream stops serving one removed service and keeps the deletion
+// guard for a delayed snapshot.
+func (s *Store) removeDownstream(serviceID string) {
+	if s.downstream != nil {
+		s.downstream.mirror.RemoveService(serviceID)
+	}
 }
 
 // dropCopy deletes one local copy while the service remains tracked, for
 // example during a forced resync.
 func (s *Store) dropCopy(serviceID string) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	delete(s.copies, serviceID)
+	s.mu.Unlock()
+	s.withholdDownstream(serviceID)
 }
 
 // removeCopy deletes a removed service and keeps its request path unavailable
 // until the evaluator acknowledges the assembly without that service.
 func (s *Store) removeCopy(serviceID string) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	if copied := s.copies[serviceID]; copied != nil {
 		s.pendingRemoved[serviceID] = copied.service.Name
 	}
+	s.removals[serviceID]++
 	delete(s.copies, serviceID)
+	s.mu.Unlock()
+	s.removeDownstream(serviceID)
 }
 
 // guardRenames records the previous name of every selected service whose
@@ -443,6 +649,7 @@ func (s *Store) dropUnselected(selected map[string]struct{}) []string {
 			continue
 		}
 		s.pendingRemoved[serviceID] = s.copies[serviceID].service.Name
+		s.removals[serviceID]++
 		delete(s.copies, serviceID)
 		removed = append(removed, serviceID)
 	}
