@@ -301,6 +301,33 @@ func newDownstreamServing(client *adsync.Client, machine *adsync.Machine, option
 	return &downstreamServing{mirror: mirror, server: server}, nil
 }
 
+func (s *Store) startTLSWatch() {
+	if s.options.APIKey != "" {
+		return
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	s.tlsCancel = cancel
+	s.tlsDone = make(chan struct{})
+	s.tlsReload = make(chan struct{}, 1)
+	go func() {
+		defer close(s.tlsDone)
+		s.client.WatchTLS(ctx, s.tlsReload)
+	}()
+}
+
+// UpstreamTLSReloadEnabled reports whether the process owner should route its
+// reload signal to this store. The library never changes signal disposition.
+func (s *Store) UpstreamTLSReloadEnabled() bool { return s.tlsReload != nil }
+
+// RequestTLSReload schedules a reload on the owned watcher, whose cancellation
+// also interrupts an in-flight CRL fetch. Repeated requests are coalesced.
+func (s *Store) RequestTLSReload() {
+	select {
+	case s.tlsReload <- struct{}{}:
+	default:
+	}
+}
+
 // DownstreamHandler returns the policy-source protocol handler a relay serves
 // on its dedicated downstream TLS listener. It is nil for a store that does
 // not serve downstream instances.
@@ -329,6 +356,11 @@ func (s *Store) downstreamSessionCount() uint64 {
 // downstream sessions and the evaluator watch. It is safe to call repeatedly.
 func (s *Store) Close() error {
 	s.closeOnce.Do(func() {
+		if s.tlsCancel != nil {
+			s.tlsCancel()
+			<-s.tlsDone
+		}
+		defer s.client.Close()
 		s.StopWatch()
 		if s.downstream != nil {
 			s.downstream.server.Close()

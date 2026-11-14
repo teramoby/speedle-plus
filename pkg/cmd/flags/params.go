@@ -681,7 +681,11 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 	k.configOnlyStore = nil
 	if conf != nil && conf.StoreConfig != nil && k.StoreType.Value == "policy-source" {
 		k.configOnlyStore = &cfg.StoreConfig{StoreType: "policy-source", StoreProps: make(map[string]interface{})}
-		for _, key := range []string{"UpstreamURL", "APIKey", "PolicySourceURL", "CredentialFile", "PolicySourcePublicKeys", "Services", "CloudFallbackURL", "CloudCredentialFile", "InstanceName", "DownstreamCredentialsFile", "MaxDownstream", "MaxChainDepth", "MaxConnectionsPerDownstream"} {
+		for _, key := range []string{
+			"UpstreamURL", "APIKey", "TLSReloadInterval", "CRLFiles", "CRLURLs", "CRLRefreshInterval", "CRLMaxAge",
+			"PolicySourceURL", "CredentialFile", "PolicySourcePublicKeys", "Services", "CloudFallbackURL", "CloudCredentialFile", "InstanceName", "InstanceID",
+			"DownstreamCredentialsFile", "MaxDownstream", "MaxChainDepth", "MaxConnectionsPerDownstream",
+		} {
 			// Properties with a flag binding have already passed through the
 			// normal precedence/conversion path. Removed properties have no
 			// binding and must reach the builder so it can reject them.
@@ -692,7 +696,7 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 					break
 				}
 			}
-			if bound {
+			if bound && !removedPolicySourceFlagProperty(key) {
 				continue
 			}
 			if value, exists := conf.StoreConfig.StoreProps[key]; exists {
@@ -773,6 +777,17 @@ func (k *Parameters) ValidateFlags() {
 	}
 }
 
+// Removed flags remain recognized so an explicit use reaches the store's
+// migration error. Their defaults must not appear in a new configuration.
+func removedPolicySourceFlagProperty(key string) bool {
+	switch key {
+	case "DownstreamCredentialsFile", "MaxDownstream", "MaxChainDepth", "MaxConnectionsPerDownstream":
+		return true
+	default:
+		return false
+	}
+}
+
 func (k *Parameters) Param2Config(storeParamsMap map[string]string) (*cfg.Config, error) {
 
 	conf := cfg.Config{}
@@ -784,6 +799,20 @@ func (k *Parameters) Param2Config(storeParamsMap map[string]string) (*cfg.Config
 	for k, v := range storeParamsMap {
 		f := pflag.Lookup(k)
 		if f != nil {
+			// A removed policy-source setting only reaches a policy-source
+			// store, and only when it was explicitly set: its empty default is
+			// never injected, and other store types do not see it. The
+			// policy-source builder then rejects it by name.
+			if removedPolicySourceFlagProperty(v) {
+				if storeConf.StoreType != "policy-source" {
+					continue
+				}
+				if !f.Changed {
+					if _, set := os.LookupEnv(FlagToEnv(k)); !set {
+						continue
+					}
+				}
+			}
 			storeConf.StoreProps[v] = f.Value.String()
 		}
 	}
