@@ -556,7 +556,7 @@ func TestCascadeRetryAfterSurvivesReturnToSameUpstream(t *testing.T) {
 	}
 }
 
-func TestCascadeReconnectBackoffResetsAfterAdmission(t *testing.T) {
+func TestCascadeReconnectBackoffResetsAfterHealthyPeriod(t *testing.T) {
 	pki := newCascadePKI(t)
 	cert, _, _ := pki.issue(t, 81, x509.ExtKeyUsageServerAuth, "127.0.0.1", time.Now().Add(time.Hour))
 	ack := cascadeAck(t, nil)
@@ -591,6 +591,7 @@ func TestCascadeReconnectBackoffResetsAfterAdmission(t *testing.T) {
 		if err := conn.WriteJSON(ack); err != nil {
 			return
 		}
+		time.Sleep(80 * time.Millisecond)
 		admitted <- time.Now()
 	}))
 	client := mustCascadeClient(t, cascadeConfig(t, pki, server.URL))
@@ -656,5 +657,111 @@ func TestCascadeGETAddressAndGenerationAreOneSelection(t *testing.T) {
 	}
 	if _, err := client.Services(context.Background()); err != nil {
 		t.Fatalf("replacement GET: %v", err)
+	}
+}
+
+func TestCascadeFlappingAckDoesNotResetBackoff(t *testing.T) {
+	pki := newCascadePKI(t)
+	cert, _, _ := pki.issue(t, 101, x509.ExtKeyUsageServerAuth, "127.0.0.1", time.Now().Add(time.Hour))
+	template := cascadeAck(t, nil)
+	template.Services = []channelAckService{}
+	attempts := make(chan time.Time, 20)
+	server := cascadeServer(t, pki, cert, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case attempts <- time.Now():
+		default:
+		}
+		conn, err := channelUpgrader.Upgrade(w, r, nil)
+		if err != nil {
+			return
+		}
+		defer conn.Close()
+		_, payload, err := conn.ReadMessage()
+		if err != nil {
+			return
+		}
+		var frame struct {
+			Seq uint64 `json:"seq"`
+		}
+		if json.Unmarshal(payload, &frame) != nil {
+			return
+		}
+		ack := template
+		ack.AckSeq = &frame.Seq
+		_ = conn.WriteJSON(ack)
+	}))
+	client := mustCascadeClient(t, cascadeConfig(t, pki, server.URL))
+	channel := newTestChannel(t, client, newChannelMachine(t), ChannelOptions{Transport: TransportWebSocket})
+	channel.heartbeatOverride = time.Second
+	channel.backoff = Backoff{Initial: 40 * time.Millisecond, Max: 160 * time.Millisecond, Jitter: 0.2, Rand: func() float64 { return 0.5 }}
+	runChannel(t, channel)
+	var times []time.Time
+	for len(times) < 3 {
+		select {
+		case at := <-attempts:
+			times = append(times, at)
+		case <-time.After(3 * time.Second):
+			t.Fatal("flapping reconnects stopped")
+		}
+	}
+	if gap := times[2].Sub(times[1]); gap < 70*time.Millisecond {
+		t.Fatalf("one ACK reset flapping backoff: %s", gap)
+	}
+}
+
+func TestCascadeSentReferencesExpireByFreshnessWindow(t *testing.T) {
+	pki := newCascadePKI(t)
+	client := mustCascadeClient(t, cascadeConfig(t, pki, "https://relay.example"))
+	channel := newTestChannel(t, client, newChannelMachine(t), ChannelOptions{})
+	channel.recordSent(1)
+	channel.mu.Lock()
+	channel.sentAt[1] = time.Now().Add(-maxStopAfter - time.Second)
+	channel.mu.Unlock()
+	channel.recordSent(2)
+	channel.mu.Lock()
+	_, old := channel.sentAt[1]
+	_, current := channel.sentAt[2]
+	channel.mu.Unlock()
+	if old || !current {
+		t.Fatal("expired reference retained, or current reference discarded")
+	}
+	ack := cascadeAck(t, nil)
+	if _, err := channel.inheritedDeadline(&ack); !errors.Is(err, ErrProtocol) {
+		t.Fatalf("expired old ack reference accepted: %v", err)
+	}
+}
+
+func TestLegacyCascadeDecoderRejectsExtendedAck(t *testing.T) {
+	// This is the b29088be channelAck wire shape. Its decodeStrict helper is
+	// unchanged: unknown fields are rejected before an ack can reach Machine.
+	type legacyAck struct {
+		Type              string              `json:"type"`
+		ServicesVersion   int64               `json:"servicesVersion"`
+		Services          []channelAckService `json:"services"`
+		ServerTime        int64               `json:"serverTime"`
+		HeartbeatInterval string              `json:"heartbeatInterval"`
+		StaleAfter        string              `json:"staleAfter"`
+		StopAfter         string              `json:"stopAfter"`
+		Commands          []channelCommand    `json:"commands"`
+	}
+	old := validChannelAck()
+	legacyBytes, err := json.Marshal(old)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var legacy legacyAck
+	if err := decodeStrict(legacyBytes, &legacy); err != nil {
+		t.Fatalf("legacy control ACK: %v", err)
+	}
+	for _, state := range []string{"live", "syncing", "stale"} {
+		ack := cascadeAck(t, nil)
+		ack.UpstreamState = state
+		payload, err := json.Marshal(ack)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := decodeStrict(payload, &legacy); !errors.Is(err, ErrProtocol) {
+			t.Fatalf("legacy decoder accepted %s cascade metadata: %v", state, err)
+		}
 	}
 }

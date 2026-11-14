@@ -175,3 +175,14 @@ Endpoint selection serializes with an in-flight synchronization pass so one
 pass cannot combine endpoints. Request stall timeouts remain in force; a
 continuously progressing large transfer can delay selection until that pass
 finishes. No total download-duration or payload-size limit is introduced.
+
+Cascade nodes must use compatible protocol versions during rollout. The older
+Engine's strict ACK decoder rejects the extended metadata and disconnects; it
+cannot confirm stale policy by silently ignoring the new fields. Lenient custom
+peers that ignore freshness metadata are outside the supported protocol. A
+legacy-mode negotiation path is not provided.
+
+Reconnect backoff resets only after an admitted endpoint remains healthy for a
+heartbeat interval. A peer that sends one ACK and immediately disconnects keeps
+exponential backoff. Sent-frame references older than the protocol's maximum
+freshness window expire; no count or payload-size cap is used for that cleanup.

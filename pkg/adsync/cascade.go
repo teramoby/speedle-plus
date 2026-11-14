@@ -114,8 +114,9 @@ func (c *Channel) runCascade(ctx context.Context) error {
 		}
 		c.mu.Lock()
 		admitted := c.acked
+		since := c.healthySince
 		c.mu.Unlock()
-		if admitted {
+		if admitted && !since.IsZero() && time.Since(since) >= c.heartbeatInterval() {
 			rounds = 0
 		}
 		if preferred {
@@ -277,7 +278,15 @@ func (c *Channel) recordSent(seq uint64) {
 	if c.sentAt == nil {
 		c.sentAt = make(map[uint64]time.Time)
 	}
-	c.sentAt[seq] = time.Now()
+	now := time.Now()
+	// No valid freshness budget can refer to an older frame. Prune by the
+	// protocol time window, without a frame-count or payload-size limit.
+	for previous, sent := range c.sentAt {
+		if now.Sub(sent) >= maxStopAfter {
+			delete(c.sentAt, previous)
+		}
+	}
+	c.sentAt[seq] = now
 }
 
 // An ack is generated after the echoed client frame arrived. Subtracting its
