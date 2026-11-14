@@ -8,7 +8,11 @@
 - Log rotation uses `gopkg.in/natefinch/lumberjack.v2` v2.2.1. Existing JSON
   `rotationConfig` fields are unchanged. Go applications constructing
   `logging.LogConfig.RotationConfig` must import the v2 package because the
-  exported field now uses its `Logger` type.
+  exported field now uses its `Logger` type. Newly created log files default
+  to `0600` instead of `0644`; rotation preserves an existing file's mode.
+  Deployments with a separate log-collector account must check that account's
+  read access, or provision the log file with appropriate ownership and mode
+  before startup. Speedle retains the stricter upstream creation default.
 - Updated Gorilla mux/handlers to v1.8.1/v1.5.2, fsnotify to v1.10.1 and
   pflag to v1.1.0. Gorilla uses request contexts instead of gorilla/context;
   file watching includes upstream rename/watch fixes. pflag corrects typed
