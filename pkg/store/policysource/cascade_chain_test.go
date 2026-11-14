@@ -224,6 +224,16 @@ func TestCascadeThreeLevelRuntimeChainAndFreshness(t *testing.T) {
 }
 
 func TestCascadeRestartRejectsHeadBelowDiskCacheBeforePulling(t *testing.T) {
+	for _, conflict := range []bool{false, true} {
+		name := "older revision"
+		if conflict {
+			name = "equal revision conflicting hash"
+		}
+		t.Run(name, func(t *testing.T) { testCascadeRestartFloor(t, conflict) })
+	}
+}
+func testCascadeRestartFloor(t *testing.T, conflictingHash bool) {
+	t.Helper()
 	options, cert, roots := chainCredentials(t)
 	options.CacheDir = filepath.Join(t.TempDir(), "cache")
 	cache, err := adsync.NewCache(options.CacheDir)
@@ -237,12 +247,17 @@ func TestCascadeRestartRejectsHeadBelowDiskCacheBeforePulling(t *testing.T) {
 		t.Fatal(err)
 	}
 	var olderPulls, newerPulls atomic.Int32
-	makeRelay := func(id string, revision uint64, pulls *atomic.Int32) *httptest.Server {
+	makeRelay := func(id string, revision uint64, pulls *atomic.Int32, conflict bool) *httptest.Server {
+		servedSnapshot, servedHash := snapshot, hash
+		if conflict {
+			servedSnapshot.Policies = []adsync.Policy{{ID: "01HF7YAT000000000000000199", Name: "conflicting", SPDL: "grant user alice read books"}}
+			servedHash = adsync.StateHash(servedSnapshot)
+		}
 		mirror, err := adsproxy.NewMirror(adsproxy.MirrorOptions{})
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := mirror.ApplySnapshot(&adsync.SnapshotResponse{ServiceID: testServiceID1, SourceID: testServiceID1, Epoch: testServiceID1, Revision: revision, StateHash: hash, CommitHash: hash, Snapshot: snapshot}); err != nil {
+		if err := mirror.ApplySnapshot(&adsync.SnapshotResponse{ServiceID: testServiceID1, SourceID: testServiceID1, Epoch: testServiceID1, Revision: revision, StateHash: servedHash, CommitHash: servedHash, Snapshot: servedSnapshot}); err != nil {
 			t.Fatal(err)
 		}
 		relay, err := adsproxy.NewServer(adsproxy.Config{InstanceID: id, Mirror: mirror, Upstream: func() adsync.UpstreamStatus { return adsync.UpstreamStatus{State: "live", FreshFor: time.Minute} }})
@@ -257,8 +272,12 @@ func TestCascadeRestartRejectsHeadBelowDiskCacheBeforePulling(t *testing.T) {
 			relay.ServeHTTP(w, r)
 		}), cert, roots)
 	}
-	primary := makeRelay("0193a5c2-7d1e-7b3a-9f10-4c2d8e6a1b51", 1, &olderPulls)
-	backup := makeRelay("0193a5c2-7d1e-7b3a-9f10-4c2d8e6a1b52", 2, &newerPulls)
+	primaryRevision := uint64(1)
+	if conflictingHash {
+		primaryRevision = 2
+	}
+	primary := makeRelay("0193a5c2-7d1e-7b3a-9f10-4c2d8e6a1b51", primaryRevision, &olderPulls, conflictingHash)
+	backup := makeRelay("0193a5c2-7d1e-7b3a-9f10-4c2d8e6a1b52", 2, &newerPulls, false)
 	options.UpstreamURL = primary.URL
 	options.UpstreamURLs = []string{primary.URL, backup.URL}
 	child, err := Open(context.Background(), options)
@@ -367,4 +386,86 @@ func TestCascadeSyncRotatesOnlyForEndpointFailures(t *testing.T) {
 			}
 		})
 	}
+}
+
+type cascadeOffsetClock struct {
+	mu     sync.Mutex
+	offset time.Duration
+}
+
+func (c *cascadeOffsetClock) Now() time.Time {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return time.Now().Add(c.offset)
+}
+func (c *cascadeOffsetClock) advance(d time.Duration) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.offset += d
+}
+
+func TestCascadeRecoversAfterAncestorSyncingExceedsStopAfter(t *testing.T) {
+	fixture := newTestFixture(t, booksService())
+	root := fixture.open(func(o *Options) { o.ServeDownstream = true })
+	t.Cleanup(func() { root.Close() })
+	options, cert, roots := chainCredentials(t)
+	options.ReconcilePeriod = 0 // Exercise the production minute cadence, not a fast test ticker.
+	rootServer := chainListener(t, root, cert, roots)
+	openChild := func(address string) (*Store, *cascadeOffsetClock) {
+		clock := &cascadeOffsetClock{}
+		o := options
+		o.UpstreamURL = address
+		o.CacheDir = filepath.Join(t.TempDir(), "cache")
+		o.Clock = clock
+		child, err := Open(context.Background(), o)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { child.Close() })
+		engine, err := eval.NewWithStore(&cfg.Config{EnableWatch: true}, child)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { engine.(*eval.PolicyEvalImpl).Close() })
+		e2eWaitFor(t, "initial cascade sync", func() bool { return child.machine.Upstream().State == "live" })
+		return child, clock
+	}
+	relay, relayClock := openChild(rootServer.URL)
+	relayServer := chainListener(t, relay, cert, roots)
+	leaf, leafClock := openChild(relayServer.URL)
+	// Stabilize the availability observer at the confirmed live state before
+	// driving the long transition; no heartbeat-period sleeps are needed.
+	root.changeDistribution(func() {})
+	relay.changeDistribution(func() {})
+	root.changeDistribution(func() { root.machine.Resync(testServiceID1) })
+	e2eWaitFor(t, "syncing state at both descendants", func() bool {
+		return relay.machine.Instance().Liveness == adsync.LivenessStale && leaf.machine.Instance().Liveness == adsync.LivenessStale
+	})
+	e2eWaitFor(t, "rejected ancestor ACKs to clear data admission", func() bool {
+		_, a := relay.runtime.channel.AckedServices()
+		_, b := leaf.runtime.channel.AckedServices()
+		return !a && !b
+	})
+	relayClock.advance(3 * time.Minute)
+	leafClock.advance(3 * time.Minute)
+	e2eWaitFor(t, "both descendants to stop after the long syncing interval", func() bool {
+		return relay.Instance().Liveness == adsync.LivenessStopped && leaf.Instance().Liveness == adsync.LivenessStopped
+	})
+	// Materialize the same heartbeat-lost latch that the next live ACK would
+	// otherwise materialize; no old verification may carry across this point.
+	relay.machine.Stop(adsync.ReasonHeartbeatLost)
+	leaf.machine.Stop(adsync.ReasonHeartbeatLost)
+	if err := root.Sync(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	confirmStoreGeneration(t, root)
+	e2eWaitForWithin(t, 15*time.Second, "post-stop recovery at every hop", func() bool {
+		for _, child := range []*Store{relay, leaf} {
+			status, ok := child.machine.Status("books")
+			if !ok || status.Instance.Liveness != adsync.LivenessLive || status.Service.State != adsync.SyncStateInSync {
+				return false
+			}
+		}
+		return true
+	})
 }

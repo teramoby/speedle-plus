@@ -178,3 +178,12 @@ func TestCascadeRejectsEmptyConfiguredCRLSources(t *testing.T) {
 		}
 	}
 }
+
+func TestCascadeCanonicalDuplicateAddresses(t *testing.T) {
+	for _, entries := range [][]string{{"https://Relay.example", "https://relay.example:443/"}, {"https://[::1]", "https://[::1]:443/"}} {
+		options := Options{UpstreamURLs: entries}
+		if err := validateUpstream(&options); err == nil {
+			t.Fatalf("equivalent addresses were not duplicates: %v", entries)
+		}
+	}
+}

@@ -186,3 +186,8 @@ Reconnect backoff resets only after an admitted endpoint remains healthy for a
 heartbeat interval. A peer that sends one ACK and immediately disconnects keeps
 exponential backoff. Sent-frame references older than the protocol's maximum
 freshness window expire; no count or payload-size cap is used for that cleanup.
+
+Configured upstreams are canonicalized by host case and default HTTPS port
+before duplicate detection. Persistent failed cascade attempts emit at most
+one warning per endpoint per minute, with the endpoint origin/index and a
+static failure class; response bodies and opaque URL path prefixes are omitted.

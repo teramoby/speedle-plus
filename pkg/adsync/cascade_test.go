@@ -3,10 +3,12 @@
 package adsync
 
 import (
+	"bytes"
 	"context"
 	"crypto/x509"
 	"encoding/json"
 	"errors"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -763,5 +765,52 @@ func TestLegacyCascadeDecoderRejectsExtendedAck(t *testing.T) {
 		if err := decodeStrict(payload, &legacy); !errors.Is(err, ErrProtocol) {
 			t.Fatalf("legacy decoder accepted %s cascade metadata: %v", state, err)
 		}
+	}
+}
+
+func TestCascadeCanonicalUpstreamDuplicates(t *testing.T) {
+	pki := newCascadePKI(t)
+	for _, urls := range [][]string{{"https://Relay.example", "https://relay.example:443/"}, {"https://[::1]", "https://[::1]:443/"}} {
+		config := cascadeConfig(t, pki, urls[0])
+		config.UpstreamURLs = urls
+		if _, err := NewClient(config); err == nil || !strings.Contains(err.Error(), "duplicate") {
+			t.Fatalf("accepted equivalent upstreams %v: %v", urls, err)
+		}
+	}
+	config := cascadeConfig(t, pki, "https://Relay.example:443/")
+	config.UpstreamURLs = []string{config.BaseURL}
+	client := mustCascadeClient(t, config)
+	if client.base.String() != "https://relay.example" {
+		t.Fatalf("canonical base: %s", client.base)
+	}
+}
+
+func TestCascadeFailureWarningsAreRateLimitedAndRedacted(t *testing.T) {
+	var output bytes.Buffer
+	logger := log.StandardLogger()
+	previous, level := logger.Out, logger.GetLevel()
+	logger.SetOutput(&output)
+	logger.SetLevel(log.WarnLevel)
+	defer func() { logger.SetOutput(previous); logger.SetLevel(level) }()
+	pki := newCascadePKI(t)
+	cert, _, _ := pki.issue(t, 111, x509.ExtKeyUsageServerAuth, "127.0.0.1", time.Now().Add(time.Hour))
+	var requests atomic.Int32
+	server := cascadeServer(t, pki, cert, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { requests.Add(1); w.WriteHeader(503) }))
+	config := cascadeConfig(t, pki, server.URL+"/private-prefix-must-not-be-logged")
+	client := mustCascadeClient(t, config)
+	channel := newTestChannel(t, client, newChannelMachine(t), ChannelOptions{Transport: TransportWebSocket})
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	done := make(chan error, 1)
+	go func() { done <- channel.Run(ctx) }()
+	waitFor(t, 3*time.Second, "repeated failed endpoint attempts", func() bool { return requests.Load() >= 3 })
+	cancel()
+	<-done
+	message := output.String()
+	if strings.Count(message, "policy-source cascade upstream attempt failed") != 1 || !strings.Contains(message, "failure_class") || !strings.Contains(message, "unavailable") || !strings.Contains(message, server.URL) {
+		t.Fatalf("failure warning: %s", message)
+	}
+	if strings.Contains(message, "private-prefix") || strings.Contains(message, testAPIKey) {
+		t.Fatal("warning exposed a path or credential")
 	}
 }

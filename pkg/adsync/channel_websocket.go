@@ -69,6 +69,9 @@ func (c *Channel) runWebSocket(ctx context.Context) wsOutcome {
 					err:      &terminalError{err: newStatusError(http.MethodGet, APIPrefix+"/channel", response.StatusCode, body)},
 				}
 			}
+			if c.client.cascade() {
+				return wsOutcome{upgradeFailed: true, err: newStatusError(http.MethodGet, APIPrefix+"/channel", response.StatusCode, body)}
+			}
 		}
 		return wsOutcome{
 			upgradeFailed: true,

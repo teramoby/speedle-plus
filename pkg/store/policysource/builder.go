@@ -418,6 +418,9 @@ func validateUpstream(options *Options) error {
 			return errors.New(errors.ConfigError, "UpstreamURL must be an https URL without credentials, query or fragment")
 		}
 		parsed.Host = strings.ToLower(parsed.Host)
+		if parsed.Port() == "443" {
+			parsed.Host = strings.TrimSuffix(parsed.Host, ":443")
+		}
 		normalized := strings.TrimSuffix(parsed.String(), "/")
 		if seen[normalized] {
 			return errors.New(errors.ConfigError, "UpstreamURL contains duplicate URLs")

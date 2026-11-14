@@ -4,7 +4,9 @@ package adsync
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"net/url"
 	"strings"
 	"time"
@@ -33,6 +35,10 @@ func parseUpstreams(config Config, base *url.URL) ([]*url.URL, error) {
 			return nil, fmt.Errorf("adsync: invalid upstream URL")
 		}
 		candidate.Path = strings.TrimSuffix(candidate.Path, "/")
+		candidate.Host = strings.ToLower(candidate.Host)
+		if candidate.Port() == "443" {
+			candidate.Host = strings.TrimSuffix(candidate.Host, ":443")
+		}
 		if seen[candidate.String()] {
 			return nil, fmt.Errorf("adsync: duplicate upstream URL")
 		}
@@ -57,6 +63,7 @@ func (c *Client) selectedBase() *url.URL {
 // failure in cascade mode; automatic WS-to-poll fallback remains per endpoint.
 func (c *Channel) runCascade(ctx context.Context) error {
 	index, rounds := 0, 0
+	lastWarning := make(map[string]time.Time)
 	for ctx.Err() == nil {
 		attemptCtx, cancel := context.WithCancel(ctx)
 		selectEndpoint := func() {
@@ -74,6 +81,7 @@ func (c *Channel) runCascade(ctx context.Context) error {
 			selectEndpoint()
 		}
 		preferred := false
+		livenessLost := false
 		monitorDone := make(chan struct{})
 		go func() {
 			defer close(monitorDone)
@@ -91,6 +99,7 @@ func (c *Channel) runCascade(ctx context.Context) error {
 						continue
 					}
 					if c.machine.Instance().Liveness != LivenessLive {
+						livenessLost = true
 						cancel()
 						return
 					}
@@ -102,7 +111,7 @@ func (c *Channel) runCascade(ctx context.Context) error {
 				}
 			}
 		}()
-		_ = c.runTransport(attemptCtx)
+		attemptErr := c.runTransport(attemptCtx)
 		c.client.dataReady.Store(false)
 		cancel()
 		<-monitorDone
@@ -118,6 +127,13 @@ func (c *Channel) runCascade(ctx context.Context) error {
 		c.mu.Unlock()
 		if admitted && !since.IsZero() && time.Since(since) >= c.heartbeatInterval() {
 			rounds = 0
+		}
+		if !preferred && attemptErr != nil && (livenessLost || !errors.Is(attemptErr, context.Canceled)) {
+			class := cascadeFailureClass(attemptErr)
+			if livenessLost {
+				class = "liveness"
+			}
+			warnCascadeAttempt(c.client.channelBase(), index, class, lastWarning, time.Now())
 		}
 		if preferred {
 			index = 0
@@ -371,4 +387,32 @@ func (m *Machine) observeUpstreamUntil(state string, deadline time.Time) time.Du
 	m.upstreamState = state
 	m.upstreamDeadline = now.Add(min(remaining, m.effectiveThresholdsLocked().StaleAfter))
 	return remaining
+}
+
+func cascadeFailureClass(err error) string {
+	switch {
+	case errors.Is(err, ErrUnauthorized), errors.Is(err, ErrForbidden):
+		return "authentication"
+	case errors.Is(err, ErrIntegrity):
+		return "integrity"
+	case errors.Is(err, ErrProtocol):
+		return "protocol"
+	case errors.Is(err, ErrRateLimited):
+		return "rate_limit"
+	case errors.Is(err, ErrUnavailable):
+		return "unavailable"
+	default:
+		return "transport"
+	}
+}
+
+// Failed attempts are observable without exposing an upstream's error body,
+// credential-like URL paths, or flooding logs during a persistent outage.
+func warnCascadeAttempt(endpoint *url.URL, index int, class string, last map[string]time.Time, now time.Time) {
+	key := endpoint.String()
+	if previous, found := last[key]; found && now.Sub(previous) < time.Minute {
+		return
+	}
+	last[key] = now
+	log.WithFields(log.Fields{"upstream": endpoint.Scheme + "://" + endpoint.Host, "upstream_index": index, "failure_class": class}).Warn("policy-source cascade upstream attempt failed")
 }

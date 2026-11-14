@@ -264,6 +264,10 @@ func NewClientContext(ctx context.Context, config Config) (*Client, error) {
 		return nil, fmt.Errorf("adsync: BaseURL must not contain a query or fragment")
 	}
 	base.Path = strings.TrimSuffix(base.Path, "/")
+	base.Host = strings.ToLower(base.Host)
+	if base.Port() == "443" {
+		base.Host = strings.TrimSuffix(base.Host, ":443")
+	}
 	upstreams, err := parseUpstreams(config, base)
 	if err != nil {
 		return nil, err
