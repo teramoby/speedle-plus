@@ -6,22 +6,26 @@ name: Image smoke
 # before it creates a tag.
 on:
   pull_request:
-    paths:
-      - deployment/container/**
-      - .github/workflows/release.yml
-      - .github/workflows/image-smoke.yml
-      - scripts/release-smoke.sh
-      - cmd/**
+    types: [opened, synchronize, reopened, labeled]
+  push:
+    branches: [master]
 
 permissions: {}
 
 concurrency:
-  group: image-smoke-${{ github.event.pull_request.number || github.sha }}
-  cancel-in-progress: true
+  group: image-smoke-${{ github.event.pull_request.number || github.sha }}${{ (github.event.action == 'unlabeled' || (github.event.action == 'labeled' && github.event.label.name != 'full-ci' && github.event.label.name != 'merge-head')) && format('-ignored-{0}', github.run_id) || '' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   smoke:
-    name: image smoke
+    name: ${{ (github.event.action == 'unlabeled' || (github.event.action == 'labeled' && github.event.label.name != 'full-ci' && github.event.label.name != 'merge-head')) && format('Ignored image event {0}', github.run_id) || 'image smoke' }}
+    if: >-
+      github.event_name == 'push'
+      || (github.event.action != 'unlabeled'
+      && (github.event.action != 'labeled'
+      || github.event.label.name == 'full-ci' || github.event.label.name == 'merge-head')
+      && (contains(github.event.pull_request.labels.*.name, 'full-ci')
+      || contains(github.event.pull_request.labels.*.name, 'merge-head')))
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
