@@ -119,7 +119,7 @@ curl --fail --silent --show-error --retry 30 --retry-all-errors --retry-delay 1 
 {"ready":true,"servicesTotal":0,"servicesUsable":0}
 ```
 
-프로세스가 실행 중인 동안 `/healthz`는 `200 {"status":"ok"}`를 응답합니다. ADS가 요청을 평가할 수 있을 때 `/readyz`는 `200`을 응답합니다. 파일 저장소에는 분산 상태가 없으므로 서비스 수는 0으로 유지됩니다. 확인해야 할 필드는 `ready`입니다. 이미지에는 셸과 `curl`이 없으므로 이러한 프로브는 호스트나 다른 컨테이너에서 실행됩니다.
+프로세스가 실행 중인 동안 `/healthz`는 `200 {"status":"ok"}`를 응답합니다. 로컬 ADS의 `/readyz`는 `200`과 `ready: true`를 반환하며 서비스 수는 0입니다. 이미지에는 셸과 `curl`이 없으므로 이러한 프로브는 호스트나 다른 컨테이너에서 실행됩니다.
 
 ## 정책 추가 및 확인
 

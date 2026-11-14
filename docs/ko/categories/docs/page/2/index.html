@@ -80,6 +80,20 @@
     
     <li>
   <h2 class="title2">
+    <a href="/ko/docs/overview/" itemprop="headline">Speedle 개요: 세분화된 접근 제어를 위한 인가 엔진</a>
+  </h2>
+  
+  <p itemprop="about">Speedle이 일반적인 인가 용어(PAP, PDP, PEP, PIP, RBAC, ABAC, PBAC, XACML, 제로 트러스트, ID, IAM)와 어떻게 대응하는지 설명합니다.</p>
+  
+  
+  <p itemprop="about">인가 및 접근 제어 어휘에서 Speedle의 위치</p>
+  
+  <hr />
+</li>
+
+    
+    <li>
+  <h2 class="title2">
     <a href="/ko/docs/pms/diagnosis/" itemprop="headline">인가 진단</a>
   </h2>
   
@@ -94,13 +108,13 @@
     
     <li>
   <h2 class="title2">
-    <a href="/ko/docs/deployment/docker/" itemprop="headline">Docker 이미지</a>
+    <a href="/ko/docs/assertor/" itemprop="headline">토큰 어서터</a>
   </h2>
   
-  <p itemprop="about">공개된 Speedle 이미지로 speedle-pms, speedle-ads 및 spctl 실행</p>
+  <p itemprop="about">ID 토큰을 검증하고 Speedle 인가 요청에 신뢰할 수 있는 주체와 신원 도메인을 제공</p>
   
   
-  <p itemprop="about">Docker Hub 및 GHCR의 단일 이미지로 공유 파일 저장소를 사용하는 정책 관리 서비스, 인가 결정 서비스 및 spctl을 실행합니다.</p>
+  <p itemprop="about">평가 요청에는 사용자를 나타내는 ID 토큰이 포함될 수 있습니다. 이 경우 평가 엔진은 어서터 서비스를 호출하여 사용자의 명시적 신원을 얻을 수 있습니다</p>
   
   <hr />
 </li>
@@ -108,27 +122,13 @@
     
     <li>
   <h2 class="title2">
-    <a href="/ko/docs/sdks/go/" itemprop="headline">Go SDK</a>
+    <a href="/ko/docs/api/" itemprop="headline">API</a>
   </h2>
   
-  <p itemprop="about">Speedle Go SDK를 추가하고 로컬 Speedle 또는 Speedle Cloud에 대해 인가 확인 수행</p>
+  <p itemprop="about">Open API 사양 문서</p>
   
   
-  <p itemprop="about">go get으로 github.com/teramoby/speedle-sdk/go v0.2.0을 추가하고 로컬 Speedle 또는 Speedle Cloud에 대해 IsAllowed 및 Check를 호출합니다.</p>
-  
-  <hr />
-</li>
-
-    
-    <li>
-  <h2 class="title2">
-    <a href="/ko/docs/deployment/homebrew/" itemprop="headline">Homebrew 설치</a>
-  </h2>
-  
-  <p itemprop="about">Homebrew로 speedle-spctl, speedle-pms, speedle-ads를 설치하고 로컬에서 데모를 실행합니다.</p>
-  
-  
-  <p itemprop="about">Homebrew는 명령줄 도구와 두 서비스를 설치한 뒤, 127.0.0.1에서 하나의 정책 파일을 공유하여 실행합니다.</p>
+  <p itemprop="about">Open API 사양 문서. API를 사용하여 단순하거나 복잡한 정책을 선언적으로 모델링하고, 결정을 쿼리하며, 정책을 동적으로 발견하고 정책 평가를 디버깅합니다.</p>
   
   <hr />
 </li>

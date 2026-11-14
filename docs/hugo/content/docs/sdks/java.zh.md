@@ -1,6 +1,6 @@
 +++
 title = "Java SDK"
-description = "添加 Speedle Java SDK，向本地 Speedle 或 Speedle Cloud 发起授权检查。"
+description = "添加 Speedle Java SDK，向本地 Speedle 发起授权检查。"
 weight = 10
 aliases = ["/zh/docs/api/sdk-java/"]
 draft = false
@@ -8,7 +8,7 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "用 Maven 或 Gradle 添加 io.speedle:speedle-sdk 0.2.0，再向本地 Speedle 或 Speedle Cloud 调用 isAllowed 与 check。"
+bref = "用 Maven 或 Gradle 添加 io.speedle:speedle-sdk 0.2.0，再向本地 Speedle 调用 isAllowed 与 check。"
 lastmod = 2026-11-08T19:23:52+08:00
 +++
 
@@ -114,60 +114,6 @@ alice get /docs/public: allowed=true
 alice delete /docs/public: allowed=false reason=NO_APPLICABLE_POLICIES
 ```
 
-## 调用 Speedle Cloud
-
-> **Speedle Cloud 即将上线。**
-
-程序从 `SPEEDLE_SERVICE` 读取服务名，从 `SPEEDLE_TOKEN` 读取具有 `ads` 权限范围的账号 API 密钥。`SPEEDLE_ENDPOINT` 可覆盖默认端点 `https://cloud.speedle.io`。将 `src/main/java/Main.java` 替换为：
-
-```java
-import io.speedle.sdk.Auth;
-import io.speedle.sdk.Backend;
-import io.speedle.sdk.Decision;
-import io.speedle.sdk.SpeedleClient;
-import io.speedle.sdk.SpeedleException;
-import io.speedle.sdk.Subject;
-import java.net.URI;
-import java.util.List;
-
-public class Main {
-  public static void main(String[] args) {
-    String endpoint = System.getenv().getOrDefault("SPEEDLE_ENDPOINT", "https://cloud.speedle.io");
-    try (SpeedleClient speedle = SpeedleClient.builder()
-        .backend(Backend.SPEEDLE_CLOUD)
-        .endpoint(URI.create(endpoint))
-        .auth(Auth.bearer(System.getenv("SPEEDLE_TOKEN")))
-        .serviceName(System.getenv("SPEEDLE_SERVICE"))
-        .build()) {
-      boolean allowed = speedle.isAllowed(Subject.user("alice"), "get", "/docs/public", List.of());
-      System.out.println("alice get /docs/public: allowed=" + allowed);
-
-      Decision d = speedle.check(Subject.user("alice"), "delete", "/docs/public", List.of());
-      System.out.println("alice delete /docs/public: allowed=" + d.allowed() + " reason=" + d.reason());
-    } catch (SpeedleException e) {
-      System.err.println("Speedle error: " + e.getMessage());
-      System.exit(1);
-    }
-  }
-}
-```
-
-设置环境变量后运行。`read -rs` 不会把API 密钥写入 shell 历史，也不会显示在屏幕上：
-
-```bash
-export SPEEDLE_SERVICE=docs
-read -rs SPEEDLE_TOKEN && export SPEEDLE_TOKEN
-mvn -q compile exec:java -Dexec.mainClass=Main
-```
-
-服务中已有示例策略时，输出为：
-
-```text
-alice get /docs/public: allowed=true
-alice delete /docs/public: allowed=false reason=NO_APPLICABLE_POLICIES
-```
-
-API 密钥是服务端密钥，切勿放进浏览器、移动应用或桌面客户端。
 
 ## 错误处理
 

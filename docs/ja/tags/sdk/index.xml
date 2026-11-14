@@ -96,9 +96,9 @@ use speedle::blocking::Client; use speedle::{Auth, Backend}; fn main() { if let 
       <pubDate>Tue, 10 Nov 2026 14:45:43 +0800</pubDate>
       
       <guid>https://engine.speedle.io/ja/docs/sdks/</guid>
-      <description>Speedle SDK は、決定 API POST /authz-check/v1/is-allowed のクライアントライブラリです。セルフホストの Speedle ADS および Speedle Cloud の両方で動作します。各言語ページではパッケージの追加方法を説明し、両方の環境向けにテスト済みの完全なプログラムを提供しています。ソースコードと完全なリファレンスは teramoby/speedle-sdk にあります。これらのサンプルで PMS と ADS を実行する方法については、デプロイ と Docker イメージ を参照してください。
+      <description>Speedle SDK は、決定 API POST /authz-check/v1/is-allowed のクライアントライブラリです。セルフホストの Speedle ADS で動作します。各言語ページではパッケージの追加方法を説明し、セルフホスト環境向けにテスト済みの完全なプログラムを提供しています。ソースコードと完全なリファレンスは teramoby/speedle-sdk にあります。これらのサンプルで PMS と ADS を実行する方法については、デプロイ と Docker イメージ を参照してください。
 パッケージ Java、Python、Go、.NET、Rust はバージョン 0.2.0 です。@speedle/sdk は npm で公開されています。各言語のインストールコマンドは各ページに記載されています。
- Java: Maven Central io.speedle:speedle-sdk、公開済み。 Python: PyPI speedle、公開済み。 Go: Go モジュール github.com/teramoby/speedle-sdk/go、公開済み。 C#/.NET: NuGet Speedle.Sdk、公開済み。 Rust: crates.io speedle、公開済み。 Node.js / TypeScript: npm @speedle/sdk、公開済み。  機能    機能 ステータス     isAllowed: 認可決定を返す 6 つの SDK すべて   check: 認可決定と理由（該当するポリシーがない等）を返す 6 つの SDK すべて   セルフホストの Speedle ADS 6 つの SDK すべて   Speedle Cloud まもなく公開    メソッド名は各言語の命名規則に従っています。Python と Rust では is_allowed と check、Go では IsAllowed と Check、.</description>
+ Java: Maven Central io.speedle:speedle-sdk、公開済み。 Python: PyPI speedle、公開済み。 Go: Go モジュール github.com/teramoby/speedle-sdk/go、公開済み。 C#/.NET: NuGet Speedle.Sdk、公開済み。 Rust: crates.io speedle、公開済み。 Node.js / TypeScript: npm @speedle/sdk、公開済み。  機能    機能 ステータス     isAllowed: 認可決定を返す 6 つの SDK すべて   check: 認可決定と理由（該当するポリシーがない等）を返す 6 つの SDK すべて   セルフホストの Speedle ADS 6 つの SDK すべて    メソッド名は各言語の命名規則に従っています。Python と Rust では is_allowed と check、Go では IsAllowed と Check、.</description>
     </item>
     
   </channel>

@@ -8,11 +8,11 @@ linksection = true
 tocheading = "h2"
 tags = ["sdk"]
 categories = ["docs"]
-bref = "Client libraries for the Speedle decision API in six languages. They work with a self-hosted Speedle ADS and with Speedle Cloud (coming soon)."
+bref = "Client libraries for the Speedle decision API in six languages. They work with a self-hosted Speedle ADS."
 lastmod = 2026-11-10T14:45:43+08:00
 +++
 
-The Speedle SDKs are client libraries for the decision API `POST /authz-check/v1/is-allowed`. They work with a self-hosted Speedle ADS and with Speedle Cloud. Each language page shows how to add the package and gives a complete, tested program for both. The source and the full reference are in [teramoby/speedle-sdk](https://github.com/teramoby/speedle-sdk). To run PMS and ADS for these examples, see [Deployment](/docs/deployment/) and the [Docker image](/docs/deployment/docker/).
+The Speedle SDKs are client libraries for the decision API `POST /authz-check/v1/is-allowed`. They work with a self-hosted Speedle ADS. Each language page shows how to add the package and gives a complete, tested program for a self-hosted ADS. The source and the full reference are in [teramoby/speedle-sdk](https://github.com/teramoby/speedle-sdk). To run PMS and ADS for these examples, see [Deployment](/docs/deployment/) and the [Docker image](/docs/deployment/docker/).
 
 ## Packages
 
@@ -32,7 +32,6 @@ Java, Python, Go, .NET and Rust are version 0.2.0. `@speedle/sdk` is published o
 | `isAllowed`: returns the decision | All six SDKs |
 | `check`: returns the decision and the reason, for example that no policy applies | All six SDKs |
 | Self-hosted Speedle ADS | All six SDKs |
-| Speedle Cloud | Coming soon |
 
 The method names follow each language's conventions: `is_allowed` and `check` in Python and Rust, `IsAllowed` and `Check` in Go, `IsAllowedAsync` and `CheckAsync` in .NET.
 
@@ -48,5 +47,3 @@ Every example asks whether user `alice` may `get` and `delete` the resource `/do
 ```
 
 The local examples connect to `http://localhost:6734` without credentials. The SDKs accept plain `http://` only for a loopback host; use HTTPS for any other ADS.
-
-The Speedle Cloud examples connect to `https://cloud.speedle.io` and read the service name and an account API key with the `ads` scope from the environment variables `SPEEDLE_SERVICE` and `SPEEDLE_TOKEN`. Create the same policy in that service to get the same answers. The API key is a server-side secret: never ship it to browsers, mobile apps or desktop clients.

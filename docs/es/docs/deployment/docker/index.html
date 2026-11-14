@@ -149,19 +149,7 @@
 </ul>
 
 </li>
-
-
-
-<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/es/docs/cloud/">Speedle Cloud</a></span>
-<ul class="">
-<li data-docs-depth="1" class=""><a href="/es/docs/cloud/getting-started/">Primeros pasos</a></li>
-<li data-docs-depth="1" class=""><a href="/es/docs/cloud/tokens/">Claves API</a></li>
-<li data-docs-depth="1" class=""><a href="/es/docs/cloud/authorization-api/">API de autorización</a></li>
-<li data-docs-depth="1" class=""><a href="/es/docs/cloud/api-reference/">Referencia de la API</a></li>
-<li data-docs-depth="1" class=""><a href="/es/docs/cloud/limits-and-errors/">Límites y errores</a></li>
-</ul>
-
-</li>
+<li data-docs-depth="0" class=""><a href="/es/docs/extending-decision-service/">Extender el servicio de decisiones</a></li>
 <li data-docs-depth="0" class=""><a href="/es/docs/security/">Seguridad</a></li>
 <li data-docs-depth="0" class=""><a href="/es/docs/logging/">Marco de registro</a></li>
 <li data-docs-depth="0" class=""><a href="/es/docs/versions/">Versiones</a></li>
@@ -261,7 +249,7 @@ docker run -d --name speedle-pms <span style="color:#f1fa8c">\
 curl --fail --silent --show-error --retry <span style="color:#bd93f9">30</span> --retry-all-errors --retry-delay <span style="color:#bd93f9">1</span> --connect-timeout <span style="color:#bd93f9">2</span> <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/readyz</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">{&#34;status&#34;:&#34;ok&#34;}
 {&#34;ready&#34;:true,&#34;servicesTotal&#34;:0,&#34;servicesUsable&#34;:0}</code></pre></div>
-<p><code>/healthz</code> responde <code>200 {&quot;status&quot;:&quot;ok&quot;}</code> mientras el proceso se está ejecutando. <code>/readyz</code> responde <code>200</code> cuando ADS puede evaluar una solicitud. Un almacén de archivos no tiene estado de distribución, por lo que el recuento de servicios se mantiene en cero; el campo que debe comprobarse es <code>ready</code>. La imagen no tiene shell ni <code>curl</code>, por lo que estas comprobaciones se ejecutan desde el host o desde otro contenedor.</p>
+<p><code>/healthz</code> responde <code>200 {&quot;status&quot;:&quot;ok&quot;}</code> mientras el proceso se está ejecutando. El ADS local responde a <code>/readyz</code> con <code>200</code>, <code>ready: true</code> y contadores de servicios en cero. La imagen no tiene shell ni <code>curl</code>, por lo que estas comprobaciones se ejecutan desde el host o desde otro contenedor.</p>
 
 <h2 id="añadir-y-comprobar-una-política">Añadir y comprobar una política</h2>
 

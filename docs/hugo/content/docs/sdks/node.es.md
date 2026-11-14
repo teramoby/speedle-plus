@@ -1,6 +1,6 @@
 +++
 title = "Node.js/TypeScript SDK"
-description = "Añada el SDK de Speedle para Node.js/TypeScript y compruebe autorizaciones frente a un Speedle local o Speedle Cloud."
+description = "Añada el SDK de Speedle para Node.js/TypeScript y compruebe autorizaciones frente a un Speedle local."
 weight = 60
 aliases = ["/es/docs/api/sdk-node/"]
 draft = false
@@ -8,7 +8,7 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "Instale @speedle/sdk con npm, y luego llame a isAllowed y check frente a un Speedle local o Speedle Cloud."
+bref = "Instale @speedle/sdk con npm, y luego llame a isAllowed y check frente a un Speedle local."
 lastmod = 2026-11-10T09:48:45+08:00
 +++
 
@@ -71,54 +71,6 @@ alice get /docs/public: allowed=true
 alice delete /docs/public: allowed=false reason=NoApplicablePolicies
 ```
 
-## Llamar a Speedle Cloud
-
-> **Speedle Cloud estará disponible próximamente.**
-
-El programa lee el nombre del servicio desde `SPEEDLE_SERVICE` y una clave API de cuenta con ámbito `ads` desde `SPEEDLE_TOKEN`. `SPEEDLE_ENDPOINT` anula el endpoint predeterminado `https://cloud.speedle.io`. Sustituya `main.ts` por:
-
-```typescript
-import { Auth, Reason, SpeedleClient, SpeedleError } from "@speedle/sdk";
-
-try {
-  const speedle = new SpeedleClient({
-    backend: "speedle-cloud",
-    endpoint: process.env.SPEEDLE_ENDPOINT ?? "https://cloud.speedle.io",
-    auth: Auth.bearer(process.env.SPEEDLE_TOKEN ?? ""),
-    serviceName: process.env.SPEEDLE_SERVICE ?? "",
-  });
-  try {
-    const allowed = await speedle.isAllowed("alice", "get", "/docs/public");
-    console.log(`alice get /docs/public: allowed=${allowed}`);
-
-    const d = await speedle.check("alice", "delete", "/docs/public");
-    console.log(`alice delete /docs/public: allowed=${d.allowed} reason=${Reason[d.reason] ?? d.reason}`);
-  } finally {
-    await speedle.close();
-  }
-} catch (e) {
-  if (!(e instanceof SpeedleError)) throw e;
-  console.error(`Speedle error: ${e.message}`);
-  process.exitCode = 1;
-}
-```
-
-Configure las variables de entorno y ejecútelo. `read -rs` evita que la clave API quede registrada en el historial de la terminal o en pantalla:
-
-```bash
-export SPEEDLE_SERVICE=docs
-read -rs SPEEDLE_TOKEN && export SPEEDLE_TOKEN
-node main.ts
-```
-
-Salida, cuando el servicio cuenta con la política de ejemplo:
-
-```text
-alice get /docs/public: allowed=true
-alice delete /docs/public: allowed=false reason=NoApplicablePolicies
-```
-
-La clave API es un secreto del lado del servidor. Nunca lo distribuya a navegadores, aplicaciones móviles o clientes de escritorio.
 
 ## Speedle MCP
 

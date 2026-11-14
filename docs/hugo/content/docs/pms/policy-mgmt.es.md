@@ -110,51 +110,6 @@ role_policy_id=$(./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1
 ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ delete service test
 ```
 
-## Speedle Cloud
-
-Use una clave API de cuenta para gestionar servicios y políticas de Cloud con `spctl`. El endpoint de gestión es:
-
-```text
-https://cloud.speedle.io/policy-mgmt/v1
-```
-
-Elija un único ámbito fijo para una clave API de cuenta. `pms:read` permite leer servicios y políticas; `pms:write` permite además crearlos y eliminarlos. Ambos se aplican a los servicios de la cuenta. Una clave `ads` no puede gestionar políticas y recibe `403 insufficient_scope`. Consulte [Claves API](/es/docs/cloud/tokens/) para creación y revocación.
-
-Pase el endpoint como un indicador global y lea la clave API desde `SPCTL_TOKEN`. En una sesión interactiva, esto evita que el secreto quede expuesto en los argumentos de comando o en el historial de la terminal:
-
-<!-- deployment-template: cloud-token-environment -->
-```bash
-read -rsp 'API key: ' SPCTL_TOKEN; echo
-export SPCTL_TOKEN
-./bin/spctl --pms-endpoint https://cloud.speedle.io/policy-mgmt/v1 get service --all
-unset SPCTL_TOKEN
-```
-
-El indicador `--token` sigue estando disponible por compatibilidad, pero la variable de entorno evita exponer la clave API mediante los argumentos de comando. Cada indicador global dispone también de una variable de entorno: anteponga `SPCTL_`, ponga el nombre en mayúsculas y reemplace los guiones por guiones bajos. Por ejemplo, `SPCTL_PMS_ENDPOINT` define `pms-endpoint` y `SPCTL_SKIPVERIFY` define `skipverify`.
-
-Para una configuración guardada, utilice `~/.speedle`. Su formato es un par `nombre=valor` por línea, con los mismos nombres de indicadores que la línea de comandos:
-
-```ini
-pms-endpoint=https://cloud.speedle.io/policy-mgmt/v1
-token=<api-key>
-```
-
-Cree o actualice este archivo sin colocar la clave API en argumentos de comando:
-
-<!-- deployment-template: cloud-token-config -->
-```bash
-read -rsp 'API key: ' SPCTL_TOKEN; echo
-printf '%s\n' "$SPCTL_TOKEN" | ./bin/spctl config token --stdin
-unset SPCTL_TOKEN
-```
-
-`spctl config token --stdin` escribe en `~/.speedle` con permisos `0600`. Si edita el archivo manualmente, créelo con `install -m 600 /dev/null ~/.speedle` o ejecute `chmod 0600 ~/.speedle` a continuación. `spctl` emite una advertencia en la salida de error estándar si lee una clave API de un archivo cuyos permisos permiten acceso a grupos u otros usuarios. `spctl config --list` enmascara la clave API configurada como `********`.
-
-Los indicadores explícitos de la línea de comandos anulan las variables de entorno, que a su vez anulan ambos archivos de configuración. Entre los archivos, `~/.speedle` anula a `~/.spctlconfig`. Definir un campo de configuración distinto de `token` con `spctl config` la escribe en `~/.spctlconfig` y elimina cualquier copia duplicada en `~/.speedle`.
-
-La clave API se envía como una credencial `Authorization: Bearer` únicamente a través de HTTPS con la verificación de certificados activada. HTTP en texto plano solo se permite con una clave API para hosts de bucle invertido como `127.0.0.1`, `::1` o `localhost`; `spctl` rechaza endpoints HTTP remotos y redirecciones de degradación de HTTPS a HTTP antes de enviar la credencial. Para endpoints HTTPS, también rechaza enviar una clave API si se especifica `--skipverify=true`; utilice `--cacert` para confiar en una entidad emisora de certificados privada o autofirmada. Las claves API no se incluyen en la salida estándar de los comandos ni en los mensajes de error.
-
-Los errores de Cloud generan un código de salida distinto de cero. Compruebe la clave API tras un error `401`, y sus alcances tras un `403 insufficient_scope`. Un error `404` identifica un recurso inexistente, mientras que `409 service_exists` y `409 policy_exists` identifican duplicados. En caso de `429`, respete el valor devuelto en `Retry-After` y use un tiempo de espera exponencial limitado. Para `429 daily_quota_exceeded`, espere hasta las 00:00 UTC según `Retry-After`. Los límites de servicios y políticas devuelven `409 quota_exceeded` y no se restablecen con el tiempo; elimine elementos sin uso. Una plaza de clave API se libera al revocar la clave o al dejar que caduque. Consulte [Límites y errores](/es/docs/cloud/limits-and-errors/).
 
 ## Otras interfaces
 

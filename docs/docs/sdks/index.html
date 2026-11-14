@@ -148,19 +148,7 @@
 </ul>
 
 </li>
-
-
-
-<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/docs/cloud/">Speedle Cloud</a></span>
-<ul class="">
-<li data-docs-depth="1" class=""><a href="/docs/cloud/getting-started/">Getting started</a></li>
-<li data-docs-depth="1" class=""><a href="/docs/cloud/tokens/">API keys</a></li>
-<li data-docs-depth="1" class=""><a href="/docs/cloud/authorization-api/">Authorization API</a></li>
-<li data-docs-depth="1" class=""><a href="/docs/cloud/api-reference/">API reference</a></li>
-<li data-docs-depth="1" class=""><a href="/docs/cloud/limits-and-errors/">Limits and errors</a></li>
-</ul>
-
-</li>
+<li data-docs-depth="0" class=""><a href="/docs/extending-decision-service/">Extending the decision service</a></li>
 <li data-docs-depth="0" class=""><a href="/docs/security/">Security</a></li>
 <li data-docs-depth="0" class=""><a href="/docs/logging/">Logging Framework</a></li>
 <li data-docs-depth="0" class=""><a href="/docs/versions/">Versions</a></li>
@@ -181,7 +169,7 @@
   <h1>SDKs</h1>
   <p></p>
 
-<p>The Speedle SDKs are client libraries for the decision API <code>POST /authz-check/v1/is-allowed</code>. They work with a self-hosted Speedle ADS and with Speedle Cloud. Each language page shows how to add the package and gives a complete, tested program for both. The source and the full reference are in <a href="https://github.com/teramoby/speedle-sdk">teramoby/speedle-sdk</a>. To run PMS and ADS for these examples, see <a href="/docs/deployment/">Deployment</a> and the <a href="/docs/deployment/docker/">Docker image</a>.</p>
+<p>The Speedle SDKs are client libraries for the decision API <code>POST /authz-check/v1/is-allowed</code>. They work with a self-hosted Speedle ADS. Each language page shows how to add the package and gives a complete, tested program for a self-hosted ADS. The source and the full reference are in <a href="https://github.com/teramoby/speedle-sdk">teramoby/speedle-sdk</a>. To run PMS and ADS for these examples, see <a href="/docs/deployment/">Deployment</a> and the <a href="/docs/deployment/docker/">Docker image</a>.</p>
 
 <h2 id="packages">Packages</h2>
 
@@ -221,11 +209,6 @@
 <td>Self-hosted Speedle ADS</td>
 <td>All six SDKs</td>
 </tr>
-
-<tr>
-<td>Speedle Cloud</td>
-<td>Coming soon</td>
-</tr>
 </tbody>
 </table>
 
@@ -239,8 +222,6 @@
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service docs
 ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c <span style="color:#f1fa8c">&#34;grant user alice get,list /docs/public&#34;</span> --service-name<span style="color:#ff79c6">=</span>docs</code></pre></div>
 <p>The local examples connect to <code>http://localhost:6734</code> without credentials. The SDKs accept plain <code>http://</code> only for a loopback host; use HTTPS for any other ADS.</p>
-
-<p>The Speedle Cloud examples connect to <code>https://cloud.speedle.io</code> and read the service name and an account API key with the <code>ads</code> scope from the environment variables <code>SPEEDLE_SERVICE</code> and <code>SPEEDLE_TOKEN</code>. Create the same policy in that service to get the same answers. The API key is a server-side secret: never ship it to browsers, mobile apps or desktop clients.</p>
 </div></main>
         </div>
     </div>

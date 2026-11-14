@@ -1,6 +1,6 @@
 # Speedle — full documentation
 
-> Speedle is an open-source (UPL-1.0) authorization engine with the SPDL policy language. It consists of ADS (decisions) and PMS (policy management), SDKs in six languages, Speedle Cloud (hosted), and Speedle AI (authorization for and with AI agents, an MCP server, and the policy-modeler skill).
+> Speedle is an open-source (UPL-1.0) authorization engine with the SPDL policy language. It consists of ADS (decisions) and PMS (policy management), SDKs in six languages, and Speedle AI (authorization for and with AI agents, an MCP server, and the policy-modeler skill).
 
 This file contains the complete English documentation published at https://engine.speedle.io/, including the full reference for SPDL (Speedle Policy Definition Language). Index: https://engine.speedle.io/llms.txt. Canonical source: https://github.com/teramoby/speedle-plus (Universal Permissive License v1.0).
 
@@ -18,6 +18,7 @@ This file contains the complete English documentation published at https://engin
 - [Global Policy](https://engine.speedle.io/docs/pms/global-policy/)
 - [Policy Discovery](https://engine.speedle.io/docs/pms/discover/)
 - [Policy Diagnosis](https://engine.speedle.io/docs/pms/diagnosis/)
+- [Extending the decision service](https://engine.speedle.io/docs/extending-decision-service/)
 - [Custom Function](https://engine.speedle.io/docs/custom-function/)
 - [Token asserter](https://engine.speedle.io/docs/assertor/)
 - [Identity Domain](https://engine.speedle.io/docs/idd/)
@@ -36,12 +37,6 @@ This file contains the complete English documentation published at https://engin
 - [Speedle embedded mode](https://engine.speedle.io/docs/deployment/embedded/)
 - [Docker image](https://engine.speedle.io/docs/deployment/docker/)
 - [Homebrew](https://engine.speedle.io/docs/deployment/homebrew/)
-- [Speedle Cloud](https://engine.speedle.io/docs/cloud/)
-- [Getting started with Speedle Cloud](https://engine.speedle.io/docs/cloud/getting-started/)
-- [Speedle Cloud API keys](https://engine.speedle.io/docs/cloud/tokens/)
-- [Speedle Cloud authorization API](https://engine.speedle.io/docs/cloud/authorization-api/)
-- [API reference](https://engine.speedle.io/docs/cloud/api-reference/)
-- [Speedle Cloud Limits and errors](https://engine.speedle.io/docs/cloud/limits-and-errors/)
 - [Pluggable Storage](https://engine.speedle.io/docs/store/)
 - [MySQL Setup](https://engine.speedle.io/docs/store/mysql/)
 - [etcd Setup](https://engine.speedle.io/docs/store/etcd/)
@@ -56,7 +51,7 @@ This file contains the complete English documentation published at https://engin
 
 Source: https://engine.speedle.io/about/
 
-Speedle is an open-source (UPL-1.0) authorization engine with the SPDL policy language. It consists of ADS (decisions) and PMS (policy management), SDKs in six languages, Speedle Cloud (hosted), and Speedle AI (authorization for and with AI agents, an MCP server, and the policy-modeler skill).
+Speedle is an open-source (UPL-1.0) authorization engine with the SPDL policy language. It consists of ADS (decisions) and PMS (policy management), SDKs in six languages, and Speedle AI (authorization for and with AI agents, an MCP server, and the policy-modeler skill).
 
 Speedle was built by the team behind Oracle Entitlements Server (OES). Its design draws on many years of that team's work on earlier authorization products, including OES, BEA ALES/WLES and CrossLogix.
 
@@ -1133,52 +1128,6 @@ role_policy_id=$(./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1
 ```
 
 
-### Speedle Cloud
-
-Use an account API key to manage Cloud services and policies with `spctl`. The management endpoint is:
-
-```text
-https://cloud.speedle.io/policy-mgmt/v1
-```
-
-Choose one fixed scope for an account API key. `pms:read` permits reads of services and policies; `pms:write` also permits creating and deleting them. Both scopes apply to the account’s services. An `ads` key cannot manage policies and receives `403 insufficient_scope`. See [API keys](https://engine.speedle.io/docs/cloud/tokens/) for creation and revocation.
-
-Pass the endpoint as a global flag and read the API key from `SPCTL_TOKEN`. In an interactive shell, this keeps the secret out of command arguments and shell history:
-
-
-```bash
-read -rsp 'API key: ' SPCTL_TOKEN; echo
-export SPCTL_TOKEN
-./bin/spctl --pms-endpoint https://cloud.speedle.io/policy-mgmt/v1 get service --all
-unset SPCTL_TOKEN
-```
-
-The `--token` flag remains available for compatibility, but the environment variable avoids exposing the API key through command arguments. Every global flag also has an environment variable: prefix `SPCTL_`, uppercase the flag name and replace hyphens with underscores. For example, `SPCTL_PMS_ENDPOINT` sets `pms-endpoint` and `SPCTL_SKIPVERIFY` sets `skipverify`.
-
-For a saved configuration, use `~/.speedle`. Its format is one `name=value` pair per line, with the same flag names as the command line:
-
-```ini
-pms-endpoint=https://cloud.speedle.io/policy-mgmt/v1
-token=<api-key>
-```
-
-Create or update this file without putting the API key in command arguments:
-
-
-```bash
-read -rsp 'API key: ' SPCTL_TOKEN; echo
-printf '%s\n' "$SPCTL_TOKEN" | ./bin/spctl config token --stdin
-unset SPCTL_TOKEN
-```
-
-`spctl config token --stdin` writes `~/.speedle` with mode `0600`. When editing the file manually, create it with `install -m 600 /dev/null ~/.speedle` or run `chmod 0600 ~/.speedle` afterwards. `spctl` warns on standard error if it reads an API key from a file whose permissions allow group or other access. `spctl config --list` masks a configured API key as `********`.
-
-Explicit command-line flags override environment variables, which override both configuration files. Within the files, `~/.speedle` overrides `~/.spctlconfig`. Setting a configuration field other than `token` with `spctl config` writes it to `~/.spctlconfig` and removes any shadowing copy from `~/.speedle`.
-
-The API key is sent as an `Authorization: Bearer` credential only over HTTPS with certificate verification enabled. Plain HTTP is allowed with an API key only for a loopback host such as `127.0.0.1`, `::1` or `localhost`; `spctl` rejects remote HTTP endpoints and HTTPS-to-HTTP downgrade redirects before sending the credential. For HTTPS endpoints, it also refuses to send an API key with `--skipverify=true`; use `--cacert` to trust a private or self-signed certificate authority instead. API keys are not included in normal command output or error messages.
-
-Cloud errors produce a non-zero exit status. Check the API key after a `401`, and its scopes after a `403 insufficient_scope`. A `404` identifies a missing resource, while `409 service_exists` and `409 policy_exists` identify duplicates. For `429`, honor the returned `Retry-After` value and use bounded backoff. For `429 daily_quota_exceeded`, wait until 00:00 UTC as indicated by `Retry-After`. Service and policy caps return `409 quota_exceeded` and do not reset with time; delete unused items. An API-key slot is freed by revoking the key or letting it expire. See [Limits and errors](https://engine.speedle.io/docs/cloud/limits-and-errors/).
-
 
 ### Other interfaces
 
@@ -1413,6 +1362,88 @@ The diagnostic response uses `allowed` as a Boolean, `reason` as a string such a
 | `condition` | Expression and result; may be empty for unconditional policies |
 
 Policy status values are `takeEffect`, `conditionFailed` and `ignored`. `ignored` means the final result was already determined, so that policy did not need evaluation. Ordering can vary; inspect IDs and status rather than matching a historical response verbatim. See the [decision schema](https://engine.speedle.io/docs/api/decision_api/) for the complete response contract.
+
+## Extending the decision service
+
+Source: https://engine.speedle.io/docs/extending-decision-service/
+
+Implement `store.StoreBuilder`, register a unique name with `store.Register`, and
+import the package from your executable. `GetStoreParams` maps extra flags to
+store properties. Parse your own flags before starting the server; the Engine
+library does not parse flags or install signal handlers.
+
+Use `ads.Run(ctx, params, conf, options...)` from
+`github.com/teramoby/speedle-plus/pkg/ads` to reuse the standard ADS startup.
+`params` is `*flags.Parameters`, `conf` is `*cfg.Config`, and cancelling `ctx`
+stops both servers. `ads.WithGate(g)` overrides gate discovery on both transports;
+`ads.WithGate(nil)` disables it. `ads.WithListeners(rest, rpc)` accepts pre-bound
+`net.Listener` values (nil uses the configured endpoint). Run owns and closes
+those listeners, even on startup failure. REST retains the configured TLS;
+gRPC retains its server credentials. `ads.WithHTTPServer(func(*http.Server))`
+can wrap the handler or add routes before serving. `ads.WithGRPCOptions(...)`
+adds server options; use `grpc.ChainUnaryInterceptor(...)` for extra interceptors
+to preserve the standard panic recovery interceptor.
+
+The transport-independent `pkg/svcs/gate.Gate` has two methods:
+`Route(serviceName string) gate.Route` chooses `gate.Local`, `gate.Fallback`, or
+`gate.Unavailable`, and `Forward(context.Context, gate.Operation,
+*ads.RequestContext) (*gate.Response, error)` supplies a typed fallback result.
+Local continues normal evaluation. Fallback can allow or deny, return roles, or
+return permissions; failures never switch to local evaluation. Diagnose and
+Discover fail closed when fallback is selected. A `*gate.UnavailableError` carries
+a public reason code; other failures and nil responses map to
+`fallback_unavailable`. REST returns 503 with `authorization_unavailable`, a
+reason, `Cache-Control: no-store`, and `Retry-After: 30`; gRPC returns Unavailable.
+A response's `ErrorMessage` is an evaluation failure: REST IsAllowed returns its
+normal 200 error body, other REST operations return 500, and gRPC returns Internal.
+Successful fallback responses carry `X-Speedle-Decision-Source: upstream` (gRPC
+metadata uses the lowercase key). An optional `gate.Auditor.Audit(ctx, event)`
+receives one event per non-local route without subjects, tokens or request bodies;
+the services also write their standard audit logs. Gate implementations must be
+safe for concurrent requests and own their fallback authentication and resources.
+
+`gate.Response.Metadata` (`map[string][]string`) supplies optional response
+metadata on successful forwarded decisions, including denials and role/permission
+lists. REST copies the allowed values as response headers; gRPC sends the same
+keys, lower-cased, as response header metadata. Repeated values are preserved.
+Both transports drop hop-by-hop headers (including names listed in `Connection`),
+`Set-Cookie`, `Content-Length`, `Content-Type`, and service-owned headers such as
+`Cache-Control`, `Retry-After`, `X-Speedle-Decision-Source`, `Speedle-Principals`,
+`WWW-Authenticate`, `Date` and `Server`. Upstream body headers, including
+`Content-Encoding`, `Content-Range`, digests and validators, are excluded because
+the services serialize a new response body. Reserved `grpc-*` and binary `*-bin` keys,
+invalid text keys and non-printable/non-ASCII values are also dropped. REST keeps
+headers already set by middleware. Empty metadata leaves behavior unchanged;
+evaluation errors and failed forwards do not copy metadata. Keep a reused map
+immutable while requests are active.
+
+A store can implement `gate.GateProvider.RequestGate() gate.Gate`; REST and gRPC
+discover it through the evaluator's backing-store accessor. Embedded callers can
+use `eval.NewWithStore`, then `adsrest.NewRouter(evaluator,
+adsrest.WithGate(g))` or `adsgrpc.NewGRPCService(evaluator,
+adsgrpc.WithGate(g))`. Omitting the option discovers the store gate; an explicit
+nil disables it. Without a gate, existing local behavior is unchanged.
+
+Keep store lifetimes explicit: `store.WatchRequirement.RequireWatch()` forces
+subscription even if config disables watching. Optional
+`ReadPolicyStoreForReload() (*pms.PolicyStore, func(), error)` supplies a snapshot
+and an acknowledgement callback, called only after successful installation.
+`(*eval.PolicyEvalImpl).DistributionStore()` exposes the backing store for
+adapters. Closing the evaluator stops its watch and closes a closable store;
+`ads.Run` performs that cleanup. An explicitly supplied gate remains caller-owned.
+
+Cancelling the context stops gRPC first, then allows HTTP requests a five-second
+grace period before closing active connections. `ads.WithShutdownTimeout(d)`
+sets a positive grace period. Custom handlers and gates should observe request
+context cancellation. Both transports route before local token assertion:
+fallback receives the original token and principals and owns their authentication;
+local routes retain normal assertion. An evaluation error always clears
+`Allowed`, sets `Reason` to `ERROR_IN_EVALUATION`, and audits `evaluation_error`,
+even if the supplied fallback response claimed a grant.
+
+See the [test-only external store and gate](https://github.com/teramoby/speedle-plus/blob/master/pkg/ads/extensions_test.go)
+for REST/gRPC examples, the [store interfaces](https://github.com/teramoby/speedle-plus/tree/master/pkg/store)
+and [embedded deployment](https://engine.speedle.io/docs/deployment/embedded/).
 
 ## Custom Function
 
@@ -1903,9 +1934,9 @@ The full OpenAPI definition is published at [/swagger/policy-check.yaml](https:/
 
 ### Health endpoints
 
-`GET /healthz` reports process liveness and always answers `200 {"status":"ok"}` while the process runs. It does not restart a stopped instance.
+`GET /healthz` reports process liveness and always answers `200 {"status":"ok"}` while the process runs.
 
-`GET /readyz` reports whether the instance can currently answer an authorization request: `200` when ready, `503` otherwise. The endpoint is unauthenticated and returns aggregate counts only, so it does not expose service identities, revisions, stop reasons or revocation state. A store without distribution support is always ready.
+`GET /readyz` is unauthenticated and returns `200 {"ready":true,"servicesTotal":0,"servicesUsable":0}` for the local decision service. The counters remain zero; the probe does not enumerate stored services.
 
 ## Policy Management API
 
@@ -1931,7 +1962,7 @@ The full OpenAPI definition is published at [/swagger/asserter.yaml](https://eng
 
 Source: https://engine.speedle.io/docs/sdks/
 
-The Speedle SDKs are client libraries for the decision API `POST /authz-check/v1/is-allowed`. They work with a self-hosted Speedle ADS and with Speedle Cloud. Each language page shows how to add the package and gives a complete, tested program for both. The source and the full reference are in [teramoby/speedle-sdk](https://github.com/teramoby/speedle-sdk). To run PMS and ADS for these examples, see [Deployment](https://engine.speedle.io/docs/deployment/) and the [Docker image](https://engine.speedle.io/docs/deployment/docker/).
+The Speedle SDKs are client libraries for the decision API `POST /authz-check/v1/is-allowed`. They work with a self-hosted Speedle ADS. Each language page shows how to add the package and gives a complete, tested program for a self-hosted ADS. The source and the full reference are in [teramoby/speedle-sdk](https://github.com/teramoby/speedle-sdk). To run PMS and ADS for these examples, see [Deployment](https://engine.speedle.io/docs/deployment/) and the [Docker image](https://engine.speedle.io/docs/deployment/docker/).
 
 ### Packages
 
@@ -1951,7 +1982,6 @@ Java, Python, Go, .NET and Rust are version 0.2.0. `@speedle/sdk` is published o
 | `isAllowed`: returns the decision | All six SDKs |
 | `check`: returns the decision and the reason, for example that no policy applies | All six SDKs |
 | Self-hosted Speedle ADS | All six SDKs |
-| Speedle Cloud | Coming soon |
 
 The method names follow each language's conventions: `is_allowed` and `check` in Python and Rust, `IsAllowed` and `Check` in Go, `IsAllowedAsync` and `CheckAsync` in .NET.
 
@@ -1967,8 +1997,6 @@ Every example asks whether user `alice` may `get` and `delete` the resource `/do
 ```
 
 The local examples connect to `http://localhost:6734` without credentials. The SDKs accept plain `http://` only for a loopback host; use HTTPS for any other ADS.
-
-The Speedle Cloud examples connect to `https://cloud.speedle.io` and read the service name and an account API key with the `ads` scope from the environment variables `SPEEDLE_SERVICE` and `SPEEDLE_TOKEN`. Create the same policy in that service to get the same answers. The API key is a server-side secret: never ship it to browsers, mobile apps or desktop clients.
 
 ## Java SDK
 
@@ -2076,60 +2104,6 @@ alice get /docs/public: allowed=true
 alice delete /docs/public: allowed=false reason=NO_APPLICABLE_POLICIES
 ```
 
-### Call Speedle Cloud
-
-> **Speedle Cloud is coming soon.**
-
-The program reads the service name from `SPEEDLE_SERVICE` and an account API key with the `ads` scope from `SPEEDLE_TOKEN`. `SPEEDLE_ENDPOINT` overrides the default endpoint `https://cloud.speedle.io`. Replace `src/main/java/Main.java` with:
-
-```java
-import io.speedle.sdk.Auth;
-import io.speedle.sdk.Backend;
-import io.speedle.sdk.Decision;
-import io.speedle.sdk.SpeedleClient;
-import io.speedle.sdk.SpeedleException;
-import io.speedle.sdk.Subject;
-import java.net.URI;
-import java.util.List;
-
-public class Main {
-  public static void main(String[] args) {
-    String endpoint = System.getenv().getOrDefault("SPEEDLE_ENDPOINT", "https://cloud.speedle.io");
-    try (SpeedleClient speedle = SpeedleClient.builder()
-        .backend(Backend.SPEEDLE_CLOUD)
-        .endpoint(URI.create(endpoint))
-        .auth(Auth.bearer(System.getenv("SPEEDLE_TOKEN")))
-        .serviceName(System.getenv("SPEEDLE_SERVICE"))
-        .build()) {
-      boolean allowed = speedle.isAllowed(Subject.user("alice"), "get", "/docs/public", List.of());
-      System.out.println("alice get /docs/public: allowed=" + allowed);
-
-      Decision d = speedle.check(Subject.user("alice"), "delete", "/docs/public", List.of());
-      System.out.println("alice delete /docs/public: allowed=" + d.allowed() + " reason=" + d.reason());
-    } catch (SpeedleException e) {
-      System.err.println("Speedle error: " + e.getMessage());
-      System.exit(1);
-    }
-  }
-}
-```
-
-Set the environment and run it. `read -rs` keeps the API key out of your shell history and screen:
-
-```bash
-export SPEEDLE_SERVICE=docs
-read -rs SPEEDLE_TOKEN && export SPEEDLE_TOKEN
-mvn -q compile exec:java -Dexec.mainClass=Main
-```
-
-Output, when the service has the example policy:
-
-```text
-alice get /docs/public: allowed=true
-alice delete /docs/public: allowed=false reason=NO_APPLICABLE_POLICIES
-```
-
-The API key is a server-side secret. Never ship it to browsers, mobile apps or desktop clients.
 
 ### Error handling
 
@@ -2198,51 +2172,6 @@ alice get /docs/public: allowed=True
 alice delete /docs/public: allowed=False reason=<Reason.NO_APPLICABLE_POLICIES: 3>
 ```
 
-### Call Speedle Cloud
-
-> **Speedle Cloud is coming soon.**
-
-The program reads the service name from `SPEEDLE_SERVICE` and an account API key with the `ads` scope from `SPEEDLE_TOKEN`. `SPEEDLE_ENDPOINT` overrides the default endpoint `https://cloud.speedle.io`. Replace `main.py` with:
-
-```python
-import os
-import sys
-
-from speedle import Auth, Client, SpeedleError
-
-try:
-    with Client(
-        backend="speedle-cloud",
-        endpoint=os.environ.get("SPEEDLE_ENDPOINT", "https://cloud.speedle.io"),
-        auth=Auth.bearer(os.environ["SPEEDLE_TOKEN"]),
-        service_name=os.environ["SPEEDLE_SERVICE"],
-    ) as speedle:
-        allowed = speedle.is_allowed("alice", "get", "/docs/public")
-        print(f"alice get /docs/public: allowed={allowed}")
-
-        decision = speedle.check("alice", "delete", "/docs/public")
-        print(f"alice delete /docs/public: allowed={decision.allowed} reason={decision.reason!r}")
-except SpeedleError as e:
-    print(f"Speedle error: {e}", file=sys.stderr)
-    sys.exit(1)
-```
-
-Set the environment and run it. `read -rs` keeps the API key out of your shell history and screen:
-
-```bash
-export SPEEDLE_SERVICE=docs
-read -rs SPEEDLE_TOKEN && export SPEEDLE_TOKEN
-python main.py
-```
-
-Output, when the service has the example policy:
-
-```text
-alice get /docs/public: allowed=True
-alice delete /docs/public: allowed=False reason=<Reason.NO_APPLICABLE_POLICIES: 3>
-```
-
-The API key is a server-side secret. Never ship it to browsers, mobile apps or desktop clients.
 
 ### Error handling
 
@@ -2323,73 +2252,6 @@ alice get /docs/public: allowed=true
 alice delete /docs/public: allowed=false reason=NO_APPLICABLE_POLICIES
 ```
 
-### Call Speedle Cloud
-
-> **Speedle Cloud is coming soon.**
-
-The program reads the service name from `SPEEDLE_SERVICE` and an account API key with the `ads` scope from `SPEEDLE_TOKEN`. `SPEEDLE_ENDPOINT` overrides the default endpoint `https://cloud.speedle.io`. Replace `main.go` with:
-
-```go
-package main
-
-import (
-	"context"
-	"fmt"
-	"os"
-
-	speedle "github.com/teramoby/speedle-sdk/go"
-)
-
-func main() {
-	endpoint := os.Getenv("SPEEDLE_ENDPOINT")
-	if endpoint == "" {
-		endpoint = "https://cloud.speedle.io"
-	}
-	client, err := speedle.NewClient(speedle.Config{
-		Backend:     speedle.BackendSpeedleCloud,
-		Endpoint:    endpoint,
-		Auth:        speedle.BearerToken(os.Getenv("SPEEDLE_TOKEN")),
-		ServiceName: os.Getenv("SPEEDLE_SERVICE"),
-	})
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Speedle error:", err)
-		os.Exit(1)
-	}
-	defer client.Close()
-
-	ctx := context.Background()
-	allowed, err := client.IsAllowed(ctx, speedle.User("alice"), "get", "/docs/public", nil)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Speedle error:", err)
-		os.Exit(1)
-	}
-	fmt.Printf("alice get /docs/public: allowed=%t\n", allowed)
-
-	d, err := client.Check(ctx, speedle.User("alice"), "delete", "/docs/public", nil)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Speedle error:", err)
-		os.Exit(1)
-	}
-	fmt.Printf("alice delete /docs/public: allowed=%t reason=%s\n", d.Allowed, d.Reason)
-}
-```
-
-Set the environment and run it. `read -rs` keeps the API key out of your shell history and screen:
-
-```bash
-export SPEEDLE_SERVICE=docs
-read -rs SPEEDLE_TOKEN && export SPEEDLE_TOKEN
-go run .
-```
-
-Output, when the service has the example policy:
-
-```text
-alice get /docs/public: allowed=true
-alice delete /docs/public: allowed=false reason=NO_APPLICABLE_POLICIES
-```
-
-The API key is a server-side secret. Never ship it to browsers, mobile apps or desktop clients.
 
 ### Error handling
 
@@ -2457,55 +2319,6 @@ alice get /docs/public: allowed=True
 alice delete /docs/public: allowed=False reason=NoApplicablePolicies
 ```
 
-### Call Speedle Cloud
-
-> **Speedle Cloud is coming soon.**
-
-The program reads the service name from `SPEEDLE_SERVICE` and an account API key with the `ads` scope from `SPEEDLE_TOKEN`. `SPEEDLE_ENDPOINT` overrides the default endpoint `https://cloud.speedle.io`. Replace `Program.cs` with:
-
-```csharp
-using Speedle.Sdk;
-
-try
-{
-    await using var speedle = new SpeedleClient(new SpeedleClientOptions
-    {
-        Backend = Backend.SpeedleCloud,
-        Endpoint = new Uri(Environment.GetEnvironmentVariable("SPEEDLE_ENDPOINT") ?? "https://cloud.speedle.io"),
-        Auth = Auth.Bearer(Environment.GetEnvironmentVariable("SPEEDLE_TOKEN") ?? ""),
-        ServiceName = Environment.GetEnvironmentVariable("SPEEDLE_SERVICE") ?? "",
-    });
-
-    bool allowed = await speedle.IsAllowedAsync("alice", "get", "/docs/public");
-    Console.WriteLine($"alice get /docs/public: allowed={allowed}");
-
-    Decision d = await speedle.CheckAsync("alice", "delete", "/docs/public");
-    Console.WriteLine($"alice delete /docs/public: allowed={d.Allowed} reason={d.Reason}");
-}
-catch (SpeedleException e)
-{
-    Console.Error.WriteLine($"Speedle error: {e.Message}");
-    return 1;
-}
-return 0;
-```
-
-Set the environment and run it. `read -rs` keeps the API key out of your shell history and screen:
-
-```bash
-export SPEEDLE_SERVICE=docs
-read -rs SPEEDLE_TOKEN && export SPEEDLE_TOKEN
-dotnet run
-```
-
-Output, when the service has the example policy:
-
-```text
-alice get /docs/public: allowed=True
-alice delete /docs/public: allowed=False reason=NoApplicablePolicies
-```
-
-The API key is a server-side secret. Never ship it to browsers, mobile apps or desktop clients.
 
 ### Error handling
 
@@ -2569,56 +2382,6 @@ alice get /docs/public: allowed=true
 alice delete /docs/public: allowed=false reason=NoApplicablePolicies
 ```
 
-### Call Speedle Cloud
-
-> **Speedle Cloud is coming soon.**
-
-The program reads the service name from `SPEEDLE_SERVICE` and an account API key with the `ads` scope from `SPEEDLE_TOKEN`. `SPEEDLE_ENDPOINT` overrides the default endpoint `https://cloud.speedle.io`. Replace `src/main.rs` with:
-
-```rust
-use std::env;
-
-use speedle::blocking::Client;
-use speedle::{Auth, Backend};
-
-fn main() {
-    if let Err(e) = run() {
-        eprintln!("Speedle error: {e}");
-        std::process::exit(1);
-    }
-}
-
-fn run() -> Result<(), speedle::Error> {
-    let endpoint = env::var("SPEEDLE_ENDPOINT").unwrap_or_else(|_| "https://cloud.speedle.io".to_string());
-    let token = env::var("SPEEDLE_TOKEN").unwrap_or_default();
-    let service = env::var("SPEEDLE_SERVICE").unwrap_or_default();
-    let speedle = Client::builder(Backend::SpeedleCloud, &endpoint, Auth::bearer(token), service).build()?;
-
-    let allowed = speedle.is_allowed(&"alice".into(), "get", "/docs/public", &[])?;
-    println!("alice get /docs/public: allowed={allowed}");
-
-    let d = speedle.check(&"alice".into(), "delete", "/docs/public", &[])?;
-    println!("alice delete /docs/public: allowed={} reason={:?}", d.allowed, d.reason);
-    Ok(())
-}
-```
-
-Set the environment and run it. `read -rs` keeps the API key out of your shell history and screen:
-
-```bash
-export SPEEDLE_SERVICE=docs
-read -rs SPEEDLE_TOKEN && export SPEEDLE_TOKEN
-cargo run
-```
-
-Output, when the service has the example policy:
-
-```text
-alice get /docs/public: allowed=true
-alice delete /docs/public: allowed=false reason=NoApplicablePolicies
-```
-
-The API key is a server-side secret. Never ship it to browsers, mobile apps or desktop clients.
 
 ### Error handling
 
@@ -2687,54 +2450,6 @@ alice get /docs/public: allowed=true
 alice delete /docs/public: allowed=false reason=NoApplicablePolicies
 ```
 
-### Call Speedle Cloud
-
-> **Speedle Cloud is coming soon.**
-
-The program reads the service name from `SPEEDLE_SERVICE` and an account API key with the `ads` scope from `SPEEDLE_TOKEN`. `SPEEDLE_ENDPOINT` overrides the default endpoint `https://cloud.speedle.io`. Replace `main.ts` with:
-
-```typescript
-import { Auth, Reason, SpeedleClient, SpeedleError } from "@speedle/sdk";
-
-try {
-  const speedle = new SpeedleClient({
-    backend: "speedle-cloud",
-    endpoint: process.env.SPEEDLE_ENDPOINT ?? "https://cloud.speedle.io",
-    auth: Auth.bearer(process.env.SPEEDLE_TOKEN ?? ""),
-    serviceName: process.env.SPEEDLE_SERVICE ?? "",
-  });
-  try {
-    const allowed = await speedle.isAllowed("alice", "get", "/docs/public");
-    console.log(`alice get /docs/public: allowed=${allowed}`);
-
-    const d = await speedle.check("alice", "delete", "/docs/public");
-    console.log(`alice delete /docs/public: allowed=${d.allowed} reason=${Reason[d.reason] ?? d.reason}`);
-  } finally {
-    await speedle.close();
-  }
-} catch (e) {
-  if (!(e instanceof SpeedleError)) throw e;
-  console.error(`Speedle error: ${e.message}`);
-  process.exitCode = 1;
-}
-```
-
-Set the environment and run it. `read -rs` keeps the API key out of your shell history and screen:
-
-```bash
-export SPEEDLE_SERVICE=docs
-read -rs SPEEDLE_TOKEN && export SPEEDLE_TOKEN
-node main.ts
-```
-
-Output, when the service has the example policy:
-
-```text
-alice get /docs/public: allowed=true
-alice delete /docs/public: allowed=false reason=NoApplicablePolicies
-```
-
-The API key is a server-side secret. Never ship it to browsers, mobile apps or desktop clients.
 
 ### Speedle MCP
 
@@ -3155,7 +2870,7 @@ curl --fail --silent --show-error --retry 30 --retry-all-errors --retry-delay 1 
 {"ready":true,"servicesTotal":0,"servicesUsable":0}
 ```
 
-`/healthz` answers `200 {"status":"ok"}` while the process is running. `/readyz` answers `200` when ADS can evaluate a request. A file store has no distribution state, so the service counts stay zero; `ready` is the field to check. The image has no shell and no `curl`, so these probes run on the host, or in the orchestrator, against the published ports. `http://localhost:6734/healthz` reaches the same published port.
+`/healthz` answers `200 {"status":"ok"}` while the process is running. The local ADS answers `/readyz` with `200`, `ready: true` and zero service counters. The image has no shell and no `curl`, so these probes run on the host, or in the orchestrator, against the published ports. `http://localhost:6734/healthz` reaches the same published port.
 
 ### Create a policy with spctl
 
@@ -3393,333 +3108,6 @@ The response contains `"allowed":true`. The services read policy changes from th
 brew services stop speedle-ads
 brew services stop speedle-pms
 ```
-
-## Speedle Cloud
-
-Source: https://engine.speedle.io/docs/cloud/
-
-Speedle Cloud is a hosted authorization service built on the open-source Speedle engine. Manage services, SPDL authorization and role policies, test decisions in the Playground and call the API from your server.
-
-**Speedle Cloud is coming soon.** This guide describes the workflow available when production sign-in and authenticated authorization checks open; the examples have not been run against a live Cloud environment.
-
-Account sign-in must be available before using the console or creating API keys. The free public beta is for trials, learning and evaluation, has no SLA and is not recommended for production use. Features and limits may change.
-
-### Documentation
-
-- [Getting started](https://engine.speedle.io/docs/cloud/getting-started/): Sign in, create a service and policy in the console, create an API key, and check authorization from your application.
-- [API keys](https://engine.speedle.io/docs/cloud/tokens/): Account-level credentials, fixed scopes, a required expiry, Create and Revoke, one-time secret display and pagination.
-- [Authorization API](https://engine.speedle.io/docs/cloud/authorization-api/): IsAllowed requests, caller identity, Node.js 22 and transport constraints.
-- [API reference](https://engine.speedle.io/docs/cloud/api-reference/): authorization checks and policy management with an API key. Requests run from your server; this page is read-only.
-- [Limits and errors](https://engine.speedle.io/docs/cloud/limits-and-errors/): Account caps, size limits, burst limits, daily quota, error codes and reset times.
-
-### Downloads
-
-- [API reference (Swagger)](https://engine.speedle.io/docs/cloud/api-reference/): Browse every endpoint, parameter and response example online.
-- [English Markdown](https://engine.speedle.io/docs/cloud/quickstart.en.md): The four Cloud chapters in one offline guide.
-- OpenAPI specification: [YAML](https://cloud.speedle.io/openapi.public.yaml) · [JSON](https://cloud.speedle.io/openapi.public.json), for code generators and API clients.
-
-Read the Cloud [Terms](https://cloud.speedle.io/terms) / [Privacy Policy](https://cloud.speedle.io/privacy).
-
-## Getting started with Speedle Cloud
-
-Source: https://engine.speedle.io/docs/cloud/getting-started/
-
-**Speedle Cloud is coming soon.** This guide describes the workflow available when production sign-in and authenticated authorization checks open; the examples have not been run against a live Cloud environment.
-
-### Sign in with GitHub or Google (opens soon)
-
-Open the [Cloud console](https://cloud.speedle.io/) in your browser and sign in with an available provider. For a new identity with an unused verified email address, confirm **Create account**. If the email is already in use, sign in with the linked provider shown by the console.
-
-### Create a service and a policy
-
-Open the [Service workspace](https://cloud.speedle.io/service), enter `books`, and choose **Create service**. Use a new service for this example so existing policies do not affect the results; do not overwrite existing data.
-
-Choose **New policy**, name it `read-books`, and enter this SPDL:
-
-```text
-grant user alice from corp get /books
-```
-
-This lets `alice` in the `corp` identity domain perform `get` on `/books`. A grant without `from` matches the name in every domain. Derive the domain from trusted authentication data and send it as `idd` in each request. See [identity domains](https://engine.speedle.io/docs/idd/).
-
-Choose **Validate policy**, then **Save policy**. Validation checks syntax but does not save the draft. Allow approximately 60 seconds for saved policies to reach the authorization API.
-
-### Create an API key
-
-Open [API keys](https://cloud.speedle.io/tokens), enter a name such as `books-app`, select the `ads` scope (authorization checks), choose an expiry (the console defaults to 3 months and shows the UTC time), and choose **Create API key**. Complete provider verification if prompted, then submit the form again. Copy the secret when it appears: it is shown only once. Every key expires, including keys created before an expiry was required. [API key management](https://engine.speedle.io/docs/cloud/tokens/) states when. Read the listed expiry and replace the key before then. Revoke a key earlier when it is no longer needed.
-
-Store the key in your server's secret store and provide it through the `SPEEDLE_API_KEY` environment variable. Keep it out of browser code and source control.
-
-### Check authorization from your application
-
-From your application's server, send this `isAllowed` request for the policy saved above. The policy needs no attributes, so `attributes` is empty:
-
-```bash
-curl --fail-with-body --silent --show-error --max-time 10 \
-  'https://cloud.speedle.io/authz-check/v1/is-allowed' \
-  -H "Authorization: Bearer $SPEEDLE_API_KEY" \
-  -H 'Content-Type: application/json' \
-  --data '{"subject":{"principals":[{"type":"user","name":"alice","idd":"corp"}]},"serviceName":"books","resource":"/books","action":"get","attributes":[]}'
-```
-
-With only the example policy saved, the expected response is:
-
-```json
-{"allowed":true,"reason":0}
-```
-
-Change `action` to `delete` and send the request again. No policy grants that action, so the expected response is:
-
-```json
-{"allowed":false,"reason":3}
-```
-
-Both decisions return HTTP 200. Perform the protected action only when `allowed` is `true`; your application must enforce the result and deny access on errors, invalid responses or timeouts.
-
-See the [authorization API](https://engine.speedle.io/docs/cloud/authorization-api/) and the [SDKs](https://engine.speedle.io/docs/sdks/), including [Node.js/TypeScript](https://engine.speedle.io/docs/sdks/node/), [Python](https://engine.speedle.io/docs/sdks/python/), [Java](https://engine.speedle.io/docs/sdks/java/) and [Go](https://engine.speedle.io/docs/sdks/go/), for integration details.
-
-### Test saved policies in the Playground
-
-Optionally, open the service's **Playground** and select **Is allowed**. Enter `[{"type":"user","name":"alice","idd":"corp"}]` in **Principals (JSON)**, `/books` in **Resource**, `get` in **Action**, and `[]` in **Attributes (JSON)**, then choose **Run test**.
-
-**Is allowed** shows the decision; **Diagnose** explains how policies contributed; **All granted roles** lists the subject's roles; **All granted permissions** lists granted resources and actions. Tests use saved policies, not an unsaved draft. Run the test again after changing inputs or policies. Applications use the [ADS authorization API](https://engine.speedle.io/docs/cloud/authorization-api/) with an API key.
-
-Next steps: for programmatic management, create a separate key with the `pms:write` scope (or `pms:read` for reads), then use the [PMS API or spctl (Speedle Cloud)](https://engine.speedle.io/docs/pms/policy-mgmt/#speedle-cloud). The `ads` key from the previous step cannot manage policies.
-
-## Speedle Cloud API keys
-
-Source: https://engine.speedle.io/docs/cloud/tokens/
-
-API keys belong to your account and can access its services according to their scope. They authenticate your application, not its end users. Managing API keys, sessions and linked identities always requires a signed-in console session.
-
-**Speedle Cloud is coming soon.** This guide describes the workflow available when production sign-in and authenticated authorization checks open; the examples have not been run against a live Cloud environment.
-
-### Create an API key
-
-Open [API keys](https://cloud.speedle.io/tokens), enter a name of 1–128 characters after trimming whitespace, select a scope and an expiry (`7d`, `30d`, `90d`, `180d` or `365d`; the console defaults to 3 months), and choose **Create**. Creating a key requires authentication with a linked provider within the last 10 minutes. If you receive `403 reauth_required`, authenticate again, then submit **Create** again; returning from the provider does not create a key automatically.
-
-Each key has one scope, fixed at creation:
-
-| Scope | Access |
-| --- | --- |
-| `ads` (default) | Authorization checks through `/authz-check/v1/*` only. |
-| `pms:read` | Read account services, policies and role policies through `/policy-mgmt/v1`. |
-| `pms:write` | Read, create and delete account services, policies and role policies through `/policy-mgmt/v1`. |
-
-Management scopes cannot call ADS; `ads` cannot call policy management. Using the wrong scope returns `403 insufficient_scope`. Requesting a management scope while sign-in is closed returns `403 management_scope_disabled`.
-
-The console sends a session-authenticated request:
-
-```http
-POST /api/tokens
-Origin: https://cloud.speedle.io
-X-SC-CSRF: 1
-Content-Type: application/json
-
-{"name":"books-app","scope":"ads","expiresIn":"90d"}
-```
-
-The request accepts `name`, required `expiresIn` and optional `scope` (default `ads`). `expiresIn` is one of `7d`, `30d`, `90d`, `180d` or `365d` (1 week, 1 month, 3 months, 6 months or 1 year). Each day is 24 hours. In the console, **Expires after** defaults to 3 months and **Preview expiry (UTC)** shows the resulting time before you submit. There is no non-expiring key. Do not send a service selector, `expiresAt` or authentication proofs. A missing or unknown `expiresIn`, or a client-supplied `expiresAt`, returns `400 invalid_request`. A body that contains only `name` and `scope` returns that 400. The server does not supply `expiresIn`. Cookie authentication and CSRF headers are required; an API key cannot replace the session.
-
-### Protect the secret
-
-Creation returns HTTP 201. The response's `token` field contains the API key secret and is shown only once:
-
-```text
-spdl_<canonical uppercase ULID id>_<43 base62 digits>
-```
-
-Every key expires at `expiresAt`, which the server computes and returns in Unix milliseconds. At or after that instant, authorization and policy-management calls return `401 {"error":"api_key_expired"}`. Create a replacement key. Retrying the expired key does not succeed. You can revoke a key before it expires. Keys that already existed when an expiry became required have one too. If 365 days of 24 hours after creation is still in the future, the key expires then, even when that date is only a short time after the requirement took effect. If that date has already passed, the key expires 30 days of 24 hours after the requirement took effect. Every listed key includes `expiresAt`. Read it and create a replacement before that time.
-
-This describes the format, not a usable key. Save the value immediately in a server-side secret store. Never put it in browser storage, frontend code, URLs, source control, screenshots or logs. Listing keys returns metadata only; a lost secret cannot be recovered.
-
-Your account can have **10 active API keys across all scopes**. Creating another returns `409 {"error":"quota_exceeded","limit":10}`. Revoke an unused key, or let it expire, to free a slot. The cap does not reset on a schedule. Revoked and expired keys remain listed and do not count toward the cap.
-
-### List API keys
-
-`GET /api/tokens` lists active, expired and revoked keys, newest first. The default page size is 25; `limit` accepts 1–100. Pass the last response's `nextCursor` as `cursor` until `nextCursor` is `null`. Each key includes `expiresAt` in Unix milliseconds. The console shows **Expires (UTC)**. A key that expires within 7 days is marked **Expires soon**. Expired keys appear in an **Expired** group. `lastUsedAt` is best-effort, normally updated at most hourly; it does not prove that a key is unused.
-
-### Revoke an API key
-
-Choose **Revoke**, check the key name and ID, and confirm. Revocation does not require recent reauthentication. The console sends:
-
-```http
-DELETE /api/tokens/<API key id>
-Origin: https://cloud.speedle.io
-X-SC-CSRF: 1
-Content-Type: application/json
-
-{}
-```
-
-The first revocation returns an empty HTTP 204. Unknown, other-account or already-revoked IDs return `404 not_found`. Previously verified requests may continue using a key for up to 60 seconds; revocation is not instantaneous everywhere.
-
-The available actions are **Create** and **Revoke**. To change a secret, scope or expiry, create another key, update callers and revoke the old key. If all active keys are in use at the cap, plan for interruption before revoking one. Deleting a service does not revoke account API keys.
-
-If a creation or revocation response is lost, refresh the list before acting again. A matching name cannot recover a lost secret. See [Limits and errors](https://engine.speedle.io/docs/cloud/limits-and-errors/) and the [Authorization API](https://engine.speedle.io/docs/cloud/authorization-api/).
-
-## Speedle Cloud authorization API
-
-Source: https://engine.speedle.io/docs/cloud/authorization-api/
-
-**Speedle Cloud is coming soon.** This guide describes the workflow available when production sign-in and authenticated authorization checks open; the examples have not been run against a live Cloud environment.
-
-Use an account API key for server-side authorization calls. Account sign-in must be available before you can create keys. A key with a management scope cannot call ADS; use `ads` or the response is `403 insufficient_scope`.
-
-### Call IsAllowed from your server
-
-Send an account API key with the `ads` scope in one `Authorization: Bearer` header and make a POST request:
-
-```http
-POST /authz-check/v1/is-allowed
-Authorization: Bearer <API key>
-Content-Type: application/json
-
-{"subject":{"principals":[{"type":"user","name":"alice","idd":"corp"}]},"serviceName":"books","resource":"/books","action":"get","attributes":[{"name":"level","type":"numeric","value":3},{"name":"when","type":"datetime","value":"2026-11-05T03:00:00Z"}]}
-```
-
-The body is the Speedle REST request, with the same fields and types as a self-hosted Speedle ADS. `attributes` is an array of `{name, type, value}` items. The supported attribute types are `string`, `numeric`, `bool`, and `datetime` in RFC 3339 format.
-
-`idd` is the principal's identity domain: the namespace your application authenticated the caller in, such as an identity provider or a tenant. Set it on the server from trusted authentication data, never from a value the browser supplies.
-
-The getting-started policy, `grant user alice from corp get /books`, matches the request above only in the `corp` domain. A policy without `from` matches the name in every domain. A principal without `idd` matches every domain as well, which makes two different users who share a name indistinguishable when the application accepts more than one identity source. Multi-tenant integrations must send `idd` in every request.
-
-`serviceName` is required in every request and is never defaulted. Select a service in the API key’s account. A missing, empty, unknown or other-account service name returns `404 {"error":"service_not_found"}`. An account API key is not bound to one service.
-
-The [getting-started policy](https://engine.speedle.io/docs/cloud/getting-started/#create-a-service-and-a-policy) allows the example request:
-
-```json
-{"allowed":true,"reason":0}
-```
-
-### Interpret decisions and caller identity
-
-A policy denial also returns HTTP 200, with `allowed` set to `false`. Your application must check `allowed` before performing the protected action and must fail closed on exceptions or invalid responses.
-
-The application establishes the caller's principals through its own user authentication. The API key identifies the account and its permitted API scope, not the end user. Do not trust a principal name supplied by an unauthenticated browser.
-
-Speedle Cloud does not validate subject tokens. Like self-hosted Speedle without a token asserter, it accepts `subject.token` and `tokenType` and discards them without validation, so a non-empty token field is never evidence that authentication happened; decisions use the principals only. Do not forward an end-user token and treat the call as asserted.
-
-The session Playground evaluates the currently saved policies. Authenticated ADS uses published snapshots. A successful Playground test does not prove that every ADS location has the new snapshot. ADS has no public Diagnose endpoint.
-
-### Node.js 22 example
-
-Node.js 22 can call ADS without an SDK:
-
-```js
-export async function canReadBooks(authenticatedUserName, authenticatedUserIdd) {
-  if (!authenticatedUserName || !authenticatedUserIdd) {
-    throw new Error("principal name and identity domain are required");
-  }
-  const apiKey = process.env.SPEEDLE_API_KEY;
-  if (!apiKey) throw new Error("Speedle credential is not configured");
-  const response = await fetch("https://cloud.speedle.io/authz-check/v1/is-allowed", {
-    method: "POST",
-    redirect: "error",
-    signal: AbortSignal.timeout(10_000),
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      subject: {
-        principals: [
-          { type: "user", name: authenticatedUserName, idd: authenticatedUserIdd },
-        ],
-      },
-      serviceName: "books",
-      resource: "/books",
-      action: "get",
-    }),
-  });
-  if (!response.ok) throw new Error(`Speedle HTTP ${response.status}`);
-  const result = await response.json();
-  if (
-    typeof result !== "object" || result === null || Array.isArray(result) ||
-    typeof result.allowed !== "boolean" || !Number.isInteger(result.reason) ||
-    result.reason < 0 || result.reason > 6
-  ) {
-    throw new Error("Invalid Speedle decision");
-  }
-  return result.allowed;
-}
-```
-
-Inject `SPEEDLE_API_KEY` from a server-side secret store; never hard-code it. Pass the principal name and identity domain that your server derived from the authenticated user. The example rejects an empty name or domain before building the body, because `JSON.stringify` would otherwise drop `idd` and send a domain-less principal. Leave `idd` out only for a service with a single identity source, where a name cannot collide across domains. The caller must fail closed on exceptions and must not turn failures into permission grants.
-
-This minimal example has no retry loop. Production handling should distinguish the documented errors, respect `Retry-After`, and use bounded retries. Setting `redirect: "error"` prevents fetch from following a redirect with the credential; retain that behavior when adapting the example.
-
-### Transport and caching constraints
-
-Use POST for ADS. A non-POST request may be stopped at the public edge with Cloudflare's 403 response; do not parse that response as an application authorization decision. There is no browser CORS workflow for direct ADS calls with a secret API key.
-
-Matched application ADS responses use `Cache-Control: no-store`. Do not put decisions or credentials in shared caches.
-
-For client libraries in Java, Python, Go, .NET, Rust and Node.js/TypeScript, see the [SDKs section](https://engine.speedle.io/docs/sdks/). For failures, quotas and response headers, see [Limits and errors](https://engine.speedle.io/docs/cloud/limits-and-errors/). API schemas and Markdown downloads are linked from the [Speedle Cloud overview](https://engine.speedle.io/docs/cloud/#downloads).
-
-## API reference
-
-Source: https://engine.speedle.io/docs/cloud/api-reference/
-
-[Authorization API preview](https://engine.speedle.io/docs/cloud/authorization-api/) explains the IsAllowed call. [Limits and errors](https://engine.speedle.io/docs/cloud/limits-and-errors/) lists quotas and error responses.
-
-The full OpenAPI definition is published at [/openapi/cloud-public.yaml](https://engine.speedle.io/openapi/cloud-public.yaml).
-
-## Speedle Cloud Limits and errors
-
-Source: https://engine.speedle.io/docs/cloud/limits-and-errors/
-
-**Speedle Cloud is coming soon.** This guide describes the workflow available when production sign-in and authenticated authorization checks open; the examples have not been run against a live Cloud environment.
-
-Limits apply to the whole account unless a row says otherwise. API keys are account credentials; changing keys does not increase the daily quota.
-
-### Limits
-
-| What is limited | Limit | When reached / how to recover |
-| --- | --- | --- |
-| Services per account | 100 | `409 quota_exceeded`; delete an unused service. No timed reset. |
-| Authorization and role policies combined, across all services | 200 per account | `409 quota_exceeded`; delete policies. No timed reset. |
-| Complete SPDL source for one policy | 1,024 UTF-8 bytes | `400 invalid_request` on console policy writes; shorten the source. This counts bytes, not characters. No timed reset. |
-| Active API keys, all scopes combined | 10 per account | `409 quota_exceeded` with `limit: 10`; revoke an unused key or let it expire. The cap does not reset on a schedule. Revoked and expired keys do not count. |
-| Policy name / API key name | 128 Unicode code points / 1–128 characters after trimming | `400 invalid_request`; shorten or correct the name. No timed reset. |
-| Billable policy-management and authorization calls | 10,000 per account per UTC day | `429 daily_quota_exceeded`; resets at 00:00 UTC. Follow `Retry-After`. |
-| Short bursts of API-key requests | Approximately 600 per minute per key at each Cloud location | `429 rate_limited` with `Retry-After: 60`; wait before retrying. This is a short-term limit, not a guaranteed throughput or a separate daily allowance. |
-| Ordinary request body | 65,536 bytes (64 KiB) | `413 request_too_large`; send a smaller body. No timed reset. |
-| Atomic JSON import body (`POST /api/service/import` only) | 5,100,000 bytes | `413 request_too_large`; reduce the import. The policy and account limits still apply. No timed reset. |
-| Incoming attributes | 50 attributes; 16,384 UTF-8 bytes of canonical JSON | `400 SPDL-0004`; send fewer or smaller attributes. No timed reset. |
-
-For scopes, expiry, creation and revocation, see [API keys](https://engine.speedle.io/docs/cloud/tokens/).
-
-### Daily quota
-
-Reads, writes, validation, Playground tests, imports, exports and authorization checks share the daily allowance. A policy denial or invalid business input still counts. Authentication, session operations and `GET /api/me` do not count. Requests rejected by authentication, scope checks, routing, CSRF, body-size checks, burst limits or the daily quota do not count.
-
-Cloud-side failures may receive a quota refund, up to 1,000 per account per UTC day; if a refund cannot be confirmed, the call stays charged. Errors caused by the request still count. During a temporary quota-counter failure, authorization calls may continue at a reduced rate within an additional allowance of up to 10,000 calls per account per UTC day. That allowance is separate from the normal quota, is not guaranteed, and resets at 00:00 UTC along with the refund allowance. If it cannot be granted, the response is `503 quota_unavailable`.
-
-Some daily capacity can be reserved but unused, so the usable total can be below 10,000. `GET /api/me` reports usage and the reset time. Do not retry continuously or switch keys to bypass account limits.
-
-### Errors and response headers
-
-Errors are flat JSON, for example `{"error":"rate_limited"}`. An error is not an authorization grant; fail closed if a valid decision cannot be obtained.
-
-| Status and error | What to do |
-| --- | --- |
-| `400 invalid_request` or a Speedle error message | Correct the request; do not retry it unchanged. |
-| `401 unauthorized` | Check the API key or signed-in session. A session cookie alone cannot authorize ADS. |
-| `401 api_key_expired` | The API key is at or past its expiry. Create a replacement; retrying this key will not succeed. Keys created before an expiry was required have one too. The API keys page states when; read `expiresAt` and replace the key before then. |
-| `403 reauth_required` | Authenticate with a linked provider again before creating a key. |
-| `403 insufficient_scope` | Use a key with the required scope. |
-| `403 management_scope_disabled` | Management-scope issuance is unavailable while sign-in is closed. |
-| `403 csrf_failed` | Use the console session with the required origin and CSRF header. |
-| `404 service_not_found` (ADS) / `404 not_found` (management) | Select an existing service in your account. Unknown, other-account or already-revoked key IDs also return `404 not_found`. |
-| `409 quota_exceeded` | Free a service or policy slot by deleting an unused item; time does not reset those caps. Free an API-key slot by revoking the key or letting it expire. |
-| `413 request_too_large` | Reduce the body size. |
-| `429 rate_limited` / `429 daily_quota_exceeded` | Respect `Retry-After` and use bounded backoff; the daily limit resets at UTC midnight. |
-| `503 quota_unavailable` / `503 snapshot_unavailable` / `500 internal_error` | Fail closed and retry with bounded backoff, respecting `Retry-After` when present. |
-
-For verified API-key requests, `X-RateLimit-Limit` is 600. There is no exact `X-RateLimit-Remaining`. `X-Quota-Daily-Remaining`, when present, is an approximate account-wide balance; concurrent calls and unused reservations can make it differ from what you can actually use. It does not guarantee that the next request will succeed, and early rejections omit it.
-
-ADS responses use `Cache-Control: no-store`. Keep decisions and credentials out of shared caches. Use POST; other methods can receive `405 method_not_allowed` or an earlier non-JSON block response. See the [Authorization API](https://engine.speedle.io/docs/cloud/authorization-api/).
 
 ## Pluggable Storage
 

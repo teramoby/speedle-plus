@@ -89,7 +89,8 @@ cargo new speedle-example cd speedle-example cargo add speedle@0.2.0 --features 
       <pubDate>Tue, 10 Nov 2026 14:45:43 +0800</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/sdks/</guid>
-      <description>Los SDK de Speedle son bibliotecas cliente para la API de decisiones POST /authz-check/v1/is-allowed. Funcionan tanto con un Speedle ADS autohospedado como con Speedle Cloud. Cada página de lenguaje muestra cómo agregar el paquete y proporciona un programa completo y probado para ambos entornos. El código fuente y la referencia completa se encuentran en teramoby/speedle-sdk. Para ejecutar PMS y ADS para estos ejemplos, consulte Despliegue y la Imagen de Docker.</description>
+      <description>Los SDK de Speedle son bibliotecas cliente para la API de decisiones POST /authz-check/v1/is-allowed. Funcionan con un Speedle ADS autohospedado. Cada página de lenguaje muestra cómo agregar el paquete y proporciona un programa completo y probado para el entorno autohospedado. El código fuente y la referencia completa se encuentran en teramoby/speedle-sdk. Para ejecutar PMS y ADS para estos ejemplos, consulte Despliegue y la Imagen de Docker.
+Paquetes Java, Python, Go, .</description>
     </item>
     
   </channel>

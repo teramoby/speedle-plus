@@ -1,6 +1,6 @@
 +++
 title = "Java SDK"
-description = "Speedle Java SDK를 추가하고 로컬 Speedle 또는 Speedle Cloud에 대해 인가 확인 수행"
+description = "Speedle Java SDK를 추가하고 로컬 Speedle에 대해 인가 확인 수행"
 weight = 10
 aliases = ["/ko/docs/api/sdk-java/"]
 draft = false
@@ -8,7 +8,7 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "Maven 또는 Gradle로 io.speedle:speedle-sdk 0.2.0을 추가하고 로컬 Speedle 또는 Speedle Cloud에 대해 isAllowed 및 check를 호출합니다."
+bref = "Maven 또는 Gradle로 io.speedle:speedle-sdk 0.2.0을 추가하고 로컬 Speedle에 대해 isAllowed 및 check를 호출합니다."
 lastmod = 2026-11-08T19:23:52+08:00
 +++
 
@@ -114,60 +114,6 @@ alice get /docs/public: allowed=true
 alice delete /docs/public: allowed=false reason=NO_APPLICABLE_POLICIES
 ```
 
-## Speedle Cloud 호출
-
-> **Speedle Cloud는 출시 예정입니다.**
-
-프로그램은 `SPEEDLE_SERVICE`에서 서비스 이름을, `SPEEDLE_TOKEN`에서 `ads` 범위의 계정 API 키을 읽습니다. `SPEEDLE_ENDPOINT`는 기본 엔드포인트 `https://cloud.speedle.io`를 재정의합니다. `src/main/java/Main.java`를 다음과 같이 대체합니다:
-
-```java
-import io.speedle.sdk.Auth;
-import io.speedle.sdk.Backend;
-import io.speedle.sdk.Decision;
-import io.speedle.sdk.SpeedleClient;
-import io.speedle.sdk.SpeedleException;
-import io.speedle.sdk.Subject;
-import java.net.URI;
-import java.util.List;
-
-public class Main {
-  public static void main(String[] args) {
-    String endpoint = System.getenv().getOrDefault("SPEEDLE_ENDPOINT", "https://cloud.speedle.io");
-    try (SpeedleClient speedle = SpeedleClient.builder()
-        .backend(Backend.SPEEDLE_CLOUD)
-        .endpoint(URI.create(endpoint))
-        .auth(Auth.bearer(System.getenv("SPEEDLE_TOKEN")))
-        .serviceName(System.getenv("SPEEDLE_SERVICE"))
-        .build()) {
-      boolean allowed = speedle.isAllowed(Subject.user("alice"), "get", "/docs/public", List.of());
-      System.out.println("alice get /docs/public: allowed=" + allowed);
-
-      Decision d = speedle.check(Subject.user("alice"), "delete", "/docs/public", List.of());
-      System.out.println("alice delete /docs/public: allowed=" + d.allowed() + " reason=" + d.reason());
-    } catch (SpeedleException e) {
-      System.err.println("Speedle error: " + e.getMessage());
-      System.exit(1);
-    }
-  }
-}
-```
-
-환경 변수를 설정하고 실행합니다. `read -rs`를 사용하면 API 키이 셸 기록이나 화면에 노출되지 않습니다:
-
-```bash
-export SPEEDLE_SERVICE=docs
-read -rs SPEEDLE_TOKEN && export SPEEDLE_TOKEN
-mvn -q compile exec:java -Dexec.mainClass=Main
-```
-
-서비스에 예제 정책이 있는 경우 출력:
-
-```text
-alice get /docs/public: allowed=true
-alice delete /docs/public: allowed=false reason=NO_APPLICABLE_POLICIES
-```
-
-API 키은 서버 측 비밀 값입니다. 브라우저, 모바일 앱 또는 데스크톱 클라이언트에 절대 배포하지 마십시오.
 
 ## 오류 처리
 

@@ -1,6 +1,6 @@
 +++
 title = "C#/.NET SDK"
-description = "Add the Speedle .NET SDK and check authorization against a local Speedle or Speedle Cloud."
+description = "Add the Speedle .NET SDK and check authorization against a local Speedle."
 weight = 40
 aliases = ["/docs/api/sdk-dotnet/"]
 draft = false
@@ -8,7 +8,7 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "Add Speedle.Sdk 0.2.0 with dotnet add package, then call IsAllowedAsync and CheckAsync against a local Speedle or Speedle Cloud."
+bref = "Add Speedle.Sdk 0.2.0 with dotnet add package, then call IsAllowedAsync and CheckAsync against a local Speedle."
 lastmod = 2026-11-07T19:43:15+08:00
 +++
 
@@ -70,55 +70,6 @@ alice get /docs/public: allowed=True
 alice delete /docs/public: allowed=False reason=NoApplicablePolicies
 ```
 
-## Call Speedle Cloud
-
-> **Speedle Cloud is coming soon.**
-
-The program reads the service name from `SPEEDLE_SERVICE` and an account API key with the `ads` scope from `SPEEDLE_TOKEN`. `SPEEDLE_ENDPOINT` overrides the default endpoint `https://cloud.speedle.io`. Replace `Program.cs` with:
-
-```csharp
-using Speedle.Sdk;
-
-try
-{
-    await using var speedle = new SpeedleClient(new SpeedleClientOptions
-    {
-        Backend = Backend.SpeedleCloud,
-        Endpoint = new Uri(Environment.GetEnvironmentVariable("SPEEDLE_ENDPOINT") ?? "https://cloud.speedle.io"),
-        Auth = Auth.Bearer(Environment.GetEnvironmentVariable("SPEEDLE_TOKEN") ?? ""),
-        ServiceName = Environment.GetEnvironmentVariable("SPEEDLE_SERVICE") ?? "",
-    });
-
-    bool allowed = await speedle.IsAllowedAsync("alice", "get", "/docs/public");
-    Console.WriteLine($"alice get /docs/public: allowed={allowed}");
-
-    Decision d = await speedle.CheckAsync("alice", "delete", "/docs/public");
-    Console.WriteLine($"alice delete /docs/public: allowed={d.Allowed} reason={d.Reason}");
-}
-catch (SpeedleException e)
-{
-    Console.Error.WriteLine($"Speedle error: {e.Message}");
-    return 1;
-}
-return 0;
-```
-
-Set the environment and run it. `read -rs` keeps the API key out of your shell history and screen:
-
-```bash
-export SPEEDLE_SERVICE=docs
-read -rs SPEEDLE_TOKEN && export SPEEDLE_TOKEN
-dotnet run
-```
-
-Output, when the service has the example policy:
-
-```text
-alice get /docs/public: allowed=True
-alice delete /docs/public: allowed=False reason=NoApplicablePolicies
-```
-
-The API key is a server-side secret. Never ship it to browsers, mobile apps or desktop clients.
 
 ## Error handling
 

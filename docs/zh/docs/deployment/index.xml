@@ -19,7 +19,7 @@
       <guid>https://engine.speedle.io/zh/docs/deployment/embedded/</guid>
       <description>什么是 Speedle 嵌入模式 嵌入模式将 Speedle 策略决策引擎运行在你的 Go 应用进程中，通过 evaluator 直接决策，无需启动 PMS 或 ADS 服务。应用负责认证用户，并为每次决策提供主体、资源和操作。
 编写代码前，可以先用 Playground 体验基本策略功能。如果希望以独立服务运行 Speedle，请参阅快速入门。
-前提条件 使用 Linux 或 macOS、命令行 shell，以及 Go 1.27.4（也可使用同一大版本的更新补丁版本），安全补丁版本要求与快速入门一致。本例使用 Go modules 和已发布的 Speedle v1.6.0，
+前提条件 使用 Linux 或 macOS、命令行 shell，以及 Go 1.27.4（也可使用同一大版本的更新补丁版本），安全补丁版本要求与快速入门一致。本例使用 Go modules 和已发布的 Speedle v1.6.0。
 按照 Go 官方安装说明安装 Go，然后检查版本：
 go version Go 会自动配置 GOROOT 和默认 GOPATH，无需手工设置。
 创建应用模块 在 Speedle 源码目录之外，选择一个有写入权限的目录，从新目录开始本例：

@@ -1,201 +1,56 @@
 // Licensed under the Universal Permissive License (UPL) Version 1.0.
-
 package adsgrpc
 
 import (
 	"context"
-	"encoding/json"
-	"sort"
-	"strings"
-
-	"github.com/teramoby/speedle-plus/pkg/adsync"
+	"github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/pkg/logging"
-	"github.com/teramoby/speedle-plus/pkg/svcs"
-	"github.com/teramoby/speedle-plus/pkg/svcs/adsgate"
 	"github.com/teramoby/speedle-plus/pkg/svcs/adsgrpc/pb"
-
+	"github.com/teramoby/speedle-plus/pkg/svcs/gate"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
-// route returns the routing decision for one service. A service without a
-// distribution gate keeps the existing local behaviour.
-func (impl *GRPCService) route(serviceName string) adsgate.Route {
-	if impl.gate == nil {
-		return adsgate.Route{Kind: adsgate.RouteLocal}
+func (impl *GRPCService) dispatch(ctx context.Context, op gate.Operation, request *ads.RequestContext) (*gate.Response, bool, error) {
+	response, handled, err := gate.Dispatch(ctx, impl.gate, op, request)
+	if !handled {
+		return nil, false, nil
 	}
-	return impl.gate.Route(serviceName)
-}
-
-// unavailableError reports a fail-closed state with the reason code from the
-// distribution protocol. The caller must treat any non-OK status as deny.
-func unavailableError(reason adsync.Reason) error {
-	return status.Error(codes.Unavailable, string(reason))
-}
-
-// fallbackContextRequest is the REST body Cloud accepts for a forwarded gRPC
-// request. Cloud serves only the REST authorization endpoint.
-type fallbackContextRequest struct {
-	Subject     *fallbackSubject    `json:"subject,omitempty"`
-	ServiceName string              `json:"serviceName"`
-	Resource    string              `json:"resource"`
-	Action      string              `json:"action"`
-	Attributes  []fallbackAttribute `json:"attributes,omitempty"`
-}
-
-type fallbackSubject struct {
-	Principals []*fallbackPrincipal `json:"principals,omitempty"`
-	TokenType  string               `json:"tokenType,omitempty"`
-	Token      string               `json:"token,omitempty"`
-}
-
-type fallbackPrincipal struct {
-	Type string `json:"type,omitempty"`
-	Name string `json:"name,omitempty"`
-	IDD  string `json:"idd,omitempty"`
-}
-
-type fallbackAttribute struct {
-	Name  string      `json:"name"`
-	Value interface{} `json:"value"`
-}
-
-func fallbackRequestBody(in *pb.ContextRequest) ([]byte, error) {
-	request := fallbackContextRequest{
-		ServiceName: in.GetServiceName(),
-		Resource:    in.GetResource(),
-		Action:      in.GetAction(),
-	}
-	if subject := in.GetSubject(); subject != nil {
-		converted := &fallbackSubject{
-			TokenType: subject.GetTokenType(),
-			Token:     subject.GetToken(),
-		}
-		for _, principal := range subject.GetPrincipals() {
-			converted.Principals = append(converted.Principals, &fallbackPrincipal{
-				Type: principal.GetType(),
-				Name: principal.GetName(),
-				IDD:  principal.GetIdd(),
-			})
-		}
-		request.Subject = converted
-	}
-	names := make([]string, 0, len(in.GetAttributes()))
-	for name := range in.GetAttributes() {
-		names = append(names, name)
-	}
-	sort.Strings(names)
-	for _, name := range names {
-		request.Attributes = append(request.Attributes, fallbackAttribute{
-			Name:  name,
-			Value: in.GetAttributes()[name],
-		})
-	}
-	return json.Marshal(request)
-}
-
-// forward sends one authorization request to Cloud and marks the response as a
-// fallback decision. Cloud answers with the same JSON the REST endpoint uses.
-func (impl *GRPCService) forward(ctx context.Context, operation adsync.FallbackOperation, in *pb.ContextRequest) (*adsync.FallbackResponse, error) {
-	body, err := fallbackRequestBody(in)
+	fields := map[string]interface{}{"serviceName": request.ServiceName, "decisionSource": "upstream"}
 	if err != nil {
-		return nil, status.Error(codes.Internal, "unable to build the fallback request")
+		logging.WriteSimpleFailedAuditLog("[gRPC]"+string(op), fields, gate.Reason(err))
+		return nil, true, status.Error(codes.Unavailable, gate.Reason(err))
 	}
-	response, err := impl.gate.Forward(ctx, operation, body)
-	if err != nil {
-		return nil, unavailableError(adsgate.UnavailableReason(err))
+	if response.ErrorMessage != "" {
+		logging.WriteSimpleFailedAuditLog("[gRPC]"+string(op), fields, response.ErrorMessage)
+		return nil, true, status.Error(codes.Internal, response.ErrorMessage)
 	}
-	// SetHeader is best effort: a direct in-process call has no server
-	// transport stream to carry the metadata.
-	_ = grpc.SetHeader(ctx, metadata.Pairs(strings.ToLower(svcs.DecisionSourceHeader), svcs.DecisionSourceUpstream))
-	return response, nil
+	headers := metadata.MD(gate.FilterMetadata(response.Metadata))
+	if headers == nil {
+		headers = metadata.MD{}
+	}
+	headers.Set("x-speedle-decision-source", "upstream")
+	_ = grpc.SetHeader(ctx, headers)
+	logging.WriteSimpleSucceededAuditLog("[gRPC]"+string(op), fields, map[string]interface{}{"allowed": response.Allowed, "reason": response.Reason, "roles": response.Roles, "permissions": response.Permissions})
+	return response, true, nil
 }
 
-// cloudDecision is the JSON body of Cloud's is-allowed response.
-type cloudDecision struct {
-	Allowed      bool   `json:"allowed"`
-	Reason       int32  `json:"reason"`
-	ErrorMessage string `json:"errorMessage"`
+func decisionResponse(response *gate.Response) *pb.IsAllowedResponse {
+	return &pb.IsAllowedResponse{Allowed: response.Allowed, Reason: int32(response.Reason)}
 }
-
-func (impl *GRPCService) fallbackIsAllowed(ctx context.Context, in *pb.ContextRequest) (*pb.IsAllowedResponse, error) {
-	auditAction := "[gRPC]" + adsgate.FallbackAuditOperation(adsync.FallbackIsAllowed)
-	auditFields := adsgate.FallbackAuditFields(adsync.FallbackIsAllowed, in.GetServiceName())
-	response, err := impl.forward(ctx, adsync.FallbackIsAllowed, in)
-	if err != nil {
-		logging.WriteSimpleFailedAuditLog(auditAction, auditFields, err.Error())
-		return nil, err
-	}
-	var decision cloudDecision
-	if err := adsync.ReadFallbackResponse(response.Body, &decision); err != nil {
-		logging.WriteSimpleFailedAuditLog(auditAction, auditFields, "invalid fallback response: "+err.Error())
-		return nil, status.Error(codes.Internal, "invalid fallback response")
-	}
-	if decision.ErrorMessage != "" {
-		// The local evaluator reports an evaluation error as an error, never as
-		// a normal decision; a forwarded call must do the same.
-		logging.WriteSimpleFailedAuditLog(auditAction, auditFields, decision.ErrorMessage)
-		return nil, status.Error(codes.Internal, decision.ErrorMessage)
-	}
-	result := &pb.IsAllowedResponse{
-		Allowed: decision.Allowed,
-		Reason:  decision.Reason,
-	}
-	logging.WriteSimpleSucceededAuditLog(auditAction, auditFields,
-		map[string]interface{}{"allowed": decision.Allowed, "reason": decision.Reason})
-	return result, nil
-}
-
-func (impl *GRPCService) fallbackAllGrantedRoles(ctx context.Context, in *pb.ContextRequest) (*pb.AllRoleResponse, error) {
-	auditAction := "[gRPC]" + adsgate.FallbackAuditOperation(adsync.FallbackAllGrantedRoles)
-	auditFields := adsgate.FallbackAuditFields(adsync.FallbackAllGrantedRoles, in.GetServiceName())
-	response, err := impl.forward(ctx, adsync.FallbackAllGrantedRoles, in)
-	if err != nil {
-		logging.WriteSimpleFailedAuditLog(auditAction, auditFields, err.Error())
-		return nil, err
-	}
-	var roles []string
-	if err := adsync.ReadFallbackResponse(response.Body, &roles); err != nil {
-		logging.WriteSimpleFailedAuditLog(auditAction, auditFields, "invalid fallback response: "+err.Error())
-		return nil, status.Error(codes.Internal, "invalid fallback response")
-	}
+func rolesResponse(response *gate.Response) *pb.AllRoleResponse {
+	roles := response.Roles
 	if roles == nil {
 		roles = []string{}
 	}
-	result := &pb.AllRoleResponse{Roles: roles}
-	logging.WriteSimpleSucceededAuditLog(auditAction, auditFields,
-		map[string]interface{}{"roles": roles})
-	return result, nil
+	return &pb.AllRoleResponse{Roles: roles}
 }
-
-func (impl *GRPCService) fallbackAllGrantedPermissions(ctx context.Context, in *pb.ContextRequest) (*pb.AllPermissionResponse, error) {
-	auditAction := "[gRPC]" + adsgate.FallbackAuditOperation(adsync.FallbackAllGrantedPermissions)
-	auditFields := adsgate.FallbackAuditFields(adsync.FallbackAllGrantedPermissions, in.GetServiceName())
-	response, err := impl.forward(ctx, adsync.FallbackAllGrantedPermissions, in)
-	if err != nil {
-		logging.WriteSimpleFailedAuditLog(auditAction, auditFields, err.Error())
-		return nil, err
+func permissionsResponse(response *gate.Response) *pb.AllPermissionResponse {
+	result := &pb.AllPermissionResponse{Permissions: make([]*pb.AllPermissionResponse_Permission, 0, len(response.Permissions))}
+	for _, permission := range response.Permissions {
+		result.Permissions = append(result.Permissions, &pb.AllPermissionResponse_Permission{Resource: permission.Resource, Actions: permission.Actions})
 	}
-	var permissions []struct {
-		Resource string   `json:"resource"`
-		Actions  []string `json:"actions"`
-	}
-	if err := adsync.ReadFallbackResponse(response.Body, &permissions); err != nil {
-		logging.WriteSimpleFailedAuditLog(auditAction, auditFields, "invalid fallback response: "+err.Error())
-		return nil, status.Error(codes.Internal, "invalid fallback response")
-	}
-	ret := pb.AllPermissionResponse{
-		Permissions: make([]*pb.AllPermissionResponse_Permission, 0, len(permissions)),
-	}
-	for _, permission := range permissions {
-		ret.Permissions = append(ret.Permissions, &pb.AllPermissionResponse_Permission{
-			Resource: permission.Resource,
-			Actions:  permission.Actions,
-		})
-	}
-	logging.WriteSimpleSucceededAuditLog(auditAction, auditFields,
-		map[string]interface{}{"permissions": auditPermissions(ret.Permissions)})
-	return &ret, nil
+	return result
 }

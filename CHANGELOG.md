@@ -2,6 +2,51 @@
 
 ## Unreleased
 
+- Removed the experimental policy-distribution feature introduced in v1.7.x.
+  The Engine continues to provide policy decisions, local policy stores,
+  management and decision APIs, spctl and SDK integration. The shipped
+  `speedle-ads` and `speedle-pms` binaries reject the removed `policy-source`
+  store at startup with a v1.8.0 migration error. A host that registers its own
+  builder with `store.Register("policy-source", ...)` can still select it; see
+  [Extending the decision service](docs/hugo/content/docs/extending-decision-service.md).
+  Remove obsolete distribution command-line flags before using an old
+  configuration; removed flags are rejected as unknown options during parsing.
+  For a v1.7.x distribution deployment, migrate every dependent client together:
+  the policy-source protocol and dedicated `downstream-*` mTLS listener are no
+  longer served, so older clients cannot keep synchronizing with this binary.
+  Replace the `policy-source` store configuration with a supported local store
+  and remove its source URL/API key, `ClientCertFile`, `ClientKeyFile`, `CAFile`,
+  `CRL*` and `CacheDir` settings. Retire the dedicated listener, its firewall or
+  load-balancer route, and its client CA/certificates and keys when no remaining
+  deployment uses them; revoke credentials that are no longer needed. After
+  stopping the old distribution process and completing the migration, remove
+  its unused `CacheDir`, including the persistent instance identity and retained
+  CRL watermarks. Do not delete credentials or state still used by another
+  service. The Engine does not clean up these files automatically.
+
+  **Removed Go API:** v1.8.0 is intentionally source-incompatible for consumers
+  of the experimental `pkg/adsync`, `pkg/adsproxy`, `pkg/svcs/adsgate`,
+  `pkg/store/policysource` and `testutil/adsyncfake` packages, `cfg.Secret`,
+  `cfg.RedactedSecret` and `(*flags.Parameters).DownstreamListenerConfig`.
+  Pin v1.7.x until those imports and calls are migrated; no distribution stubs
+  remain. These distribution APIs have no built-in replacement. An external
+  implementation can use `pkg/ads.Run` for server startup, `pkg/svcs/gate` and
+  the REST/gRPC `WithGate` options for request routing, and the retained
+  `store.Register`/`eval.NewWithStore` hooks for its store. See
+  [Extending the decision service](docs/hugo/content/docs/extending-decision-service.md).
+  `(*flags.Parameters).GRPCServerOptions` remains available.
+  The retained `adsrest.NewRESTService`, `adsrest.NewRESTServiceWithEvaluator`,
+  `adsrest.NewRouter` and `adsgrpc.NewGRPCService` constructors now accept
+  variadic `...Option` arguments. Existing direct calls still compile. Code
+  assigning a constructor to a function value with its old signature must wrap
+  the call in a function with that signature and omit the optional arguments.
+
+- Removed the Cloud getting-started guides, API and Swagger reference, SDK
+  examples and `cloud-public.yaml` specification from the Engine site in all
+  five languages. The old documentation and `/openapi/cloud-public.yaml` URLs
+  are not redirected. This repository no longer publishes replacement Cloud
+  documentation; the shared `cloud.speedle.io` product links remain.
+
 - Source builds now require Go 1.27.4 or newer. CI reads the root module's
   Go version; its executable-guide matrix uses Go 1.27.4. Older published
   releases retain their own toolchain requirements.
@@ -34,14 +79,3 @@
   Benchmark engine baselines, recorded results and
   executed-source archives are unchanged; dependency maintenance is not a new
   benchmark measurement.
-
-- The policy-source store accepts a downstream mTLS configuration with a
-  required persistent `CacheDir`. Its client verifies relay certificates and
-  reloads TLS files on a 30-second poll or SIGHUP, reconnecting upstream
-  connections when material changes. See [configuration](docs/POLICY_SOURCE.md).
-- Removed the unreleased `DownstreamCredentialsFile` credential prototype and
-  `Services` per-downstream subsets. Setting either fails startup with an error
-  naming `ClientCertFile`, `ClientKeyFile`, `CAFile` and the relay's
-  `downstreamClientCAPath`. Connection/depth limit properties `MaxDownstream`,
-  `MaxChainDepth` and `MaxConnectionsPerDownstream` are also rejected. Engines
-  without the policy-source store keep their existing behavior.

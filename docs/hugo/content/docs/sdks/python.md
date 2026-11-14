@@ -1,6 +1,6 @@
 +++
 title = "Python SDK"
-description = "Add the Speedle Python SDK and check authorization against a local Speedle or Speedle Cloud."
+description = "Add the Speedle Python SDK and check authorization against a local Speedle."
 weight = 20
 aliases = ["/docs/api/sdk-python/"]
 draft = false
@@ -8,7 +8,7 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "Install speedle 0.2.0 with pip or uv, then call is_allowed and check against a local Speedle or Speedle Cloud."
+bref = "Install speedle 0.2.0 with pip or uv, then call is_allowed and check against a local Speedle."
 lastmod = 2026-11-07T19:43:15+08:00
 +++
 
@@ -71,51 +71,6 @@ alice get /docs/public: allowed=True
 alice delete /docs/public: allowed=False reason=<Reason.NO_APPLICABLE_POLICIES: 3>
 ```
 
-## Call Speedle Cloud
-
-> **Speedle Cloud is coming soon.**
-
-The program reads the service name from `SPEEDLE_SERVICE` and an account API key with the `ads` scope from `SPEEDLE_TOKEN`. `SPEEDLE_ENDPOINT` overrides the default endpoint `https://cloud.speedle.io`. Replace `main.py` with:
-
-```python
-import os
-import sys
-
-from speedle import Auth, Client, SpeedleError
-
-try:
-    with Client(
-        backend="speedle-cloud",
-        endpoint=os.environ.get("SPEEDLE_ENDPOINT", "https://cloud.speedle.io"),
-        auth=Auth.bearer(os.environ["SPEEDLE_TOKEN"]),
-        service_name=os.environ["SPEEDLE_SERVICE"],
-    ) as speedle:
-        allowed = speedle.is_allowed("alice", "get", "/docs/public")
-        print(f"alice get /docs/public: allowed={allowed}")
-
-        decision = speedle.check("alice", "delete", "/docs/public")
-        print(f"alice delete /docs/public: allowed={decision.allowed} reason={decision.reason!r}")
-except SpeedleError as e:
-    print(f"Speedle error: {e}", file=sys.stderr)
-    sys.exit(1)
-```
-
-Set the environment and run it. `read -rs` keeps the API key out of your shell history and screen:
-
-```bash
-export SPEEDLE_SERVICE=docs
-read -rs SPEEDLE_TOKEN && export SPEEDLE_TOKEN
-python main.py
-```
-
-Output, when the service has the example policy:
-
-```text
-alice get /docs/public: allowed=True
-alice delete /docs/public: allowed=False reason=<Reason.NO_APPLICABLE_POLICIES: 3>
-```
-
-The API key is a server-side secret. Never ship it to browsers, mobile apps or desktop clients.
 
 ## Error handling
 

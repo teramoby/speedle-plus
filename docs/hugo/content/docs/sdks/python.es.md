@@ -1,6 +1,6 @@
 +++
 title = "Python SDK"
-description = "Añada el SDK de Speedle para Python y compruebe autorizaciones frente a un Speedle local o Speedle Cloud."
+description = "Añada el SDK de Speedle para Python y compruebe autorizaciones frente a un Speedle local."
 weight = 20
 aliases = ["/es/docs/api/sdk-python/"]
 draft = false
@@ -8,7 +8,7 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "Instale speedle 0.2.0 con pip o uv, y luego llame a is_allowed y check frente a un Speedle local o Speedle Cloud."
+bref = "Instale speedle 0.2.0 con pip o uv, y luego llame a is_allowed y check frente a un Speedle local."
 lastmod = 2026-11-07T19:43:15+08:00
 +++
 
@@ -71,51 +71,6 @@ alice get /docs/public: allowed=True
 alice delete /docs/public: allowed=False reason=<Reason.NO_APPLICABLE_POLICIES: 3>
 ```
 
-## Llamar a Speedle Cloud
-
-> **Speedle Cloud estará disponible próximamente.**
-
-El programa lee el nombre del servicio desde `SPEEDLE_SERVICE` y una clave API de cuenta con ámbito `ads` desde `SPEEDLE_TOKEN`. `SPEEDLE_ENDPOINT` anula el endpoint predeterminado `https://cloud.speedle.io`. Sustituya `main.py` por:
-
-```python
-import os
-import sys
-
-from speedle import Auth, Client, SpeedleError
-
-try:
-    with Client(
-        backend="speedle-cloud",
-        endpoint=os.environ.get("SPEEDLE_ENDPOINT", "https://cloud.speedle.io"),
-        auth=Auth.bearer(os.environ["SPEEDLE_TOKEN"]),
-        service_name=os.environ["SPEEDLE_SERVICE"],
-    ) as speedle:
-        allowed = speedle.is_allowed("alice", "get", "/docs/public")
-        print(f"alice get /docs/public: allowed={allowed}")
-
-        decision = speedle.check("alice", "delete", "/docs/public")
-        print(f"alice delete /docs/public: allowed={decision.allowed} reason={decision.reason!r}")
-except SpeedleError as e:
-    print(f"Speedle error: {e}", file=sys.stderr)
-    sys.exit(1)
-```
-
-Configure las variables de entorno y ejecútelo. `read -rs` evita que la clave API quede registrada en el historial de la terminal o en pantalla:
-
-```bash
-export SPEEDLE_SERVICE=docs
-read -rs SPEEDLE_TOKEN && export SPEEDLE_TOKEN
-python main.py
-```
-
-Salida, cuando el servicio cuenta con la política de ejemplo:
-
-```text
-alice get /docs/public: allowed=True
-alice delete /docs/public: allowed=False reason=<Reason.NO_APPLICABLE_POLICIES: 3>
-```
-
-La clave API es un secreto del lado del servidor. Nunca lo distribuya a navegadores, aplicaciones móviles o clientes de escritorio.
 
 ## Gestión de errores
 

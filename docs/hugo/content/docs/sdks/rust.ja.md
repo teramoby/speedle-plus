@@ -1,6 +1,6 @@
 +++
 title = "Rust SDK"
-description = "Speedle Rust SDK を追加し、ローカルの Speedle または Speedle Cloud に対して認可チェックを実行"
+description = "Speedle Rust SDK を追加し、ローカルの Speedle に対して認可チェックを実行"
 weight = 50
 aliases = ["/ja/docs/api/sdk-rust/"]
 draft = false
@@ -8,7 +8,7 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "cargo add で speedle 0.2.0 クレートを追加し、ローカルの Speedle または Speedle Cloud に対して is_allowed と check を呼び出します。"
+bref = "cargo add で speedle 0.2.0 クレートを追加し、ローカルの Speedle に対して is_allowed と check を呼び出します。"
 lastmod = 2026-11-07T19:43:15+08:00
 +++
 
@@ -66,56 +66,6 @@ alice get /docs/public: allowed=true
 alice delete /docs/public: allowed=false reason=NoApplicablePolicies
 ```
 
-## Speedle Cloud の呼び出し
-
-> **Speedle Cloud はまもなく公開されます。**
-
-プログラムは `SPEEDLE_SERVICE` からサービス名を、`SPEEDLE_TOKEN` から`ads` スコープのアカウント API キーを読み取ります。`SPEEDLE_ENDPOINT` はデフォルトのエンドポイント `https://cloud.speedle.io` を上書きします。`src/main.rs` を以下に置き換えます:
-
-```rust
-use std::env;
-
-use speedle::blocking::Client;
-use speedle::{Auth, Backend};
-
-fn main() {
-    if let Err(e) = run() {
-        eprintln!("Speedle error: {e}");
-        std::process::exit(1);
-    }
-}
-
-fn run() -> Result<(), speedle::Error> {
-    let endpoint = env::var("SPEEDLE_ENDPOINT").unwrap_or_else(|_| "https://cloud.speedle.io".to_string());
-    let token = env::var("SPEEDLE_TOKEN").unwrap_or_default();
-    let service = env::var("SPEEDLE_SERVICE").unwrap_or_default();
-    let speedle = Client::builder(Backend::SpeedleCloud, &endpoint, Auth::bearer(token), service).build()?;
-
-    let allowed = speedle.is_allowed(&"alice".into(), "get", "/docs/public", &[])?;
-    println!("alice get /docs/public: allowed={allowed}");
-
-    let d = speedle.check(&"alice".into(), "delete", "/docs/public", &[])?;
-    println!("alice delete /docs/public: allowed={} reason={:?}", d.allowed, d.reason);
-    Ok(())
-}
-```
-
-環境変数を設定して実行します。`read -rs` を使用すると、API キーがシェルの履歴や画面に表示されません:
-
-```bash
-export SPEEDLE_SERVICE=docs
-read -rs SPEEDLE_TOKEN && export SPEEDLE_TOKEN
-cargo run
-```
-
-サービスにサンプルポリシーが存在する場合の出力:
-
-```text
-alice get /docs/public: allowed=true
-alice delete /docs/public: allowed=false reason=NoApplicablePolicies
-```
-
-API キーはサーバー側のシークレットです。ブラウザ、モバイルアプリ、またはデスクトップクライアントには絶対に配布しないでください。
 
 ## エラー処理
 
