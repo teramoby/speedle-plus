@@ -211,11 +211,22 @@ defines `HOMEBREW_TAP_TOKEN`, the workflow pushes a `homebrew-vX.Y.Z` branch
 to `teramoby/homebrew-tap` and opens a pull request against `main`. It does
 not push `main` or `master`. It also opens a pull request on this repository
 so `deployment/homebrew/` matches that update. That pull request also points
-both Quick Start guides at this release and refreshes the committed guide
+all Quick Start locales at this release and refreshes the committed guide
 pages, including `llms-full.txt`. The token needs permission to
 push a branch and open a pull request on `teramoby/homebrew-tap`. The pull
 request on this repository uses the workflow's `GITHUB_TOKEN`. The tap token
 is read only by that publish step.
+
+The pin helper updates the first release-install command and the current-release
+note immediately after its code block. That paragraph's first version code span
+names the installed release. Put historical versions and other installation
+examples in separate paragraphs. Use plain text and inline code spans only in
+this note, and keep it short enough that any RSS summary quoting the install
+command includes the complete note. The helper repairs it even when a retry has
+already updated the command. A missing note is an error. If RSS text does not
+match, the error names the feed: remove unsupported markup or shorten the note,
+then regenerate the site before retrying. Regeneration alone does not repair
+unsupported formatting or a truncated summary.
 
 When `HOMEBREW_TAP_TOKEN` is unset, the workflow logs that the Homebrew tap
 update was skipped and the release still succeeds. `brew install` reads the
