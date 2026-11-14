@@ -196,6 +196,6 @@ func (impl *GRPCService) fallbackAllGrantedPermissions(ctx context.Context, in *
 		})
 	}
 	logging.WriteSimpleSucceededAuditLog(auditAction, auditFields,
-		map[string]interface{}{"permissions": ret.Permissions})
+		map[string]interface{}{"permissions": auditPermissions(ret.Permissions)})
 	return &ret, nil
 }

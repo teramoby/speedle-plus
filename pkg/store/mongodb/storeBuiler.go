@@ -10,8 +10,8 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/store"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 const (
@@ -48,7 +48,7 @@ func (msb MongoStoreBuilder) NewStore(config map[string]interface{}) (pms.Policy
 	clientOptions.SetRetryWrites(true)
 
 	// Connect to MongoDB
-	client, err := mongo.Connect(context.TODO(), clientOptions)
+	client, err := mongo.Connect(clientOptions)
 
 	if err != nil {
 		log.Error(err)

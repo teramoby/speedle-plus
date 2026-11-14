@@ -5,8 +5,6 @@ package errors
 
 import (
 	"fmt"
-
-	gerrs "github.com/pkg/errors"
 )
 
 // speedleError is the struct of speedle error
@@ -25,6 +23,11 @@ func (e *speedleError) Error() string {
 	return errMsg + ": " + e.cause.Error()
 }
 
+// Unwrap exposes the cause to the standard errors.Is and errors.As functions.
+func (e *speedleError) Unwrap() error {
+	return e.cause
+}
+
 func (e *speedleError) Cause() error {
 	return e.cause
 }
@@ -33,9 +36,17 @@ func (e *speedleError) Code() ErrorCode {
 	return e.code
 }
 
-// Cause returns the cause error of this error
+// Cause returns the deepest legacy Cause() error, preserving the historical
+// traversal contract. Use standard errors.Is/As for chains containing %w wrappers.
 func Cause(err error) error {
-	return gerrs.Cause(err)
+	for err != nil {
+		legacy, ok := err.(interface{ Cause() error })
+		if !ok {
+			break
+		}
+		err = legacy.Cause()
+	}
+	return err
 }
 
 // Code returns the error code

@@ -1,0 +1,15 @@
+{
+  "services": [{
+    "name": "books", "type": "application", "metadata": {"owner": "图书馆"},
+    "policies": [{"id": "policy-id", "name": "read", "effect": "grant",
+      "permissions": [{"resource": "book", "resourceExpression": "book.*", "actions": ["read", "list"]}],
+      "principals": [["user:alice", "role:reader"], ["user:bob"]],
+      "condition": "request.level > 2", "metadata": {"source": "legacy"}}],
+    "rolePolicies": [{"id": "role-id", "name": "reader", "effect": "deny", "roles": ["reader"],
+      "principals": ["group:guests"], "resources": ["book"], "resourceExpressions": ["book.*"],
+      "condition": "request.active == false", "metadata": {"source": "legacy"}}]
+  }],
+  "functions": [{"name": "allowed", "description": "legacy function", "funcURL": "http://function",
+    "localFuncURL": "http://local", "ca": "certificate", "resultCachable": true,
+    "resultTTL": 4294967296, "metadata": {"source": "legacy"}}]
+}

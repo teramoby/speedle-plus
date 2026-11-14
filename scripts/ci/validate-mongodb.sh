@@ -55,10 +55,10 @@ import (
     "os"
     "net/url"
     "time"
-    "go.mongodb.org/mongo-driver/bson"
-    "go.mongodb.org/mongo-driver/mongo"
-    "go.mongodb.org/mongo-driver/mongo/options"
-    "go.mongodb.org/mongo-driver/mongo/readpref"
+    "go.mongodb.org/mongo-driver/v2/bson"
+    "go.mongodb.org/mongo-driver/v2/mongo"
+    "go.mongodb.org/mongo-driver/v2/mongo/options"
+    "go.mongodb.org/mongo-driver/v2/mongo/readpref"
 )
 
 func main() {
@@ -69,7 +69,7 @@ func main() {
     // Do not require replicaSet membership before replSetInitiate has run.
     // This direct bootstrap connection must also allow a non-primary node.
     bootstrapURI := "mongodb://" + bootstrapURL.Host + "/"
-    client, err := mongo.Connect(ctx, options.Client().ApplyURI(bootstrapURI).SetDirect(true).SetReadPreference(readpref.Nearest()).SetServerSelectionTimeout(time.Second))
+    client, err := mongo.Connect(options.Client().ApplyURI(bootstrapURI).SetDirect(true).SetReadPreference(readpref.Nearest()).SetServerSelectionTimeout(time.Second))
     if err != nil { log.Fatal(err) }
     defer client.Disconnect(context.Background())
     for client.Ping(ctx, readpref.Nearest()) != nil {
