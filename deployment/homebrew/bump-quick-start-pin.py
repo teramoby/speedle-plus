@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Point the Quick Start install pin at one release.
 
-The English and Chinese guides install
+All Quick Start locales install
 ``github.com/teramoby/speedle-plus/cmd/...@vX.Y.Z``. When the pin changes,
 ``--stamp`` writes one release time into front matter. The site build reads
 that value and does not read Git.
@@ -9,6 +9,7 @@ that value and does not read Git.
 Usage:
     python3 bump-quick-start-pin.py vX.Y.Z [repo]
     python3 bump-quick-start-pin.py --stamp 2026-11-10T16:35:23+08:00 [repo]
+    python3 bump-quick-start-pin.py --paths [repo]
 """
 
 import re
@@ -24,20 +25,31 @@ VERSION = re.compile(r"^v[0-9]+\.[0-9]+\.[0-9]+$")
 # because the page template's numeric offset prints UTC that way.
 AUTHORED = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$")
 
-GUIDES = (
-    "docs/hugo/content/quick-start.md",
-    "docs/hugo/content/quick-start.zh.md",
-)
-GENERATED = (
-    "docs/quick-start/index.html",
-    "docs/zh/quick-start/index.html",
-    "docs/zh/index.xml",
-)
-SITEMAPS = (
-    ("docs/en/sitemap.xml", "https://engine.speedle.io/quick-start/"),
-    ("docs/zh/sitemap.xml", "https://engine.speedle.io/zh/quick-start/"),
-)
-SITEMAP_INDEX = "docs/sitemap.xml"
+def guide_paths(root):
+    """Discover the default guide and every locale, including future additions."""
+    return sorted((Path(root) / "docs/hugo/content").glob("quick-start*.md"))
+
+
+def outputs(root, guide):
+    """Return the page, optional feed and sitemap for a discovered source."""
+    locale = guide.name[len("quick-start"):-len(".md")].lstrip(".")
+    directory = Path(root) / "docs" / locale
+    return (
+        directory / "quick-start/index.html",
+        directory / "index.xml",
+        Path(root) / "docs" / (locale or "en") / "sitemap.xml",
+        f"https://engine.speedle.io/{locale + '/' if locale else ''}quick-start/",
+    )
+
+
+def tracked_paths(root):
+    """Files the publisher must stage after pinning or stamping."""
+    root = Path(root)
+    paths = set(guide_paths(root))
+    for guide in guide_paths(root):
+        paths.update(outputs(root, guide)[:3])
+    paths.update(root / "docs" / name for name in ("sitemap.xml", "llms.txt", "llms-full.txt"))
+    return sorted(path.relative_to(root) for path in paths if path.is_file())
 
 
 def bump_text(text, version):
@@ -63,31 +75,32 @@ def bump_text(text, version):
 
 
 def bump_tree(root, version):
-    """Update both guides and the generated pages that quote the install command."""
+    """Update every guide and its generated page/feed without changing archives."""
     root = Path(root)
-    guides = [root / rel for rel in GUIDES]
-    if not any(path.is_file() for path in guides):
-        return False
-    missing = [path for path in guides if not path.is_file()]
-    if missing:
-        raise SystemExit("both Quick Start guides are required: " + ", ".join(str(path) for path in missing))
     changed = False
-    for path in guides:
-        text, did = bump_text(path.read_text(), version)
-        if did:
-            path.write_text(text)
-            changed = True
-    if not changed:
-        return False
-    for rel in GENERATED:
-        path = root / rel
-        if not path.is_file():
-            raise SystemExit(f"missing generated Quick Start page {path}")
-        text, did = bump_text(path.read_text(), version)
+    for guide in guide_paths(root):
+        text, did = bump_text(guide.read_text(), version)
         if not did:
-            raise SystemExit(f"{path} does not contain the previous install pin")
-        path.write_text(text)
-    return True
+            continue
+        page, feed, _, _ = outputs(root, guide)
+        if not page.is_file():
+            raise SystemExit(f"missing generated Quick Start page {page}")
+        rendered, rendered_did = bump_text(page.read_text(), version)
+        if not rendered_did:
+            raise SystemExit(f"{page} does not contain the previous install pin")
+        guide.write_text(text)
+        page.write_text(rendered)
+        if feed.is_file():
+            # RSS summaries have plain text rather than Markdown/HTML code spans.
+            # Restrict replacements to the item containing the install command.
+            def bump_item(match):
+                item = match.group(0)
+                pin = INSTALL.search(item)
+                return item.replace(pin.group(2), version) if pin else item
+
+            feed.write_text(re.sub(r"<item>[\s\S]*?</item>", bump_item, feed.read_text()))
+        changed = True
+    return changed
 
 
 def hugo_stamp(authored):
@@ -158,24 +171,19 @@ def stamp_tree(root, authored):
     """Write one release time into the Quick Start sources and generated pages."""
     root = Path(root)
     authored = hugo_stamp(authored)
-    if not (root / GUIDES[0]).is_file():
+    guides = guide_paths(root)
+    if not guides:
         return False
-    for rel in GUIDES:
-        path = root / rel
-        if not path.is_file():
-            raise SystemExit(f"missing Quick Start guide {path}")
-        path.write_text(stamp_front_matter(path.read_text(), authored))
-    for rel in GENERATED[:2]:
-        path = root / rel
-        if not path.is_file():
-            raise SystemExit(f"missing generated Quick Start page {path}")
-        path.write_text(stamp_html(path.read_text(), authored))
-    for rel, loc in SITEMAPS:
-        path = root / rel
-        if not path.is_file():
-            raise SystemExit(f"missing sitemap {path}")
-        path.write_text(stamp_sitemap(path.read_text(), loc, authored))
-    index = root / SITEMAP_INDEX
+    for guide in guides:
+        page, _, sitemap, loc = outputs(root, guide)
+        if not page.is_file():
+            raise SystemExit(f"missing generated Quick Start page {page}")
+        if not sitemap.is_file():
+            raise SystemExit(f"missing sitemap {sitemap}")
+        guide.write_text(stamp_front_matter(guide.read_text(), authored))
+        page.write_text(stamp_html(page.read_text(), authored))
+        sitemap.write_text(stamp_sitemap(sitemap.read_text(), loc, authored))
+    index = root / "docs/sitemap.xml"
     if index.is_file():
         index.write_text(stamp_index(index.read_text(), authored))
     return True
@@ -186,6 +194,14 @@ def main(argv):
     if not args:
         print("usage: bump-quick-start-pin.py vX.Y.Z [repo]", file=sys.stderr)
         return 2
+    if args[0] == "--paths":
+        if len(args) > 2:
+            print("usage: bump-quick-start-pin.py --paths [repo]", file=sys.stderr)
+            return 2
+        root = Path(args[1]) if len(args) == 2 else Path.cwd()
+        for path in tracked_paths(root):
+            print(path)
+        return 0
     if args[0] == "--stamp":
         if len(args) not in (2, 3) or not AUTHORED.fullmatch(args[1]):
             print(

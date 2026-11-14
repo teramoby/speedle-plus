@@ -175,22 +175,9 @@ if [[ "${pin_status}" == *"Quick Start install pin set to ${VERSION}"* && -f doc
 fi
 git add -- deployment/homebrew/Formula deployment/homebrew/README.md
 doc_paths=()
-for path in \
-  docs/hugo/content/quick-start.md \
-  docs/hugo/content/quick-start.zh.md \
-  docs/quick-start/index.html \
-  docs/zh/quick-start/index.html \
-  docs/llms.txt \
-  docs/llms-full.txt \
-  docs/zh/index.xml \
-  docs/en/sitemap.xml \
-  docs/zh/sitemap.xml \
-  docs/sitemap.xml
-do
-  if [[ -f "${path}" ]]; then
-    doc_paths+=("${path}")
-  fi
-done
+while IFS= read -r path; do
+  doc_paths+=("${path}")
+done < <(python3 "${script_dir}/bump-quick-start-pin.py" --paths .)
 if [[ ${#doc_paths[@]} -gt 0 ]]; then
   git add -- "${doc_paths[@]}"
 fi
@@ -204,21 +191,7 @@ if ! git diff --cached --quiet; then
     author_date=$(git log -1 --format=%aI)
     committer_date=$(git log -1 --format=%cI)
     python3 "${script_dir}/bump-quick-start-pin.py" --stamp "${author_date}" .
-    stamp_paths=()
-    for path in \
-      docs/hugo/content/quick-start.md \
-      docs/hugo/content/quick-start.zh.md \
-      docs/quick-start/index.html \
-      docs/zh/quick-start/index.html \
-      docs/en/sitemap.xml \
-      docs/zh/sitemap.xml \
-      docs/sitemap.xml
-    do
-      if [[ -f "${path}" ]]; then
-        stamp_paths+=("${path}")
-      fi
-    done
-    git add -- "${stamp_paths[@]}"
+    git add -- "${doc_paths[@]}"
     if ! git diff --cached --quiet; then
       GIT_AUTHOR_DATE="${author_date}" GIT_COMMITTER_DATE="${committer_date}" git commit --amend --no-edit
     fi
@@ -239,7 +212,7 @@ Update the Homebrew formulas in \`deployment/homebrew/\` to ${VERSION}.
 
 These files are the source of truth for \`teramoby/homebrew-tap\`. The Release workflow opened a pull request with the same files on that tap.
 
-The Quick Start guides in both languages pin this release. The committed guide pages use the same version.
+The Quick Start guides in every locale pin this release. The committed guide pages use the same version.
 EOF
   gh pr create --repo "${source_repo}" --base master --head "${source_branch}" \
     --title "chore(release): update Homebrew formulas to ${VERSION}" \

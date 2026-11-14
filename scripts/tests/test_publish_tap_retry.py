@@ -1,4 +1,4 @@
-"""The release publisher recreates a retained Homebrew branch from master."""
+"""Exercise release branch retries and every discovered Quick Start locale."""
 
 import hashlib
 import importlib.util
@@ -17,6 +17,12 @@ UPDATER_SPEC = importlib.util.spec_from_file_location(
     "update_formulas", HOMEBREW / "update-formulas.py")
 update_formulas = importlib.util.module_from_spec(UPDATER_SPEC)
 UPDATER_SPEC.loader.exec_module(update_formulas)
+PIN_SPEC = importlib.util.spec_from_file_location(
+    "bump_pin", HOMEBREW / "bump-quick-start-pin.py")
+bump_pin = importlib.util.module_from_spec(PIN_SPEC)
+PIN_SPEC.loader.exec_module(bump_pin)
+# fr is deliberately not a shipped locale: no production fixed list may know it.
+EXTRA_LOCALES = ("es", "ja", "ko", "fr")
 
 
 def run(command, cwd, env):
@@ -66,6 +72,41 @@ class PublishTapRetryTest(unittest.TestCase):
             self.assertNotIn("2024-05-01T00:00:00Z", html)
             index = (root / "docs/sitemap.xml").read_text()
             self.assertIn("<lastmod>2024-05-01T00:00:00+00:00</lastmod>", index)
+
+    def test_partial_release_update_and_retry_leave_no_stale_locale(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self._write_quick_start(root, "v1.7.1")
+            # Reproduce #424: English and Chinese are already up to date.
+            for rel in ("docs/hugo/content/quick-start.md", "docs/hugo/content/quick-start.zh.md",
+                        "docs/quick-start/index.html", "docs/zh/quick-start/index.html"):
+                path = root / rel
+                path.write_text(path.read_text().replace("v1.7.1", "v1.8.0"))
+            archive = root / "docs/archive/quick-start/index.html"
+            archive.parent.mkdir(parents=True)
+            archive.write_text("historical cmd/...@v1.7.1")
+            unrelated = root / "docs/hugo/content/embedded.fr.md"
+            unrelated.write_text("historical v1.7.1")
+            self.assertTrue(bump_pin.bump_tree(root, "v1.8.0"))
+            for locale in EXTRA_LOCALES:
+                for rel in (f"docs/hugo/content/quick-start.{locale}.md",
+                            f"docs/{locale}/quick-start/index.html", f"docs/{locale}/index.xml"):
+                    text = (root / rel).read_text()
+                    self.assertIn("cmd/...@v1.8.0", text)
+                    self.assertNotIn("v1.7.1", text)
+            before = {path: path.read_bytes() for path in root.rglob("*") if path.is_file()}
+            self.assertFalse(bump_pin.bump_tree(root, "v1.8.0"))
+            self.assertEqual(before, {path: path.read_bytes() for path in before})
+            self.assertEqual(archive.read_text(), "historical cmd/...@v1.7.1")
+            self.assertEqual(unrelated.read_text(), "historical v1.7.1")
+
+    def test_missing_generated_locale_page_fails(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self._write_quick_start(root, "v1.7.1")
+            (root / "docs/fr/quick-start/index.html").unlink()
+            with self.assertRaisesRegex(SystemExit, "missing generated Quick Start page.*fr/"):
+                bump_pin.bump_tree(root, "v1.8.0")
 
     def _run_case(self, root, open_pr, existing_tap_branch=False, quick_start=None):
         source_bare = root / "source.git"
@@ -228,7 +269,7 @@ class PublishTapRetryTest(unittest.TestCase):
                 "go install github.com/teramoby/speedle-plus/cmd/...@" + version + "\n"
                 f"<code>{version}</code> 是撰写本文时的最新发布标签。\n",
             "docs/zh/index.xml":
-                "go install github.com/teramoby/speedle-plus/cmd/...@" + version + "\n",
+                "<item>go install github.com/teramoby/speedle-plus/cmd/...@" + version + "</item>\n",
             "docs/en/sitemap.xml":
                 "<loc>https://engine.speedle.io/quick-start/</loc>\n"
                 "<lastmod>2020-01-01T00:00:00+00:00</lastmod>\n",
@@ -236,6 +277,17 @@ class PublishTapRetryTest(unittest.TestCase):
                 "<loc>https://engine.speedle.io/zh/quick-start/</loc>\n"
                 "<lastmod>2020-01-01T00:00:00+00:00</lastmod>\n",
         }
+        for locale in EXTRA_LOCALES:
+            pages[f"docs/hugo/content/quick-start.{locale}.md"] = pages["docs/hugo/content/quick-start.md"]
+            pages[f"docs/{locale}/quick-start/index.html"] = pages["docs/quick-start/index.html"]
+            pages[f"docs/{locale}/index.xml"] = (
+                f"<rss><channel><item>go install github.com/teramoby/speedle-plus/cmd/...@{version} "
+                f"{version} is the latest release.</item></channel></rss>\n"
+            )
+            pages[f"docs/{locale}/sitemap.xml"] = (
+                f"<loc>https://engine.speedle.io/{locale}/quick-start/</loc>\n"
+                "<lastmod>2020-01-01T00:00:00+00:00</lastmod>\n"
+            )
         for rel, text in pages.items():
             path = workspace / rel
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -280,6 +332,16 @@ class PublishTapRetryTest(unittest.TestCase):
         ):
             self.assertIn(f"lastmod = {author}", show(guide))
             self.assertNotIn("2020-01-01T00:00:00", show(guide))
+        for locale in EXTRA_LOCALES:
+            guide = show(f"docs/hugo/content/quick-start.{locale}.md")
+            html = show(f"docs/{locale}/quick-start/index.html")
+            feed = show(f"docs/{locale}/index.xml")
+            self.assertIn(f"lastmod = {author}", guide)
+            self.assertIn(author.replace("+", "&#43;"), html)
+            self.assertIn(author, show(f"docs/{locale}/sitemap.xml"))
+            for text in (guide, html, feed):
+                self.assertIn(f"cmd/...@{version}", text)
+                self.assertNotIn(previous, text)
         self.assertIn(author, show("docs/en/sitemap.xml"))
         self.assertIn(author, show("docs/zh/sitemap.xml"))
         self.assertNotIn("2020-01-01T00:00:00", show("docs/en/sitemap.xml"))
