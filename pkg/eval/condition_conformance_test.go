@@ -368,7 +368,7 @@ func conditionCases() []conditionCase {
 		last := &cases[len(cases)-1]
 		last.effect, last.conditionError = pms.Deny, c.conditionError
 		if c.conditionError != "" {
-			last.design = "A failed function makes its condition nonmatching, as with other runtime condition errors. [SPDL §2.4.1](https://engine.speedle.io/docs/spdl/#241-built-in-functions); the policy takes effect only when its condition is met [SPDL §1](https://engine.speedle.io/docs/spdl/#1-overview)."
+			last.design = "A failed function makes its condition nonmatching, as with other runtime condition errors. [SPDL §2.4.1](https://engine.speedle.io/docs/spdl/#2-4-1-built-in-functions); the policy takes effect only when its condition is met [SPDL §1](https://engine.speedle.io/docs/spdl/#1-overview)."
 		}
 	}
 	// known difference, behaviour pinned: the fork accepts these extensions;
