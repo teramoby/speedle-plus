@@ -14,17 +14,21 @@ spec.loader.exec_module(reporter)
 
 
 class ConditionCoverageReportTest(unittest.TestCase):
-    def run_report(self, extra='', omit=None):
+    def run_report(self, extra='', omit=None, go126=False):
         files = ['pkg/eval/condition/condition.go', 'pkg/eval/function/builtin_functions.go']
         files += [reporter.FORK + name for name in (
             'EvaluableExpression.go', 'parsing.go', 'stagePlanner.go',
             'evaluationStage.go', 'lexerState.go', 'lexerStream.go',
             'parameters.go', 'sanitizedParameters.go')]
-        annotations = ''.join(
-            f'github.com/teramoby/speedle-plus/{reporter.FORK}{file}:{span} {n} 0\n'
-            for file, blocks in reporter.UNREACHABLE.items() for span, n in blocks
-            if (file, span, n) != omit
-        )
+        annotations = ''
+        for file, blocks in reporter.UNREACHABLE.items():
+            for span, n in blocks:
+                if (file, span, n) == omit:
+                    continue
+                if go126:
+                    span = next(actual for (source, actual, count), canonical in reporter.GO126_SPANS.items()
+                                if source == file and count == n and canonical == (span, n))
+                annotations += f'github.com/teramoby/speedle-plus/{reporter.FORK}{file}:{span} {n} 0\n'
         with tempfile.TemporaryDirectory() as directory:
             profile = Path(directory) / 'coverage.out'
             profile.write_text('mode: count\n' + ''.join(
@@ -82,3 +86,13 @@ class ConditionCoverageReportTest(unittest.TestCase):
             failed, output = self.run_report()
         self.assertTrue(failed)
         self.assertIn('audited source changed; re-audit required', output)
+
+    def test_go126_layout_matches_same_annotations(self):
+        failed, output = self.run_report(go126=True)
+        self.assertFalse(failed, output)
+
+    def test_mixed_layouts_are_rejected(self):
+        failed, output = self.run_report(
+            f'github.com/teramoby/speedle-plus/{reporter.FORK}parsing.go:48.17,50.4 1 0\n')
+        self.assertTrue(failed)
+        self.assertIn('mixed coverage layouts', output)

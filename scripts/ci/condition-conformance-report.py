@@ -85,6 +85,34 @@ AUDITED_SOURCE_SHA256 = {'EvaluableExpression.go': '8402d0eadf149b6bf511e992e89e
  'stagePlanner.go': 'e46fc41044ec3b2e6ea66b5bb570de68cce3360e494d5e05e4ebb72187948650'}
 
 
+# Go 1.26 records the enclosing control-flow boundary; Go 1.27 starts at
+# the first statement. Both layouts below were verified against the identical
+# source hashes above. Unknown layouts still fail closed. Values identify the
+# canonical annotation, so every annotation must match in either layout.
+GO126_SPANS = {('EvaluableExpression.go', '81.16,83.3', 1): ('82.3,83.1', 1),
+ ('EvaluableExpression.go', '111.16,113.3', 1): ('112.3,113.1', 1),
+ ('EvaluableExpression.go', '126.16,128.3', 1): ('127.3,128.1', 1),
+ ('lexerState.go', '345.17,347.4', 1): ('346.4,347.1', 1),
+ ('parsing.go', '48.17,50.4', 1): ('49.4,50.1', 1),
+ ('parsing.go', '87.33,88.12', 1): ('88.4,88.12', 1),
+ ('parsing.go', '343.26,344.13', 1): ('344.5,344.13', 1),
+ ('parsing.go', '442.35,444.2', 1): ('443.2,444.1', 1),
+ ('stagePlanner.go', '186.16,188.3', 1): ('187.3,188.1', 1),
+ ('stagePlanner.go', '200.23,202.3', 1): ('201.3,202.1', 1),
+ ('stagePlanner.go', '229.17,231.4', 1): ('230.4,231.1', 1),
+ ('stagePlanner.go', '255.30,256.10', 1): ('256.5,256.10', 1),
+ ('stagePlanner.go', '267.18,269.5', 1): ('268.5,269.1', 1),
+ ('stagePlanner.go', '309.16,311.3', 1): ('310.3,311.1', 1),
+ ('stagePlanner.go', '328.23,330.3', 1): ('329.3,330.1', 1),
+ ('stagePlanner.go', '350.18,352.5', 1): ('351.5,352.1', 1),
+ ('stagePlanner.go', '379.23,381.3', 1): ('380.3,381.1', 1),
+ ('stagePlanner.go', '390.17,392.4', 1): ('391.4,392.1', 1),
+ ('stagePlanner.go', '436.21,439.3', 2): ('437.3,439.1', 2),
+ ('stagePlanner.go', '594.35,596.3', 1): ('595.3,596.1', 1),
+ ('stagePlanner.go', '691.16,693.3', 1): ('692.3,693.1', 1),
+ ('stagePlanner.go', '696.16,698.3', 1): ('697.3,698.1', 1),
+ ('stagePlanner.go', '717.16,719.3', 1): ('718.3,719.1', 1)}
+
 def report(profile, matrix=None):
     blocks = {}
     for line in Path(profile).read_text().splitlines()[1:]:
@@ -103,7 +131,7 @@ def report(profile, matrix=None):
     totals = defaultdict(lambda: [0, 0, 0])
     exclusions = []
     failures = []
-    consumed = set()
+    consumed = {}
     for file, expected_hash in AUDITED_SOURCE_SHA256.items():
         actual_hash = hashlib.sha256((ROOT / FORK / file).read_bytes()).hexdigest()
         if actual_hash != expected_hash:
@@ -114,9 +142,14 @@ def report(profile, matrix=None):
             totals[file][1] += n
         reason = UNUSED_FILES.get(file)
         if reason is None and file.startswith(FORK):
-            reason = UNREACHABLE.get(file[len(FORK):], {}).get((span, n))
+            short_file = file[len(FORK):]
+            canonical = GO126_SPANS.get((short_file, span, n), (span, n))
+            reason = UNREACHABLE.get(short_file, {}).get(canonical)
             if reason:
-                consumed.add((file[len(FORK):], span, n))
+                annotation = (short_file, *canonical)
+                if annotation in consumed and consumed[annotation] != span:
+                    failures.append(f'mixed coverage layouts for one annotation: {file}:{span}')
+                consumed[annotation] = span
         # An unreachable annotation becoming covered signals a stale audit.
         if count and reason and file not in UNUSED_FILES:
             failures.append(f'stale unreachable annotation: {file}:{span}')
