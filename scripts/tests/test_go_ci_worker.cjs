@@ -73,7 +73,7 @@ test('worker owns runner selection and exposes only the mode input, never a call
   assert.match(step('Checkout code'), /ref: \$\{\{ github.sha \}\}/);
   assert.match(step('Checkout code'), /persist-credentials: false/);
   assert.match(step('Setup Go'), /uses: actions\/setup-go@[a-f0-9]{40}(?:\s|$)/);
-  assert.match(step('Setup Go'), /go-version: '1\.26'/);
+  assert.match(step('Setup Go'), /go-version-file: go\.mod/);
   assert.doesNotMatch(source, /secrets:|secrets\.inherit|\$\{\{\s*inputs\.(?:ref|sha|runner|store_type)/);
 });
 test('trusted events send weekly to fiona, build to Linux and other tasks to any Speedle runner', () => {
@@ -219,7 +219,7 @@ function runSuite(mode, {listExit = 0, failMatching = '', mysqlOnly = false, doc
     const stub = tool => `#!${process.execPath}
 const fs=require('node:fs');const a=process.argv.slice(2);
 if(${JSON.stringify(tool)}==='bash'&&!String(a[0]).startsWith('scripts/ci/validate-')){const r=require('node:child_process').spawnSync(process.env.FIXTURE_REAL_BASH,a,{stdio:'inherit'});process.exit(r.status===null?1:r.status)}
-if(${JSON.stringify(tool)}==='go'&&a[0]==='env'){console.log(a[1]==='CC'?'true':a[1]==='GOVERSION'?'go1.26.11':process.env.FIXTURE_GOPATH);process.exit(0)}
+if(${JSON.stringify(tool)}==='go'&&a[0]==='env'){console.log(a[1]==='CC'?'true':a[1]==='GOVERSION'?'go1.27.4':process.env.FIXTURE_GOPATH);process.exit(0)}
 if(${JSON.stringify(tool)}==='docker')process.exit(process.env.FIXTURE_DOCKER==='reachable'?0:1)
 if(${JSON.stringify(tool)}==='id'){console.log(a[0]==='-un'?'runner':process.env.FIXTURE_DOCKER==='group'?'runner docker':'runner');process.exit(0)}
 if(${JSON.stringify(tool)}==='go'&&a[0]==='list'){console.log('example.invalid/pkg/a\\nexample.invalid/pkg/store/mongodb\\nexample.invalid/samples/x\\nexample.invalid/pkg/svcs/adsgrpc/pb');process.exit(Number(process.env.FIXTURE_LIST_EXIT))}
@@ -262,8 +262,8 @@ test('gate runs every package once, only store-dependent packages again with etc
   assert.deepEqual(gate.args.slice(0, 6),
     ['scripts/ci/coverage.py', 'coverage.out', '--merge', 'coverage-cli.out', '--min-file', 'scripts/ci/coverage-min.txt']);
   assert.deepEqual(records.filter(r => r.tool === 'python3').slice(1).map(r => r.args), [
-    ['website/tests/check_quick_start.py', '--toolchain', 'go1.26.11'],
-    ['website/tests/check_embedded.py', '--toolchain', 'go1.26.11', '--candidate'],
+    ['website/tests/check_quick_start.py', '--toolchain', 'go1.27.4'],
+    ['website/tests/check_embedded.py', '--toolchain', 'go1.27.4', '--candidate'],
     ['website/tests/check_docs.py'],
   ]);
   for (const record of records) {
@@ -290,7 +290,7 @@ test('package discovery failure cannot turn a partial package list into a green 
   }
 });
 test('nightly runs every suite even after a failure, records checks and fails at the end', () => {
-  const {result, records, checks} = runSuite('nightly', {failMatching: 'go1.26.11'});
+  const {result, records, checks} = runSuite('nightly', {failMatching: 'go1.27.4'});
   assert.equal(result.status, 1);
   assert.equal(goTests(records).length, 0, 'every backend runs through the shared regression engine');
   const file = records.find(r => r.tool === 'python3' && r.args[0] === 'scripts/ci/run-store-tests.py');
@@ -299,8 +299,8 @@ test('nightly runs every suite even after a failure, records checks and fails at
     assert.ok(records.some(r => r.tool === 'bash' && r.args[0] === launcher), launcher);
   }
   for (const backend of ['file', 'etcd', 'mysql', 'mongodb']) assert.match(checks, new RegExp(`^${backend}-full=0:${backend}-full\\.log$`, 'm'));
-  for (const toolchain of ['go1.26.11', 'go1.27.4']) assert.match(checks, new RegExp(`quick-start-${toolchain}=\\d+:`));
-  assert.match(checks, /quick-start-go1\.26\.11=7:/); assert.match(checks, /quick-start-go1\.27\.4=0:/);
+  for (const toolchain of ['go1.27.4']) assert.match(checks, new RegExp(`quick-start-${toolchain}=\\d+:`));
+  assert.match(checks, /quick-start-go1\.27\.4=7:/);
   assert.match(checks, /mysql-full=0:mysql-full\.log/);
   assert.match(checks, /^etcd-docs=0:etcd-docs\.log$/m);
   assert.match(checks, /^mongodb-docs=0:mongodb-docs\.log$/m);
@@ -347,7 +347,7 @@ test('Docker guide checks use the account docker group the runner process lacks'
   const none = runSuite('nightly', {docker: 'none'});
   assert.ok(!none.records.some(r => r.tool === 'sg'), 'without the docker group, the guide runs and reports its own error');
 });
-test('weekly tests the other supported Go releases, compares benchmarks with the baseline and runs staticcheck', () => {
+test('weekly tests the current supported Go release, compares benchmarks with the baseline and runs staticcheck', () => {
   const {result, records, checks} = runSuite('weekly'); assert.equal(result.status, 0, result.stderr);
   assert.equal(goTests(records)[0].env.GOTOOLCHAIN, 'go1.27.4');
   assert.ok(goTests(records).some(r => r.args.includes('feature_stress') && r.args.includes('^TestFeatureLargePolicyRoleSets$')));
