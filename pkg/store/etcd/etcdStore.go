@@ -4,22 +4,19 @@
 package etcd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/teramoby/speedle-plus/pkg/errors"
-	"github.com/teramoby/speedle-plus/pkg/suid"
-
 	"github.com/teramoby/speedle-plus/api/pms"
-
-	"context"
+	"github.com/teramoby/speedle-plus/pkg/errors"
+	"github.com/teramoby/speedle-plus/pkg/logging"
+	"github.com/teramoby/speedle-plus/pkg/suid"
 	clientv3 "go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/server/v3/embed"
-
-	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -976,7 +973,7 @@ func parseFilter(filterStr string) *filter {
 		}
 		return f
 	} else {
-		log.Error("invalid filter string:", filterStr)
+		logging.Default().Error(fmt.Sprint("invalid filter string:", filterStr))
 		return nil
 	}
 
@@ -984,7 +981,7 @@ func parseFilter(filterStr string) *filter {
 
 func nameFilter(name string, f *filter) bool { //this filter function return true when the input filter is invalid.
 	if f.field != "name" {
-		log.Error("invalid name filter. filter is:", f)
+		logging.Default().Error(fmt.Sprint("invalid name filter. filter is:", f))
 		return true
 	}
 	switch f.operator {
@@ -1005,7 +1002,7 @@ func nameFilter(name string, f *filter) bool { //this filter function return tru
 	case "le":
 		return name <= f.target
 	default:
-		log.Error("invalid name filter:", f)
+		logging.Default().Error(fmt.Sprint("invalid name filter:", f))
 		return true
 	}
 }

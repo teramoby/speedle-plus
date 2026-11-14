@@ -1,10 +1,10 @@
 package adsgrpc
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"reflect"
 	"regexp"
 	"sort"
@@ -12,8 +12,8 @@ import (
 	"strings"
 	"testing"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/pkg/logging"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 // These records were captured by the original f2591e6b generated client calling
@@ -38,14 +38,8 @@ func TestLegacyProtoAuditRecords(t *testing.T) {
 	// Discovery is optional on other stores; this is an audit format contract.
 	t.Setenv("STORE_TYPE", "file")
 	service := newService(t)
-	logger := logging.AuditLog()
-	previousOut, previousFormatter, previousLevel := logger.Out, logger.Formatter, logger.GetLevel()
-	t.Cleanup(func() {
-		logger.SetOutput(previousOut)
-		logger.SetFormatter(previousFormatter)
-		logger.SetLevel(previousLevel)
-	})
-	logger.SetLevel(log.InfoLevel)
+	previous := logging.AuditLog()
+	t.Cleanup(func() { logging.SetAuditLog(previous) })
 	attributes := map[string]string{"level": "high", "edge": "quote\"\\\n\t\x01中"}
 	alice, bob := request("alice", "res1", "read", attributes), request("bob", "res1", "read", attributes)
 	calls := []struct {
@@ -68,20 +62,25 @@ func TestLegacyProtoAuditRecords(t *testing.T) {
 		}
 		for i, call := range calls {
 			t.Run(format+"/"+call.name, func(t *testing.T) {
-				var output bytes.Buffer
-				logger.SetOutput(&output)
-				if format == "text" {
-					logger.SetFormatter(&log.TextFormatter{DisableTimestamp: true, DisableColors: true})
-				} else {
-					logger.SetFormatter(&log.JSONFormatter{})
+				rotation := &lumberjack.Logger{Filename: filepath.Join(t.TempDir(), "audit.log")}
+				t.Cleanup(func() { _ = rotation.Close() })
+				logger, err := logging.NewLogger(&logging.LogConfig{Formatter: format, RotationConfig: rotation})
+				if err != nil {
+					t.Fatal(err)
 				}
+				logging.SetAuditLog(logger)
 				if err := call.run(); err != nil {
 					t.Fatal(err)
 				}
+				rawOutput, err := os.ReadFile(rotation.Filename)
+				if err != nil {
+					t.Fatal(err)
+				}
+				output := string(rawOutput)
 				want := expected[i]
 				if format == "json" {
 					var actual record
-					if err := json.Unmarshal(output.Bytes(), &actual); err != nil {
+					if err := json.Unmarshal([]byte(output), &actual); err != nil {
 						t.Fatal(err)
 					}
 					if call.name == "permissions" {
@@ -93,7 +92,7 @@ func TestLegacyProtoAuditRecords(t *testing.T) {
 					}
 				} else {
 					var value any
-					if match := field.FindStringSubmatch(output.String()); match != nil {
+					if match := field.FindStringSubmatch(output); match != nil {
 						text := match[1]
 						if strings.HasPrefix(text, `"`) {
 							text, err = strconv.Unquote(text)
@@ -107,8 +106,8 @@ func TestLegacyProtoAuditRecords(t *testing.T) {
 						value = normalizePermissionAuditOrder(value, format)
 						want.Value = normalizePermissionAuditOrder(want.Value, format)
 					}
-					if !strings.Contains(output.String(), want.Message) || !strings.Contains(output.String(), "response="+want.Response) || !reflect.DeepEqual(value, want.Value) {
-						t.Fatalf("audit text changed:\ngot %#v\nwant %#v\nrecord %s", value, want.Value, output.String())
+					if !strings.Contains(output, want.Message) || !strings.Contains(output, "response="+want.Response) || !reflect.DeepEqual(value, want.Value) {
+						t.Fatalf("audit text changed:\ngot %#v\nwant %#v\nrecord %s", value, want.Value, output)
 					}
 				}
 			})

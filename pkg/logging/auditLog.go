@@ -4,10 +4,12 @@
 package logging
 
 import (
+	"context"
 	"fmt"
+	"log/slog"
+	"os"
+	"sort"
 	"time"
-
-	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -24,8 +26,6 @@ const (
 )
 
 var (
-	auditLogger = log.New()
-
 	tenantID = ""
 )
 
@@ -38,13 +38,13 @@ func generateTargetIndex() string {
 	return fmt.Sprintf("audit-%s-%d%02d", tenantID, t.Year(), t.Month())
 }
 
-func AuditLog() *log.Logger {
-	return auditLogger
+func AuditLog() *slog.Logger {
+	return audit.logger.Load()
 }
 
 // Initialize Audit Logger
 func InitAuditLog(cfg *LogConfig) error {
-	return InitLogInstance(auditLogger, cfg)
+	return audit.init(cfg)
 }
 
 // The request or response have only one contextual field
@@ -79,7 +79,7 @@ func WriteSimpleFailedAuditLog(apiName string, reqField interface{}, reason stri
 	WriteFailedAuditLog(apiName, reqFields, reason)
 }
 
-//The request or response may have multiple contextual fields
+// The request or response may have multiple contextual fields
 func WriteSucceededAuditLog(apiName string, reqFields map[string]interface{}, respFields map[string]interface{}) {
 	if respFields != nil {
 		respFields["response"] = Response_Succeeded
@@ -88,20 +88,20 @@ func WriteSucceededAuditLog(apiName string, reqFields map[string]interface{}, re
 			"response": Response_Succeeded,
 		}
 	}
-	writeAuditLog(apiName, reqFields, respFields, log.InfoLevel)
+	writeAuditLog(apiName, reqFields, respFields, slog.LevelInfo)
 }
 
-//The request may have multiple contextual fields
+// The request may have multiple contextual fields
 func WriteFailedAuditLog(apiName string, reqFields map[string]interface{}, reason string) {
 	respFields := map[string]interface{}{
 		"response": Response_Failed,
 		"reason":   reason,
 	}
 
-	writeAuditLog(apiName, reqFields, respFields, log.ErrorLevel)
+	writeAuditLog(apiName, reqFields, respFields, slog.LevelError)
 }
 
-func writeAuditLog(apiName string, reqFields map[string]interface{}, respFields map[string]interface{}, level log.Level) {
+func writeAuditLog(apiName string, reqFields map[string]interface{}, respFields map[string]interface{}, level slog.Level) {
 	// Merge the reqFields and respFields, so that we only need to generate one audit log entry .
 	// If we want to generate two audit log entries, then we shouldn't merge them.
 	allFields := make(map[string]interface{})
@@ -116,21 +116,23 @@ func writeAuditLog(apiName string, reqFields map[string]interface{}, respFields 
 	allFields[TenantID_key] = tenantID
 	allFields[Target_Index_Key] = generateTargetIndex()
 
-	ctxLogger := AuditLog().WithFields(allFields)
+	// Stable ordering makes text records deterministic; response fields override
+	// request fields, and the tenant/index metadata overrides both as before.
+	keys := make([]string, 0, len(allFields))
+	for key := range allFields {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	attrs := make([]any, 0, len(keys)*2)
+	for _, key := range keys {
+		attrs = append(attrs, key, allFields[key])
+	}
 	msg := Audit_Prefix + apiName
-
+	AuditLog().Log(context.Background(), level, msg, attrs...)
 	switch level {
-	case log.InfoLevel:
-		ctxLogger.Info(msg)
-	case log.ErrorLevel:
-		ctxLogger.Error(msg)
-	case log.WarnLevel:
-		ctxLogger.Warn(msg)
-	case log.DebugLevel:
-		ctxLogger.Debug(msg)
-	case log.FatalLevel:
-		ctxLogger.Fatal(msg)
-	case log.PanicLevel:
-		ctxLogger.Panic(msg)
+	case LevelFatal:
+		os.Exit(1)
+	case LevelPanic:
+		panic(msg)
 	}
 }

@@ -5,12 +5,12 @@ package file
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 	"testing"
 
 	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/pkg/logging"
 	"github.com/teramoby/speedle-plus/pkg/store"
 )
 
@@ -57,7 +57,7 @@ func TestWriteReadPolicyStore(t *testing.T) {
 		t.Error("should have 10 services in the store")
 	}
 	for _, service := range psr.Services {
-		log.Printf("%s", service.Name)
+		logging.Default().Info(fmt.Sprintf("%s", service.Name))
 	}
 
 }

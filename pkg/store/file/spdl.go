@@ -12,9 +12,9 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/errors"
+	"github.com/teramoby/speedle-plus/pkg/logging"
 	"github.com/teramoby/speedle-plus/pkg/pdl"
 	"github.com/teramoby/speedle-plus/pkg/suid"
 )
@@ -79,7 +79,7 @@ func (s *Store) readSPDLWithoutLock() (*pms.PolicyStore, error) {
 	}
 	defer func() {
 		if err := f.Close(); err != nil {
-			log.Warnf("Unable to close file %s because of error %v", s.FileLocation, err)
+			logging.Default().Warn(fmt.Sprintf("Unable to close file %s because of error %v", s.FileLocation, err))
 		}
 	}()
 

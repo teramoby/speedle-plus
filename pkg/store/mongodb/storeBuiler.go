@@ -5,10 +5,11 @@ package mongodb
 
 import (
 	"context"
+	"fmt"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/pkg/logging"
 	"github.com/teramoby/speedle-plus/pkg/store"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
@@ -51,7 +52,7 @@ func (msb MongoStoreBuilder) NewStore(config map[string]interface{}) (pms.Policy
 	client, err := mongo.Connect(clientOptions)
 
 	if err != nil {
-		log.Error(err)
+		logging.Default().Error(fmt.Sprint(err))
 		return nil, err
 	}
 
@@ -59,7 +60,7 @@ func (msb MongoStoreBuilder) NewStore(config map[string]interface{}) (pms.Policy
 	err = client.Ping(context.TODO(), nil)
 
 	if err != nil {
-		log.Error(err)
+		logging.Default().Error(fmt.Sprint(err))
 		return nil, err
 	}
 

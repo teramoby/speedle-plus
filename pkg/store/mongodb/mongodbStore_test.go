@@ -2,12 +2,12 @@ package mongodb
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"testing"
 
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/cfg"
+	"github.com/teramoby/speedle-plus/pkg/logging"
 	"github.com/teramoby/speedle-plus/pkg/store"
 )
 
@@ -22,7 +22,7 @@ func testMain(m *testing.M) int {
 	var err error
 	storeConfig, err = cfg.ReadStoreConfig("./mongoStoreConfig.json")
 	if err != nil {
-		log.Fatal("fail to read config file", err)
+		logging.Fatal(fmt.Sprint("fail to read config file", err))
 	}
 	// The weekly CI job points the tests at its MongoDB service and requires
 	// it, so a broken service fails the run instead of skipping every test.
@@ -35,10 +35,12 @@ func testMain(m *testing.M) int {
 	testStore, err := store.NewStore(storeConfig.StoreType, storeConfig.StoreProps)
 	if err != nil {
 		if os.Getenv("SPEEDLE_REQUIRE_MONGO") == "1" {
-			log.Printf("MongoDB is required but not available: %v", err)
+			logging.Default().
+				Info(fmt.Sprintf("MongoDB is required but not available: %v", err))
 			return 1
 		}
-		log.Printf("MongoDB not available: %v - tests will be skipped", err)
+		logging.Default().
+			Info(fmt.Sprintf("MongoDB not available: %v - tests will be skipped", err))
 		mongoAvailable = false
 	} else {
 		mongoAvailable = true

@@ -1,11 +1,14 @@
 # Engine slog migration design (#389)
 
-Status: proposed; this draft contains design only. Implementation requires the
-coordinator's explicit approval below. Authorization behavior is outside scope.
+Status: approved for implementation for the release after v1.8.0.
+Authorization behavior is outside scope.
 
 ## Coordinator: design approved
 
-Pending. The coordinator must record approval before implementation starts.
+Approved. Implement the design with the following clarifications: keep the
+Engine logger independent of the host's standard logger, retain the stricter
+lumberjack v2 file permissions, and document Go API and collector migrations
+under Unreleased. The coordinator runs the full regression.
 
 ## Logging API
 
@@ -15,7 +18,10 @@ preserve existing termination behavior. Do not build a replacement logrus API.
 
 - Retain `InitLog(*LogConfig) error` and `InitAuditLog(*LogConfig) error`.
   Initialize independent application and audit handlers; `InitLog` installs the
-  application logger with `slog.SetDefault`.
+  application logger through `logging.Default()` without calling
+  `slog.SetDefault` (which would also redirect the host's standard `log`).
+  `SetDefault(*slog.Logger)` and `SetAuditLog(*slog.Logger)` allow host-owned
+  handlers and scoped test capture without changing process-wide loggers.
 - Add `NewLogger(*LogConfig) (*slog.Logger, error)` for independent instances.
   Replace the logrus-specific `InitLogInstance` API with this constructor;
   callers assign its returned logger instead of mutating a logrus instance.
@@ -47,7 +53,9 @@ Accept the existing case-insensitive level names, including `warning` and
 | fatal | custom (12) | fatal |
 | panic | custom (16) | panic |
 
-Preserve severity filtering and existing messages. Convert printf calls with
+Preserve severity filtering and existing messages, with one explicit exception:
+trace and debug share the debug threshold, so selecting debug also emits former
+trace messages. Convert printf calls with
 `fmt.Sprintf`, variadic message calls with `fmt.Sprint`, `WithField(s)` to slog
 attributes and `WithError` to an `error` string attribute. Keep structured values
 structured. Preserve `time`, `level`, `msg`, and caller `file`/`func` keys; caller
@@ -86,6 +94,10 @@ Go consumers migrate their import from `github.com/natefinch/lumberjack` to
 Existing v1 pointers no longer compile. Replace #405's external-package legacy
 assignment test with a v2 consumer test only after this explicit break is
 approved. Test real writes, close/reopen, rotation and config round trips.
+New log files use v2's owner-only `0600` default (subject to umask), rather
+than v1's `0644`. Existing file modes are preserved through rotation. Keep
+these stricter defaults; run collectors as the log owner or explicitly provision
+appropriate access before switching versions.
 
 ## Dependencies and scope
 
@@ -98,8 +110,11 @@ website change and follow the repository generation process.
 On this base, `spctl` already uses standard `log`; the only direct Go zap import
 is the etcd TLS test's `transport.SelfCert(zap.NewNop(), ...)`. Replace that
 fixture with a standard-library certificate fixture preserving its assertions.
-Remove zap as a direct requirement; etcd can and likely will retain zap
-transitively, so do not claim it disappears from `go.sum` or the dependency graph.
+Remove zap and logrus as direct requirements. `go mod why -m` confirms that
+etcd retains zap and also retains logrus through
+`github.com/tmc/grpc-websocket-proxy/wsproxy`; neither can disappear from the
+root dependency graph while the current embedded-etcd dependency needs it.
+The browser module can remove both entirely from its actual build graph.
 Replace stray Engine standard-log calls with slog while preserving their exit
 and panic behavior. No authorization, policy, recovery or store logic changes.
 
@@ -110,10 +125,10 @@ discarding them. Add table tests for every accepted/rejected level and format,
 thresholds, caller fields, metadata collisions, error values, atomic invalid
 initialization, partial initialization and independent audit/application config.
 Retain flag/config precedence and rotation-option coverage. Run targeted logging,
-flags, evaluator and audit regression tests, then the full repository regression,
-vet, builds, module tidiness and playground checks. Full CI requires coordinator
-queue labels under `CONTRIBUTING.md`; this worker never changes labels or merges.
+flags, evaluator and audit regression tests, then vet, builds, module tidiness and playground checks. Dispatch full CI
+on this branch without changing queue labels; the coordinator runs the full
+regression. This worker never changes labels or merges.
 Report exact-head CI and ReviewBot evidence separately from local results.
 
-For this design-only commit: Go tests, builds and runtime checks are **not run**;
-no implementation has been made.
+Validation results and exact-head CI/review evidence are maintained in the PR
+description as implementation proceeds.

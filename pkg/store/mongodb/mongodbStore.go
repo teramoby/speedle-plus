@@ -7,15 +7,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/pkg/errors"
+	"github.com/teramoby/speedle-plus/pkg/logging"
+	"github.com/teramoby/speedle-plus/pkg/suid"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"go.mongodb.org/mongo-driver/v2/mongo/readconcern"
-
-	log "github.com/sirupsen/logrus"
-	"github.com/teramoby/speedle-plus/api/pms"
-	"github.com/teramoby/speedle-plus/pkg/errors"
-	"github.com/teramoby/speedle-plus/pkg/suid"
 )
 
 type Store struct {
@@ -335,7 +334,8 @@ func (s *Store) CreateService(service *pms.Service) error {
 	if err != nil {
 		return err
 	}
-	log.Info(insertResult.InsertedID)
+	logging.Default().
+		Info(fmt.Sprint(insertResult.InsertedID))
 	return nil
 }
 
@@ -427,7 +427,8 @@ func (s *Store) Watch() (pms.StorageChangeChannel, error) {
 				if ctx.Err() != nil {
 					return
 				}
-				log.Error("reopen MongoDB change stream: ", err)
+				logging.Default().
+					Error(fmt.Sprint("reopen MongoDB change stream: ", err))
 			}
 			// The new stream starts now; reload what was committed while
 			// there was none.
@@ -446,14 +447,16 @@ func follow(ctx context.Context, stream *mongo.ChangeStream, send func(pms.Store
 		closeCtx, closeCancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer closeCancel()
 		if err := stream.Close(closeCtx); err != nil {
-			log.Error(err)
+			logging.Default().
+				Error(fmt.Sprint(err))
 		}
 	}()
 	var lastTransaction string
 	for stream.Next(ctx) {
 		var event mongoChangeEvent
 		if err := stream.Decode(&event); err != nil {
-			log.Error(err)
+			logging.Default().
+				Error(fmt.Sprint(err))
 			return send(pms.StoreChangeEvent{Type: pms.STORE_UNAVAILABLE})
 		}
 		var events []pms.StoreChangeEvent
@@ -471,7 +474,8 @@ func follow(ctx context.Context, stream *mongo.ChangeStream, send func(pms.Store
 		} else {
 			var err error
 			if events, err = event.storeEvents(); err != nil {
-				log.Error(err)
+				logging.Default().
+					Error(fmt.Sprint(err))
 				return send(pms.StoreChangeEvent{Type: pms.STORE_UNAVAILABLE})
 			}
 		}
@@ -485,7 +489,8 @@ func follow(ctx context.Context, stream *mongo.ChangeStream, send func(pms.Store
 		return false
 	}
 	if err := stream.Err(); err != nil {
-		log.Error("MongoDB change stream ended: ", err)
+		logging.Default().
+			Error(fmt.Sprint("MongoDB change stream ended: ", err))
 	}
 	return send(pms.StoreChangeEvent{Type: pms.STORE_UNAVAILABLE})
 }
@@ -952,7 +957,8 @@ func (s *Store) CreateFunction(function *pms.Function) (*pms.Function, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Info(insertResult.InsertedID)
+	logging.Default().
+		Info(fmt.Sprint(insertResult.InsertedID))
 	return function, nil
 
 }

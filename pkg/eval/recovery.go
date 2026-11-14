@@ -5,8 +5,8 @@ import (
 	"os"
 	"runtime/debug"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/pkg/errors"
+	"github.com/teramoby/speedle-plus/pkg/logging"
 )
 
 type recoveredEvaluationError struct{}
@@ -35,9 +35,8 @@ func logEvaluationPanic(operation string, value interface{}) {
 		}
 	}()
 	// Do not expose panic payloads (which can contain tokens or attributes).
-	log.WithFields(log.Fields{
-		"operation":  operation,
-		"panic_type": fmt.Sprintf("%T", value),
-		"stack":      string(debug.Stack()),
-	}).Error("authorization engine recovered a panic")
+	logging.Default().Error("authorization engine recovered a panic",
+		"operation", operation,
+		"panic_type", fmt.Sprintf("%T", value),
+		"stack", string(debug.Stack()))
 }

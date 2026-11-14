@@ -1,9 +1,11 @@
 package eval
 
 import (
-	log "github.com/sirupsen/logrus"
+	"fmt"
+
 	"github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/pkg/errors"
+	"github.com/teramoby/speedle-plus/pkg/logging"
 	"github.com/teramoby/speedle-plus/pkg/store"
 )
 
@@ -31,7 +33,7 @@ func (p *PolicyEvalImpl) Discover(ctx ads.RequestContext) (allowed bool, reason 
 		}
 		err := d.SaveDiscoverRequest(&ctx)
 		if err != nil {
-			log.Warn("error in saving discover request, ", err)
+			logging.Default().Warn(fmt.Sprint("error in saving discover request, ", err))
 		}
 		return true, ads.DISCOVER_MODE, err
 	}

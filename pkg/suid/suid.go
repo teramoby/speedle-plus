@@ -13,10 +13,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/teramoby/speedle-plus/pkg/logging"
+
+	// SUID is the type of Speedle Unique ID
+	"fmt"
 )
 
-// SUID is the type of Speedle Unique ID
 type SUID []byte
 
 var sequenceID uint32
@@ -69,7 +71,6 @@ func ParseSUID(src string) string {
 	if nil != match {
 		return match[0]
 	}
-
-	log.Errorf("Failed to parse SUID from %s", src)
+	logging.Default().Error(fmt.Sprintf("Failed to parse SUID from %s", src))
 	return src
 }

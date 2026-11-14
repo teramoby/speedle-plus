@@ -7,20 +7,15 @@ import (
 	"encoding/json"
 	"net/http"
 	"strings"
+	"time"
 
+	"github.com/gorilla/mux"
+	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/errors"
 	"github.com/teramoby/speedle-plus/pkg/httputils"
 	"github.com/teramoby/speedle-plus/pkg/logging"
-	"github.com/teramoby/speedle-plus/pkg/svcs/pmsimpl"
-
-	"github.com/gorilla/mux"
-
-	"github.com/teramoby/speedle-plus/api/pms"
-
-	"time"
-
 	"github.com/teramoby/speedle-plus/pkg/svcs"
-	log "github.com/sirupsen/logrus"
+	"github.com/teramoby/speedle-plus/pkg/svcs/pmsimpl"
 )
 
 type RESTService struct {
@@ -37,8 +32,8 @@ func NewRestService(s pms.PolicyStoreManager) (*RESTService, error) {
 }
 
 // returns:
-//     1. ServiceName
-//     2. policy/role-policy ID
+//  1. ServiceName
+//  2. policy/role-policy ID
 func ParseRequestURI(r *http.Request) (string, string) {
 	segs := strings.Split(r.URL.Path, "/")
 	segLength := len(segs)
@@ -290,7 +285,7 @@ func (mgr *RESTService) DeletePolicy(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Audit contextual fields for request
-	ctxFields := log.Fields{
+	ctxFields := map[string]interface{}{
 		"serviceName": serviceName,
 		"policyId":    policyIDStr,
 	}
@@ -315,7 +310,7 @@ func (mgr *RESTService) GetPolicy(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Audit log for request
-	ctxFields := log.Fields{
+	ctxFields := map[string]interface{}{
 		"serviceName": serviceName,
 		"policyId":    policyIDStr,
 	}
@@ -371,7 +366,7 @@ func (mgr *RESTService) CreateRolePolicy(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Audit log for request
-	ctxFields := log.Fields{
+	ctxFields := map[string]interface{}{
 		"serviceName": serviceName,
 		"rolePolicy":  &rolePolicy,
 	}
@@ -424,7 +419,7 @@ func (mgr *RESTService) DeleteRolePolicy(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Audit contextual fields for request
-	ctxFields := log.Fields{
+	ctxFields := map[string]interface{}{
 		"serviceName":  serviceName,
 		"rolePolicyId": rolePolicyIDStr,
 	}

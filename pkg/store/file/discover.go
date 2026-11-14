@@ -5,15 +5,16 @@ package file
 
 import (
 	"encoding/json"
+	"fmt"
 	"math"
 	"os"
 	"path/filepath"
 	"sync"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/errors"
+	"github.com/teramoby/speedle-plus/pkg/logging"
 	"github.com/teramoby/speedle-plus/pkg/store"
 )
 
@@ -51,7 +52,7 @@ func (s *discoverRequestStore) readDiscoverRequestStoreWithoutLock() (*StoreCont
 		return &drs, errors.Wrapf(err, errors.StoreError, "unable to read file %q", s.FileLocation)
 	}
 	if err := json.Unmarshal(raw, &drs); err != nil {
-		log.Warnf("error reading discover request store because of error %v", err)
+		logging.Default().Warn(fmt.Sprintf("error reading discover request store because of error %v", err))
 		return &StoreContent{}, err
 	}
 	return &drs, nil
@@ -72,11 +73,11 @@ func (s *discoverRequestStore) writeDiscoverRequestStoreWithoutLock(drs *StoreCo
 	defer jsonFile.Close()
 	drsB, err := json.MarshalIndent(*drs, "", "    ")
 	if err != nil {
-		log.Errorf("marshal indent filed becuase of %v", err)
+		logging.Default().Error(fmt.Sprintf("marshal indent filed becuase of %v", err))
 		return errors.Wrap(err, errors.SerializationError, "marshal indent failed")
 	}
 	if _, err := jsonFile.Write(drsB); err != nil {
-		log.Errorf("write to file failed becuase of %v", err)
+		logging.Default().Error(fmt.Sprintf("write to file failed becuase of %v", err))
 		return errors.Wrapf(err, errors.StoreError, "unable to write to file %q", s.FileLocation)
 	}
 	return nil
@@ -91,11 +92,11 @@ func getDiscoverRequestStore(s *Store) (*discoverRequestStore, error) {
 		if dir == "./" {
 			discoverFileLocation = dir + discoverStoreFileName
 		}
-		log.Infof("discover store file location:%s\n", discoverFileLocation)
+		logging.Default().Info(fmt.Sprintf("discover store file location:%s\n", discoverFileLocation))
 		if _, err := os.Stat(discoverFileLocation); os.IsNotExist(err) {
-			log.Infof("discover store file does not exist, create one...")
+			logging.Default().Info("discover store file does not exist, create one...")
 			if err1 := os.WriteFile(discoverFileLocation, []byte("{}"), 0644); err1 != nil {
-				log.Errorf("error creating discover store file: %v\n", err1)
+				logging.Default().Error(fmt.Sprintf("error creating discover store file: %v\n", err1))
 				return nil, err1
 			}
 		}

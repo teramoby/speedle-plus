@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
@@ -14,14 +15,14 @@ import (
 	"testing"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-	logtest "github.com/sirupsen/logrus/hooks/test"
 	ads "github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/eval"
+	"github.com/teramoby/speedle-plus/pkg/logging"
 	_ "github.com/teramoby/speedle-plus/pkg/store/file"
 	"github.com/teramoby/speedle-plus/pkg/svcs"
 	"github.com/teramoby/speedle-plus/pkg/svcs/adsrest"
+	"github.com/teramoby/speedle-plus/testutil/logcapture"
 )
 
 // The single case table below follows docs/hugo/content/docs/spdl.md. Expectations
@@ -403,10 +404,11 @@ func TestConditionConformance(t *testing.T) {
 	// getPolicyList currently discards their returned errors; requiring only
 	// NO_APPLICABLE_POLICIES would otherwise misclassify failures as clean false.
 	// As in recovery_test.go, keep this test and its subtests nonparallel while
-	// the process-wide logger hook is installed, and restore hooks on cleanup.
-	oldHooks := log.StandardLogger().ReplaceHooks(make(log.LevelHooks))
-	hook := logtest.NewGlobal()
-	t.Cleanup(func() { log.StandardLogger().ReplaceHooks(oldHooks) })
+	// the Engine logger capture is installed, and restore it on cleanup.
+	previous := logging.Default()
+	hook := &logcapture.Handler{}
+	logging.SetDefault(slog.New(hook))
+	t.Cleanup(func() { logging.SetDefault(previous) })
 	cases := conditionCases()
 	service := &pms.Service{Name: "conformance"}
 	for i, c := range cases {
@@ -503,14 +505,14 @@ func TestConditionConformance(t *testing.T) {
 	}
 }
 
-func assertConditionError(t *testing.T, hook *logtest.Hook, path string, c conditionCase) {
+func assertConditionError(t *testing.T, hook *logcapture.Handler, path string, c conditionCase) {
 	t.Helper()
 	var got []string
 	const prefix = "Error happens in evaluating condition ("
-	for _, entry := range hook.AllEntries() {
+	for _, entry := range hook.Records() {
 		if strings.HasPrefix(entry.Message, prefix) {
 			got = append(got, entry.Message)
-			if entry.Level != log.ErrorLevel {
+			if entry.Level != slog.LevelError {
 				t.Errorf("%s: condition failure logged at %v, want error", path, entry.Level)
 			}
 		}

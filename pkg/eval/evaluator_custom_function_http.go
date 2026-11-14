@@ -8,15 +8,17 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
-	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
-	"github.com/teramoby/speedle-plus/api/ext"
-	"github.com/teramoby/speedle-plus/api/pms"
-	"github.com/teramoby/speedle-plus/pkg/errors"
+	"fmt"
 	"io"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
+	"github.com/teramoby/speedle-plus/api/ext"
+	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/pkg/errors"
+	"github.com/teramoby/speedle-plus/pkg/logging"
 )
 
 // Native evaluators retain the existing custom-function behavior.
@@ -144,7 +146,7 @@ func getFunctionResp(client *http.Client, request *http.Request, cf *pms.Functio
 	defer client.CloseIdleConnections()
 	resp, err := client.Do(request)
 	if err != nil {
-		log.Errorf("error happens when calling customer function %s, err is: %v\n", cf.Name, err)
+		logging.Default().Error(fmt.Sprintf("error happens when calling customer function %s, err is: %v\n", cf.Name, err))
 		return nil, errors.Wrapf(err, errors.CustomerFuncError, "failed to do customer function request for customer function %q", cf.Name)
 	}
 	defer resp.Body.Close()
@@ -153,7 +155,7 @@ func getFunctionResp(client *http.Client, request *http.Request, cf *pms.Functio
 	case http.StatusOK:
 		body, err := io.ReadAll(io.LimitReader(resp.Body, maxCustomerFunctionResponseBytes+1))
 		if err != nil {
-			log.Errorf("error reading response from customer function %s, err is: %v\n", cf.Name, err)
+			logging.Default().Error(fmt.Sprintf("error reading response from customer function %s, err is: %v\n", cf.Name, err))
 			return nil, errors.Wrapf(err, errors.CustomerFuncError, "fail to read response for customer function %q", cf.Name)
 		}
 		if len(body) > maxCustomerFunctionResponseBytes {
@@ -161,16 +163,16 @@ func getFunctionResp(client *http.Client, request *http.Request, cf *pms.Functio
 		}
 		response := ext.CustomerFunctionResponse{}
 		if err = json.Unmarshal(body, &response); err != nil {
-			log.Errorf("error unmarshaling response from customer function %s, err is: %v\n", cf.Name, err)
+			logging.Default().Error(fmt.Sprintf("error unmarshaling response from customer function %s, err is: %v\n", cf.Name, err))
 			return nil, errors.Wrapf(err, errors.CustomerFuncError, "fail to unmarshal response for customer function %q", cf.Name)
 		} else if response.Error != "" {
-			log.Errorf("error in response from customer function %s, err is: %v\n", cf.Name, response.Error)
+			logging.Default().Error(fmt.Sprintf("error in response from customer function %s, err is: %v\n", cf.Name, response.Error))
 			return nil, errors.Errorf(errors.CustomerFuncError, "customer function %q returns error %q", cf.Name, response.Error)
 		} else {
 			return response.Result, nil
 		}
 	default:
-		log.Errorf("Invalid status code returns when calling customer function %s, status code is : %v\n", cf.Name, resp.StatusCode)
+		logging.Default().Error(fmt.Sprintf("Invalid status code returns when calling customer function %s, status code is : %v\n", cf.Name, resp.StatusCode))
 		return nil, errors.Errorf(errors.CustomerFuncError, "unexpected http status %d returned when calling customer function %s", resp.StatusCode, cf.Name)
 	}
 }

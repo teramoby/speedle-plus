@@ -4,12 +4,13 @@
 package eval
 
 import (
+	"fmt"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
 	adsapi "github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/pkg/logging"
 )
 
 func matchResource(expressions *ExpressionCache, requestRes string, resources, resExpressions []string) bool {
@@ -179,7 +180,7 @@ func evaluateCondition(condition *govaluate.EvaluableExpression, attributes map[
 	res, err := condition.Evaluate(attributes)
 	if err != nil || res != true {
 		if err != nil {
-			log.Errorf("Error happens in evaluating condition (%s): %v", condition.String(), err)
+			logging.Default().Error(fmt.Sprintf("Error happens in evaluating condition (%s): %v", condition.String(), err))
 		}
 		return false, err
 	}

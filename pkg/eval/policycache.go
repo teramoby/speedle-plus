@@ -4,10 +4,11 @@
 package eval
 
 import (
-	log "github.com/sirupsen/logrus"
+	"fmt"
 
 	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
 	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/pkg/logging"
 )
 
 type PolicyCacheData struct {
@@ -274,7 +275,7 @@ func (p *PolicyCacheData) getPoliciesFromResourceExpressionMap(resourceToPolicyM
 			for resExp, policyIDSet := range resourceToPolicyMap.ResourceExpressionToPolicies {
 				matched, err := p.Expressions.matchString(resExp, resource)
 				if err != nil {
-					log.Errorf("Meet error when match the resource expression in poliy. err: %s", err)
+					logging.Default().Error(fmt.Sprintf("Meet error when match the resource expression in poliy. err: %s", err))
 					continue
 				}
 				if matched {

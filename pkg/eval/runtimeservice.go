@@ -4,12 +4,13 @@
 package eval
 
 import (
+	"fmt"
 	"sync"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/errors"
+	"github.com/teramoby/speedle-plus/pkg/logging"
 )
 
 type RuntimePolicyStore struct {
@@ -100,10 +101,10 @@ func (rtps *RuntimePolicyStore) deleteService(serviceName string) {
 }
 
 func (rtps *RuntimePolicyStore) recompilePolicyConditionAtRuntime(serviceName string, policy *pms.Policy) (*govaluate.EvaluableExpression, error) {
-	log.Debugf("Recompiling the condition of policy %q in service %q", policy.ID, serviceName)
+	logging.Default().Debug(fmt.Sprintf("Recompiling the condition of policy %q in service %q", policy.ID, serviceName))
 	condition, err := compileCondition(policy.Condition, rtps.Functions)
 	if err == nil {
-		log.Debugf("Updating the condition of policy %q in service %q", policy.ID, serviceName)
+		logging.Default().Debug(fmt.Sprintf("Updating the condition of policy %q in service %q", policy.ID, serviceName))
 		go updatePolicyCondition(rtps, serviceName, policy, condition)
 	}
 	return condition, err
@@ -117,7 +118,7 @@ func updatePolicyCondition(rtps *RuntimePolicyStore, serviceName string, policy 
 	rtService, ok := rtps.RuntimeServices[serviceName]
 	if !ok {
 		// Service is not found
-		log.Errorf("Unable find service %s in runtime cache.", serviceName)
+		logging.Default().Error(fmt.Sprintf("Unable find service %s in runtime cache.", serviceName))
 		return
 	}
 	rtService.Lock()
@@ -126,10 +127,10 @@ func updatePolicyCondition(rtps *RuntimePolicyStore, serviceName string, policy 
 }
 
 func (rtps *RuntimePolicyStore) recompileRolePolicyConditionAtRuntime(serviceName string, policy *pms.RolePolicy) (*govaluate.EvaluableExpression, error) {
-	log.Debugf("Recompiling the condition of role policy %q in service %q", policy.ID, serviceName)
+	logging.Default().Debug(fmt.Sprintf("Recompiling the condition of role policy %q in service %q", policy.ID, serviceName))
 	condition, err := compileCondition(policy.Condition, rtps.Functions)
 	if err == nil {
-		log.Debugf("Updating the condition of role policy %q in service %q", policy.ID, serviceName)
+		logging.Default().Debug(fmt.Sprintf("Updating the condition of role policy %q in service %q", policy.ID, serviceName))
 		go updateRolePolicyCondition(rtps, serviceName, policy, condition)
 	}
 	return condition, err
@@ -143,7 +144,7 @@ func updateRolePolicyCondition(rtps *RuntimePolicyStore, serviceName string, pol
 	rtService, ok := rtps.RuntimeServices[serviceName]
 	if !ok {
 		// Service is not found
-		log.Errorf("Unable find service %s in runtime cache.", serviceName)
+		logging.Default().Error(fmt.Sprintf("Unable find service %s in runtime cache.", serviceName))
 		return
 	}
 	rtService.Lock()
@@ -162,7 +163,7 @@ func (rtps *RuntimePolicyStore) addPolicy(serviceName string, policy *pms.Policy
 	rtService, ok := rtps.RuntimeServices[serviceName]
 	if !ok {
 		// Service is not found
-		log.Errorf("Unable find service %s in runtime cache.", serviceName)
+		logging.Default().Error(fmt.Sprintf("Unable find service %s in runtime cache.", serviceName))
 		return nil
 	}
 	rtService.Lock()
@@ -180,7 +181,7 @@ func (rtps *RuntimePolicyStore) deletePolicy(serviceName string, policyID string
 	rtService, ok := rtps.RuntimeServices[serviceName]
 	if !ok {
 		// Service is not found
-		log.Errorf("Unable find service %s in runtime cache.", serviceName)
+		logging.Default().Error(fmt.Sprintf("Unable find service %s in runtime cache.", serviceName))
 		return
 	}
 	rtService.Lock()
@@ -201,7 +202,7 @@ func (rtps *RuntimePolicyStore) addRolePolicy(serviceName string, rolePolicy *pm
 	rtService, ok := rtps.RuntimeServices[serviceName]
 	if !ok {
 		// Service is not found
-		log.Errorf("Unable find service %s in runtime cache.", serviceName)
+		logging.Default().Error(fmt.Sprintf("Unable find service %s in runtime cache.", serviceName))
 		return nil
 	}
 	rtService.Lock()
@@ -219,7 +220,7 @@ func (rtps *RuntimePolicyStore) deleteRolePolicy(serviceName string, rolePolicyI
 	rtService, ok := rtps.RuntimeServices[serviceName]
 	if !ok {
 		// Service is not found
-		log.Errorf("Unable find service %s in runtime cache.", serviceName)
+		logging.Default().Error(fmt.Sprintf("Unable find service %s in runtime cache.", serviceName))
 		return
 	}
 	rtService.Lock()
@@ -240,9 +241,9 @@ func (rtps *RuntimePolicyStore) addFunction(function *pms.Function) error {
 	if err == nil {
 		rtps.Functions[function.Name] = ef
 		rtps.customFunctionNames[function.Name] = struct{}{}
-		log.Infof("loaded customer function %q.\n", function.Name)
+		logging.Default().Info(fmt.Sprintf("loaded customer function %q.\n", function.Name))
 	} else {
-		log.Errorf("fail to load customer function %q, err is %v. \n", function.Name, err)
+		logging.Default().Error(fmt.Sprintf("fail to load customer function %q, err is %v. \n", function.Name, err))
 	}
 	return nil
 }
@@ -284,7 +285,7 @@ func compileCondition(condition string, functions map[string]govaluate.Expressio
 
 	exp, err := govaluate.NewEvaluableExpressionWithFunctions(condition, functions)
 	if err != nil {
-		log.Errorf("Error parsing policy condition: %v", err)
+		logging.Default().Error(fmt.Sprintf("Error parsing policy condition: %v", err))
 		if _, limited := err.(*govaluate.ComplexityError); limited {
 			return nil, errors.Wrap(err, errors.EvalEngineError, "policy condition exceeds evaluation limits")
 		}
@@ -337,9 +338,9 @@ func convertFunctions(functions []*pms.Function, resultCache *FuncResultCache, f
 		ef, err := resultCache.generateCustomerExpressionFunction(funcSvcEndpoint, function)
 		if err == nil {
 			funcs[function.Name] = ef
-			log.Infof("loaded customer function %q.\n", function.Name)
+			logging.Default().Info(fmt.Sprintf("loaded customer function %q.\n", function.Name))
 		} else {
-			log.Errorf("fail to load customer function %q, err is %v. \n", function.Name, err)
+			logging.Default().Error(fmt.Sprintf("fail to load customer function %q, err is %v. \n", function.Name, err))
 		}
 	}
 	return funcs

@@ -21,9 +21,6 @@ import (
 	"github.com/teramoby/speedle-plus/pkg/svcs/pmsgrpc"
 	"github.com/teramoby/speedle-plus/pkg/svcs/pmsgrpc/pb"
 	"github.com/teramoby/speedle-plus/pkg/svcs/pmsrest"
-
-	log "github.com/sirupsen/logrus"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
@@ -52,7 +49,7 @@ func main() {
 	intChan := make(chan os.Signal, 1)
 	signal.Notify(intChan, os.Interrupt)
 	if err := run(&params, conf, intChan); err != nil {
-		log.Error(err)
+		logging.Default().Error(fmt.Sprint(err))
 		os.Exit(1)
 	}
 }
@@ -64,20 +61,20 @@ func run(params *flags.Parameters, conf *cfg.Config, stop <-chan os.Signal) erro
 	if conf.LogConfig != nil {
 		err := logging.InitLog(conf.LogConfig)
 		if err != nil {
-			log.Errorf("Policy_mgmt failed to initialize the log module, err: %v.", err)
+			logging.Default().Error(fmt.Sprintf("Policy_mgmt failed to initialize the log module, err: %v.", err))
 		}
 	} else {
-		log.Error("No any log configurations for pmsserver.")
+		logging.Default().Error("No any log configurations for pmsserver.")
 	}
 
 	// Initialize the Audit logging
 	if conf.AuditLogConfig != nil {
 		err := logging.InitAuditLog(conf.AuditLogConfig)
 		if err != nil {
-			log.Errorf("Policy_mgmt failed to initialize the audit log module, err: %v.", err)
+			logging.Default().Error(fmt.Sprintf("Policy_mgmt failed to initialize the audit log module, err: %v.", err))
 		}
 	} else {
-		log.Error("No any audit log configurations for Policy_mgmt.")
+		logging.Default().Error("No any audit log configurations for Policy_mgmt.")
 	}
 
 	ps, err := store.NewStore(conf.StoreConfig.StoreType, conf.StoreConfig.StoreProps)
@@ -101,19 +98,19 @@ func run(params *flags.Parameters, conf *cfg.Config, stop <-chan os.Signal) erro
 			return err
 		}
 	} else {
-		log.Info("The gRPC server is off; set --grpc-endpoint to start it.")
+		logging.Default().Info("The gRPC server is off; set --grpc-endpoint to start it.")
 	}
 
 	errChan := make(chan error, 2)
 	if grpcServer != nil {
 		go func() {
-			log.Infof("Starting the gRPC server for policy management service on %s...", grpcEndpoint)
+			logging.Default().Info(fmt.Sprintf("Starting the gRPC server for policy management service on %s...", grpcEndpoint))
 			errChan <- listenGRPCServer(grpcServer, grpcEndpoint)
 		}()
 	}
 
 	go func() {
-		log.Info("Starting the REST server for policy management service...")
+		logging.Default().Info("Starting the REST server for policy management service...")
 		errChan <- params.ListenAndServe(httpServer)
 	}()
 
@@ -121,17 +118,16 @@ func run(params *flags.Parameters, conf *cfg.Config, stop <-chan os.Signal) erro
 	select {
 	case err = <-errChan:
 	case <-stop:
-		log.Info("Interrupt signal")
+		logging.Default().Info("Interrupt signal")
 	}
-
-	log.Info("Stopping servers...")
+	logging.Default().Info("Stopping servers...")
 	// Stop all services
 	if httpServer != nil {
-		log.Info("Stopping HTTP Server...")
+		logging.Default().Info("Stopping HTTP Server...")
 		httpServer.Shutdown(context.Background())
 	}
 	if grpcServer != nil {
-		log.Info("Stopping GRPC Server...")
+		logging.Default().Info("Stopping GRPC Server...")
 		grpcServer.Stop()
 	}
 	return err
@@ -143,7 +139,7 @@ func newGRPCServer(params *flags.Parameters, ps pms.PolicyStoreManager) (*grpc.S
 		return nil, err
 	}
 	if params.IsInsecure() {
-		log.Warningf("The gRPC server on %s is plaintext because insecure is true.", params.GRPCEndpoint.Value)
+		logging.Default().Warn(fmt.Sprintf("The gRPC server on %s is plaintext because insecure is true.", params.GRPCEndpoint.Value))
 	}
 	server := grpc.NewServer(options...)
 	pb.RegisterPolicyManagerServer(server, pmsgrpc.NewServiceImpl(ps))
@@ -165,7 +161,7 @@ func listenGRPCServer(server *grpc.Server, endpoint string) error {
 func newHTTPServer(params *flags.Parameters, ps pms.PolicyStoreManager) (*http.Server, error) {
 	routers, err := pmsrest.NewRouter(ps)
 	if err != nil {
-		log.Error("Fail to create handler...")
+		logging.Default().Error("Fail to create handler...")
 		return nil, err
 	}
 	return params.NewHTTPServer(routers)

@@ -6,15 +6,16 @@ package testutil
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"go/build"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 
 	pmsapi "github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/pkg/logging"
 	"github.com/teramoby/speedle-plus/pkg/svcs"
 	"github.com/teramoby/speedle-plus/testutil/msg"
 	"github.com/teramoby/speedle-plus/testutil/param"
@@ -316,23 +317,23 @@ func (client *CmdClient) CreateServiceWithPDL(serviceName string, pdl []string) 
 	cmdStr := client.cmd + param.DELETE_SERVICE(serviceName)
 	c := Command("/bin/bash", "-c", cmdStr)
 	c.Run()
-	log.Println("DeleteService firstly. Output is: " + c.stdout)
+	logging.Default().Info(fmt.Sprint("DeleteService firstly. Output is: " + c.stdout))
 
 	//create service
 	tmpPDLFile := filepath.Join(TestLog.TempDir(), "policies.spdl")
 	GeneratePdlFile(tmpPDLFile, serviceSPDL(serviceName, pdl))
 	cmdStr = client.cmd + param.CREATE_SERVICE_WITH_PDLFILE(serviceName, pmsapi.TypeApplication, tmpPDLFile)
-	log.Println("CreateServiceWithPDL cmdstr= " + cmdStr)
+	logging.Default().Info(fmt.Sprint("CreateServiceWithPDL cmdstr= " + cmdStr))
 	c = Command("/bin/bash", "-c", cmdStr)
 	c.Run()
 	client.output = c.Stdout()
-	log.Println("CreateServiceWithPDL cmd output-" + client.output)
+	logging.Default().Info(fmt.Sprint("CreateServiceWithPDL cmd output-" + client.output))
 	if !c.Success() {
 		TestLog.Logf("CreateServiceWithPDL failed: %s", c.Stderr())
 		return false
 	}
 	if !strings.Contains(client.output, msg.OUTPUT_SERVICE_CREATED()) {
-		log.Println("Service created failed.")
+		logging.Default().Info("Service created failed.")
 		return false
 	}
 	return true

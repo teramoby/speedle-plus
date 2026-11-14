@@ -5,17 +5,17 @@ package eval
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"testing"
 
+	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/cfg"
+	"github.com/teramoby/speedle-plus/pkg/logging"
 	"github.com/teramoby/speedle-plus/pkg/store"
 	_ "github.com/teramoby/speedle-plus/pkg/store/etcd"
 	_ "github.com/teramoby/speedle-plus/pkg/store/file"
 	"github.com/teramoby/speedle-plus/testutil/storetest"
-
-	log "github.com/sirupsen/logrus"
-	"github.com/teramoby/speedle-plus/api/pms"
 )
 
 func WriteToTempFile(content []byte) (string, error) {
@@ -38,12 +38,11 @@ var conf *cfg.Config
 func testMain(m *testing.M) int {
 	var mConfig *cfg.Config
 	var configFile string
-
-	log.Infof("STORE_TYPE = %s\n", os.Getenv("STORE_TYPE"))
+	logging.Default().Info(fmt.Sprintf("STORE_TYPE = %s\n", os.Getenv("STORE_TYPE")))
 	if storetest.SelectedBackend() != "file" {
 		fixture, err := storetest.NewFixture(&pms.PolicyStore{})
 		if err != nil {
-			log.Print(err)
+			logging.Default().Info(fmt.Sprint(err))
 			return 1
 		}
 		defer fixture.Close()
@@ -51,8 +50,7 @@ func testMain(m *testing.M) int {
 		conf = &cfg.Config{StoreConfig: fixture.Config}
 		return m.Run()
 	}
-
-	log.Info("Start file!")
+	logging.Default().Info("Start file!")
 	configFile = "../cfg/config_file.json"
 	defer os.Remove("./ps.json")
 	defer os.Remove("./speedle_discover_requests.json")
@@ -60,7 +58,7 @@ func testMain(m *testing.M) int {
 	var err error
 	mConfig, err = cfg.ReadConfig(configFile)
 	if err != nil {
-		log.Fatal("Fail to read store config")
+		logging.Fatal("Fail to read store config")
 		os.Exit(1)
 	}
 
@@ -69,7 +67,7 @@ func testMain(m *testing.M) int {
 
 	testPS, err = store.NewStore(mConfig.StoreConfig.StoreType, mConfig.StoreConfig.StoreProps)
 	if err != nil {
-		log.Fatal("Fail to NewStore")
+		logging.Fatal("Fail to NewStore")
 		os.Exit(1)
 	}
 	conf = mConfig

@@ -4,12 +4,13 @@
 package file
 
 import (
+	"fmt"
 	"os"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/errors"
+	"github.com/teramoby/speedle-plus/pkg/logging"
 	"github.com/teramoby/speedle-plus/pkg/store"
 )
 
@@ -32,9 +33,9 @@ func (fs FileStoreBuilder) NewStore(config map[string]interface{}) (pms.PolicySt
 		return nil, errors.New(errors.ConfigError, "configure item FileLocation is not found")
 	}
 	if _, err := os.Stat(fileLocation); os.IsNotExist(err) {
-		log.Info("policy store file does not exist, create one...")
+		logging.Default().Info("policy store file does not exist, create one...")
 		if err1 := os.WriteFile(fileLocation, []byte("{}"), 0644); err1 != nil {
-			log.Errorf("error creating policy store file: %v\n", err1)
+			logging.Default().Error(fmt.Sprintf("error creating policy store file: %v\n", err1))
 			return nil, err1
 		}
 	}

@@ -7,19 +7,20 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"net/url"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"github.com/teramoby/speedle-plus/pkg/logging"
 	"go.etcd.io/etcd/server/v3/embed"
 )
 
 func main() {
 	if len(os.Args) != 3 {
-		log.Fatal("usage: etcdserver DATA_DIR ENDPOINT_FILE")
+		logging.Fatal("usage: etcdserver DATA_DIR ENDPOINT_FILE")
 	}
 	configuration := embed.NewConfig()
 	configuration.Dir = os.Args[1]
@@ -32,27 +33,27 @@ func main() {
 	configuration.InitialCluster = configuration.InitialClusterFromName(configuration.Name)
 	server, err := embed.StartEtcd(configuration)
 	if err != nil {
-		log.Fatal(err)
+		logging.Fatal(fmt.Sprint(err))
 	}
 	defer server.Close()
 	select {
 	case <-server.Server.ReadyNotify():
 	case <-time.After(30 * time.Second):
-		log.Fatal("etcd did not become ready")
+		logging.Fatal("etcd did not become ready")
 	}
 	// Write then rename, so a reader never sees a partial endpoint.
 	endpoint := os.Args[2]
 	if err := os.WriteFile(endpoint+".tmp", []byte(server.Clients[0].Addr().String()), 0600); err != nil {
-		log.Fatal(err)
+		logging.Fatal(fmt.Sprint(err))
 	}
 	if err := os.Rename(endpoint+".tmp", endpoint); err != nil {
-		log.Fatal(err)
+		logging.Fatal(fmt.Sprint(err))
 	}
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
 	select {
 	case <-stop:
 	case err := <-server.Err():
-		log.Fatal(err)
+		logging.Fatal(fmt.Sprint(err))
 	}
 }

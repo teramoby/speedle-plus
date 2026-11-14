@@ -3,11 +3,12 @@ package mysql
 
 import (
 	"context"
+	"fmt"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/errors"
+	"github.com/teramoby/speedle-plus/pkg/logging"
 )
 
 type watcher struct {
@@ -46,7 +47,7 @@ func (s *Store) poll(ctx context.Context, w *watcher) {
 			if ctx.Err() != nil {
 				return
 			}
-			log.Warnf("MySQL watch will retry: %v", err)
+			logging.Default().Warn(fmt.Sprintf("MySQL watch will retry: %v", err))
 			select {
 			case w.events <- pms.StoreChangeEvent{Type: pms.STORE_UNAVAILABLE}:
 				// Recovery must publish a complete snapshot even if the revision

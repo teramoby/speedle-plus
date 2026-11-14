@@ -4,21 +4,18 @@ package pmsrest
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
-
 	"os"
 	"testing"
-
 	"time"
-
-	"encoding/json"
-
-	"log"
 
 	pmsapi "github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/cfg"
+	"github.com/teramoby/speedle-plus/pkg/logging"
 	"github.com/teramoby/speedle-plus/pkg/store"
 	_ "github.com/teramoby/speedle-plus/pkg/store/etcd"
 	_ "github.com/teramoby/speedle-plus/pkg/store/file"
@@ -110,13 +107,13 @@ func testMain(m *testing.M) int {
 	}()
 	err := os.WriteFile(storeFile, []byte(`{"services":[{"name":"fakeservice","type":"app"}]}`), 0644)
 	if err != nil {
-		log.Fatal(err)
+		logging.Fatal(fmt.Sprint(err))
 		return 1
 	}
 	defer os.Remove(storeFile)
 	testserver, err = NewTestServer()
 	if err != nil {
-		log.Fatal("failed to start test server. error:", err)
+		logging.Fatal(fmt.Sprint("failed to start test server. error:", err))
 		return 1
 	}
 	defer testserver.Close()
@@ -125,13 +122,13 @@ func testMain(m *testing.M) int {
 	// their own.
 	scenarioStore := "./scenariostore.json"
 	if err := os.WriteFile(scenarioStore, []byte(`{}`), 0600); err != nil {
-		log.Print(err)
+		logging.Default().Info(fmt.Sprint(err))
 		return 1
 	}
 	defer os.Remove(scenarioStore)
 	scenarioServer, err := newTestServerWithStore(scenarioStore)
 	if err != nil {
-		log.Print("failed to start the scenario server. error:", err)
+		logging.Default().Info(fmt.Sprint("failed to start the scenario server. error:", err))
 		return 1
 	}
 	defer scenarioServer.Close()
