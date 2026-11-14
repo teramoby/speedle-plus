@@ -102,7 +102,7 @@ jobs:
           packages = ['./' + d for d in sorted(selected)]
           Path('quick-packages.txt').write_text(''.join(p + '\n' for p in packages))
           files = [p for p in changed if p.endswith('.go') and Path(p).is_file() and not p.startswith(('3rdparty/', 'docs/'))]
-          Path('quick-go-files.txt').write_text(''.join(p + '\n' for p in files))
+          Path('quick-go-files.txt').write_text(''.join(p + '\0' for p in files))
           print('Changed packages:', packages)
           PYTHON
 
@@ -110,10 +110,10 @@ jobs:
         if: inputs.mode == 'quick'
         run: |
           set -euo pipefail
-          while IFS= read -r file; do
-            formatted=$(gofmt -l "${file}") || { echo "::error file=${file}::gofmt failed."; exit 1; }
+          while IFS= read -r -d '' file; do
+            formatted=$(gofmt -l "${file}") || { printf 'gofmt failed for %q\n' "${file}" >&2; exit 1; }
             if [[ -n "${formatted}" ]]; then
-              echo "::error file=${file}::Run gofmt on this file."
+              printf 'Run gofmt on %q\n' "${file}" >&2
               exit 1
             fi
           done < quick-go-files.txt

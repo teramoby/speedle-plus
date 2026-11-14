@@ -119,6 +119,11 @@ test('actual package selector includes nested fixtures/deletions and module-wide
       return fs.readFileSync(path.join(dir, 'quick-packages.txt'), 'utf8').trim().split('\n').filter(Boolean);
     };
     const packages = ['pkg/a', 'pkg/a/sub', 'cmd/b', 'deployment/container/dispatch'];
+    const unusual = 'pkg/a/file\n::warning::spoof.go';
+    fs.mkdirSync(path.join(dir, 'pkg/a'), {recursive: true});
+    fs.writeFileSync(path.join(dir, unusual), 'package a\n');
+    assert.deepEqual(execute([unusual], packages), ['./pkg/a']);
+    assert.equal(fs.readFileSync(path.join(dir, 'quick-go-files.txt'), 'utf8'), unusual + '\0');
     assert.deepEqual(execute(['deployment/container/dispatch/main.go'], packages), ['./deployment/container/dispatch']);
     assert.deepEqual(execute(['pkg/a/testdata/policy.json', 'pkg/a/sub/deleted.go'], packages), ['./pkg/a', './pkg/a/sub']);
     assert.deepEqual(execute(['pkg/a/sub/file.go'], packages), ['./pkg/a/sub']);
@@ -192,7 +197,7 @@ test('image smoke runs for all full PRs and master pushes with isolated ignored 
 test('quick formatting rejects parse errors, command failures and unformatted files', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-quick-gofmt-'));
   try {
-    fs.writeFileSync(path.join(dir, 'quick-go-files.txt'), 'changed.go\n');
+    fs.writeFileSync(path.join(dir, 'quick-go-files.txt'), 'changed.go\0');
     fs.writeFileSync(path.join(dir, 'gofmt'), `#!${process.execPath}\nprocess.stdout.write(process.env.FORMAT_OUTPUT);process.exit(Number(process.env.FORMAT_EXIT));\n`);
     fs.chmodSync(path.join(dir, 'gofmt'), 0o755);
     for (const [FORMAT_EXIT, FORMAT_OUTPUT, allowed] of [['0', '', true], ['0', 'changed.go', false], ['2', '', false]]) {
@@ -200,6 +205,15 @@ test('quick formatting rejects parse errors, command failures and unformatted fi
         cwd: dir, encoding: 'utf8', env: {...process.env, FORMAT_EXIT, FORMAT_OUTPUT, PATH: dir + path.delimiter + process.env.PATH},
       });
       assert.equal(result.status === 0, allowed, JSON.stringify([FORMAT_EXIT, FORMAT_OUTPUT, result]));
+    }
+    fs.writeFileSync(path.join(dir, 'quick-go-files.txt'), 'changed\n::warning::spoof.go\0');
+    for (const FORMAT_EXIT of ['0', '2']) {
+      const result = spawnSync('/bin/bash', ['-c', script(worker, 'Check changed Go formatting')], {
+        cwd: dir, encoding: 'utf8', env: {...process.env, FORMAT_EXIT, FORMAT_OUTPUT: 'unformatted', PATH: dir + path.delimiter + process.env.PATH},
+      });
+      assert.notEqual(result.status, 0);
+      assert.doesNotMatch(result.stdout + result.stderr, /^::/m);
+      assert.match(result.stderr, /spoof\.go/);
     }
   } finally {fs.rmSync(dir, {recursive: true, force: true});}
 });
