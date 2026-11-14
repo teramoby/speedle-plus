@@ -178,19 +178,55 @@ func TestNotifiedCatchUpDoesNotWarnForReusedDiscovery(t *testing.T) {
 			t.Fatalf("notified head = %d, want 2", state.Revision)
 		}
 	}
-	// Plain Sync and SyncByName do not carry minRevision. Once the copy is
-	// in memory, a lagging discovery result alone must not warn either.
+	// Plain Sync does not carry minRevision and may reuse the same result.
 	if _, err := syncer.Sync(context.Background(), discovery.Services[0]); err != nil {
 		t.Fatal(err)
 	}
+	if buffer.Len() != 0 {
+		t.Fatalf("reusing discovery after notified catch-up warned: %s", buffer.String())
+	}
+	// SyncByName instead reads a fresh upstream result. A newly reported
+	// lower revision must warn, even if the local copy advanced by notification.
 	fixture.source.configure(func(source *fixtureSource) {
 		source.services[service.ID] = newFixtureService(service.ID, "books")
 	})
 	if _, err := syncer.SyncByName(context.Background(), "books"); err != nil {
 		t.Fatal(err)
 	}
-	if buffer.Len() != 0 {
-		t.Fatalf("reusing discovery after notified catch-up warned: %s", buffer.String())
+	requireRevisionWarning(t, buffer, service.ID, service.Epoch, "discovery", 1, 2)
+}
+
+func TestLowerCachedRevisionWarningUsesNotifiedHead(t *testing.T) {
+	for _, notified := range []uint64{2, 5, 6} {
+		t.Run(fmt.Sprint(notified), func(t *testing.T) {
+			buffer, _ := captureRevisionWarnings(t)
+			service := newFixtureService(testServiceID1, "books")
+			fixture := newFixture(t, service)
+			cacheDir := t.TempDir()
+			syncer := fixture.newSyncer(cacheDir, nil)
+			local := syncFixtureService(t, syncer, "books")
+			local.Revision = 5
+			if err := syncer.store(local); err != nil {
+				t.Fatal(err)
+			}
+			syncer = fixture.newSyncer(cacheDir, nil)
+			state, err := syncer.SyncAtLeast(context.Background(), testAckService(service.ID, "books", 1), notified)
+			if err != nil || state.Revision != 5 {
+				t.Fatalf("cached copy changed: %+v, error %v", state, err)
+			}
+			if notified < 5 {
+				requireRevisionWarning(t, buffer, service.ID, service.Epoch, "discovery", 1, 5)
+				var entry map[string]any
+				if err := json.Unmarshal(buffer.Bytes(), &entry); err != nil {
+					t.Fatal(err)
+				}
+				if entry["known_head_revision"] != float64(notified) {
+					t.Fatalf("known head = %v, want %d", entry["known_head_revision"], notified)
+				}
+			} else if buffer.Len() != 0 {
+				t.Fatalf("notification already accounts for the cached revision: %s", buffer.String())
+			}
+		})
 	}
 }
 
