@@ -21,8 +21,8 @@ type route struct {
 
 type routes []route
 
-func initRouters(evaluator eval.InternalEvaluator) (*routes, error) {
-	restService, err := NewRESTServiceWithEvaluator(evaluator)
+func initRouters(evaluator eval.InternalEvaluator, options ...Option) (*routes, error) {
+	restService, err := NewRESTServiceWithEvaluator(evaluator, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -83,8 +83,8 @@ func initRoutersForService(restService *RESTService) *routes {
 	}
 }
 
-func NewRouter(evaluator eval.InternalEvaluator) (*mux.Router, error) {
-	routes, err := initRouters(evaluator)
+func NewRouter(evaluator eval.InternalEvaluator, options ...Option) (*mux.Router, error) {
+	routes, err := initRouters(evaluator, options...)
 	if err != nil {
 		return nil, err
 	}

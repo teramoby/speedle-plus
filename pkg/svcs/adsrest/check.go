@@ -16,6 +16,7 @@ import (
 	"github.com/teramoby/speedle-plus/pkg/eval"
 	"github.com/teramoby/speedle-plus/pkg/httputils"
 	"github.com/teramoby/speedle-plus/pkg/logging"
+	"github.com/teramoby/speedle-plus/pkg/svcs/gate"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/pkg/svcs"
@@ -49,6 +50,7 @@ type JsonContext struct {
 
 type RESTService struct {
 	Evaluator eval.InternalEvaluator
+	Gate      gate.Gate
 }
 
 type IsAllowedResponse struct {
@@ -111,20 +113,25 @@ type EvaluationDebugResponse struct {
 	Policies       []PolicyResponse       `json:"policies,omitempty"`
 }
 
-func NewRESTService(conf *cfg.Config) (*RESTService, error) {
-	Evaluator, err := eval.NewFromConfig(conf)
+// Option configures a decision service. WithGate(nil) explicitly disables discovery.
+type Option func(*RESTService)
+
+func WithGate(g gate.Gate) Option { return func(s *RESTService) { s.Gate = g } }
+
+func NewRESTService(conf *cfg.Config, options ...Option) (*RESTService, error) {
+	evaluator, err := eval.NewFromConfig(conf)
 	if err != nil {
 		return nil, err
 	}
-	return &RESTService{
-		Evaluator: Evaluator,
-	}, nil
+	return NewRESTServiceWithEvaluator(evaluator, options...)
 }
 
-func NewRESTServiceWithEvaluator(evaluator eval.InternalEvaluator) (*RESTService, error) {
-	return &RESTService{
-		Evaluator: evaluator,
-	}, nil
+func NewRESTServiceWithEvaluator(evaluator eval.InternalEvaluator, options ...Option) (*RESTService, error) {
+	service := &RESTService{Evaluator: evaluator, Gate: gate.Of(evaluator)}
+	for _, option := range options {
+		option(service)
+	}
+	return service, nil
 }
 
 func DecodeJSONContext(r *http.Request) (*JsonContext, error) {
@@ -331,6 +338,10 @@ func (e *RESTService) IsAllowed(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if e.dispatch(w, r, gate.IsAllowed, context) {
+		return
+	}
+
 	result, reason, err := e.Evaluator.IsAllowed(*context)
 	response := IsAllowedResponse{
 		Allowed: result,
@@ -372,6 +383,10 @@ func (e *RESTService) GetAllGrantedRoles(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	if e.dispatch(w, r, gate.AllGrantedRoles, context) {
+		return
+	}
+
 	roles, err := e.Evaluator.GetAllGrantedRoles(*context)
 	if err != nil {
 		httputils.HandleError(w, err)
@@ -400,6 +415,10 @@ func (e *RESTService) GetAllGrantedPermissions(w http.ResponseWriter, r *http.Re
 	context, err := ConvertJSONRequestToContext(jsonRequest)
 	if err != nil {
 		httputils.HandleError(w, err)
+		return
+	}
+
+	if e.dispatch(w, r, gate.AllGrantedPermissions, context) {
 		return
 	}
 
@@ -494,6 +513,10 @@ func (e *RESTService) Diagnose(w http.ResponseWriter, r *http.Request) {
 	context, err := ConvertJSONRequestToContext(jsonRequest)
 	if err != nil {
 		httputils.HandleError(w, err)
+		return
+	}
+
+	if e.dispatch(w, r, gate.Diagnose, context) {
 		return
 	}
 

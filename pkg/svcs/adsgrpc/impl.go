@@ -11,6 +11,7 @@ import (
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/eval"
 	"github.com/teramoby/speedle-plus/pkg/svcs/adsgrpc/pb"
+	"github.com/teramoby/speedle-plus/pkg/svcs/gate"
 
 	"github.com/teramoby/speedle-plus/pkg/logging"
 )
@@ -18,14 +19,22 @@ import (
 // GRPCService is the ADS GRPC implementation
 type GRPCService struct {
 	evaluator eval.InternalEvaluator
+	gate      gate.Gate
 }
 
-// NewGRPCService constructs a new ADS GRPC service instance
-func NewGRPCService(evaluator eval.InternalEvaluator) (*GRPCService, error) {
+// Option configures a gRPC decision service.
+type Option func(*GRPCService)
 
-	return &GRPCService{
-		evaluator: evaluator,
-	}, nil
+// WithGate overrides store discovery; nil explicitly disables the gate.
+func WithGate(g gate.Gate) Option { return func(s *GRPCService) { s.gate = g } }
+
+// NewGRPCService constructs a new ADS gRPC service instance.
+func NewGRPCService(evaluator eval.InternalEvaluator, options ...Option) (*GRPCService, error) {
+	service := &GRPCService{evaluator: evaluator, gate: gate.Of(evaluator)}
+	for _, option := range options {
+		option(service)
+	}
+	return service, nil
 }
 
 func convertGRPCContextRequest(context *pb.ContextRequest) *adsapi.RequestContext {
@@ -82,6 +91,13 @@ func (impl *GRPCService) IsAllowed(ctx context.Context, in *pb.ContextRequest) (
 		return nil, err
 	}
 
+	if response, handled, err := impl.dispatch(ctx, gate.IsAllowed, reqCtx); handled {
+		if err != nil {
+			return nil, err
+		}
+		return decisionResponse(response), nil
+	}
+
 	allowed, reason, err := impl.evaluator.IsAllowed(*reqCtx)
 	if err != nil {
 		// Audit log
@@ -108,6 +124,13 @@ func (impl *GRPCService) GetAllGrantedRoles(ctx context.Context, in *pb.ContextR
 		return nil, err
 	}
 
+	if response, handled, err := impl.dispatch(ctx, gate.AllGrantedRoles, reqCtx); handled {
+		if err != nil {
+			return nil, err
+		}
+		return rolesResponse(response), nil
+	}
+
 	roles, err := impl.evaluator.GetAllGrantedRoles(*reqCtx)
 	if err != nil {
 		// Audit log
@@ -129,6 +152,13 @@ func (impl *GRPCService) GetAllPermissions(ctx context.Context, in *pb.ContextRe
 	// assert token
 	if err := impl.evaluator.AssertToken(reqCtx); err != nil {
 		return nil, err
+	}
+
+	if response, handled, err := impl.dispatch(ctx, gate.AllGrantedPermissions, reqCtx); handled {
+		if err != nil {
+			return nil, err
+		}
+		return permissionsResponse(response), nil
 	}
 
 	perms, err := impl.evaluator.GetAllGrantedPermissions(*reqCtx)
@@ -160,6 +190,13 @@ func (impl *GRPCService) Discover(ctx context.Context, in *pb.ContextRequest) (*
 	// assert token
 	if err := impl.evaluator.AssertToken(reqCtx); err != nil {
 		return nil, err
+	}
+
+	if response, handled, err := impl.dispatch(ctx, gate.Discover, reqCtx); handled {
+		if err != nil {
+			return nil, err
+		}
+		return decisionResponse(response), nil
 	}
 
 	allowed, reason, err := impl.evaluator.Discover(*reqCtx)
@@ -336,6 +373,10 @@ func (impl *GRPCService) Diagnose(ctx context.Context, in *pb.ContextRequest) (*
 
 	// assert token
 	if err := impl.evaluator.AssertToken(reqCtx); err != nil {
+		return nil, err
+	}
+
+	if _, handled, err := impl.dispatch(ctx, gate.Diagnose, reqCtx); handled {
 		return nil, err
 	}
 

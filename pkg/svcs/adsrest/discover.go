@@ -4,6 +4,7 @@
 package adsrest
 
 import (
+	"github.com/teramoby/speedle-plus/pkg/svcs/gate"
 	"net/http"
 
 	"github.com/teramoby/speedle-plus/pkg/httputils"
@@ -20,6 +21,10 @@ func (e *RESTService) Discover(w http.ResponseWriter, r *http.Request) {
 	context, err := ConvertJSONRequestToContext(jsonRequest)
 	if err != nil {
 		httputils.HandleError(w, err)
+		return
+	}
+
+	if e.dispatch(w, r, gate.Discover, context) {
 		return
 	}
 
