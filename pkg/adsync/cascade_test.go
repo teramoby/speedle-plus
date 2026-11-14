@@ -349,3 +349,40 @@ func TestCascadeDelayedAcksNeverExtendAncestorDeadline(t *testing.T) {
 		})
 	}
 }
+
+func TestCascadeOldForwardFailureCannotCancelNewSelection(t *testing.T) {
+	pki := newCascadePKI(t)
+	cert, _, _ := pki.issue(t, 51, x509.ExtKeyUsageServerAuth, "127.0.0.1", time.Now().Add(time.Hour))
+	reached, release := make(chan struct{}), make(chan struct{})
+	old := cascadeServer(t, pki, cert, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { close(reached); <-release; w.WriteHeader(503) }))
+	replacement := cascadeServer(t, pki, cert, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(503) }))
+	config := cascadeConfig(t, pki, old.URL)
+	config.UpstreamURLs = []string{old.URL, replacement.URL}
+	client := mustCascadeClient(t, config)
+	var oldCanceled, newCanceled atomic.Bool
+	client.selectEndpoint(client.upstreams[0], func() { oldCanceled.Store(true) })
+	done := make(chan error, 1)
+	go func() {
+		_, err := client.ForwardFallback(context.Background(), FallbackIsAllowed, []byte(`{}`))
+		done <- err
+	}()
+	select {
+	case <-reached:
+	case <-time.After(time.Second):
+		t.Fatal("old forward did not start")
+	}
+	client.selectEndpoint(client.upstreams[1], func() { newCanceled.Store(true) })
+	close(release)
+	if err := <-done; err == nil {
+		t.Fatal("old failure was accepted")
+	}
+	if oldCanceled.Load() || newCanceled.Load() {
+		t.Fatal("old request canceled a replacement attempt")
+	}
+	if _, err := client.ForwardFallback(context.Background(), FallbackIsAllowed, []byte(`{}`)); err == nil {
+		t.Fatal("current failure accepted")
+	}
+	if !newCanceled.Load() {
+		t.Fatal("current failure did not request failover")
+	}
+}

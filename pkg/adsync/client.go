@@ -166,19 +166,20 @@ type Config struct {
 // Client is the read-only policy-source protocol client. It has no mutable
 // per-service state; Syncer adds resume and caching.
 type Client struct {
-	base            *url.URL
-	activeBase      atomic.Pointer[url.URL]
-	upstreams       []*url.URL
-	upstreamMu      sync.Mutex
-	upstreamCancel  context.CancelFunc
-	tlsMaterial     *clientTLS
-	apiKey          string
-	http            *http.Client
-	dialer          *websocket.Dialer
-	requestTimeout  time.Duration
-	fallbackTimeout time.Duration
-	retry           RetryPolicy
-	userAgent       string
+	base               *url.URL
+	activeBase         atomic.Pointer[url.URL]
+	upstreams          []*url.URL
+	upstreamMu         sync.Mutex
+	upstreamCancel     context.CancelFunc
+	upstreamGeneration uint64
+	tlsMaterial        *clientTLS
+	apiKey             string
+	http               *http.Client
+	dialer             *websocket.Dialer
+	requestTimeout     time.Duration
+	fallbackTimeout    time.Duration
+	retry              RetryPolicy
+	userAgent          string
 
 	// identityMu guards the lazily created instance ID.
 	identityMu  sync.Mutex

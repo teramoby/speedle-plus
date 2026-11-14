@@ -54,7 +54,7 @@ func (c *Client) selectedBase() *url.URL {
 }
 
 // FailUpstream interrupts the selected cascade channel after a data failure.
-// The owner calls it after releasing its synchronization lock.
+// Store synchronization calls it before releasing its selection lock.
 func (c *Client) FailUpstream() {
 	if !c.cascade() {
 		return
@@ -73,7 +73,7 @@ func (c *Channel) runCascade(ctx context.Context) error {
 	for ctx.Err() == nil {
 		attemptCtx, cancel := context.WithCancel(ctx)
 		selectEndpoint := func() {
-			c.client.activeBase.Store(c.client.upstreams[index])
+			c.client.selectEndpoint(c.client.upstreams[index], cancel)
 			c.mu.Lock()
 			c.acked = false
 			c.healthySince = time.Time{}
@@ -86,9 +86,6 @@ func (c *Channel) runCascade(ctx context.Context) error {
 		} else {
 			selectEndpoint()
 		}
-		c.client.upstreamMu.Lock()
-		c.client.upstreamCancel = cancel
-		c.client.upstreamMu.Unlock()
 		preferred := false
 		monitorDone := make(chan struct{})
 		go func() {
@@ -309,4 +306,20 @@ func (c *Channel) inheritedBudget(ack *channelAck) (time.Duration, error) {
 		}
 	}
 	return max(time.Duration(0), time.Duration(*ack.UpstreamFreshForMs)*time.Millisecond-time.Since(sent)), nil
+}
+
+func (c *Client) selectEndpoint(base *url.URL, cancel context.CancelFunc) {
+	c.upstreamMu.Lock()
+	defer c.upstreamMu.Unlock()
+	c.activeBase.Store(base)
+	c.upstreamGeneration++
+	c.upstreamCancel = cancel
+}
+
+func (c *Client) failUpstreamGeneration(generation uint64) {
+	c.upstreamMu.Lock()
+	defer c.upstreamMu.Unlock()
+	if c.cascade() && generation == c.upstreamGeneration && c.upstreamCancel != nil {
+		c.upstreamCancel()
+	}
 }

@@ -280,16 +280,16 @@ func (s *Store) RequireWatch() bool { return true }
 // channel can call it whenever a revision is announced and after a confirmed
 // ack.
 func (s *Store) Sync(ctx context.Context) (syncErr error) {
-	defer func() {
-		if syncErr != nil {
-			s.client.FailUpstream()
-		}
-	}()
 	if ctx == nil {
 		ctx = context.Background()
 	}
 	s.syncMu.Lock()
 	defer s.syncMu.Unlock()
+	defer func() {
+		if syncErr != nil && ctx.Err() == nil {
+			s.client.FailUpstream()
+		}
+	}()
 
 	var selected []adsync.Service
 	if s.runtimeChannel() {

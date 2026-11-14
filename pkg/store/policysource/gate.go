@@ -44,8 +44,5 @@ func (s *Store) ForwardFallback(ctx context.Context, operation adsync.FallbackOp
 	if err != nil && s.options.APIKey != "" && (stderrors.Is(err, adsync.ErrUnauthorized) || stderrors.Is(err, adsync.ErrForbidden)) {
 		s.machine.Stop(adsync.ReasonRevoked)
 	}
-	if err != nil {
-		s.client.FailUpstream()
-	}
 	return response, err
 }

@@ -193,7 +193,16 @@ func (c *Client) ForwardFallback(ctx context.Context, operation FallbackOperatio
 	}
 }
 
-func (c *Client) forwardOnce(ctx context.Context, operation FallbackOperation, body []byte) (*FallbackResponse, error) {
+func (c *Client) forwardOnce(ctx context.Context, operation FallbackOperation, body []byte) (result *FallbackResponse, resultErr error) {
+	c.upstreamMu.Lock()
+	base := c.selectedBase()
+	generation := c.upstreamGeneration
+	c.upstreamMu.Unlock()
+	defer func() {
+		if resultErr != nil && ctx.Err() == nil {
+			c.failUpstreamGeneration(generation)
+		}
+	}()
 	timeout := c.fallbackTimeout
 	if timeout == 0 {
 		timeout = DefaultFallbackTimeout
@@ -201,7 +210,7 @@ func (c *Client) forwardOnce(ctx context.Context, operation FallbackOperation, b
 	requestCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	target := *c.selectedBase()
+	target := *base
 	target.Path = target.Path + AuthzCheckAPIPrefix + string(operation)
 	request, err := http.NewRequestWithContext(requestCtx, http.MethodPost, target.String(), bytes.NewReader(body))
 	if err != nil {
