@@ -6,9 +6,9 @@ package logging
 import (
 	"strings"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/natefinch/lumberjack"
 	"github.com/teramoby/speedle-plus/pkg/errors"
-	"gopkg.in/natefinch/lumberjack.v2"
+	log "github.com/sirupsen/logrus"
 )
 
 const (

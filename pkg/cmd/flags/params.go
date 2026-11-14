@@ -23,9 +23,9 @@ import (
 
 	"strconv"
 
+	"github.com/natefinch/lumberjack"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
-	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/gorilla/handlers"
 	"google.golang.org/grpc"

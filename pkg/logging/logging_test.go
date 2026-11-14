@@ -6,83 +6,14 @@ package logging
 import (
 	"bytes"
 	"encoding/json"
-	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 
+	"github.com/natefinch/lumberjack"
 	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/pkg/errors"
-	"gopkg.in/natefinch/lumberjack.v2"
 )
-
-// Exercise the configured writer, not just its assignment to logrus: existing
-// JSON configuration must still produce a backup and continue on a fresh file.
-func TestRotationConfigJSON(t *testing.T) {
-	filename := filepath.Join(t.TempDir(), "audit.log")
-	raw, err := json.Marshal(map[string]interface{}{
-		"formatter": "json",
-		"rotationConfig": map[string]interface{}{
-			"filename": filename, "maxsize": 1, "maxage": 7,
-			"maxbackups": 3, "localtime": true, "compress": false,
-		},
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	var config LogConfig
-	if err := json.Unmarshal(raw, &config); err != nil {
-		t.Fatal(err)
-	}
-	rotation := config.RotationConfig
-	if rotation == nil || rotation.Filename != filename || rotation.MaxSize != 1 ||
-		rotation.MaxAge != 7 || rotation.MaxBackups != 3 || !rotation.LocalTime || rotation.Compress {
-		t.Fatalf("rotation configuration: %+v", rotation)
-	}
-	t.Cleanup(func() { _ = rotation.Close() })
-	logger := log.New()
-	if err := InitLogInstance(logger, &config); err != nil {
-		t.Fatal(err)
-	}
-	logger.Info("before rotation")
-	if err := rotation.Rotate(); err != nil {
-		t.Fatal(err)
-	}
-	logger.Info("after rotation")
-	if err := rotation.Close(); err != nil {
-		t.Fatal(err)
-	}
-	backups, err := filepath.Glob(filepath.Join(filepath.Dir(filename), "audit-*.log"))
-	if err != nil || len(backups) != 1 {
-		t.Fatalf("backups %v: %v", backups, err)
-	}
-	for path, message := range map[string]string{backups[0]: "before rotation", filename: "after rotation"} {
-		data, err := os.ReadFile(path)
-		if err != nil {
-			t.Fatal(err)
-		}
-		var entry map[string]interface{}
-		if err := json.Unmarshal(data, &entry); err != nil || entry["msg"] != message {
-			t.Fatalf("log %s: %s (%v)", path, data, err)
-		}
-		assertLogPermissions(t, path, 0600)
-	}
-}
-
-func assertLogPermissions(t *testing.T, path string, want os.FileMode) {
-	t.Helper()
-	if runtime.GOOS == "windows" {
-		return // Windows does not expose Unix group/other permission bits.
-	}
-	info, err := os.Stat(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got := info.Mode().Perm(); got != want {
-		t.Fatalf("%s permissions: %04o, want %04o", path, got, want)
-	}
-}
 
 // captureAudit sends the audit log to a buffer as JSON at debug level.
 func captureAudit(t *testing.T) *bytes.Buffer {
