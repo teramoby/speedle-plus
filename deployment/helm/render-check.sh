@@ -7,6 +7,10 @@ chart="${root}/deployment/helm/speedle"
 work=$(mktemp -d)
 trap 'rm -rf "${work}"' EXIT
 
+app=$(awk '/^appVersion:/ { gsub(/["\047]/, "", $2); print $2; exit }' "${chart}/Chart.yaml")
+
+[[ "${app}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "appVersion missing or invalid in ${chart}/Chart.yaml; expected X.Y.Z" >&2; exit 1; }
+
 helm lint "${chart}"
 
 render() {
@@ -15,7 +19,7 @@ render() {
 
 file=$(render)
 printf '%s\n' "${file}" > "${work}/file.yaml"
-grep -F 'speedle/speedle:1.7.0' "${work}/file.yaml" >/dev/null
+grep -F "speedle/speedle:${app}" "${work}/file.yaml" >/dev/null
 grep -F 'filestore-loc' "${work}/file.yaml" >/dev/null
 grep -F '/data/policies.json' "${work}/file.yaml" >/dev/null
 grep -F 'runAsNonRoot: true' "${work}/file.yaml" >/dev/null
@@ -189,7 +193,6 @@ claim_name=$(awk '$1 == "kind:" && $2 == "PersistentVolumeClaim" { want = 1; nex
 [[ "${#claim_name}" -le 63 ]]
 
 version=$(awk '/^version:/ { print $2; exit }' "${chart}/Chart.yaml")
-app=$(awk '/^appVersion:/ { gsub(/"/, "", $2); print $2; exit }' "${chart}/Chart.yaml")
 helm package "${chart}" --version "${version}" --app-version "${app}" --destination "${work}"
 helm lint "${work}/speedle-${version}.tgz"
 

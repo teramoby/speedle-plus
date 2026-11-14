@@ -239,9 +239,9 @@ test('image smoke unions original paths with full labels and isolates ignored ev
       assert.equal(result.status, 0, result.stderr);
       return fs.readFileSync(output, 'utf8').trim() === 'smoke=true';
     };
-    for (const file of ['deployment/container/Dockerfile', 'deployment/container/dispatch/main.go', 'cmd/spctl/main.go',
+    for (const file of ['deployment/container/Dockerfile', 'deployment/container/dispatch/main.go', 'deployment/helm/speedle/Chart.yaml', 'cmd/spctl/main.go',
       '.github/workflows/release.yml', '.github/workflows/image-smoke.yml', 'scripts/release-smoke.sh']) assert.equal(select([file]), true, file);
-    for (const files of [[], ['docs/page.md'], ['pkg/eval/eval.go'], ['cmd-like/main.go'], ['scripts/release-smoke.sh.bak']]) {
+    for (const files of [[], ['deployment/helm/speedle/templates/deployment.yaml'], ['deployment/helm/render-check.sh'], ['docs/page.md'], ['pkg/eval/eval.go'], ['cmd-like/main.go'], ['scripts/release-smoke.sh.bak']]) {
       assert.equal(select(files), false, files.join(','));
       assert.equal(select(files, true), true);
     }
@@ -305,4 +305,17 @@ test('quick formatting rejects parse errors, command failures and unformatted fi
       assert.match(result.stderr, /spoof\.go/);
     }
   } finally {fs.rmSync(dir, {recursive: true, force: true});}
+});
+
+// The chart integration job consumes these candidate-image inputs, including
+// transitive packages, rather than an already-published image.
+test('Helm pull requests and pushes select every candidate image input', () => {
+  const helm = fs.readFileSync(path.join(root, '.github/workflows/helm.yml'), 'utf8');
+  for (const event of ['pull_request', 'push']) {
+    const block = helm.split(`  ${event}:\n`)[1].split(/\n  [a-z_]+:|\npermissions:/)[0];
+    const paths = [...block.matchAll(/^      - (.+)$/gm)].map(match => match[1]);
+    for (const input of ['deployment/helm/**', 'deployment/container/**', 'cmd/**', 'pkg/**', 'api/**', '3rdparty/**', 'go.mod', 'go.sum']) {
+      assert.ok(paths.includes(input), `${event} must select ${input}`);
+    }
+  }
 });

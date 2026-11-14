@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v1.8.0
+
 - Removed the experimental policy-distribution feature introduced in v1.7.x.
   The Engine continues to provide policy decisions, local policy stores,
   management and decision APIs, spctl and SDK integration. The shipped
@@ -79,3 +81,14 @@
   Benchmark engine baselines, recorded results and
   executed-source archives are unchanged; dependency maintenance is not a new
   benchmark measurement.
+
+- SPDL keywords (`grant`, `deny`, `user`, `group`, `entity`, `role`,
+  `from`, `on`, `if` and `in`) are now reserved in every name position,
+  regardless of letter case or quoting. Rename keyword identifiers in existing
+  SPDL before parsing it with this release.
+- The container image now includes the public CA certificate bundle, so TLS
+  endpoints using public certificates no longer need a separately supplied CA
+  file. The v1.7.0 and v1.7.1 images do not contain that bundle.
+- Added Japanese, Korean and Spanish documentation alongside English and
+  Chinese, plus a self-service performance testing guide and updated
+  performance information on the Engine site.
