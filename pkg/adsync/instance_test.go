@@ -78,7 +78,7 @@ func TestInstanceIDFallbackConflictReloadsWinner(t *testing.T) {
 
 func TestInstanceIDVerifiesPublication(t *testing.T) {
 	for _, fallback := range []bool{false, true} {
-		for _, change := range []string{"unchanged", "remove", "replace"} {
+		for _, change := range []string{"unchanged", "remove", "replace", "content"} {
 			t.Run(fmt.Sprintf("fallback=%t/%s", fallback, change), func(t *testing.T) {
 				dir := t.TempDir()
 				path := filepath.Join(dir, InstanceIDFile)
@@ -99,13 +99,18 @@ func TestInstanceIDVerifiesPublication(t *testing.T) {
 							t.Fatal(err)
 						}
 					case "replace":
-						// Keep the original inode alive to prevent inode reuse.
-						if err := os.Rename(path, path+".old"); err != nil {
+						// Only the production handle/temp link keeps the inode
+						// alive; the test must not artificially preserve it.
+						if err := os.Remove(path); err != nil {
 							t.Fatal(err)
 						}
 						writeTestFile(t, dir, InstanceIDFile, []byte(winner+"\n"), 0o600)
+					case "content":
+						if err := os.WriteFile(path, []byte(winner+"\n"), 0o600); err != nil {
+							t.Fatal(err)
+						}
 					}
-					return checkPublishedInstanceID(path, published)
+					return checkPublishedInstanceID(path, published, testInstanceID)
 				}
 				err = writeInstanceIDWithCheck(path, testInstanceID, link, check)
 				switch change {
@@ -113,7 +118,7 @@ func TestInstanceIDVerifiesPublication(t *testing.T) {
 					if !errors.Is(err, os.ErrNotExist) {
 						t.Fatalf("missing publication reported success: %v", err)
 					}
-				case "replace":
+				case "replace", "content":
 					if !errors.Is(err, ErrCacheCorrupt) {
 						t.Fatalf("replaced publication reported success: %v", err)
 					}

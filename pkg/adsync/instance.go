@@ -266,7 +266,9 @@ func cleanupInstanceIDTemps(dir string) {
 // Filesystems without hard links use exclusive creation instead; neither path
 // replaces an existing identity.
 func writeInstanceID(path, id string, link func(string, string) error) error {
-	return writeInstanceIDWithCheck(path, id, link, checkPublishedInstanceID)
+	return writeInstanceIDWithCheck(path, id, link, func(path string, published fs.FileInfo) error {
+		return checkPublishedInstanceID(path, published, id)
+	})
 }
 
 func writeInstanceIDWithCheck(path, id string, link func(string, string) error, check func(string, fs.FileInfo) error) error {
@@ -292,6 +294,7 @@ func writeInstanceIDWithCheck(path, id string, link func(string, string) error, 
 	if err := temporary.Close(); err != nil {
 		return err
 	}
+	var fallback *os.File
 	if err := link(temporary.Name(), path); err != nil {
 		if !errors.Is(err, fs.ErrPermission) &&
 			!errors.Is(err, syscall.ENOTSUP) && !errors.Is(err, syscall.ENOSYS) {
@@ -301,6 +304,8 @@ func writeInstanceIDWithCheck(path, id string, link func(string, string) error, 
 		if err != nil {
 			return err
 		}
+		fallback = file
+		defer file.Close()
 		if _, err = file.WriteString(id + "\n"); err == nil {
 			err = file.Sync()
 		}
@@ -310,13 +315,10 @@ func writeInstanceIDWithCheck(path, id string, link func(string, string) error, 
 		if err == nil {
 			err = statErr
 		}
-		if closeErr := file.Close(); err == nil {
-			err = closeErr
-		}
 		if err != nil {
 			// A paused unlocked writer may have lost its publication to a
 			// repairer. Do not clean up a different writer's winning inode.
-			if statErr == nil && checkPublishedInstanceID(path, published) == nil {
+			if statErr == nil && checkPublishedInstanceID(path, published, "") == nil {
 				_ = os.Remove(path)
 			}
 			return err
@@ -324,6 +326,13 @@ func writeInstanceIDWithCheck(path, id string, link func(string, string) error, 
 	}
 	if err := check(path, published); err != nil {
 		return err
+	}
+	// Keep the fallback inode alive until verification finishes. Closing its
+	// last handle earlier would let a replacement reuse its inode number.
+	if fallback != nil {
+		if err := fallback.Close(); err != nil {
+			return err
+		}
 	}
 	if handle, err := os.Open(directory); err == nil {
 		_ = handle.Sync()
@@ -334,7 +343,8 @@ func writeInstanceIDWithCheck(path, id string, link func(string, string) error, 
 
 // A fallback writer can resume after a repairer removed its stale open inode.
 // Verify the published path before reporting success on either publication path.
-func checkPublishedInstanceID(path string, published fs.FileInfo) error {
+// An empty wantID checks only ownership for cleanup of a failed partial write.
+func checkPublishedInstanceID(path string, published fs.FileInfo, wantID string) error {
 	info, err := os.Lstat(path)
 	if err != nil {
 		return fmt.Errorf("adsync: verify published instance id %s: %w", path, err)
@@ -354,5 +364,17 @@ func checkPublishedInstanceID(path string, published fs.FileInfo) error {
 	if !os.SameFile(published, current) {
 		return fmt.Errorf("%w: published instance id %s was replaced", ErrCacheCorrupt, path)
 	}
-	return checkInstanceIDFile(current)
+	if err := checkInstanceIDFile(current); err != nil {
+		return err
+	}
+	if wantID != "" {
+		data, err := io.ReadAll(io.LimitReader(file, 129))
+		if err != nil {
+			return fmt.Errorf("adsync: read published instance id %s: %w", path, err)
+		}
+		if len(data) > 128 || strings.TrimSpace(string(data)) != wantID {
+			return fmt.Errorf("%w: published instance id %s changed", ErrCacheCorrupt, path)
+		}
+	}
+	return nil
 }
