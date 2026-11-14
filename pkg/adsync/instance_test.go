@@ -137,6 +137,7 @@ func TestInstanceIDLinkFailure(t *testing.T) {
 }
 
 func TestInstanceIDRepairsPartialFile(t *testing.T) {
+	requireInstanceIDRepairLock(t)
 	for _, partial := range []string{"", testInstanceID[:10], testInstanceID[:35]} {
 		t.Run(partial, func(t *testing.T) {
 			dir := t.TempDir()
@@ -204,6 +205,7 @@ func TestInstanceIDRechecksPartialPublicationSafety(t *testing.T) {
 }
 
 func TestConcurrentInstanceIDRepair(t *testing.T) {
+	requireInstanceIDRepairLock(t)
 	for _, partial := range []string{"", testInstanceID[:10]} {
 		t.Run(partial, func(t *testing.T) {
 			dir := t.TempDir()
@@ -239,6 +241,21 @@ func writeStaleInstanceID(t *testing.T, dir, partial string) string {
 		t.Fatal(err)
 	}
 	return path
+}
+
+func requireInstanceIDRepairLock(t *testing.T) {
+	t.Helper()
+	file, err := os.CreateTemp(t.TempDir(), "lock")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+	if err := lockInstanceID(file); errors.Is(err, errInstanceIDLockUnsupported) {
+		t.Skip("partial repair requires filesystem locks")
+	} else if err != nil {
+		t.Fatal(err)
+	}
+	unlockInstanceID(file)
 }
 
 func TestInstanceIDWhitespaceCorruption(t *testing.T) {
@@ -331,16 +348,18 @@ func TestInstanceIDRechecksBeforeRepair(t *testing.T) {
 			}
 			dir := t.TempDir()
 			path := writeStaleInstanceID(t, dir, "")
-			partial, err := os.Stat(path)
-			if err != nil {
-				t.Fatal(err)
+			_, partial, err := loadInstanceIDState(path)
+			if !errors.Is(err, errPartialInstanceID) {
+				t.Fatalf("partial snapshot = %v", err)
 			}
+			err = nil
 			switch change {
 			case "inode":
 				// Keep the old inode alive so it cannot be reused.
 				err = os.Rename(path, path+".old")
 				if err == nil {
 					writeStaleInstanceID(t, dir, "")
+					err = os.Chtimes(path, partial.ModTime(), partial.ModTime())
 				}
 			case "size":
 				err = os.WriteFile(path, []byte(testInstanceID[:10]), 0o600)
@@ -434,6 +453,7 @@ func TestInstanceIDLockContention(t *testing.T) {
 }
 
 func TestInstanceIDRepairAcrossProcesses(t *testing.T) {
+	requireInstanceIDRepairLock(t)
 	dir := t.TempDir()
 	writeStaleInstanceID(t, dir, testInstanceID[:10])
 	var output [2]bytes.Buffer

@@ -147,18 +147,23 @@ func loadInstanceIDState(path string) (string, fs.FileInfo, error) {
 		if err != nil {
 			return "", nil, fmt.Errorf("adsync: stat instance id: %w", err)
 		}
-		if !info.Mode().IsRegular() {
-			return "", nil, fmt.Errorf("%w: instance id file is not a regular file", ErrUnsafeCache)
-		}
-		if runtime.GOOS != "windows" && info.Mode().Perm()&0o077 != 0 {
-			return "", nil, fmt.Errorf("%w: instance id file must be 0600", ErrUnsafeCache)
-		}
-		if info.Size() > 128 {
-			return "", nil, fmt.Errorf("%w: instance id file is too large", ErrCacheCorrupt)
+		if err := checkInstanceIDFile(info); err != nil {
+			return "", nil, err
 		}
 		file, err := os.Open(path)
 		if err != nil {
 			return "", nil, fmt.Errorf("adsync: read instance id: %w", err)
+		}
+		// Preserve the opened file's identity, including on Windows where a
+		// path-based Stat can defer resolving the file ID until SameFile.
+		info, err = file.Stat()
+		if err != nil {
+			file.Close()
+			return "", nil, fmt.Errorf("adsync: stat open instance id: %w", err)
+		}
+		if err := checkInstanceIDFile(info); err != nil {
+			file.Close()
+			return "", nil, err
 		}
 		data, err := io.ReadAll(io.LimitReader(file, 129))
 		file.Close()
@@ -185,6 +190,19 @@ func loadInstanceIDState(path string) (string, fs.FileInfo, error) {
 		}
 		time.Sleep(time.Millisecond)
 	}
+}
+
+func checkInstanceIDFile(info fs.FileInfo) error {
+	if !info.Mode().IsRegular() {
+		return fmt.Errorf("%w: instance id file is not a regular file", ErrUnsafeCache)
+	}
+	if runtime.GOOS != "windows" && info.Mode().Perm()&0o077 != 0 {
+		return fmt.Errorf("%w: instance id file must be 0600", ErrUnsafeCache)
+	}
+	if info.Size() > 128 {
+		return fmt.Errorf("%w: instance id file is too large", ErrCacheCorrupt)
+	}
+	return nil
 }
 
 // Re-stat immediately before removal: a writer that made progress or replaced
