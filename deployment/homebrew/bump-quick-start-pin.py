@@ -67,7 +67,7 @@ def bump_text(text, version, plain=False):
     command = INSTALL.search(body)
     after = body[command.end():]
     if plain:
-        pattern = r"(?<![\w./-])v[0-9]+\.[0-9]+\.[0-9]+(?![\w.])"
+        pattern = r"(?<![A-Za-z0-9_./-])v[0-9]+\.[0-9]+\.[0-9]+(?![A-Za-z0-9_]|\.[0-9])"
         after = re.sub(pattern, lambda _: version, after, count=1)
     else:
         pattern = r"`v[0-9]+\.[0-9]+\.[0-9]+`|<code>v[0-9]+\.[0-9]+\.[0-9]+</code>"

@@ -121,6 +121,15 @@ class PublishTapRetryTest(unittest.TestCase):
                     self.assertNotIn("v1.7.1", path.read_text(), str(path))
             self.assertFalse(bump_pin.bump_tree(root, "v1.8.0"))
 
+    def test_rss_release_tags_allow_localized_suffixes_and_sentence_punctuation(self):
+        for suffix in ("은 최신 릴리스 태그입니다.", "是最新版本。", "。", "."):
+            with self.subTest(suffix=suffix):
+                text = "go install github.com/teramoby/speedle-plus/cmd/...@v1.8.0 v1.7.1" + suffix
+                updated, changed = bump_pin.bump_text(text, "v1.8.0", plain=True)
+                self.assertTrue(changed)
+                self.assertEqual(updated, text.replace("v1.7.1", "v1.8.0"))
+                self.assertFalse(bump_pin.bump_text(updated, "v1.8.0", plain=True)[1])
+
     def test_missing_generated_locale_page_fails(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
