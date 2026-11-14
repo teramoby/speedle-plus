@@ -173,6 +173,7 @@ function testEnvironment(mode) {
   assert.ok(block, 'Missing sanitized test environment');
   const env = {};
   for (const line of block.trimEnd().split('\n')) {
+    if (line.trim().startsWith('#')) continue;
     const match = line.match(/^          ([A-Z_]+): (.*)$/); assert.ok(match, `Unexpected environment entry ${line}`);
     env[match[1]] = match[2] === "''" ? '' : match[2].replace('${{ inputs.mode }}', mode);
   }
@@ -439,7 +440,7 @@ test('queue runner overrides retain trusted eligibility and replace task default
   }
 });
 test('quick steps support macOS Bash without Docker or Linux-only tooling', () => {
-  for (const name of ['Select changed packages', 'Check changed Go formatting', 'Test changed packages without integration services']) {
+  for (const name of ['Select changed packages', 'Check changed Go formatting', 'Test changed packages without integration services', 'Check container dispatcher without Docker']) {
     assert.match(step(name), /if: inputs\.mode == 'quick'/);
     assert.doesNotMatch(script(name), /docker|flock|mapfile|readarray|xargs|grep -P|sed -i/);
   }
@@ -453,7 +454,29 @@ test('quick steps support macOS Bash without Docker or Linux-only tooling', () =
 test('quick clears inherited integration configuration so MySQL tests use their no-DSN skip', () => {
   const env = testEnvironment('quick');
   assert.equal(env.STORE_TYPE, 'file');
-  for (const key of [...cleanKeys, 'SPEEDLE_TEST_STORE_PROPS', 'SPEEDLE_MYSQL_TEST_DSN', 'SPEEDLE_REQUIRE_MYSQL']) {
+  assert.equal(env.PMS_ENDPOINT, 'http://127.0.0.1:0');
+  assert.equal(env.ADS_ENDPOINT, 'http://127.0.0.1:0');
+  for (const key of [...cleanKeys, 'SPEEDLE_TEST_STORE_PROPS', 'SPEEDLE_MYSQL_TEST_DSN', 'SPEEDLE_REQUIRE_MYSQL',
+    'SPEEDLE_TEST_EXTERNAL_SERVICES', 'SPEEDLE_MYSQL_EXTERNAL', 'SPEEDLE_CLI_COVERPROFILE']) {
     assert.equal(env[key], '', key);
   }
+});
+
+test('quick dispatcher check vets and builds natively and propagates each failure', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-quick-dispatch-'));
+  try {
+    fs.writeFileSync(path.join(dir, 'go'), `#!${process.execPath}\nrequire('node:fs').appendFileSync(process.env.RECORD,JSON.stringify(process.argv.slice(2))+'\\n');process.exit(process.argv[2]===process.env.FAIL_COMMAND?7:0);\n`);
+    fs.chmodSync(path.join(dir, 'go'), 0o755);
+    for (const FAIL_COMMAND of ['', 'vet', 'build']) {
+      const RECORD = path.join(dir, 'calls-' + (FAIL_COMMAND || 'ok'));
+      const result = spawnSync('/bin/bash', ['-c', script('Check container dispatcher without Docker')], {
+        cwd: dir, encoding: 'utf8', env: {...process.env, FAIL_COMMAND, RECORD, RUNNER_TEMP: dir, PATH: dir + path.delimiter + process.env.PATH},
+      });
+      assert.equal(result.status, FAIL_COMMAND ? 7 : 0, result.stderr);
+      const calls = fs.readFileSync(RECORD, 'utf8').trim().split('\n').map(JSON.parse);
+      assert.deepEqual(calls[0], ['vet', './deployment/container/dispatch']);
+      if (FAIL_COMMAND === 'vet') assert.equal(calls.length, 1);
+      else assert.deepEqual(calls[1], ['build', '-o', path.join(dir, 'quick-dispatch'), './deployment/container/dispatch']);
+    }
+  } finally {fs.rmSync(dir, {recursive: true, force: true});}
 });

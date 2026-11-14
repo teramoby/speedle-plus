@@ -57,7 +57,8 @@ commands, configuration and data boundaries.
 ## CI and the merge queue
 
 Unlabeled pull requests run quick checks: formatting, vet, module tidiness,
-build, and tests for changed Go packages. Quick checks use the file store,
+build (including the container dispatcher without Docker), and tests for changed
+Go packages under `pkg`, `cmd`, `api` and `deployment`. Quick checks use the file store,
 compile service-backed store packages without starting services, and do not
 apply the coverage gate. DCO and automated review retain their own workflows.
 

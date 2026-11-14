@@ -109,7 +109,7 @@ test('actual package selector includes nested fixtures/deletions and module-wide
   try {
     fs.mkdirSync(path.join(dir, 'bin'));
     for (const tool of ['git', 'go']) {
-      fs.writeFileSync(path.join(dir, 'bin', tool), `#!${process.execPath}\nconst p=process.env;process.stdout.write(${JSON.stringify(tool)}==='git'?p.CHANGED.split('|').join('\\0'):p.PACKAGES.split('|').map(d=>p.FIXTURE_ROOT+'/'+d).join('\\n')+'\\n');\n`);
+      fs.writeFileSync(path.join(dir, 'bin', tool), `#!${process.execPath}\nconst p=process.env;process.stdout.write(${JSON.stringify(tool)}==='git'?p.CHANGED.split('|').join('\\0'):p.PACKAGES.split('|').filter(d=>process.argv.slice(2).includes('./'+d.split('/')[0]+'/...')).map(d=>p.FIXTURE_ROOT+'/'+d).join('\\n')+'\\n');\n`);
       fs.chmodSync(path.join(dir, 'bin', tool), 0o755);
     }
     const execute = (changed, packages) => {
@@ -118,12 +118,13 @@ test('actual package selector includes nested fixtures/deletions and module-wide
       assert.equal(result.status, 0, result.stderr);
       return fs.readFileSync(path.join(dir, 'quick-packages.txt'), 'utf8').trim().split('\n').filter(Boolean);
     };
-    const packages = ['pkg/a', 'pkg/a/sub', 'cmd/b'];
+    const packages = ['pkg/a', 'pkg/a/sub', 'cmd/b', 'deployment/container/dispatch'];
+    assert.deepEqual(execute(['deployment/container/dispatch/main.go'], packages), ['./deployment/container/dispatch']);
     assert.deepEqual(execute(['pkg/a/testdata/policy.json', 'pkg/a/sub/deleted.go'], packages), ['./pkg/a', './pkg/a/sub']);
     assert.deepEqual(execute(['pkg/a/sub/file.go'], packages), ['./pkg/a/sub']);
     assert.deepEqual(execute(['docs/change.md', '.github/workflows/ci.yml'], packages), []);
     for (const file of ['go.mod', 'go.sum', 'testutil/storetest/fixture.go', '3rdparty/example/x.go']) {
-      assert.deepEqual(execute([file], packages), ['./cmd/b', './pkg/a', './pkg/a/sub']);
+      assert.deepEqual(execute([file], packages), ['./cmd/b', './deployment/container/dispatch', './pkg/a', './pkg/a/sub']);
     }
   } finally { fs.rmSync(dir, {recursive: true, force: true}); }
 });
@@ -186,4 +187,19 @@ test('image smoke runs for all full PRs and master pushes with isolated ignored 
   const push = context('push'); delete push.github.event.pull_request;
   assert.equal(evaluate(condition, push), true);
   assert.equal(evaluate(name, push), 'image smoke');
+});
+
+test('quick formatting rejects parse errors, command failures and unformatted files', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-quick-gofmt-'));
+  try {
+    fs.writeFileSync(path.join(dir, 'quick-go-files.txt'), 'changed.go\n');
+    fs.writeFileSync(path.join(dir, 'gofmt'), `#!${process.execPath}\nprocess.stdout.write(process.env.FORMAT_OUTPUT);process.exit(Number(process.env.FORMAT_EXIT));\n`);
+    fs.chmodSync(path.join(dir, 'gofmt'), 0o755);
+    for (const [FORMAT_EXIT, FORMAT_OUTPUT, allowed] of [['0', '', true], ['0', 'changed.go', false], ['2', '', false]]) {
+      const result = spawnSync('/bin/bash', ['-c', script(worker, 'Check changed Go formatting')], {
+        cwd: dir, encoding: 'utf8', env: {...process.env, FORMAT_EXIT, FORMAT_OUTPUT, PATH: dir + path.delimiter + process.env.PATH},
+      });
+      assert.equal(result.status === 0, allowed, JSON.stringify([FORMAT_EXIT, FORMAT_OUTPUT, result]));
+    }
+  } finally {fs.rmSync(dir, {recursive: true, force: true});}
 });

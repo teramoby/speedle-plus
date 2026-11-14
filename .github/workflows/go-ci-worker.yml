@@ -90,7 +90,7 @@ jobs:
           changed = output('git', 'diff', '--name-only', '-z', os.environ['PR_BASE'], os.environ['GITHUB_SHA'], '--').split('\0')
           # Shared test fixtures and module changes can affect every package.
           all_packages = any(p in ('go.mod', 'go.sum') or p.startswith(('testutil/', '3rdparty/')) for p in changed)
-          directories = output('go', 'list', '-f', '{{.Dir}}', './pkg/...', './cmd/...', './api/...').splitlines()
+          directories = output('go', 'list', '-f', '{{.Dir}}', './pkg/...', './cmd/...', './api/...', './deployment/...').splitlines()
           package_dirs = [Path(d).resolve().relative_to(root).as_posix() for d in directories]
           selected = set(package_dirs) if all_packages else set()
           for file in changed:
@@ -111,7 +111,8 @@ jobs:
         run: |
           set -euo pipefail
           while IFS= read -r file; do
-            if [[ -n "$(gofmt -l "${file}")" ]]; then
+            formatted=$(gofmt -l "${file}") || { echo "::error file=${file}::gofmt failed."; exit 1; }
+            if [[ -n "${formatted}" ]]; then
               echo "::error file=${file}::Run gofmt on this file."
               exit 1
             fi
@@ -124,14 +125,20 @@ jobs:
           SPEEDLE_TEST_STORE_PROPS: ''
           SPEEDLE_MYSQL_TEST_DSN: ''
           SPEEDLE_REQUIRE_MYSQL: ''
+          SPEEDLE_TEST_EXTERNAL_SERVICES: ''
+          SPEEDLE_MYSQL_EXTERNAL: ''
+          SPEEDLE_CLI_COVERPROFILE: ''
           SP_APP_NAME: ''
           PMS_ADMIN_TOKEN: ''
           ADS_ADMIN_TOKEN: ''
           CA_LOCATION: ''
           CERT_LOCATION: ''
           KEY_LOCATION: ''
-          PMS_ENDPOINT: http://127.0.0.1:6733
-          ADS_ENDPOINT: http://127.0.0.1:6734
+          # Tests needing PMS install their own ephemeral httptest fixture.
+          # Fail closed if a test accidentally uses the inherited endpoints;
+          # never connect to another job's fixed-port services.
+          PMS_ENDPOINT: http://127.0.0.1:0
+          ADS_ENDPOINT: http://127.0.0.1:0
         run: |
           set -euo pipefail
           while IFS= read -r package; do
@@ -142,6 +149,13 @@ jobs:
               *) go test -count=1 -timeout 300s "${package}" ;;
             esac
           done < quick-packages.txt
+
+      - name: Check container dispatcher without Docker
+        if: inputs.mode == 'quick'
+        run: |
+          set -euo pipefail
+          go vet ./deployment/container/dispatch
+          go build -o "${RUNNER_TEMP}/quick-dispatch" ./deployment/container/dispatch
 
       - name: go vet
         if: inputs.mode == 'lint' || inputs.mode == 'quick'
