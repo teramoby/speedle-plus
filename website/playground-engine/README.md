@@ -26,7 +26,7 @@ GO_BIN=/path/to/go website/playground-engine/build.sh
 
 `go.mod` replaces the Speedle dependency with this repository's root. The
 underlying engine source (`api/`, `pkg/`, `3rdparty/`, `go.mod`, `go.sum`) is pinned
-to commit `93fb93710a43e25f345ffa6d736cbbfeb67677aa`. The checked-in
+to commit `c14ee1b2d625778cf78812db69f26784968bf79c`. The checked-in
 `engine-source.tar.gz` contains those unmodified paths from that revision. `engine-source.sha256` pins its bytes; the build verifies both the
 checksum and the archive's embedded revision before extraction. A shallow clone
 is sufficient, even after squash merging and deleting the original PR branch.
