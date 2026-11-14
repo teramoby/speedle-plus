@@ -433,8 +433,8 @@ test('Makefile binaries and development images follow the chart version at the n
       fs.writeFileSync(file, '#!/bin/sh\n' + body + '\n');
       fs.chmodSync(file, 0o755);
     }
-    for (const version of ['1.8.0', '1.9.0']) {
-      fs.writeFileSync(chart, `appVersion: "${version}"\n`);
+    for (const [version, quote] of [['1.8.0', '"'], ['1.9.0', "'"], ['1.9.1', '']]) {
+      fs.writeFileSync(chart, `appVersion: ${quote}${version}${quote} # release\n`);
       const result = spawnSync('make', ['-f', path.join(repo, 'Makefile'), '-n', 'build', 'image'], {
         cwd: directory, encoding: 'utf8', env: {...process.env, PATH: directory + path.delimiter + process.env.PATH},
       });
@@ -443,7 +443,7 @@ test('Makefile binaries and development images follow the chart version at the n
       for (const service of ['pms', 'ads']) assert.ok(result.stdout.includes(`speedle-${service}:v${version}`));
       assert.ok(!result.stdout.includes('main.productVersion=0.1'));
     }
-    for (const contents of [null, 'name: speedle\n', 'appVersion: ""\n']) {
+    for (const contents of [null, 'name: speedle\n', 'appVersion: ""\n', 'appVersion: # unset\n', 'appVersion: null\n', 'appVersion: latest\n']) {
       if (contents === null) fs.unlinkSync(chart);
       else fs.writeFileSync(chart, contents);
       const result = spawnSync('make', ['-f', path.join(repo, 'Makefile'), '-n', 'build', 'image'], {
@@ -468,7 +468,7 @@ test('Helm render check rejects missing and empty appVersion before calling Helm
     const helm = path.join(directory, 'helm');
     fs.writeFileSync(helm, '#!/bin/sh\ntouch "$FIXTURE_HELM_MARKER"\nexit 0\n');
     fs.chmodSync(helm, 0o755);
-    for (const contents of ['name: speedle\n', 'appVersion: ""\n', '  appVersion: "1.8.0"\n']) {
+    for (const contents of ['name: speedle\n', 'appVersion: ""\n', '  appVersion: "1.8.0"\n', 'appVersion: # unset\n', 'appVersion: null\n', 'appVersion: latest\n']) {
       fs.writeFileSync(path.join(helmDir, 'speedle/Chart.yaml'), contents);
       const result = spawnSync('bash', [check], {encoding: 'utf8', env: {
         ...process.env, PATH: directory + path.delimiter + process.env.PATH, FIXTURE_HELM_MARKER: marker,

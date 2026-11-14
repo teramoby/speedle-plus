@@ -7,9 +7,9 @@ chart="${root}/deployment/helm/speedle"
 work=$(mktemp -d)
 trap 'rm -rf "${work}"' EXIT
 
-app=$(awk '/^appVersion:/ { gsub(/"/, "", $2); print $2; exit }' "${chart}/Chart.yaml")
+app=$(awk '/^appVersion:/ { gsub(/["\047]/, "", $2); print $2; exit }' "${chart}/Chart.yaml")
 
-[[ -n "${app}" ]] || { echo "appVersion missing from ${chart}/Chart.yaml" >&2; exit 1; }
+[[ "${app}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "appVersion missing or invalid in ${chart}/Chart.yaml; expected X.Y.Z" >&2; exit 1; }
 
 helm lint "${chart}"
 

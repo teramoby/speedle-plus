@@ -4,9 +4,9 @@ gopath := $(shell go env GOPATH)
 gitCommit := $(shell git rev-parse --short HEAD)
 # go version output is "go version go1.11.2 linux/amd64"
 goVersion := $(word 3,$(shell go version))
-productVersion := $(shell awk '/^appVersion:/ { gsub(/"/, "", $$2); print $$2; exit }' deployment/helm/speedle/Chart.yaml)
+productVersion := $(shell awk '/^appVersion:/ { gsub(/["\047]/, "", $$2); if ($$2 ~ /^[0-9]+\.[0-9]+\.[0-9]+$$/) print $$2; exit }' deployment/helm/speedle/Chart.yaml)
 ifeq ($(strip $(productVersion)),)
-$(error unable to read appVersion from deployment/helm/speedle/Chart.yaml)
+$(error unable to read appVersion from deployment/helm/speedle/Chart.yaml; expected X.Y.Z)
 endif
 goLDFlags := -ldflags "-X main.gitCommit=${gitCommit} -X main.productVersion=${productVersion} -X main.goVersion=${goVersion}"
 
