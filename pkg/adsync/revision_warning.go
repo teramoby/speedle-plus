@@ -44,7 +44,8 @@ func (w revisionWarning) log() {
 func (l *revisionWarningLimiter) warn(w revisionWarning) {
 	l.mu.Lock()
 	now := l.clock.Now()
-	if l.windowStart.IsZero() || now.Sub(l.windowStart) >= time.Minute {
+	// An unused budget starts a window even when an injected clock is zero.
+	if l.emitted == 0 || now.Sub(l.windowStart) >= time.Minute {
 		l.windowStart, l.emitted = now, 0
 	}
 	last, seen := l.last[w.serviceID]

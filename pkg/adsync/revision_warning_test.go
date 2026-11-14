@@ -456,19 +456,26 @@ func TestBulkRevisionWarningsHaveGlobalBudget(t *testing.T) {
 }
 
 func TestConcurrentServicesShareRevisionWarningBudget(t *testing.T) {
-	buffer, clock := captureRevisionWarnings(t)
-	var wg sync.WaitGroup
-	for i := range 100 {
-		wg.Go(func() { revisionWarnings.warn(revisionWarning{serviceID: fmt.Sprint(i)}) })
+	for _, zeroClock := range []bool{false, true} {
+		t.Run(fmt.Sprintf("zero-clock=%v", zeroClock), func(t *testing.T) {
+			buffer, clock := captureRevisionWarnings(t)
+			if zeroClock {
+				clock.now = time.Time{}
+			}
+			var wg sync.WaitGroup
+			for i := range 100 {
+				wg.Go(func() { revisionWarnings.warn(revisionWarning{serviceID: fmt.Sprint(i)}) })
+			}
+			wg.Wait()
+			if count := bytes.Count(buffer.Bytes(), []byte("\n")); count != revisionWarningBurst {
+				t.Fatalf("concurrent services emitted %d warnings, want %d", count, revisionWarningBurst)
+			}
+			buffer.Reset()
+			clock.Advance(time.Minute)
+			revisionWarnings.warn(revisionWarning{serviceID: testServiceID1})
+			requireSuppressedRevisionWarnings(t, buffer, 100-revisionWarningBurst)
+		})
 	}
-	wg.Wait()
-	if count := bytes.Count(buffer.Bytes(), []byte("\n")); count != revisionWarningBurst {
-		t.Fatalf("concurrent services emitted %d warnings, want %d", count, revisionWarningBurst)
-	}
-	buffer.Reset()
-	clock.Advance(time.Minute)
-	revisionWarnings.warn(revisionWarning{serviceID: testServiceID1})
-	requireSuppressedRevisionWarnings(t, buffer, 100-revisionWarningBurst)
 }
 
 type blockedRevisionLog struct {
