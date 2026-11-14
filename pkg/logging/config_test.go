@@ -462,3 +462,47 @@ func TestAuditReservedAliasesDoNotDuplicateMetadata(t *testing.T) {
 		t.Fatalf("audit collision %v", entry)
 	}
 }
+
+func TestEmptyGroupsDoNotEraseExistingFields(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		emit func(*slog.Logger)
+	}{
+		{"empty scope", func(logger *slog.Logger) { logger.WithGroup("request").Info("record") }},
+		{"nested empty scope", func(logger *slog.Logger) { logger.WithGroup("request").WithGroup("inner").Info("record") }},
+		{"empty record group", func(logger *slog.Logger) {
+			logger.LogAttrs(context.Background(), slog.LevelInfo, "record", slog.Group("request"))
+		}},
+		{"nested empty record group", func(logger *slog.Logger) {
+			logger.LogAttrs(context.Background(), slog.LevelInfo, "record", slog.Group("request", slog.Group("inner")))
+		}},
+		{"empty With group", func(logger *slog.Logger) { logger.With(slog.Group("request", slog.Group("inner"))).Info("record") }},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			logger, out := testLogger(t, LogConfig{Formatter: "json"})
+			test.emit(logger.With("request", "retained"))
+			requireUniqueJSONKeys(t, out.Bytes())
+			if entry := lastEntry(t, out); entry["request"] != "retained" {
+				t.Fatalf("context erased: %v", entry)
+			}
+		})
+	}
+}
+
+func TestNilSourceAttribute(t *testing.T) {
+	logger, out := testLogger(t, LogConfig{Formatter: "json", SetReportCaller: true})
+	defer func() {
+		if value := recover(); value != nil {
+			t.Errorf("nil user source panicked: %v", value)
+		}
+	}()
+	logger.Info("record", "source", (*slog.Source)(nil))
+	requireUniqueJSONKeys(t, out.Bytes())
+	entry := lastEntry(t, out)
+	if value, present := entry["source"]; !present || value != nil {
+		t.Fatalf("source is not JSON null: %v", entry)
+	}
+	if !strings.Contains(entry["file"].(string), "config_test.go:") {
+		t.Fatalf("caller missing: %v", entry)
+	}
+}

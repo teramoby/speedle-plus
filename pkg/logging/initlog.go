@@ -156,7 +156,7 @@ func newHandler(writer io.Writer, cfg LogConfig) (slog.Handler, error) {
 	}
 	options := &slog.HandlerOptions{Level: level, AddSource: cfg.SetReportCaller, ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
 		if len(groups) == 0 && a.Key == slog.SourceKey && cfg.SetReportCaller {
-			if source, ok := a.Value.Any().(*slog.Source); ok {
+			if source, ok := a.Value.Any().(*slog.Source); ok && source != nil {
 				return slog.Group("", slog.String("file", source.File+":"+strconv.Itoa(source.Line)), slog.String("func", source.Function))
 			}
 		}
@@ -220,14 +220,21 @@ func (h *compatibleHandler) resolve(a slog.Attr) slog.Attr {
 	} else if h.text && a.Value.Kind() == slog.KindAny {
 		// TextHandler uses %+v; legacy audit values use fmt.Sprint (%v).
 		a.Value = slog.StringValue(fmt.Sprint(a.Value.Any()))
-	} else if source, ok := a.Value.Any().(*slog.Source); ok && source != nil {
+	} else if source, ok := a.Value.Any().(*slog.Source); ok {
 		// Do not confuse a user-supplied Source with AddSource's metadata.
-		a.Value = slog.GroupValue(slog.String("function", source.Function), slog.String("file", source.File), slog.Int("line", source.Line))
+		if source == nil {
+			a.Value = slog.AnyValue(nil)
+		} else {
+			a.Value = slog.GroupValue(slog.String("function", source.Function), slog.String("file", source.File), slog.Int("line", source.Line))
+		}
 	}
 	return a
 }
 
 func scopedAttrs(groups []string, attrs []slog.Attr) []slog.Attr {
+	if len(attrs) == 0 {
+		return nil
+	}
 	for i := len(groups) - 1; i >= 0; i-- {
 		attrs = []slog.Attr{{Key: groups[i], Value: slog.GroupValue(attrs...)}}
 	}
@@ -245,16 +252,25 @@ func (h *compatibleHandler) coalesce(attrs []slog.Attr, top bool) []slog.Attr {
 		if a.Equal(slog.Attr{}) {
 			return
 		}
-		if a.Key == "" && a.Value.Kind() == slog.KindGroup {
-			for _, child := range a.Value.Group() {
-				add(child)
+		if a.Value.Kind() == slog.KindGroup {
+			children := h.coalesce(a.Value.Group(), false)
+			// Empty groups are absent in slog, so they must not overwrite a prior
+			// scalar or a populated group before the underlying handler drops them.
+			if len(children) == 0 {
+				return
 			}
-			return
+			a.Value = slog.GroupValue(children...)
+			if a.Key == "" {
+				for _, child := range children {
+					add(child)
+				}
+				return
+			}
 		}
 		if i, ok := positions[a.Key]; ok {
 			if result[i].Value.Kind() == slog.KindGroup && a.Value.Kind() == slog.KindGroup {
 				children := append([]slog.Attr(nil), result[i].Value.Group()...)
-				a.Value = slog.GroupValue(append(children, a.Value.Group()...)...)
+				a.Value = slog.GroupValue(h.coalesce(append(children, a.Value.Group()...), false)...)
 			}
 			result[i] = a
 		} else {
@@ -264,11 +280,6 @@ func (h *compatibleHandler) coalesce(attrs []slog.Attr, top bool) []slog.Attr {
 	}
 	for _, a := range attrs {
 		add(a)
-	}
-	for i, a := range result {
-		if a.Value.Kind() == slog.KindGroup {
-			result[i].Value = slog.GroupValue(h.coalesce(a.Value.Group(), false)...)
-		}
 	}
 	if top {
 		reserved := []string{"time", "msg", "level", "logrus_error"}
