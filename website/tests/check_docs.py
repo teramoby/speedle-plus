@@ -39,6 +39,27 @@ def steps(page,locale):
         assert code.rstrip()==(ROOT/path).read_text().rstrip(), (page,locale,'sample source drift',path)
     return result
 
+def check_proto_contracts():
+    # Published standalone schemas retain their legacy pb message names for
+    # existing clients. Server descriptors split services from uniquely named
+    # messages so modern Go bindings can share one process-wide registry.
+    # Compare every declaration, field number/type and RPC after removing only
+    # the Go generation metadata and the intentional message namespace split.
+    canonical = lambda source: re.sub(r'\s+', ' ', source).strip()
+    for kind in ['pms', 'ads']:
+        directory = ROOT / f'pkg/svcs/{kind}grpc/pb'
+        service = (directory / 'service.proto').read_text()
+        service = re.sub(r'option go_package = "[^"]+";', '', service)
+        service = service.replace(f'import "pkg/svcs/{kind}grpc/pb/messages.proto";', '')
+        service = service.replace(f'speedle.{kind}.', '')
+        messages = (directory / 'messages.proto').read_text()
+        declarations = re.search(r'^(?:message|enum) ', messages, re.M)
+        assert declarations, (kind, 'missing message declarations')
+        combined = service + messages[declarations.start():]
+        published = (ROOT / f'docs/hugo/static/protobuf/{kind}.proto').read_text()
+        assert canonical(published) == canonical(combined), (kind, 'public protobuf wire contract drift')
+        assert (ROOT / f'docs/protobuf/{kind}.proto').read_text() == published, (kind, 'published protobuf copy drift')
+
 def static_checks():
     from check_etcd import static_checks as etcd_static_checks
     etcd_static_checks()
@@ -62,8 +83,7 @@ def static_checks():
             assert result.returncode==0,(path,result.stderr)
         for match in re.finditer(r'^```json\n(.*?)\n```',text,re.S|re.M):
             json.loads(match[1])
-    for kind in ['pms','ads']:
-        assert (ROOT/f'docs/hugo/static/protobuf/{kind}.proto').read_bytes()==(ROOT/f'pkg/svcs/{kind}grpc/pb/service.proto').read_bytes()
+    check_proto_contracts()
     print('PASS paired commands, complete sample sources, JSON blocks, Content-Type and public proto copies',flush=True)
 
 def fresh_port():
