@@ -22,8 +22,10 @@ func captureRevisionWarnings(t *testing.T) (*bytes.Buffer, *fakeClock) {
 	t.Helper()
 	clock := newFakeClock()
 	revisionWarnings.mu.Lock()
+	oldStart, oldEmitted, oldSuppressed := revisionWarnings.windowStart, revisionWarnings.emitted, revisionWarnings.suppressed
 	oldClock, oldLast, oldCleanup := revisionWarnings.clock, revisionWarnings.last, revisionWarnings.lastCleanup
 	revisionWarnings.clock, revisionWarnings.last, revisionWarnings.lastCleanup = clock, nil, time.Time{}
+	revisionWarnings.windowStart, revisionWarnings.emitted, revisionWarnings.suppressed = time.Time{}, 0, 0
 	revisionWarnings.mu.Unlock()
 	logger := log.StandardLogger()
 	out, formatter, level := logger.Out, logger.Formatter, logger.GetLevel()
@@ -37,21 +39,30 @@ func captureRevisionWarnings(t *testing.T) (*bytes.Buffer, *fakeClock) {
 		logger.SetLevel(level)
 		revisionWarnings.mu.Lock()
 		revisionWarnings.clock, revisionWarnings.last, revisionWarnings.lastCleanup = oldClock, oldLast, oldCleanup
+		revisionWarnings.windowStart, revisionWarnings.emitted, revisionWarnings.suppressed = oldStart, oldEmitted, oldSuppressed
 		revisionWarnings.mu.Unlock()
 	})
 	return buffer, clock
 }
 
-func requireRevisionWarning(t *testing.T, buffer *bytes.Buffer, id, epoch, source string, upstream, local uint64) {
+func requireRevisionWarning(t *testing.T, buffer *bytes.Buffer, id, epoch, source string, upstream, local uint64, localSources ...string) {
 	t.Helper()
 	var entry map[string]any
 	if err := json.Unmarshal(bytes.TrimSpace(buffer.Bytes()), &entry); err != nil {
 		t.Fatalf("expected exactly one JSON warning, got %q: %v", buffer.String(), err)
 	}
+	localSource := "memory"
+	if local == 0 {
+		localSource = "none"
+	}
+	if len(localSources) != 0 {
+		localSource = localSources[0]
+	}
 	for field, want := range map[string]any{
-		"msg":   "policy-source revision is below the verified local copy or known head in the same epoch; ignoring rollback",
+		"msg":   "policy-source revision is below the local copy or known head in the same epoch; ignoring rollback",
 		"level": "warning", "service_id": id, "epoch": epoch, "source": source,
 		"upstream_revision": float64(upstream), "local_revision": float64(local),
+		"local_source": localSource,
 	} {
 		if entry[field] != want {
 			t.Errorf("warning %s = %v, want %v", field, entry[field], want)
@@ -138,7 +149,7 @@ func TestLowerDiscoveryRevisionWarnsForDiskCacheOnStartup(t *testing.T) {
 	initial := syncFixtureService(t, fixture.newSyncer(cacheDir, nil), "books")
 	fixture.source.configure(func(source *fixtureSource) { source.services[service.ID] = staleService })
 	// A restarted syncer knows only the disk cache; no machine has received
-	// its newer revision. It still warns and keeps the verified cached copy.
+	// its newer revision. It still warns and keeps the cached copy.
 	syncer := fixture.newSyncer(cacheDir, nil)
 	if _, found := syncer.State(service.ID); found {
 		t.Fatal("new syncer already holds an in-memory copy")
@@ -152,7 +163,7 @@ func TestLowerDiscoveryRevisionWarnsForDiskCacheOnStartup(t *testing.T) {
 	if count := fixture.requestCount(service.ID + "/snapshot"); count != 1 {
 		t.Fatalf("snapshots = %d, want only the initial snapshot", count)
 	}
-	requireRevisionWarning(t, buffer, service.ID, service.Epoch, "discovery", 1, 5)
+	requireRevisionWarning(t, buffer, service.ID, service.Epoch, "discovery", 1, 5, "cache")
 }
 
 func TestNotifiedCatchUpDoesNotWarnForReusedDiscovery(t *testing.T) {
@@ -216,7 +227,7 @@ func TestLowerCachedRevisionWarningUsesNotifiedHead(t *testing.T) {
 				t.Fatalf("cached copy changed: %+v, error %v", state, err)
 			}
 			if notified < 5 {
-				requireRevisionWarning(t, buffer, service.ID, service.Epoch, "discovery", 1, 5)
+				requireRevisionWarning(t, buffer, service.ID, service.Epoch, "discovery", 1, 5, "cache")
 				var entry map[string]any
 				if err := json.Unmarshal(buffer.Bytes(), &entry); err != nil {
 					t.Fatal(err)
@@ -232,37 +243,49 @@ func TestLowerCachedRevisionWarningUsesNotifiedHead(t *testing.T) {
 }
 
 func TestLowerSnapshotRevisionWarnsAndKeepsProtocolError(t *testing.T) {
-	buffer, _ := captureRevisionWarnings(t)
-	service := newFixtureService(testServiceID1, "books")
-	fixture := newFixture(t, service)
-	syncer := fixture.newSyncer("", nil)
-	initial := syncFixtureService(t, syncer, "books")
-	// Force a snapshot reload with a higher discovered revision; the valid
-	// snapshot is now below the verified local copy in the same epoch.
-	local := initial.clone()
-	local.Revision = 5
-	if err := syncer.store(local); err != nil {
-		t.Fatal(err)
+	for _, localSource := range []string{"memory", "cache"} {
+		t.Run(localSource, func(t *testing.T) {
+			buffer, _ := captureRevisionWarnings(t)
+			service := newFixtureService(testServiceID1, "books")
+			fixture := newFixture(t, service)
+			cacheDir := t.TempDir()
+			syncer := fixture.newSyncer(cacheDir, nil)
+			initial := syncFixtureService(t, syncer, "books")
+			// Force a snapshot reload with a higher discovered revision; the valid
+			// snapshot is now below the retained local copy in the same epoch.
+			local := initial.clone()
+			local.Revision = 5
+			if err := syncer.store(local); err != nil {
+				t.Fatal(err)
+			}
+			if localSource == "cache" {
+				syncer = fixture.newSyncer(cacheDir, nil)
+			}
+			fixture.source.configure(func(source *fixtureSource) {
+				service.Revision = 6
+				response := fixtureSnapshot(service)
+				response.Revision = 4
+				source.snapshotOverride = response
+				source.changesReason = "history_unavailable"
+			})
+			for range 3 {
+				_, err := syncer.Sync(context.Background(), testAckService(testServiceID1, "books", 6))
+				want := fmt.Sprintf("%v: snapshot revision 4 would roll back local revision 5", ErrProtocol)
+				if !errors.Is(err, ErrProtocol) || err.Error() != want {
+					t.Fatalf("Sync error = %v, want %q", err, want)
+				}
+			}
+			current, found := syncer.State(service.ID)
+			if (localSource == "cache" && found) || (localSource == "memory" && (!found || !reflect.DeepEqual(current, local))) {
+				t.Fatalf("snapshot rollback changed the in-memory copy: %+v", current)
+			}
+			cached, err := syncer.cache.Load(service.ID)
+			if err != nil || !reflect.DeepEqual(cached, local) {
+				t.Fatalf("snapshot rollback changed disk cache: %+v, error %v", cached, err)
+			}
+			requireRevisionWarning(t, buffer, service.ID, service.Epoch, "snapshot", 4, 5, localSource)
+		})
 	}
-	fixture.source.configure(func(source *fixtureSource) {
-		service.Revision = 6
-		response := fixtureSnapshot(service)
-		response.Revision = 4
-		source.snapshotOverride = response
-		source.changesReason = "history_unavailable"
-	})
-	for range 3 {
-		_, err := syncer.Sync(context.Background(), testAckService(testServiceID1, "books", 6))
-		want := fmt.Sprintf("%v: snapshot revision 4 would roll back local revision 5", ErrProtocol)
-		if !errors.Is(err, ErrProtocol) || err.Error() != want {
-			t.Fatalf("Sync error = %v, want %q", err, want)
-		}
-	}
-	current, found := syncer.State(service.ID)
-	if !found || !reflect.DeepEqual(current, local) {
-		t.Fatalf("snapshot rollback changed the verified copy: %+v", current)
-	}
-	requireRevisionWarning(t, buffer, service.ID, service.Epoch, "snapshot", 4, 5)
 }
 
 func TestEpochChangeDoesNotWarn(t *testing.T) {
@@ -315,7 +338,7 @@ func TestRevisionWarningBudgetSharedAcrossSourcesAndServicesIndependent(t *testi
 	buffer.Reset()
 	// The issue specifies a per-service budget, so an epoch change does not
 	// create another budget for the same service within that minute.
-	revisionWarnings.warn(testServiceID1, testServiceID2, 3, 5, 5, "ack")
+	revisionWarnings.warn(revisionWarning{serviceID: testServiceID1, epoch: testServiceID2, upstream: 3, local: 5, head: 5, source: "ack", localSource: "memory"})
 	if buffer.Len() != 0 {
 		t.Fatalf("epoch change reset the service warning budget: %s", buffer.String())
 	}
@@ -323,7 +346,7 @@ func TestRevisionWarningBudgetSharedAcrossSourcesAndServicesIndependent(t *testi
 	if err := machine.ObserveHead(Head{ID: testServiceID1, Epoch: testServiceID1, Revision: 3}); err != nil {
 		t.Fatal(err)
 	}
-	revisionWarnings.warn(testServiceID1, testServiceID1, 3, 5, 5, "snapshot")
+	revisionWarnings.warn(revisionWarning{serviceID: testServiceID1, epoch: testServiceID1, upstream: 3, local: 5, head: 5, source: "snapshot", localSource: "memory"})
 	if buffer.Len() != 0 {
 		t.Fatalf("same service warned twice within a minute: %s", buffer.String())
 	}
@@ -333,10 +356,12 @@ func TestRevisionWarningBudgetSharedAcrossSourcesAndServicesIndependent(t *testi
 	requireRevisionWarning(t, buffer, testServiceID2, testServiceID2, "notification", 3, 0)
 	buffer.Reset()
 	clock.Advance(time.Nanosecond)
-	revisionWarnings.warn(testServiceID1, testServiceID1, 3, 5, 5, "snapshot")
+	revisionWarnings.warn(revisionWarning{serviceID: testServiceID1, epoch: testServiceID1, upstream: 3, local: 5, head: 5, source: "snapshot", localSource: "memory"})
 	requireRevisionWarning(t, buffer, testServiceID1, testServiceID1, "snapshot", 3, 5)
 	clock.Advance(time.Minute)
-	revisionWarnings.warn(testServiceID1, testServiceID1, 3, 5, 5, "snapshot")
+	revisionWarnings.warn(revisionWarning{serviceID: testServiceID1, epoch: testServiceID1, upstream: 3, local: 5, head: 5, source: "snapshot", localSource: "memory"})
+	revisionWarnings.mu.Lock()
+	defer revisionWarnings.mu.Unlock()
 	if len(revisionWarnings.last) != 1 {
 		t.Fatalf("expired service warning entries retained: %v", revisionWarnings.last)
 	}
@@ -346,10 +371,104 @@ func TestConcurrentRevisionWarningsAreRateLimited(t *testing.T) {
 	buffer, _ := captureRevisionWarnings(t)
 	var wg sync.WaitGroup
 	for range 50 {
-		wg.Go(func() { revisionWarnings.warn(testServiceID1, testServiceID1, 4, 5, 5, "snapshot") })
+		wg.Go(func() {
+			revisionWarnings.warn(revisionWarning{serviceID: testServiceID1, epoch: testServiceID1, upstream: 4, local: 5, head: 5, source: "snapshot", localSource: "memory"})
+		})
 	}
 	wg.Wait()
 	requireRevisionWarning(t, buffer, testServiceID1, testServiceID1, "snapshot", 4, 5)
+}
+
+func requireSuppressedRevisionWarnings(t *testing.T, buffer *bytes.Buffer, want uint64) {
+	t.Helper()
+	var entry map[string]any
+	if err := json.Unmarshal(bytes.TrimSpace(buffer.Bytes()), &entry); err != nil {
+		t.Fatal(err)
+	}
+	if entry["suppressed_since_last"] != float64(want) {
+		t.Fatalf("suppressed_since_last = %v, want %d", entry["suppressed_since_last"], want)
+	}
+}
+
+func TestRevisionWarningSuppressedCountSurvivesCleanup(t *testing.T) {
+	buffer, clock := captureRevisionWarnings(t)
+	warning := revisionWarning{serviceID: testServiceID1, epoch: testServiceID1,
+		upstream: 3, local: 5, head: 5, source: "ack", localSource: "memory"}
+	warning.log()
+	requireSuppressedRevisionWarnings(t, buffer, 0)
+	buffer.Reset()
+	for _, source := range []string{"notification", "snapshot", "discovery"} {
+		warning.source = source
+		warning.log()
+	}
+	if buffer.Len() != 0 {
+		t.Fatalf("same-service warnings escaped suppression: %s", buffer.String())
+	}
+	// Cleanup of the per-service entries must not discard the pending count.
+	clock.Advance(2 * time.Minute)
+	warning.log()
+	requireSuppressedRevisionWarnings(t, buffer, 3)
+	buffer.Reset()
+	clock.Advance(time.Minute)
+	warning.log()
+	requireSuppressedRevisionWarnings(t, buffer, 0)
+}
+
+func TestBulkRevisionWarningsHaveGlobalBudget(t *testing.T) {
+	for _, source := range []string{"ack", "discovery"} {
+		t.Run(source, func(t *testing.T) {
+			buffer, clock := captureRevisionWarnings(t)
+			machine, _ := newTestMachine(t)
+			services := make([]Service, 100)
+			for i := range services {
+				id := fmt.Sprintf("%08x-0000-7000-8000-000000000000", i+1)
+				services[i] = testAckService(id, fmt.Sprintf("service-%d", i), 5)
+			}
+			mustAck(t, machine, ackWith(services...))
+			for i := range services {
+				services[i].Revision = 4
+			}
+			if source == "ack" {
+				mustAck(t, machine, ackWith(services...))
+			} else if err := machine.Discover(services); err != nil {
+				t.Fatal(err)
+			}
+			if count := bytes.Count(buffer.Bytes(), []byte("\n")); count != revisionWarningBurst {
+				t.Fatalf("bulk %s emitted %d warnings, want %d", source, count, revisionWarningBurst)
+			}
+			for _, service := range services {
+				status, found := machine.Status(service.Name)
+				if !found || status.Service.Head != 5 {
+					t.Fatalf("warning budget changed head: %+v", status)
+				}
+			}
+			buffer.Reset()
+			// A different caller and service still share the process budget.
+			revisionWarnings.warn(revisionWarning{serviceID: testServiceID2, source: "snapshot"})
+			if buffer.Len() != 0 {
+				t.Fatalf("another source escaped the global budget: %s", buffer.String())
+			}
+			clock.Advance(time.Minute)
+			revisionWarnings.warn(revisionWarning{serviceID: services[0].ID, source: source})
+			requireSuppressedRevisionWarnings(t, buffer, uint64(len(services)-revisionWarningBurst+1))
+		})
+	}
+}
+
+func TestConcurrentServicesShareRevisionWarningBudget(t *testing.T) {
+	buffer, clock := captureRevisionWarnings(t)
+	var wg sync.WaitGroup
+	for i := range 100 {
+		wg.Go(func() { revisionWarnings.warn(revisionWarning{serviceID: fmt.Sprint(i)}) })
+	}
+	wg.Wait()
+	if count := bytes.Count(buffer.Bytes(), []byte("\n")); count != revisionWarningBurst {
+		t.Fatalf("concurrent services emitted %d warnings, want %d", count, revisionWarningBurst)
+	}
+	buffer.Reset()
+	clock.Advance(time.Minute)
+	revisionWarnings.warn(revisionWarning{serviceID: testServiceID1})
+	requireSuppressedRevisionWarnings(t, buffer, 100-revisionWarningBurst)
 }
 
 type blockedRevisionLog struct {

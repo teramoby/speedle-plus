@@ -490,16 +490,18 @@ func (m *Machine) updateRecordHeadLocked(record *serviceRecord, epoch string, re
 		effectiveEpoch = record.epoch
 	}
 	var localRevision, knownHead uint64
+	localSource := "none"
 	if record.headKnown && record.epoch == effectiveEpoch {
 		knownHead = record.headRevision
 	}
 	if record.hasLocal && record.localEpoch == effectiveEpoch {
 		localRevision = record.localRevision
+		localSource = "memory"
 	}
 	var warning *revisionWarning
 	if revision < localRevision || revision < knownHead {
 		warning = &revisionWarning{serviceID: record.id, epoch: effectiveEpoch, source: source,
-			upstream: revision, local: localRevision, head: knownHead}
+			upstream: revision, local: localRevision, head: knownHead, localSource: localSource}
 	}
 	if record.headKnown && epoch != "" && record.epoch != "" && epoch != record.epoch {
 		m.invalidateAttemptsLocked(record)
