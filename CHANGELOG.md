@@ -4,8 +4,11 @@
 
 - Removed the experimental policy-distribution feature introduced in v1.7.x.
   The Engine continues to provide policy decisions, local policy stores,
-  management and decision APIs, spctl and SDK integration. Configurations that
-  select the removed store type fail at startup with a v1.8.0 migration error.
+  management and decision APIs, spctl and SDK integration. The shipped
+  `speedle-ads` and `speedle-pms` binaries reject the removed `policy-source`
+  store at startup with a v1.8.0 migration error. A host that registers its own
+  builder with `store.Register("policy-source", ...)` can still select it; see
+  [Extending the decision service](docs/hugo/content/docs/extending-decision-service.md).
   Remove obsolete distribution command-line flags before using an old
   configuration; removed flags are rejected as unknown options during parsing.
   For a v1.7.x distribution deployment, migrate every dependent client together:
