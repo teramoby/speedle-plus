@@ -219,7 +219,7 @@ function runSuite(mode, {listExit = 0, failMatching = '', mysqlOnly = false, doc
     const stub = tool => `#!${process.execPath}
 const fs=require('node:fs');const a=process.argv.slice(2);
 if(${JSON.stringify(tool)}==='bash'&&!String(a[0]).startsWith('scripts/ci/validate-')){const r=require('node:child_process').spawnSync(process.env.FIXTURE_REAL_BASH,a,{stdio:'inherit'});process.exit(r.status===null?1:r.status)}
-if(${JSON.stringify(tool)}==='go'&&a[0]==='env'){console.log(a[1]==='CC'?'true':a[1]==='GOVERSION'?'go1.26.11':process.env.FIXTURE_GOPATH);process.exit(0)}
+if(${JSON.stringify(tool)}==='go'&&a[0]==='env'){console.log(a[1]==='CC'?'true':a[1]==='GOVERSION'?'go1.27.4':process.env.FIXTURE_GOPATH);process.exit(0)}
 if(${JSON.stringify(tool)}==='docker')process.exit(process.env.FIXTURE_DOCKER==='reachable'?0:1)
 if(${JSON.stringify(tool)}==='id'){console.log(a[0]==='-un'?'runner':process.env.FIXTURE_DOCKER==='group'?'runner docker':'runner');process.exit(0)}
 if(${JSON.stringify(tool)}==='go'&&a[0]==='list'){console.log('example.invalid/pkg/a\\nexample.invalid/pkg/store/mongodb\\nexample.invalid/samples/x\\nexample.invalid/pkg/svcs/adsgrpc/pb');process.exit(Number(process.env.FIXTURE_LIST_EXIT))}
@@ -273,8 +273,8 @@ test('gate runs every package once, only store-dependent packages again with etc
   assert.deepEqual(records.filter(r => r.tool === 'python3').slice(1).map(r => r.args), [
     ['scripts/ci/condition-conformance-report.py', profile, profile.replace(/coverage\.out$/, 'matrix.log')],
     ['-m', 'unittest', 'discover', '-s', 'scripts/tests', '-p', 'test_condition_conformance_report.py'],
-    ['website/tests/check_quick_start.py', '--toolchain', 'go1.26.11'],
-    ['website/tests/check_embedded.py', '--toolchain', 'go1.26.11', '--candidate'],
+    ['website/tests/check_quick_start.py', '--toolchain', 'go1.27.4'],
+    ['website/tests/check_embedded.py', '--toolchain', 'go1.27.4', '--candidate'],
     ['website/tests/check_docs.py'],
   ]);
   for (const record of records) {
