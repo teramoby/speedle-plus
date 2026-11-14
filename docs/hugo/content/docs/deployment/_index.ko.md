@@ -8,7 +8,7 @@ linksection = true
 tocheading = "h2"
 categories = ["docs"]
 bref = "임베디드 모드, Docker 이미지, Homebrew, 소스 빌드 및 독립 실행형 PMS와 ADS 서비스."
-lastmod = 2026-11-10T14:45:43+08:00
+lastmod = 2026-11-14T10:30:00+08:00
 +++
 
 Speedle은 Go 애플리케이션 내에 임베드하거나, 공개된 컨테이너 이미지로 실행하거나, 독립 실행형 PMS 및 ADS 서비스로 실행할 수 있습니다.
@@ -89,8 +89,8 @@ spec:
     spec:
       containers:
         - name: pms
-          image: ghcr.io/teramoby/speedle-pms:<release-tag>
-          args: ["--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6733", "--insecure=true"]
+          image: docker.io/speedle/speedle:<release-tag>
+          args: ["speedle-pms", "--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6733", "--insecure=true"]
           ports:
             - containerPort: 6733
           readinessProbe:
@@ -100,8 +100,8 @@ spec:
             - name: policies
               mountPath: /data
         - name: ads
-          image: ghcr.io/teramoby/speedle-ads:<release-tag>
-          args: ["--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6734", "--insecure=true"]
+          image: docker.io/speedle/speedle:<release-tag>
+          args: ["speedle-ads", "--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6734", "--insecure=true"]
           ports:
             - containerPort: 6734
           readinessProbe:
@@ -131,11 +131,11 @@ spec:
       targetPort: 6734
 ```
 
-`PMS_IMAGE`와 `ADS_IMAGE`를 배포할 정확한 이미지(예: 릴리스 태그 또는 다이제스트)로 설정합니다. 적용하기 전에 로컬에서 대체하고, 빠른 시작 클라이언트를 사용하는 동안 포트 포워딩을 유지합니다:
+`SPEEDLE_IMAGE`를 배포할 정확한 이미지(예: 릴리스 태그 또는 다이제스트)로 설정합니다. 적용하기 전에 로컬에서 대체하고, 빠른 시작 클라이언트를 사용하는 동안 포트 포워딩을 유지합니다:
 
 <!-- deployment-template: apply -->
 ```bash
-kubectl set image --local -f speedle-dev.yaml pms="$PMS_IMAGE" ads="$ADS_IMAGE" -o yaml | kubectl apply -f -
+kubectl set image --local -f speedle-dev.yaml pms="$SPEEDLE_IMAGE" ads="$SPEEDLE_IMAGE" -o yaml | kubectl apply -f -
 kubectl rollout status deployment/speedle-dev
 kubectl port-forward service/speedle-dev 6733:6733 6734:6734
 ```

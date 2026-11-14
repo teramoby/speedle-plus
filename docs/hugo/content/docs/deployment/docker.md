@@ -8,7 +8,7 @@ toc = true
 tocheading = "h2"
 categories = ["docs"]
 bref = "One image on Docker Hub and GHCR runs the policy manager, the decision service and spctl, with a shared file store."
-lastmod = 2026-11-10T14:45:43+08:00
+lastmod = 2026-11-14T10:30:00+08:00
 +++
 
 Speedle publishes one image that contains `speedle-pms`, `speedle-ads` and `spctl`. The image is built `FROM scratch`, runs as UID 65532, and has no shell. The first argument selects the program.
@@ -76,7 +76,7 @@ docker run -d --name speedle-pms \
   speedle-pms --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6733 --insecure=true
 ```
 
-A new named volume is filled from the image's `/data` directory, which UID 65532 can write. PMS creates `/data/policies.json` when it is missing. The image has no CA certificates. `--insecure=true` is for this local HTTP example. See [Security](/docs/security/) for TLS.
+A new named volume is filled from the image's `/data` directory, which UID 65532 can write. PMS creates `/data/policies.json` when it is missing. The image includes the public CA bundle. Releases 1.7.0 and 1.7.1 were published before the bundle was added; pass a CA file for TLS endpoints when using those tags. `--insecure=true` is for this local HTTP example. See [Security](/docs/security/) for TLS.
 
 Docker can accept the published port and reset the connection before the process listens. Retry every error, including that reset:
 

@@ -6,7 +6,7 @@
     <description>Recent content in Docs on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>ja-jp</language>
-    <lastBuildDate>Thu, 12 Nov 2026 21:00:00 +0800</lastBuildDate>
+    <lastBuildDate>Sat, 14 Nov 2026 10:30:00 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/ja/categories/docs/index.xml" rel="self" type="application/rss+xml" />
     
@@ -413,7 +413,7 @@ TLS は接続を暗号化し、サーバーを認証します。認証された�
     <item>
       <title>デプロイ</title>
       <link>https://engine.speedle.io/ja/docs/deployment/</link>
-      <pubDate>Tue, 10 Nov 2026 14:45:43 +0800</pubDate>
+      <pubDate>Sat, 14 Nov 2026 10:30:00 +0800</pubDate>
       
       <guid>https://engine.speedle.io/ja/docs/deployment/</guid>
       <description>Speedle は Go アプリケーション内への組み込み、1 つの公開コンテナイメージからの実行、またはスタンドアロンの PMS および ADS サービスとして実行できます。

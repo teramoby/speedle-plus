@@ -8,7 +8,7 @@ toc = true
 tocheading = "h2"
 categories = ["docs"]
 bref = "Docker Hub 和 GHCR 上的同一个镜像运行策略管理服务、决策服务和 spctl，并共用一份文件存储。"
-lastmod = 2026-11-10T14:45:43+08:00
+lastmod = 2026-11-14T10:30:00+08:00
 +++
 
 Speedle 发布一个镜像，其中包含 `speedle-pms`、`speedle-ads` 和 `spctl`。镜像基于 `scratch` 构建，以 UID 65532 运行，里面没有 shell。第一个参数决定启动哪个程序。
@@ -76,7 +76,7 @@ docker run -d --name speedle-pms \
   speedle-pms --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6733 --insecure=true
 ```
 
-新建的命名卷会放入镜像里的 `/data` 目录，UID 65532 可以写入。策略文件不存在时，PMS 会创建 `/data/policies.json`。镜像不包含 CA 证书。`--insecure=true` 只用于这个本地 HTTP 示例。TLS 见[安全](/docs/security/)。
+新建的命名卷会放入镜像里的 `/data` 目录，UID 65532 可以写入。策略文件不存在时，PMS 会创建 `/data/policies.json`。镜像包含公共 CA 证书包。1.7.0 和 1.7.1 发布时还没有该证书包；使用这些标签时，连接 TLS 端点需要提供 CA 文件。`--insecure=true` 只用于这个本地 HTTP 示例。TLS 见[安全](/docs/security/)。
 
 Docker 可能在进程开始监听之前就接受已发布的端口，然后重置连接。请重试所有错误，包括这种重置：
 
