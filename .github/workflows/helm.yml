@@ -11,6 +11,8 @@ on:
       - deployment/container/**
       - cmd/**
       - pkg/**
+      - api/**
+      - 3rdparty/**
       - go.mod
       - go.sum
       - scripts/ci/install-helm.sh
@@ -24,6 +26,8 @@ on:
       - deployment/container/**
       - cmd/**
       - pkg/**
+      - api/**
+      - 3rdparty/**
       - go.mod
       - go.sum
       - scripts/ci/install-helm.sh

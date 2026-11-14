@@ -314,7 +314,7 @@ test('Helm pull requests and pushes select every candidate image input', () => {
   for (const event of ['pull_request', 'push']) {
     const block = helm.split(`  ${event}:\n`)[1].split(/\n  [a-z_]+:|\npermissions:/)[0];
     const paths = [...block.matchAll(/^      - (.+)$/gm)].map(match => match[1]);
-    for (const input of ['deployment/helm/**', 'deployment/container/**', 'cmd/**', 'pkg/**', 'go.mod', 'go.sum']) {
+    for (const input of ['deployment/helm/**', 'deployment/container/**', 'cmd/**', 'pkg/**', 'api/**', '3rdparty/**', 'go.mod', 'go.sum']) {
       assert.ok(paths.includes(input), `${event} must select ${input}`);
     }
   }
