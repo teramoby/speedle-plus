@@ -17,15 +17,51 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  smoke:
-    name: ${{ (github.event.action == 'unlabeled' || (github.event.action == 'labeled' && github.event.label.name != 'full-ci' && github.event.label.name != 'merge-head') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'full-ci') && !contains(github.event.pull_request.labels.*.name, 'merge-head'))) && format('Ignored image event {0}', github.run_id) || 'image smoke' }}
+  changes:
+    name: image changes
     if: >-
-      github.event_name == 'push'
-      || (github.event.action != 'unlabeled'
+      github.event.action != 'unlabeled'
       && (github.event.action != 'labeled'
       || github.event.label.name == 'full-ci' || github.event.label.name == 'merge-head')
-      && (contains(github.event.pull_request.labels.*.name, 'full-ci')
-      || contains(github.event.pull_request.labels.*.name, 'merge-head')))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      smoke: ${{ steps.scope.outputs.smoke }}
+    steps:
+      - name: Checkout changed paths
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      # Event-level paths would also suppress full-ci/merge-head label events.
+      # Preserve the original path filter here, unioned with the label rules.
+      - name: Select image smoke
+        id: scope
+        env:
+          ALWAYS_SMOKE: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'full-ci') || contains(github.event.pull_request.labels.*.name, 'merge-head') }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          python3 - <<'PYTHON'
+          import os
+          from pathlib import Path
+          import subprocess
+          smoke = os.environ['ALWAYS_SMOKE'] == 'true'
+          if not smoke:
+              changed = subprocess.check_output(['git', 'diff', '--name-only', '-z', os.environ['PR_BASE'], os.environ['GITHUB_SHA'], '--']).decode().split('\0')
+              smoke = any(p.startswith(('deployment/container/', 'cmd/')) or p in (
+                  '.github/workflows/release.yml', '.github/workflows/image-smoke.yml', 'scripts/release-smoke.sh'
+              ) for p in changed)
+          with Path(os.environ['GITHUB_OUTPUT']).open('a') as output:
+              output.write('smoke=' + str(smoke).lower() + '\n')
+          PYTHON
+
+  smoke:
+    needs: changes
+    name: ${{ needs.changes.outputs.smoke == 'true' && 'image smoke' || format('Ignored image event {0}', github.run_id) }}
+    if: needs.changes.outputs.smoke == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:

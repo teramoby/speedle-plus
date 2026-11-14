@@ -87,21 +87,24 @@ function script(source, name) {
 }
 test('actual summary blocks failed/cancelled/missing selected jobs and allows intentional skips', () => {
   for (const full of [false, true]) {
-    const jobs = Object.fromEntries(['changes', 'quick', 'lint', 'test', 'build'].map(name => [name, {result: 'skipped'}]));
-    jobs.changes = {result: 'success', outputs: {full: String(full), go: 'true', docs: 'false', website: 'false'}};
-    const selected = full ? ['lint', 'test', 'build'] : ['quick'];
-    for (const name of selected) jobs[name].result = 'success';
-    const run = () => spawnSync('bash', ['-c', script(ci, 'Verify the selected CI path')], {encoding: 'utf8', env: {...process.env, RESULTS: JSON.stringify(jobs)}});
-    assert.equal(run().status, 0);
-    for (const name of selected) {
-      for (const result of ['failure', 'cancelled', 'skipped']) {
-        jobs[name].result = result;
-        assert.notEqual(run().status, 0, `${name}/${result}`);
+    for (const content of [false, true]) {
+      const jobs = Object.fromEntries(['changes', 'quick', 'lint', 'test', 'build'].map(name => [name, {result: 'skipped'}]));
+      jobs.changes = {result: 'success', outputs: {full: String(full), go: 'true', docs: String(content), website: 'false'}};
+      const selected = full ? ['lint', 'test', 'build'] : ['quick'];
+      if (!full && content) selected.push('build');
+      for (const name of selected) jobs[name].result = 'success';
+      const run = () => spawnSync('bash', ['-c', script(ci, 'Verify the selected CI path')], {encoding: 'utf8', env: {...process.env, RESULTS: JSON.stringify(jobs)}});
+      assert.equal(run().status, 0);
+      for (const name of selected) {
+        for (const result of ['failure', 'cancelled', 'skipped']) {
+          jobs[name].result = result;
+          assert.notEqual(run().status, 0, `${name}/${result}`);
+        }
+        jobs[name].result = 'success';
       }
-      jobs[name].result = 'success';
+      jobs.changes.result = 'failure';
+      assert.notEqual(run().status, 0);
     }
-    jobs.changes.result = 'failure';
-    assert.notEqual(run().status, 0);
   }
 });
 test('actual package selector includes nested fixtures/deletions and module-wide changes', () => {
@@ -169,29 +172,71 @@ test('ignored label events cannot publish the stable CI check name', () => {
     }
   }
 });
-test('image smoke runs for all full PRs and master pushes with isolated ignored events', () => {
+test('image smoke unions original paths with full labels and isolates ignored events', () => {
   const image = fs.readFileSync(path.join(root, '.github/workflows/image-smoke.yml'), 'utf8');
-  const condition = image.match(/    if: >-\n((?:      .*\n)+)/)[1].trim();
+  const changes = image.split('  changes:\n')[1].split('  smoke:\n')[0];
+  const condition = changes.match(/    if: >-\n((?:      .*\n)+)/)[1].trim();
+  const always = changes.match(/ALWAYS_SMOKE: \$\{\{ (.*) \}\}/)[1];
   const group = image.match(/  group: (.*)\n/)[1];
   const name = image.match(/    name: \$\{\{ (.*) \}\}/)[1];
+  const smokeCondition = image.split('  smoke:\n')[1].match(/    if: (.*)/)[1];
   const selectedGroup = c => group.replace(/\$\{\{ (.*?) \}\}/g, (_, expr) => evaluate(expr, c));
   assert.match(image, /push:\n    branches: \[master\]/);
-  assert.doesNotMatch(image, /paths:/);
+  assert.doesNotMatch(image, /paths:/); // Classify paths inside the workflow to preserve label events.
   assert.match(image, /types: \[opened, synchronize, reopened, labeled\]/);
-  for (const labels of [[], ['full-ci'], ['merge-head'], ['other'], ['full-ci', 'merge-head']]) {
-    for (const action of ['opened', 'synchronize', 'reopened', 'labeled', 'unlabeled']) {
-      for (const label of ['other', 'full-ci', 'merge-head']) {
-        const c = context('pull_request', labels, action, label);
-        const ignored = action === 'unlabeled' || (action === 'labeled' && label === 'other');
-        assert.equal(evaluate(condition, c), !ignored && labels.some(x => ['full-ci', 'merge-head'].includes(x)));
-        assert.equal(selectedGroup(c) === selectedGroup(context()), !ignored);
-        assert.equal(evaluate(name, c) === 'image smoke', !ignored && labels.some(x => ['full-ci', 'merge-head'].includes(x)));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cxmq-image-'));
+  try {
+    fs.writeFileSync(path.join(dir, 'git'), `#!${process.execPath}\nprocess.stdout.write(process.env.CHANGED.split('|').join('\\0'));\n`);
+    fs.chmodSync(path.join(dir, 'git'), 0o755);
+    const select = (paths, force = false) => {
+      const output = path.join(dir, 'output'); fs.writeFileSync(output, '');
+      const result = spawnSync('bash', ['-c', script(image, 'Select image smoke')], {cwd: dir, encoding: 'utf8', env: {...process.env,
+        PATH: dir + path.delimiter + process.env.PATH, CHANGED: paths.join('|'), ALWAYS_SMOKE: String(force), PR_BASE: 'base', GITHUB_SHA: 'head', GITHUB_OUTPUT: output}});
+      assert.equal(result.status, 0, result.stderr);
+      return fs.readFileSync(output, 'utf8').trim() === 'smoke=true';
+    };
+    for (const file of ['deployment/container/Dockerfile', 'deployment/container/dispatch/main.go', 'cmd/spctl/main.go',
+      '.github/workflows/release.yml', '.github/workflows/image-smoke.yml', 'scripts/release-smoke.sh']) assert.equal(select([file]), true, file);
+    for (const files of [[], ['docs/page.md'], ['pkg/eval/eval.go'], ['cmd-like/main.go'], ['scripts/release-smoke.sh.bak']]) {
+      assert.equal(select(files), false, files.join(','));
+      assert.equal(select(files, true), true);
+    }
+    for (const labels of [[], ['full-ci'], ['merge-head'], ['other'], ['full-ci', 'merge-head']]) {
+      for (const action of ['opened', 'synchronize', 'reopened', 'labeled', 'unlabeled']) {
+        for (const label of ['other', 'full-ci', 'merge-head']) {
+          const c = context('pull_request', labels, action, label);
+          const ignored = action === 'unlabeled' || (action === 'labeled' && label === 'other');
+          assert.equal(evaluate(condition, c), !ignored);
+          assert.equal(evaluate(always, c), labels.some(x => ['full-ci', 'merge-head'].includes(x)));
+          assert.equal(selectedGroup(c) === selectedGroup(context()), !ignored);
+          for (const pathChanged of [false, true]) {
+            const selected = !ignored && (pathChanged || evaluate(always, c));
+            c.needs.changes.outputs.smoke = String(selected);
+            assert.equal(evaluate(smokeCondition, c), selected);
+            assert.equal(evaluate(name, c) === 'image smoke', selected);
+          }
+        }
+      }
+    }
+    const push = context('push'); delete push.github.event.pull_request;
+    assert.equal(evaluate(always, push), true);
+  } finally { fs.rmSync(dir, {recursive: true, force: true}); }
+});
+
+test('content changes retain the build worker on quick and full routes', () => {
+  for (const full of [false, true]) {
+    for (const go of [false, true]) {
+      for (const docs of [false, true]) {
+        for (const website of [false, true]) {
+          const c = context();
+          c.needs.changes.outputs = Object.fromEntries(Object.entries({full, go, docs, website}).map(([k,v]) => [k, String(v)]));
+          assert.equal(evaluate(condition('build'), c), (full && go) || docs || website);
+          assert.equal(evaluate(condition('quick'), c), !full);
+          assert.equal(evaluate(condition('test'), c), full);
+        }
       }
     }
   }
-  const push = context('push'); delete push.github.event.pull_request;
-  assert.equal(evaluate(condition, push), true);
-  assert.equal(evaluate(name, push), 'image smoke');
 });
 
 test('quick formatting rejects parse errors, command failures and unformatted files', () => {

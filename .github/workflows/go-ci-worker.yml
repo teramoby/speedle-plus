@@ -259,6 +259,35 @@ jobs:
         if: inputs.mode == 'build' || inputs.mode == 'quick'
         run: go build ./cmd/speedle-pms/... ./cmd/speedle-ads/... ./cmd/spctl/...
 
+      # Unlabeled content PRs keep the existing docs and site checks without
+      # starting the full integration/coverage suite. Full test mode already
+      # runs these walkthroughs, so do not duplicate them on labeled runs.
+      - name: Select quick content checks
+        id: content
+        if: inputs.mode == 'build' && github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'full-ci') && !contains(github.event.pull_request.labels.*.name, 'merge-head')
+        env:
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          python3 - <<'PYTHON'
+          import os
+          from pathlib import Path
+          import subprocess
+          changed = subprocess.check_output(['git', 'diff', '--name-only', '-z', os.environ['PR_BASE'], os.environ['GITHUB_SHA'], '--']).decode().split('\0')
+          content = any(p.startswith(('docs/', 'website/')) for p in changed)
+          with Path(os.environ['GITHUB_OUTPUT']).open('a') as output:
+              output.write('changed=' + str(content).lower() + '\n')
+          PYTHON
+
+      - name: Verify quick documentation walkthroughs
+        if: inputs.mode == 'build' && steps.content.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          toolchain=$(go env GOVERSION)
+          python3 website/tests/check_quick_start.py --toolchain "${toolchain}"
+          python3 website/tests/check_embedded.py --toolchain "${toolchain}" --candidate
+          go test -count=1 ./website/tests/docscheck
+          python3 website/tests/check_docs.py
+
       # The default-branch worker keeps scheduling policy outside PR control.
       - name: Setup pinned Playground Go
         if: inputs.mode == 'build' && hashFiles('website/playground-engine/go.mod') != ''

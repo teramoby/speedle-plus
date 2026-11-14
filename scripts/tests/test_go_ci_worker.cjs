@@ -462,6 +462,49 @@ test('quick clears inherited integration configuration so MySQL tests use their 
   }
 });
 
+test('unlabeled content build selects documentation checks and propagates walkthrough failures', () => {
+  const selection = step('Select quick content checks');
+  assert.match(selection, /inputs.mode == 'build'/);
+  assert.match(selection, /github.event_name == 'pull_request'/);
+  for (const label of ['full-ci', 'merge-head']) assert.ok(selection.includes(`!contains(github.event.pull_request.labels.*.name, '${label}')`));
+  assert.match(step('Verify quick documentation walkthroughs'), /steps.content.outputs.changed == 'true'/);
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-content-'));
+  try {
+    fs.mkdirSync(path.join(dir, 'bin'));
+    fs.writeFileSync(path.join(dir, 'bin/git'), `#!${process.execPath}\nprocess.stdout.write(process.env.CHANGED.split('|').join('\\0'));\n`);
+    fs.chmodSync(path.join(dir, 'bin/git'), 0o755);
+    const output = path.join(dir, 'output');
+    const env = {...process.env, PATH: path.join(dir, 'bin') + path.delimiter + process.env.PATH, PR_BASE: 'base', GITHUB_SHA: 'head', GITHUB_OUTPUT: output};
+    for (const [files, selected] of [['docs/page.md', true], ['website/tests/check_docs.py', true], ['docs/deleted.md|website/page.html', true], ['pkg/eval/x.go', false], ['docs-like/x.md', false], ['', false]]) {
+      fs.writeFileSync(output, '');
+      const result = spawnSync('bash', ['-c', script('Select quick content checks')], {cwd: dir, env: {...env, CHANGED: files}, encoding: 'utf8'});
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal(fs.readFileSync(output, 'utf8'), `changed=${selected}\n`);
+    }
+    // Intercept commands, retaining the actual shell's fail-fast behavior.
+    for (const tool of ['go', 'python3']) {
+      fs.writeFileSync(path.join(dir, 'bin', tool), `#!${process.execPath}\nconst args=process.argv.slice(2);require('node:fs').appendFileSync(process.env.RECORD,JSON.stringify(args)+'\\n');if(args[0]==='env')process.stdout.write('go1.26.11\\n');process.exit(args.includes(process.env.FAIL_COMMAND)?7:0);\n`);
+      fs.chmodSync(path.join(dir, 'bin', tool), 0o755);
+    }
+    const record = path.join(dir, 'calls');
+    const commands = ['website/tests/check_quick_start.py', 'website/tests/check_embedded.py', './website/tests/docscheck', 'website/tests/check_docs.py'];
+    for (const failure of ['', ...commands]) {
+      fs.writeFileSync(record, '');
+      const result = spawnSync('bash', ['-c', script('Verify quick documentation walkthroughs')], {cwd: dir, env: {...env, RECORD: record, FAIL_COMMAND: failure}, encoding: 'utf8'});
+      assert.equal(result.status, failure ? 7 : 0, result.stderr);
+      const calls = fs.readFileSync(record, 'utf8').trim().split('\n').map(JSON.parse);
+      assert.deepEqual(calls[0], ['env', 'GOVERSION']);
+      assert.equal(calls.length, failure ? commands.indexOf(failure) + 2 : 5);
+      if (!failure) {
+        assert.deepEqual(calls.slice(1), [
+          [commands[0], '--toolchain', 'go1.26.11'], [commands[1], '--toolchain', 'go1.26.11', '--candidate'],
+          ['test', '-count=1', commands[2]], [commands[3]],
+        ]);
+      }
+    }
+  } finally {fs.rmSync(dir, {recursive: true, force: true});}
+});
+
 test('quick dispatcher check vets and builds natively and propagates each failure', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-quick-dispatch-'));
   try {
