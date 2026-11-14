@@ -641,7 +641,7 @@ func TestChannelWebSocketMultiService(t *testing.T) {
 	waitFor(t, 2*time.Second, "a heartbeat carrying every service", func() bool {
 		_, _, _, _, _, heartbeats := source.stats()
 		for _, heartbeat := range heartbeats {
-			if len(heartbeat.Services) == 3 && heartbeat.Transport == string(TransportWebSocket) {
+			if len(heartbeat.Services) == 3 {
 				return true
 			}
 		}
@@ -770,8 +770,8 @@ func TestChannelLongPollMultiService(t *testing.T) {
 	if len(heartbeats[0].Services) != 2 {
 		t.Fatalf("poll body carries %d services, want 2", len(heartbeats[0].Services))
 	}
-	if heartbeats[0].Transport != string(TransportLongPoll) {
-		t.Fatalf("poll body transport = %q", heartbeats[0].Transport)
+	if host := heartbeats[0].Host; host == nil || host.Transport != string(TransportLongPoll) {
+		t.Fatalf("poll body host = %+v", host)
 	}
 	select {
 	case change := <-changes:

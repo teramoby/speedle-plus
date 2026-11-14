@@ -158,7 +158,7 @@ func (s *Syncer) SyncByName(ctx context.Context, name string) (*ServiceState, er
 	}
 	for _, service := range services.Services {
 		if service.Name == name {
-			return s.Sync(ctx, service)
+			return s.syncAtLeast(ctx, service, 0, true)
 		}
 	}
 	return nil, fmt.Errorf("%w: no service named %q", ErrServiceNotFound, name)
@@ -184,21 +184,43 @@ func (s *Syncer) Sync(ctx context.Context, service Service) (*ServiceState, erro
 // unchanged and never replaced by an older snapshot; the state machine
 // decides on the next ack whether that is an integrity failure.
 func (s *Syncer) SyncAtLeast(ctx context.Context, service Service, minRevision uint64) (*ServiceState, error) {
+	return s.syncAtLeast(ctx, service, minRevision, false)
+}
+
+// freshDiscovery distinguishes a newly read upstream head from a Service
+// value the caller may reuse after notification-driven catch-up.
+func (s *Syncer) syncAtLeast(ctx context.Context, service Service, minRevision uint64, freshDiscovery bool) (*ServiceState, error) {
 	if err := service.validate(); err != nil {
 		return nil, err
 	}
 	lock := s.serviceLock(service.ID)
 	lock.Lock()
-	defer lock.Unlock()
+	var warning *revisionWarning
+	defer func() {
+		lock.Unlock()
+		if warning != nil {
+			warning.log()
+		}
+	}()
 
 	local, fromCache, err := s.localState(service.ID)
 	if err != nil {
 		return nil, err
 	}
 	if local == nil {
-		return s.loadSnapshot(ctx, service, local)
+		return s.loadSnapshot(ctx, service, local, &warning)
 	}
 	if local.Epoch == service.Epoch && local.Revision > service.Revision {
+		// This may be the first sight of a newer disk-cache copy: the machine
+		// has not necessarily learned its revision when it processes the ack.
+		// A caller already carrying a newer notified head may be reusing an
+		// older discovery result after catch-up; that is not a new rollback.
+		// SyncByName has fetched a fresh result, so its lower head is new
+		// upstream evidence even when the copy is already in memory.
+		if (fromCache || freshDiscovery) && minRevision < local.Revision {
+			warning = &revisionWarning{serviceID: service.ID, epoch: service.Epoch, source: "discovery",
+				upstream: service.Revision, local: local.Revision, head: max(service.Revision, minRevision)}
+		}
 		if fromCache {
 			if err := s.store(local); err != nil {
 				return nil, err
@@ -207,7 +229,7 @@ func (s *Syncer) SyncAtLeast(ctx context.Context, service Service, minRevision u
 		return local, nil
 	}
 	if local.Epoch != service.Epoch {
-		return s.loadSnapshot(ctx, service, local)
+		return s.loadSnapshot(ctx, service, local, &warning)
 	}
 	if local.Revision == service.Revision {
 		if local.StateHash == service.HeadStateHash && minRevision > local.Revision {
@@ -239,7 +261,7 @@ func (s *Syncer) SyncAtLeast(ctx context.Context, service Service, minRevision u
 			}
 			return local, nil
 		}
-		return s.loadSnapshot(ctx, service, local)
+		return s.loadSnapshot(ctx, service, local, &warning)
 	}
 
 	updated, err := s.catchUp(ctx, local, service)
@@ -252,9 +274,9 @@ func (s *Syncer) SyncAtLeast(ctx context.Context, service Service, minRevision u
 		}
 		return nil, err
 	case errors.Is(err, ErrSnapshotRequired):
-		return s.loadSnapshot(ctx, service, local)
+		return s.loadSnapshot(ctx, service, local, &warning)
 	case errors.Is(err, ErrIntegrity), errors.Is(err, ErrProtocol):
-		return s.loadSnapshot(ctx, service, local)
+		return s.loadSnapshot(ctx, service, local, &warning)
 	default:
 		return nil, err
 	}
@@ -284,7 +306,9 @@ func (s *Syncer) localState(serviceID string) (*ServiceState, bool, error) {
 	return state.clone(), true, nil
 }
 
-func (s *Syncer) loadSnapshot(ctx context.Context, service Service, local *ServiceState) (*ServiceState, error) {
+// warning captures a rejected rollback for the caller to log after unlocking
+// the service. Snapshot validation and publication stay inside that lock.
+func (s *Syncer) loadSnapshot(ctx context.Context, service Service, local *ServiceState, warning **revisionWarning) (*ServiceState, error) {
 	response, _, err := s.client.Snapshot(ctx, service.ID, "")
 	if err != nil {
 		if errors.Is(err, ErrServiceNotFound) {
@@ -306,6 +330,8 @@ func (s *Syncer) loadSnapshot(ctx context.Context, service Service, local *Servi
 	}
 	if local != nil && local.Epoch == response.Epoch {
 		if response.Revision < local.Revision {
+			*warning = &revisionWarning{serviceID: service.ID, epoch: response.Epoch, source: "snapshot",
+				upstream: response.Revision, local: local.Revision, head: service.Revision}
 			return nil, fmt.Errorf("%w: snapshot revision %d would roll back local revision %d",
 				ErrProtocol, response.Revision, local.Revision)
 		}

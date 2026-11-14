@@ -82,7 +82,6 @@ type channelHeartbeat struct {
 	Liveness        string                    `json:"liveness"`
 	Fallback        channelFallback           `json:"fallback"`
 	AgentVersion    string                    `json:"agentVersion"`
-	Transport       string                    `json:"transport"`
 	DownstreamCount *uint64                   `json:"downstreamCount,omitempty"`
 }
 
