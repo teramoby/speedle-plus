@@ -22,7 +22,7 @@ VALID_MATRIX = (
 
 
 class ConditionCoverageReportTest(unittest.TestCase):
-    def run_report(self, extra='', omit=None, go126=False, matrix=None):
+    def run_report(self, extra='', omit=None, go126=False, matrix=None, go_version=None):
         files = ['pkg/eval/condition/condition.go', 'pkg/eval/function/builtin_functions.go']
         files += [reporter.FORK + name for name in (
             'EvaluableExpression.go', 'parsing.go', 'stagePlanner.go',
@@ -46,7 +46,8 @@ class ConditionCoverageReportTest(unittest.TestCase):
             matrix_file = Path(directory) / 'matrix.log'
             matrix_file.write_text(VALID_MATRIX if matrix is None else matrix)
             with contextlib.redirect_stdout(output):
-                failed = reporter.report(profile,matrix_file, go_version='go1.26.11' if go126 else 'go1.27.4')
+                failed = reporter.report(profile, matrix_file,
+                                         go_version=go_version or ('go1.26.11' if go126 else 'go1.27.4'))
             return failed, output.getvalue()
 
     def test_duplicate_blocks_are_merged_not_added(self):
@@ -104,13 +105,20 @@ class ConditionCoverageReportTest(unittest.TestCase):
                 self.assertTrue(failed)
                 self.assertIn(f'audited source changed; re-audit required: {reporter.FORK}{file}', output)
 
-    def test_unaudited_toolchain_fails_once_before_reading_profile(self):
-        output = io.StringIO()
-        with contextlib.redirect_stdout(output):
-            failed = reporter.report('profile-must-not-be-read', None, go_version='go1.28.0')
+    def test_toolchain_version_is_informational_for_both_layouts(self):
+        for version in ('go1.27.4', 'go1.28.0', 'go1.28rc1', 'devel go1.29-abcdef'):
+            for go126 in (False, True):
+                with self.subTest(version=version, go126=go126):
+                    failed, output = self.run_report(go126=go126, go_version=version)
+                    self.assertFalse(failed, output)
+                    self.assertIn(f'Go toolchain (go env GOVERSION, informational): {version}', output)
+
+    def test_unknown_toolchain_still_rejects_unexplained_coverage_gaps(self):
+        failed, output = self.run_report(
+            'github.com/teramoby/speedle-plus/pkg/eval/condition/condition.go:2.1,2.2 2 0\n',
+            go_version='go1.28.0')
         self.assertTrue(failed)
-        self.assertEqual(output.getvalue(), 'ERROR: coverage layout for go1.28.0 is not audited '
-                         '(expected Go 1.26/1.27); re-audit required\n')
+        self.assertIn('uncovered reachable block', output)
 
     def test_go126_layout_matches_same_annotations(self):
         failed, output = self.run_report(go126=True)
@@ -130,6 +138,20 @@ class ConditionCoverageReportTest(unittest.TestCase):
         self.assertFalse(failed, output)
         self.assertIn('Known differences (name / expression / expected authorization):', output)
         self.assertIn('Difference: string/mismatch-!=/wrong-type', output)
+
+    def test_by_design_behaviours_are_separate_from_known_differences(self):
+        design = ('Design: missing-deny/logic/missing: missing => error; API allowed=true '
+                  '(A conditional `deny` therefore does not apply when its attribute is absent. '
+                  '[SPDL §1](https://engine.speedle.io/docs/spdl/#1-overview))')
+        failed, output = self.run_report(matrix=VALID_MATRIX + (
+            '    condition_conformance_test.go:1: By-design behaviours (condition outcome / expected authorization):\n'
+            f'    condition_conformance_test.go:2: {design}\n'
+            '    condition_conformance_test.go:3: Known differences / open deviations:\n'
+            '    condition_conformance_test.go:4: Difference: short-circuit\n'))
+        self.assertFalse(failed, output)
+        self.assertIn('By-design behaviours (condition outcome / expected authorization):', output)
+        self.assertIn(design, output)
+        self.assertLess(output.index(design), output.index('Known differences / open deviations:'))
 
     def test_missing_or_incomplete_matrix_fails(self):
         for matrix, reason in (

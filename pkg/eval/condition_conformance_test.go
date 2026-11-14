@@ -38,6 +38,7 @@ type conditionCase struct {
 	attributes                         []*adsrest.JsonAttribute
 	want                               bool
 	difference                         string
+	design                             string
 }
 
 var conditionOperators = []string{"+", "-", "*", "/", "%", "==", "!=", ">", ">=", "<", "<=", "=~", "in", "&&", "||", "!"}
@@ -334,6 +335,11 @@ func conditionCases() []conditionCase {
 		if c.expression != "true || missing" && c.expression != "false && missing" && c.expression != "!(true || missing)" {
 			cases[len(cases)-1].conditionError = "No parameter 'missing' found."
 			cases[len(cases)-2].conditionError = "No parameter 'missing' found."
+			// SPDL §1 explicitly covers conditional denies as well as grants.
+			// Keep this documented contract separate from reference deviations.
+			for _, index := range []int{len(cases) - 2, len(cases) - 1} {
+				cases[index].design = "A condition that references an attribute missing from the request does not match. A conditional `deny` therefore does not apply when its attribute is absent. [SPDL §1](https://engine.speedle.io/docs/spdl/#1-overview)"
+			}
 		}
 		if c.expression == "true || missing" {
 			cases[len(cases)-1].difference = "known difference, behaviour pinned"
@@ -560,6 +566,15 @@ func TestConditionConformanceMatrix(t *testing.T) {
 			t.Logf("Error: %s/%s/%s/%s: %s => %s; API allowed=%v, runtime error discarded", c.section, c.row, c.op, c.name, c.expression, c.conditionError, c.want)
 		} else if c.errorMessage != "" {
 			t.Logf("Error: %s/%s/%s/%s: %s => %s; API ERROR_IN_EVALUATION", c.section, c.row, c.op, c.name, c.expression, c.errorMessage)
+		}
+	}
+	t.Log("By-design behaviours (condition outcome / expected authorization):")
+	for _, c := range conditionCases() {
+		if c.design != "" {
+			t.Logf("Design: %s/%s/%s: %s => %s; API allowed=%v (%s)", c.row, c.op, c.name, c.expression, c.outcome(), c.want, c.design)
+		}
+		if (c.row == "missing" || c.row == "missing-deny") && c.conditionError != "" && (c.design == "" || c.difference != "") {
+			t.Errorf("missing-attribute runtime error %s/%s must be reported as by design, not a known difference", c.row, c.name)
 		}
 	}
 	t.Log("Known differences / open deviations (name / expression / expected authorization):")

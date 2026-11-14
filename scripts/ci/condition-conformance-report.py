@@ -92,7 +92,8 @@ AUDITED_SOURCE_SHA256 = {'EvaluableExpression.go': '8402d0eadf149b6bf511e992e89e
 
 # Go 1.26 records the enclosing control-flow boundary; Go 1.27 starts at
 # the first statement. Both layouts below were verified against the identical
-# source hashes above. Unknown layouts still fail closed. Values identify the
+# source hashes above. Unexplained blocks still fail closed, independently of
+# the reported toolchain version. Values identify the
 # canonical annotation, so every annotation must match in either layout.
 GO126_SPANS = {('EvaluableExpression.go', '81.16,83.3', 1): ('82.3,83.1', 1),
  ('EvaluableExpression.go', '111.16,113.3', 1): ('112.3,113.1', 1),
@@ -119,13 +120,9 @@ GO126_SPANS = {('EvaluableExpression.go', '81.16,83.3', 1): ('82.3,83.1', 1),
  ('stagePlanner.go', '717.16,719.3', 1): ('718.3,719.1', 1)}
 
 def report(profile, matrix, *, go_version):
-    # Unknown compiler layouts require a reachability audit, not dozens of
-    # misleading per-block gaps. Respect the caller's toolchain override while
-    # explicitly restricting this audit to the two verified stable series.
-    if not re.fullmatch(r'go1\.(26|27)(?:\.\d+)?', go_version):
-        print(f'ERROR: coverage layout for {go_version} is not audited '
-              '(expected Go 1.26/1.27); re-audit required')
-        return True
+    # GOVERSION is provenance, not an allow-list for the merge gate. Match the
+    # actual profile spans below; another compiler may emit the same layout.
+    print(f'Go toolchain (go env GOVERSION, informational): {go_version}')
     blocks = {}
     for line in Path(profile).read_text().splitlines()[1:]:
         location, statements, count = line.split()
@@ -140,7 +137,6 @@ def report(profile, matrix, *, go_version):
         blocks[key] = (n, max(previous, int(count)))
     if not blocks:
         raise ValueError('no condition-path coverage blocks found')
-    print(f'Audited Go coverage layout: {go_version}')
     totals = defaultdict(lambda: [0, 0, 0])
     exclusions = []
     failures = []
@@ -200,6 +196,7 @@ def report(profile, matrix, *, go_version):
             content = match.group(1).strip() if match else line.strip()
             if match:
                 if content.startswith(('|', 'Section ', 'Known differences', 'Difference:',
+                                       'By-design behaviours', 'Design:',
                                        'Matrix cells ', 'Outcome totals:', 'Error cases ', 'Error:')):
                     print(content)
             elif content.startswith('|'):
