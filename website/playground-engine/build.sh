@@ -13,13 +13,12 @@ if [[ "$("$GO_BIN" env GOVERSION)" != go1.27.4 ]]; then
   echo 'Use Go 1.27.4 for a reproducible build (set GO_BIN=/path/to/go).' >&2
   exit 1
 fi
-# Build from the checked-in, checksum-pinned source archive. It is independent
+# Build from the checked-in, checksum-pinned Git source pack. It is independent
 # of Git commit availability after a squash merge or branch deletion.
-python3 "$ROOT/website/playground-engine/engine-source.py" verify "$REVISION"
 grep -Fq "const Revision = \"$REVISION\"" playground/evaluate.go
 BUILD_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/speedle-playground.XXXXXXXX")
 trap 'rm -rf "$BUILD_ROOT"' EXIT
-tar -xzf "$ROOT/website/playground-engine/engine-source.tar.gz" -C "$BUILD_ROOT"
+python3 "$ROOT/website/playground-engine/engine-source.py" verify "$REVISION" "$BUILD_ROOT"
 mkdir -p "$BUILD_ROOT/website/playground-engine"
 cp -R cmd playground go.mod go.sum "$BUILD_ROOT/website/playground-engine/"
 OUT="$ROOT/docs/hugo/static/playground"

@@ -27,15 +27,18 @@ GO_BIN=/path/to/go website/playground-engine/build.sh
 `go.mod` replaces the Speedle dependency with this repository's root. The
 underlying engine source (`api/`, `pkg/`, `3rdparty/`, `go.mod`, `go.sum`) is pinned
 to commit `c14ee1b2d625778cf78812db69f26784968bf79c`. The checked-in
-`engine-source.tar.gz` contains those unmodified paths from that revision. `engine-source.sha256` pins its bytes; the build verifies both the
-checksum and the archive's embedded revision before extraction. A shallow clone
-is sufficient, even after squash merging and deleting the original PR branch.
-No old PR commit object or hidden GitHub ref is required.
+`engine-source.pack` contains that Git commit, its trees and the selected source
+blobs. The build checks `engine-source.sha256`, unpacks into an isolated temporary
+Git object database, and exports the exact commit's source tree. Git's object
+hashes bind every exported file to the pinned commit; a self-declared tar comment
+is not used as proof. No object is borrowed from the checkout or alternate stores.
+A shallow clone is sufficient even after squash merging and deleting the PR
+branch; no old PR commit object, hidden GitHub ref or network fetch is required.
 
 To deliberately upgrade the engine, commit and review the source change, run
 `python3 website/playground-engine/engine-source.py snapshot <commit>`, update the
 build pin, adapter `Revision`, `ENGINE-NOTICE.txt` and browser test, then rebuild.
-Review the generated archive checksum and WASM together. Later source edits do
+Review the generated source-pack checksum and WASM together. Later source edits do
 not silently change the published browser engine.
 
 The build runs native and actual Go-WASM adapter tests, uses locked modules (`-mod=readonly`),

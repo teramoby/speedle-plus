@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/../.."
+python3 website/playground-engine/tests/test_engine_source.py
 website/playground-engine/build.sh
 node website/playground-engine/tests/form-model.test.cjs
 node website/playground-engine/tests/form-dom.test.cjs
