@@ -172,6 +172,11 @@ jobs:
           rm -rf "${CONTAINER_CONTEXT}"
           mkdir -p "${CONTAINER_CONTEXT}/data"
           : > "${CONTAINER_CONTEXT}/data/.keep"
+          # The image is FROM scratch, so copy the runner's public CA bundle
+          # into the context for Go's system roots.
+          ca_bundle=/etc/ssl/certs/ca-certificates.crt
+          [[ -r "${ca_bundle}" ]] || { echo "Missing ${ca_bundle} on the runner." >&2; exit 1; }
+          cp "${ca_bundle}" "${CONTAINER_CONTEXT}/ca-certificates.crt"
           for arch in amd64 arm64; do
             cp "dist/speedle-pms_linux_${arch}" "${CONTAINER_CONTEXT}/speedle-pms-linux-${arch}"
             cp "dist/speedle-ads_linux_${arch}" "${CONTAINER_CONTEXT}/speedle-ads-linux-${arch}"

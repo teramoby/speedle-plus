@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Start PMS, then ADS, from the local image speedle:smoke and one shared volume.
-# The Release workflow and the pull-request image smoke job both call this
-# script. The image and dist/spctl_linux_<arch> must already exist.
+# Run spctl --help, then start PMS and ADS, from the local image speedle:smoke
+# and one shared volume. The Release workflow and the pull-request image smoke
+# job both call this script. The image and dist/spctl_linux_<arch> must already
+# exist.
 #
 # Docker accepts connections on the published port before the process listens,
 # and that proxy resets the connection. Retry every error until the deadline.
@@ -73,6 +74,10 @@ wait_ready() {
     sleep 1
   done
 }
+
+# The first argument selects the binary, so this exercises the dispatch
+# entrypoint and spctl before either service starts.
+docker run --rm "${image}" spctl --help >/dev/null
 
 docker rm -f speedle-smoke-pms speedle-smoke-ads >/dev/null 2>&1 || true
 docker volume rm speedle-smoke >/dev/null 2>&1 || true

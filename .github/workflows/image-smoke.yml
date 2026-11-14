@@ -1,8 +1,9 @@
 name: Image smoke
 
-# Builds the published Speedle image for this runner's architecture and runs
-# scripts/release-smoke.sh. The Release workflow runs that same script after
-# it has built linux/amd64 and linux/arm64, and before it creates a tag.
+# Builds the published Speedle image for linux/amd64 and linux/arm64, loads
+# the runner's architecture and runs scripts/release-smoke.sh. The Release
+# workflow runs that same script after it has built both architectures and
+# before it creates a tag.
 on:
   pull_request:
     paths:
@@ -37,7 +38,7 @@ jobs:
           go-version-file: go.mod
           cache: false
 
-      - name: Build and load the host image
+      - name: Build the image for both architectures and load the host architecture
         run: |
           set -euo pipefail
           host_arch=$(go env GOHOSTARCH)
@@ -48,13 +49,27 @@ jobs:
           rm -rf dist container-context
           mkdir -p dist container-context/data
           : > container-context/data/.keep
-          for command in spctl speedle-pms speedle-ads; do
-            CGO_ENABLED=0 GOOS=linux GOARCH="${host_arch}" go build -trimpath -o "dist/${command}_linux_${host_arch}" "./cmd/${command}"
+          # The same context and Dockerfile the Release workflow uses, so a
+          # TARGETARCH mapping or COPY mistake fails on the pull request.
+          for arch in amd64 arm64; do
+            for command in spctl speedle-pms speedle-ads; do
+              CGO_ENABLED=0 GOOS=linux GOARCH="${arch}" go build -trimpath -o "dist/${command}_linux_${arch}" "./cmd/${command}"
+            done
+            cp "dist/speedle-pms_linux_${arch}" "container-context/speedle-pms-linux-${arch}"
+            cp "dist/speedle-ads_linux_${arch}" "container-context/speedle-ads-linux-${arch}"
+            cp "dist/spctl_linux_${arch}" "container-context/spctl-linux-${arch}"
+            CGO_ENABLED=0 GOOS=linux GOARCH="${arch}" go build -trimpath -o "container-context/dispatch-linux-${arch}" ./deployment/container/dispatch
           done
-          cp "dist/speedle-pms_linux_${host_arch}" "container-context/speedle-pms-linux-${host_arch}"
-          cp "dist/speedle-ads_linux_${host_arch}" "container-context/speedle-ads-linux-${host_arch}"
-          cp "dist/spctl_linux_${host_arch}" "container-context/spctl-linux-${host_arch}"
-          CGO_ENABLED=0 GOOS=linux GOARCH="${host_arch}" go build -trimpath -o "container-context/dispatch-linux-${host_arch}" ./deployment/container/dispatch
+          ca_bundle=/etc/ssl/certs/ca-certificates.crt
+          [[ -r "${ca_bundle}" ]] || { echo "Missing ${ca_bundle} on the runner." >&2; exit 1; }
+          cp "${ca_bundle}" container-context/ca-certificates.crt
+          docker buildx create --name speedle-smoke --driver docker-container --use
+          docker buildx inspect --bootstrap
+          # Both architectures must build. Nothing is pushed.
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            --file deployment/container/Dockerfile \
+            --output type=cacheonly container-context
           docker buildx build \
             --platform "linux/${host_arch}" --load \
             --file deployment/container/Dockerfile \
