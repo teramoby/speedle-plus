@@ -130,6 +130,19 @@ class PublishTapRetryTest(unittest.TestCase):
                 self.assertEqual(updated, text.replace("v1.7.1", "v1.8.0"))
                 self.assertFalse(bump_pin.bump_text(updated, "v1.8.0", plain=True, note="`GOBIN` note: `v1.8.0`" + suffix)[1])
 
+    def test_rss_entities_and_smart_punctuation_preserve_original_escaping(self):
+        note = "`GOBIN` keeps this directory's \"files\" & checks <limits> -- then `v1.8.0` is latest."
+        for rendered in (
+            "GOBIN keeps this directory&rsquo;s &quot;files&quot; &amp; checks &lt;limits&gt; &ndash; then v1.7.1 is latest.",
+            "GOBIN keeps this directory&amp;rsquo;s &amp;#34;files&amp;#34; &amp;amp; checks &amp;lt;limits&amp;gt; &amp;ndash; then v1.7.1 is latest.",
+        ):
+            with self.subTest(rendered=rendered):
+                text = "go install github.com/teramoby/speedle-plus/cmd/...@v1.8.0 " + rendered
+                updated, changed = bump_pin.bump_text(text, "v1.8.0", plain=True, note=note)
+                self.assertTrue(changed)
+                self.assertEqual(updated, text.replace("v1.7.1", "v1.8.0"))
+                self.assertFalse(bump_pin.bump_text(updated, "v1.8.0", plain=True, note=note)[1])
+
     def test_missing_default_guide_is_rejected_by_every_discovery_consumer(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

@@ -217,6 +217,13 @@ push a branch and open a pull request on `teramoby/homebrew-tap`. The pull
 request on this repository uses the workflow's `GITHUB_TOKEN`. The tap token
 is read only by that publish step.
 
+The pin helper updates the first release-install command and the current-release
+note immediately after its code block. That paragraph's first version code span
+names the installed release. Put historical versions and other installation
+examples in separate paragraphs. The helper repairs that note even when a retry
+has already updated the command. If generated RSS text differs from the source
+note beyond rendering and escaping, regenerate the site before retrying.
+
 When `HOMEBREW_TAP_TOKEN` is unset, the workflow logs that the Homebrew tap
 update was skipped and the release still succeeds. `brew install` reads the
 tap's `main` branch, so `teramoby/homebrew-tap` must already exist and its

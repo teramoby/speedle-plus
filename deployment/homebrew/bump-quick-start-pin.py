@@ -90,10 +90,43 @@ def release_note(text):
     return offset + note.start(1), offset + note.end(1)
 
 
+def feed_text(value):
+    """Decode RSS entities/smart punctuation and retain original character spans."""
+    spans = [(index, index + 1) for index in range(len(value))]
+    entity = re.compile(r"&(?:\#(?:[xX][0-9A-Fa-f]+|[0-9]+)|[A-Za-z][A-Za-z0-9]+);")
+    while True:
+        pieces, offsets, start, changed = [], [], 0, False
+        for match in entity.finditer(value):
+            pieces.append(value[start:match.start()])
+            offsets.extend(spans[start:match.start()])
+            decoded = html.unescape(match.group())
+            pieces.append(decoded)
+            if decoded != match.group():
+                changed = True
+                offsets.extend([(spans[match.start()][0], spans[match.end() - 1][1])] * len(decoded))
+            else:
+                offsets.extend(spans[match.start():match.end()])
+            start = match.end()
+        if not changed:
+            break
+        pieces.append(value[start:])
+        offsets.extend(spans[start:])
+        value, spans = "".join(pieces), offsets
+    # Hugo's Smartypants renderer changes plain source punctuation. Normalize
+    # both sides for comparison; offsets still refer to the untouched feed.
+    punctuation = {"‘": "'", "’": "'", "“": '"', "”": '"', "…": "...", "–": "--", "—": "---"}
+    pieces, offsets = [], []
+    for character, span in zip(value, spans):
+        replacement = punctuation.get(character, character)
+        pieces.append(replacement)
+        offsets.extend([span] * len(replacement))
+    return "".join(pieces), offsets
+
+
 def bump_text(text, version, plain=False, note=None):
     """Repair the first install command and its own release-note paragraph.
 
-    For RSS, use the source paragraph's text before its release tag as context.
+    For RSS, match the decoded source paragraph with a variable release tag.
     A removed/reordered note cannot redirect a replacement into another example.
     """
     command = INSTALL.search(text)
@@ -102,8 +135,9 @@ def bump_text(text, version, plain=False, note=None):
     updated = INSTALL.sub(lambda pin: pin.group(1) + version, text, count=1)
     if plain:
         if note is not None:
-            # Hugo's RSS summary strips inline code and XML-escapes text.
-            reference = html.escape(note.replace("`", ""), quote=False)
+            # RSS and HTML may escape punctuation more than once. Match decoded
+            # text, then use the retained offsets to preserve the original XML.
+            reference, _ = feed_text(note.replace("`", ""))
             tag = TAG.search(reference)
             if tag:
                 def context(value):
@@ -118,10 +152,13 @@ def bump_text(text, version, plain=False, note=None):
                 # Match the complete source note, not another version in an item.
                 pin = INSTALL.search(updated)
                 tail = updated[pin.end():]
-                match = pattern.search(tail)
+                decoded, spans = feed_text(tail)
+                match = pattern.search(decoded)
                 if match:
-                    tail = tail[:match.start("tag")] + version + tail[match.end("tag"):]
-                elif TAG.search(tail):
+                    first = spans[match.start("tag")][0]
+                    last = spans[match.end("tag") - 1][1]
+                    tail = tail[:first] + version + tail[last:]
+                elif TAG.search(decoded):
                     raise SystemExit("RSS release note differs from source; regenerate the site")
                 updated = updated[:pin.end()] + tail
     else:
