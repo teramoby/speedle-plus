@@ -8,6 +8,14 @@
 - Log rotation retains the existing lumberjack dependency and exported
   `logging.LogConfig.RotationConfig` type for source compatibility. The v2
   migration is deferred to the logging redesign in #389.
+- Updated etcd client/server modules to v3.7.3 and their required indirect
+  dependencies. Client creation is now nonblocking: a successful constructor
+  does not establish endpoint readiness, and deprecated `grpc.WithBlock` is
+  ignored by etcd. Embedded etcd no longer supports legacy v2 discovery or v2
+  requests; deployments must follow etcd's 3.6-to-3.7 upgrade guidance. This
+  dependency update does not upgrade an externally managed etcd server.
+  logrus v1.9.4 and zap v1.27.1 are required module selections from etcd;
+  the logging implementation is unchanged.
 - Updated Gorilla mux/handlers to v1.8.1/v1.5.2, fsnotify to v1.10.1 and
   pflag to v1.1.0. Gorilla uses request contexts instead of gorilla/context;
   file watching includes upstream rename/watch fixes. pflag corrects typed
