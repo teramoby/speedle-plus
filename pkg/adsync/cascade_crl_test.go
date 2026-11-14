@@ -158,6 +158,37 @@ func TestCascadePinnedLeafWithRetainedFloorFailsClosed(t *testing.T) {
 	}
 }
 
+// TestCascadeCRLRequiresTheChainLeafIssuer covers a relay chain that presents
+// an intermediate while CAFile lists only the root. A root-issued CRL cannot
+// cover the leaf, and the error names the leaf's issuer. Listing the
+// intermediate makes it the trust anchor and trusts its CRL, which recovers.
+func TestCascadeCRLRequiresTheChainLeafIssuer(t *testing.T) {
+	root := newCascadePKI(t)
+	intermediate := newIntermediatePKI(t, root)
+	now := time.Now().Truncate(time.Second)
+	leaf, _, _ := intermediate.issue(t, 2, x509.ExtKeyUsageServerAuth, "127.0.0.1", now.Add(time.Hour))
+	leaf.Certificate = append(leaf.Certificate, intermediate.ca.Raw)
+	relay := cascadeServer(t, root, leaf, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		io.WriteString(w, `{"servicesVersion":1,"services":[]}`)
+	}))
+	config := cascadeConfig(t, root, relay.URL)
+	rootCRL := writeTestFile(t, t.TempDir(), "root.crl", root.crl(t, 0, 1, now.Add(-time.Minute), now.Add(time.Hour), false), 0600)
+	config.CRLFiles = []string{rootCRL}
+	client := mustCascadeClient(t, config)
+	if _, err := client.Services(context.Background()); err == nil || !strings.Contains(err.Error(), "cascade intermediate") {
+		t.Fatalf("root-only coverage accepted the chain: %v", err)
+	}
+	directory := filepath.Dir(config.CAFile)
+	bundle := append(append([]byte{}, root.pem...), intermediate.pem...)
+	config.CAFile = writeTestFile(t, directory, "bundle.pem", bundle, 0600)
+	intermediateCRL := writeTestFile(t, t.TempDir(), "intermediate.crl", intermediate.crl(t, 0, 1, now.Add(-time.Minute), now.Add(time.Hour), false), 0600)
+	config.CRLFiles = []string{rootCRL, intermediateCRL}
+	client = mustCascadeClient(t, config)
+	if _, err := client.Services(context.Background()); err != nil {
+		t.Fatalf("intermediate-anchored coverage: %v", err)
+	}
+}
+
 func TestCascadeCRLValidationAndReload(t *testing.T) {
 	pki := newCascadePKI(t)
 	certificate, _, _ := pki.issue(t, 2, x509.ExtKeyUsageServerAuth, "127.0.0.1", time.Now().Add(time.Hour))

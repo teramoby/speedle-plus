@@ -391,6 +391,7 @@ func (m *clientTLS) verifyConnection(state tls.ConnectionState) error {
 		return err
 	}
 	expiry := generation.certificate.Leaf.NotAfter
+	var missingIssuer string
 	for _, chain := range chains {
 		chainExpiry := expiry
 		valid := true
@@ -431,6 +432,9 @@ func (m *clientTLS) verifyConnection(state tls.ConnectionState) error {
 			// chains to a CAFile root, so the verified chain decides.
 			if !covered && (len(generation.crls) > 0 || m.retainsFloor(issuer)) {
 				valid = false
+				if missingIssuer == "" {
+					missingIssuer = issuer.Subject.String()
+				}
 			}
 		}
 		if !valid {
@@ -449,6 +453,9 @@ func (m *clientTLS) verifyConnection(state tls.ConnectionState) error {
 			connection.timer = time.AfterFunc(time.Until(chainExpiry), func() { connection.Close() })
 		}
 		return nil
+	}
+	if missingIssuer != "" {
+		return fmt.Errorf("adsync: relay certificate chain lacks fresh CRL coverage for issuer %q", missingIssuer)
 	}
 	return fmt.Errorf("adsync: relay certificate lacks fresh CRL coverage")
 }

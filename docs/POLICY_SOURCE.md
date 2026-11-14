@@ -62,7 +62,10 @@ addresses for relay certificate revocation checks. When either property is
 present, at least one source is required; omit both properties to disable
 optional revocation checking. For CRL verification,
 `CAFile` must contain each CRL issuer's CA certificate and the trust roots
-for HTTPS CRL hosts. This is one shared trust domain: every CA added to
+for HTTPS CRL hosts. A CRL is trusted only from a CA in `CAFile`, so a relay
+chain that presents an intermediate needs the leaf's issuer in `CAFile`, not
+only the root; that issuer then becomes the trust anchor, and fresh coverage is
+required for every certificate below it. This is one shared trust domain: every CA added to
 `CAFile` is trusted for both relay certificates and HTTPS CRL hosts. Adding a
 public or enterprise CA for a CRL host also expands relay trust to that CA.
 Use a CRL host under the relay's intended PKI, or download CRLs separately
