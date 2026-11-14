@@ -2,7 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 ROOT=$(git rev-parse --show-toplevel)
-REVISION=944c6217693107a4230263ea8d4c4cffa4858678
+REVISION=93fb93710a43e25f345ffa6d736cbbfeb67677aa
 GO_BIN="${GO_BIN:-go}"
 # Select the pinned toolchain even when the trusted worker preinstalls an
 # older Playground Go. This does not alter the worker or host configuration.
@@ -13,16 +13,13 @@ if [[ "$("$GO_BIN" env GOVERSION)" != go1.27.4 ]]; then
   echo 'Use Go 1.27.4 for a reproducible build (set GO_BIN=/path/to/go).' >&2
   exit 1
 fi
-# Build the real engine from an immutable archive. Later server/dependency edits
-# must not silently change the published browser engine or break its rebuild.
-git -C "$ROOT" cat-file -e "$REVISION^{commit}" || {
-  echo "Missing pinned engine commit $REVISION; fetch full repository history." >&2
-  exit 1
-}
+# Build from the checked-in, checksum-pinned source archive. It is independent
+# of Git commit availability after a squash merge or branch deletion.
+python3 "$ROOT/website/playground-engine/engine-source.py" verify "$REVISION"
 grep -Fq "const Revision = \"$REVISION\"" playground/evaluate.go
 BUILD_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/speedle-playground.XXXXXXXX")
 trap 'rm -rf "$BUILD_ROOT"' EXIT
-git -C "$ROOT" archive "$REVISION" api pkg 3rdparty go.mod go.sum LICENSE THIRD_PARTY_LICENSES.txt | tar -x -C "$BUILD_ROOT"
+tar -xzf "$ROOT/website/playground-engine/engine-source.tar.gz" -C "$BUILD_ROOT"
 mkdir -p "$BUILD_ROOT/website/playground-engine"
 cp -R cmd playground go.mod go.sum "$BUILD_ROOT/website/playground-engine/"
 OUT="$ROOT/docs/hugo/static/playground"

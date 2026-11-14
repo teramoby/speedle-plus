@@ -111,6 +111,10 @@ appropriate access before switching versions.
 Remove Engine logrus imports, test hooks, demo usage and the old lumberjack
 module. Migrate the playground adapter's logrus use too so its module can tidy
 away logrus; update its logging capture without changing evaluation results.
+The browser build uses a checked-in, SHA-256-pinned archive of the unmodified
+Engine source at the documented revision. Verify its embedded revision before
+extracting it. This keeps shallow clones and post-squash builds reproducible
+without relying on an otherwise unreachable PR commit.
 Do not hand-edit generated website assets. Read `website/DESIGN.md` before any
 website change and follow the repository generation process.
 
