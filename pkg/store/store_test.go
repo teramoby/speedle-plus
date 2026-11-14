@@ -53,6 +53,10 @@ func TestRegistry(t *testing.T) {
 	if _, err := NewStore("missing", nil); errors.Code(err) != errors.ConfigError {
 		t.Errorf("NewStore(missing) = %v", err)
 	}
+	Register("policy-source", fakeBuilder{})
+	if _, err := NewStore("policy-source", nil); errors.Code(err) != errors.StoreError || !strings.Contains(err.Error(), "fake") {
+		t.Errorf("registered policy-source builder error = %v", err)
+	}
 }
 
 func TestRemovedPolicySourceStore(t *testing.T) {

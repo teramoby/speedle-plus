@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
+	"os/exec"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -116,13 +118,64 @@ func (g *exampleGate) Audit(_ context.Context, event gate.Event) {
 }
 
 func TestExternalStoreGateAndServer(t *testing.T) {
+	testExternalStoreGateAndServer(t, "extension-server-"+suid.New().String())
+}
+
+func TestRegisteredPolicySourceStore(t *testing.T) {
+	// Register is process-wide and intentionally has no public unregister hook.
+	// Isolate the fixed name so migration tests and -count runs stay independent.
+	if os.Getenv("SPEEDLE_TEST_REGISTER_POLICY_SOURCE") == "1" {
+		testExternalStoreGateAndServer(t, "policy-source")
+		return
+	}
+	executable, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	command := exec.CommandContext(ctx, executable, "-test.run=^TestRegisteredPolicySourceStore$", "-test.timeout=25s")
+	command.Env = append(os.Environ(), "SPEEDLE_TEST_REGISTER_POLICY_SOURCE=1")
+	if output, err := command.CombinedOutput(); err != nil {
+		t.Fatalf("registered policy-source integration: %v\n%s", err, output)
+	}
+}
+
+func TestUnregisteredPolicySourceEvaluator(t *testing.T) {
+	conf := &cfg.Config{StoreConfig: &cfg.StoreConfig{StoreType: "policy-source"}}
+	evaluator, err := eval.NewFromConfig(conf)
+	if evaluator != nil || err == nil || !strings.Contains(err.Error(), "v1.8.0") || !strings.Contains(err.Error(), "policy-source") {
+		t.Fatalf("unregistered policy-source: evaluator=%v, error=%v", evaluator, err)
+	}
+}
+
+func testExternalStoreGateAndServer(t *testing.T, name string) {
+	t.Helper()
 	g := &exampleGate{}
 	s := &exampleStore{gate: g, events: make(pms.StorageChangeChannel, 1)}
-	name := "extension-server-" + suid.New().String()
-	store.Register(name, builder{s})
+	b := &builder{s}
+	store.Register(name, b)
 	if store.GetAllStoreParams()["extension-test-option"] != "Option" {
 		t.Fatal("store flags not registered")
 	}
+	conf := &cfg.Config{StoreConfig: &cfg.StoreConfig{StoreType: name}}
+	evaluator, err := eval.NewFromConfig(conf)
+	if err != nil {
+		t.Fatalf("NewFromConfig: %v", err)
+	}
+	if evaluator.(*eval.PolicyEvalImpl).DistributionStore() != s {
+		t.Error("NewFromConfig did not construct the registered store")
+	}
+	if err := evaluator.(*eval.PolicyEvalImpl).Close(); err != nil {
+		t.Fatal(err)
+	}
+	close(s.events)
+	if s.reads.Load() != 1 || s.watched.Load() != 1 || s.stopped.Load() != 1 || s.closed.Load() != 1 {
+		t.Fatalf("NewFromConfig lifecycle: %+v", s)
+	}
+	// Run must construct its own store, with the same public registration.
+	s = &exampleStore{gate: g, events: make(pms.StorageChangeChannel, 1)}
+	b.s = s
 	rest, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatal(err)
@@ -135,7 +188,7 @@ func TestExternalStoreGateAndServer(t *testing.T) {
 	params.Insecure.Value = "true"
 	asserter := assertion.NewTestServer(t, nil)
 	defer asserter.Close()
-	conf := &cfg.Config{StoreConfig: &cfg.StoreConfig{StoreType: name}, AsserterWebhookConfig: &assertion.AsserterConfig{Endpoint: asserter.URL + "/assert"}}
+	conf.AsserterWebhookConfig = &assertion.AsserterConfig{Endpoint: asserter.URL + "/assert"}
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan error, 1)
 	var rpcCalls atomic.Int32

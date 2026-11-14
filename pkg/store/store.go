@@ -77,13 +77,13 @@ func GetAllStoreParams() map[string]string {
 }
 
 func NewStore(storeType string, storeConfig map[string]interface{}) (pms.PolicyStoreManager, error) {
-	if storeType == "policy-source" {
-		return nil, errors.New(errors.ConfigError, "store type \"policy-source\" was removed in v1.8.0; configure a supported policy store")
-	}
 	storeBuildersMu.RLock()
 	storeBuilder, ok := storeBuilders[storeType]
 	storeBuildersMu.RUnlock()
 	if !ok {
+		if storeType == "policy-source" {
+			return nil, errors.New(errors.ConfigError, "store type \"policy-source\" was removed in v1.8.0; configure a supported policy store")
+		}
 		return nil, errors.Errorf(errors.ConfigError, "unknown store type %q (forgotten import?)", storeType)
 	}
 	return storeBuilder.NewStore(storeConfig)
