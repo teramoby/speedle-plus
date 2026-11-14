@@ -108,8 +108,11 @@ Maintainers merge in this order:
 
 Before changing routing, run `actionlint` on the modified workflows and
 `node --test scripts/tests/test_ci_scope.cjs scripts/tests/test_go_ci_worker.cjs`.
-Workflow and script changes also run these routing tests in the hosted
-`changes` job on both the quick and full routes.
+Workflow and script changes run all CI script suites in the hosted `changes`
+job on both the quick and full routes: `node --test scripts/tests/*.cjs` and
+`python3 -m unittest discover -s scripts/tests -p 'test_*.py'`. Use an empty
+`DOCKER_CONFIG` directory when running the Node suites locally so container
+fixtures cannot read the host's Docker credentials.
 
 The nightly suite runs the same full regression, every Go package plus the
 tagged ADS authorization/cache tests against native PMS/ADS, once each with the

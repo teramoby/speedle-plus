@@ -85,6 +85,45 @@ function script(source, name) {
   return source.split(`      - name: ${name}\n`)[1].split(/^      - /m)[0]
     .split('        run: |\n')[1].split('\n').filter((line, i, lines) => lines.slice(0, i + 1).every(item => !item || item.startsWith('          '))).map(line => line.slice(10)).join('\n').trimEnd();
 }
+test('CI discovers every script suite, isolates Docker config and propagates failures', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-script-suites-'));
+  try {
+    fs.mkdirSync(path.join(dir, 'bin'));
+    fs.mkdirSync(path.join(dir, 'scripts/tests'), {recursive: true});
+    // Include new filenames to catch a return to an explicit subset of suites.
+    const suites = [...fs.readdirSync(path.join(root, 'scripts/tests')).filter(name => name.endsWith('.cjs')), 'test_future.cjs'].sort();
+    for (const suite of suites) fs.writeFileSync(path.join(dir, 'scripts/tests', suite), '');
+    fs.writeFileSync(path.join(dir, 'scripts/tests/test_future.py'), '');
+    const record = path.join(dir, 'calls');
+    for (const tool of ['node', 'python3']) {
+      fs.writeFileSync(path.join(dir, 'bin', tool), `#!${process.execPath}
+const fs = require('node:fs');
+const config = process.env.DOCKER_CONFIG;
+fs.appendFileSync(process.env.RECORD, JSON.stringify({tool: ${JSON.stringify(tool)}, args: process.argv.slice(2), config, files: fs.readdirSync(config)}) + '\\n');
+process.exit(process.env.FAIL_TOOL === ${JSON.stringify(tool)} ? 7 : 0);
+`);
+      fs.chmodSync(path.join(dir, 'bin', tool), 0o755);
+    }
+    const block = job('changes');
+    assert.match(block, /name: Test CI scripts\n        if: steps.scope.outputs.ci == 'true'/);
+    assert.ok(block.indexOf('Setup Node for CI script tests') < block.indexOf('Test CI scripts'));
+    for (const failure of ['', 'node', 'python3']) {
+      fs.writeFileSync(record, '');
+      const result = spawnSync('bash', ['-c', script(ci, 'Test CI scripts')], {cwd: dir, encoding: 'utf8', env: {...process.env,
+        PATH: path.join(dir, 'bin') + path.delimiter + process.env.PATH, RECORD: record, FAIL_TOOL: failure, DOCKER_CONFIG: '/unused-host-config'}});
+      assert.equal(result.status, failure ? 7 : 0, result.stderr);
+      const calls = fs.readFileSync(record, 'utf8').trim().split('\n').map(JSON.parse);
+      assert.deepEqual(calls[0].args, ['--test', ...suites.map(name => `scripts/tests/${name}`)]);
+      assert.equal(calls.length, failure === 'node' ? 1 : 2);
+      if (calls.length === 2) assert.deepEqual(calls[1].args, ['-m', 'unittest', 'discover', '-s', 'scripts/tests', '-p', 'test_*.py']);
+      for (const call of calls) {
+        assert.notEqual(call.config, '/unused-host-config');
+        assert.deepEqual(call.files, []);
+        assert.equal(fs.existsSync(call.config), false, 'temporary Docker config must be cleaned on success and failure');
+      }
+    }
+  } finally {fs.rmSync(dir, {recursive: true, force: true});}
+});
 test('actual summary blocks failed/cancelled/missing selected jobs and allows intentional skips', () => {
   for (const full of [false, true]) {
     for (const content of [false, true]) {

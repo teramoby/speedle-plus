@@ -37,7 +37,7 @@ jobs:
       && (github.event.action != 'labeled'
       || github.event.label.name == 'full-ci' || github.event.label.name == 'merge-head')
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     outputs:
       full: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'full-ci') || contains(github.event.pull_request.labels.*.name, 'merge-head') }}
       go: ${{ steps.scope.outputs.go }}
@@ -88,16 +88,22 @@ jobs:
           } >> "${GITHUB_OUTPUT}"
           echo "Go: ${go}; website tooling: ${website}; docs: ${docs}"
 
-      - name: Setup Node for workflow routing tests
+      - name: Setup Node for CI script tests
         if: steps.scope.outputs.ci == 'true'
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
         with:
           node-version: '22'
           package-manager-cache: false
 
-      - name: Test workflow routing
+      - name: Test CI scripts
         if: steps.scope.outputs.ci == 'true'
-        run: node --test scripts/tests/test_ci_scope.cjs scripts/tests/test_go_ci_worker.cjs
+        run: |
+          set -euo pipefail
+          DOCKER_CONFIG=$(mktemp -d)
+          export DOCKER_CONFIG
+          trap 'rm -rf "${DOCKER_CONFIG}"' EXIT
+          node --test scripts/tests/*.cjs
+          python3 -m unittest discover -s scripts/tests -p 'test_*.py'
 
   lint:
     name: lint
