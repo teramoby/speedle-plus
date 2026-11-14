@@ -29,6 +29,7 @@ import (
 type conditionCase struct {
 	section, row, op, name, expression string
 	effect                             string
+	errorMessage                       string
 	attributes                         []*adsrest.JsonAttribute
 	want                               bool
 	difference                         string
@@ -108,6 +109,9 @@ func conditionCases() []conditionCase {
 		for _, op := range []string{"==", "!=", ">", ">=", "<", "<=", "=~", "&&", "||"} {
 			// known difference, behaviour pinned: != compares different types as unequal.
 			add("2.1", kind, "mismatch-"+op, "wrong-type", "x "+op+" y", (op == "!=" || kind == "bool" && op == "||"), attr("x", kind, value), attr("y", otherKind, other))
+			if op == "!=" || kind == "bool" && op == "||" {
+				cases[len(cases)-1].difference = "known difference, behaviour pinned"
+			}
 		}
 	}
 	// Every built-in attribute uses every operator valid for its injected type.
@@ -185,6 +189,8 @@ func conditionCases() []conditionCase {
 		fn, expression, name string
 		want                 bool
 	}{
+		{"unregistered", `f\oo(1)`, "escaped-unknown", false},
+		{"unregistered", `!f\oo(1)`, "negated-escaped-unknown", false},
 		{"Sqrt", "Sqrt(9) == 3", "normal", true}, {"Sqrt", "Sqrt(9) == 4", "nonmatch", false},
 		{"Sqrt", "Sqrt(0) == 0", "zero", true}, {"Sqrt", "Sqrt(-1) == 0", "negative", false},
 		{"Sqrt", "Sqrt() == 0", "empty", false}, {"Sqrt", "Sqrt(1,2) == 1", "arity", false},
@@ -222,6 +228,12 @@ func conditionCases() []conditionCase {
 		{"IsSubSet", "IsSubSet((1,2),(1,'a'))", "mixed-last", false},
 	} {
 		add("2.4", c.fn, "call", c.name, c.expression, c.want, attr("huge", "numeric", 1.7976931348623157e308), attr("empty", "numeric", []interface{}{}))
+		if c.fn == "unregistered" {
+			cases[len(cases)-1].errorMessage = "Undefined function foo"
+		}
+		if c.name == "scaled-rounding-overflow" || c.name == "flattened-array" || c.name == "flattened-first" {
+			cases[len(cases)-1].difference = "known difference, behaviour pinned"
+		}
 	}
 	for _, fn := range []string{"Sqrt", "Max", "Min", "Sum", "Avg"} {
 		for _, value := range []string{"'a'", "true", "(1,2)", "0/0", "1/0", "-1/0"} {
@@ -336,7 +348,14 @@ func TestConditionConformance(t *testing.T) {
 			} else if c.effect == pms.Deny {
 				expectedReason = ads.DENY_POLICY_FOUND
 			}
-			if err != nil || direct != c.want || reason != expectedReason {
+			if c.errorMessage != "" {
+				expectedReason = ads.ERROR_IN_EVALUATION
+			}
+			actualError := ""
+			if err != nil {
+				actualError = err.Error()
+			}
+			if actualError != c.errorMessage || direct != c.want || reason != expectedReason {
 				t.Errorf("direct %q: allowed=%v reason=%v err=%v; want %v/%v", c.expression, direct, reason, err, c.want, expectedReason)
 			}
 			body, err := json.Marshal(map[string]interface{}{"serviceName": service.Name, "resource": ctx.Resource, "action": ctx.Action, "subject": subject, "attributes": c.attributes})
@@ -352,7 +371,7 @@ func TestConditionConformance(t *testing.T) {
 			if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
 				t.Fatal(err)
 			}
-			if got.Allowed != c.want || got.Allowed != direct || got.Reason != int32(reason) || got.ErrorMessage != "" {
+			if got.Allowed != c.want || got.Allowed != direct || got.Reason != int32(reason) || got.ErrorMessage != c.errorMessage {
 				t.Errorf("REST %q: %+v; direct=%v/%v want=%v", c.expression, got, direct, reason, c.want)
 			}
 		})
@@ -394,7 +413,7 @@ func TestConditionConformanceMatrix(t *testing.T) {
 		}
 		t.Log(line + fmt.Sprintf(" %d |", other-total))
 	}
-	t.Log("Known differences (name / expression / expected authorization):")
+	t.Log("Known differences / open deviations (name / expression / expected authorization):")
 	for _, c := range conditionCases() {
 		if c.difference != "" {
 			t.Logf("Difference: %s/%s/%s: %s => %v (%s)", c.row, c.op, c.name, c.expression, c.want, c.difference)

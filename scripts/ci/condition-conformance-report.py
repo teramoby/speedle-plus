@@ -73,9 +73,12 @@ UNREACHABLE = {'EvaluableExpression.go': {('82.3,83.1', 1): 'Validated token kin
                                          'value with nil error.',
                      ('697.3,698.1', 1): 'LITERAL stages use makeLiteralStage, whose closure always returns a '
                                          'value with nil error.',
-                     ('718.3,719.1', 1): 'Both operands are validated literals. Pure operators cannot return an '
-                                         'error after type checks; literal regex errors were rejected by '
-                                         'optimizeTokens. Functions/accessors are not LITERAL.'}}
+                     ('718.3,719.1', 1): 'This is the root.operator error return after the elideStage type '
+                                         'checks at lines 701-713. Literal type errors such as true+false '
+                                         'exit at those earlier checks and are later reported by Evaluate; '
+                                         'they never reach this return. Pure well-typed operators return nil '
+                                         'errors; literal regex errors were rejected by optimizeTokens. '
+                                         'Functions/accessors are not LITERAL.'}}
 
 # Bind the audit to source contents as well as coverage spans. A source edit
 # requires an explicit reachability re-audit even if its line numbers survive.
@@ -181,7 +184,7 @@ def report(profile, matrix=None):
             match = re.search(r'condition_conformance_test.go:\d+:\s?(.*)', line)
             if match:
                 content = match.group(1).strip()
-                if content.startswith('|') or content.startswith('Section '):
+                if content.startswith(('|', 'Section ', 'Known differences', 'Difference:')):
                     print(content)
             elif line.strip().startswith('|'):
                 print(line.strip())

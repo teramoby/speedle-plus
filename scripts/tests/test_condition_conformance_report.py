@@ -14,7 +14,7 @@ spec.loader.exec_module(reporter)
 
 
 class ConditionCoverageReportTest(unittest.TestCase):
-    def run_report(self, extra='', omit=None, go126=False):
+    def run_report(self, extra='', omit=None, go126=False, matrix=None):
         files = ['pkg/eval/condition/condition.go', 'pkg/eval/function/builtin_functions.go']
         files += [reporter.FORK + name for name in (
             'EvaluableExpression.go', 'parsing.go', 'stagePlanner.go',
@@ -35,8 +35,12 @@ class ConditionCoverageReportTest(unittest.TestCase):
                 f'github.com/teramoby/speedle-plus/{file}:1.1,1.2 1 1\n' for file in files
             ) + annotations + extra)
             output = io.StringIO()
+            matrix_file=None
+            if matrix is not None:
+                matrix_file=Path(directory) / 'matrix.log'
+                matrix_file.write_text(matrix)
             with contextlib.redirect_stdout(output):
-                failed = reporter.report(profile)
+                failed = reporter.report(profile,matrix_file)
             return failed, output.getvalue()
 
     def test_duplicate_blocks_are_merged_not_added(self):
@@ -96,3 +100,12 @@ class ConditionCoverageReportTest(unittest.TestCase):
             f'github.com/teramoby/speedle-plus/{reporter.FORK}parsing.go:48.17,50.4 1 0\n')
         self.assertTrue(failed)
         self.assertIn('mixed coverage layouts', output)
+
+    def test_known_differences_are_in_generated_report(self):
+        failed, output = self.run_report(matrix=(
+            '    condition_conformance_test.go:1: Known differences (name / expression / expected authorization):\n'
+            '    condition_conformance_test.go:2: Difference: string/mismatch-!=/wrong-type: x != y => true (known difference, behaviour pinned)\n'
+            '    condition_conformance_test.go:3: Section 2.1: 196 cases\n'))
+        self.assertFalse(failed, output)
+        self.assertIn('Known differences (name / expression / expected authorization):', output)
+        self.assertIn('Difference: string/mismatch-!=/wrong-type', output)
