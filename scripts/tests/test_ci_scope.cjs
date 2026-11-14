@@ -137,8 +137,11 @@ test('change classification preserves raw Git paths and fails on diff errors', (
     }
     assert.equal(classify(previous).output, flags(true, true, true, true), 'mixed paths');
     assert.equal(classify(previous, {PR_BASE: previous}).output, flags(false, false, false, false), 'empty diff');
+    const push = classify(previous, {EVENT_NAME: 'push', PR_BASE: 'missing', PUSH_BEFORE: previous});
+    assert.equal(push.status, 0, push.stderr);
+    assert.equal(push.output, flags(false, false, false, false), 'push uses PUSH_BEFORE, not PR_BASE or the fallback');
     for (const overrides of [{EVENT_NAME: 'workflow_dispatch'}, {PR_BASE: ''},
-      {PR_BASE: '0'.repeat(40)}, {PR_BASE: 'missing'}, {EVENT_NAME: 'push'}]) {
+      {PR_BASE: '0'.repeat(40)}, {PR_BASE: 'missing'}]) {
       const result = classify(previous, overrides);
       assert.equal(result.status, 0, result.stderr);
       assert.equal(result.output, flags(true, true, true, true));
