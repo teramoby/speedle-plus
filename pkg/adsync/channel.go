@@ -880,9 +880,10 @@ func (c *Channel) heartbeatMessage(transport Transport) channelHeartbeat {
 
 func (c *Channel) channelURL() string {
 	target := *c.client.channelBase()
-	target.Scheme = "wss"
 	if target.Scheme == "http" {
 		target.Scheme = "ws"
+	} else {
+		target.Scheme = "wss"
 	}
 	target.Path = target.Path + APIPrefix + "/channel"
 	target.RawQuery = ""

@@ -113,7 +113,8 @@ type Config struct {
 	// https://cloud.speedle.io. HTTPS is required; a non-443 port is allowed
 	// for testing and internal proxies.
 	BaseURL string
-	// UpstreamURLs is the ordered cascade list; BaseURL must be its first entry.
+	// UpstreamURLs is the ordered cascade list; BaseURL must match its first
+	// entry after canonicalization.
 	UpstreamURLs []string
 	// APIKey selects direct mode and authenticates every request: synchronization, the channel and
 	// forwarded authorization requests. It is sent only in the Authorization
@@ -271,6 +272,11 @@ func NewClientContext(ctx context.Context, config Config) (*Client, error) {
 	upstreams, err := parseUpstreams(config, base)
 	if err != nil {
 		return nil, err
+	}
+	// Channel/data URLs and per-authority HTTP pools share one canonical list.
+	config.UpstreamURLs = make([]string, len(upstreams))
+	for i, upstream := range upstreams {
+		config.UpstreamURLs[i] = upstream.String()
 	}
 
 	requestTimeout := config.RequestTimeout

@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	log "github.com/sirupsen/logrus"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -134,7 +135,7 @@ func TestCascadeOrderedFailoverAndPreferredRecovery(t *testing.T) {
 			// The alternate has only a DNS SAN, unlike the primary's IP SAN. Each
 			// transport must verify the selected URL's host rather than the first host.
 			alternate := failoverSource(t, pki, "localhost", func() (int, channelAck) { mark("alternate"); return 200, good })
-			alternateURL := strings.Replace(alternate.URL, "127.0.0.1", "localhost", 1)
+			alternateURL := strings.Replace(alternate.URL, "127.0.0.1", "LOCALHOST", 1)
 			config := cascadeConfig(t, pki, primary.URL)
 			config.UpstreamURLs = []string{primary.URL, wrongTLS.URL, denied.URL, stale.URL, syncing.URL, older.URL, alternateURL}
 			client := mustCascadeClient(t, config)
@@ -145,7 +146,7 @@ func TestCascadeOrderedFailoverAndPreferredRecovery(t *testing.T) {
 			channel.failbackInterval = 200 * time.Millisecond
 			runChannel(t, channel)
 			waitFor(t, 5*time.Second, "healthy alternate", func() bool {
-				return client.selectedBase().String() == alternateURL && machine.Instance().Liveness == LivenessLive
+				return client.selectedBase().String() == strings.ToLower(alternateURL) && machine.Instance().Liveness == LivenessLive
 			})
 			if _, err := client.Services(context.Background()); err != nil {
 				t.Fatalf("alternate HTTPS host verification: %v", err)
@@ -812,5 +813,48 @@ func TestCascadeFailureWarningsAreRateLimitedAndRedacted(t *testing.T) {
 	}
 	if strings.Contains(message, "private-prefix") || strings.Contains(message, testAPIKey) {
 		t.Fatal("warning exposed a path or credential")
+	}
+}
+
+func TestCascadeCanonicalTransportSupportsDefaultPortAlternate(t *testing.T) {
+	pki := newCascadePKI(t)
+	cert, _, _ := pki.issue(t, 121, x509.ExtKeyUsageServerAuth, "localhost", time.Now().Add(time.Hour))
+	server := cascadeServer(t, pki, cert, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Host != "localhost" {
+			t.Errorf("noncanonical authority: %s", r.Host)
+		}
+		_ = json.NewEncoder(w).Encode(ServicesResponse{ServicesVersion: 1, Services: []Service{}})
+	}))
+	config := cascadeConfig(t, pki, "https://PRIMARY.example:443/")
+	config.UpstreamURLs = []string{config.BaseURL, "https://LOCALHOST:443/"}
+	client := mustCascadeClient(t, config)
+	transports, ok := client.http.Transport.(upstreamTransport)
+	if !ok {
+		t.Fatal("multiple upstreams did not create authority pools")
+	}
+	alternate := transports["localhost"]
+	if alternate == nil {
+		t.Fatal("canonical alternate authority has no transport")
+	}
+	// Route the default-port URL to an ephemeral listener without binding 443.
+	// TLS still verifies the request's localhost SAN and managed client cert.
+	alternate.DialContext = func(ctx context.Context, network, _ string) (net.Conn, error) {
+		return client.tlsMaterial.dialContext(ctx, network, server.Listener.Addr().String())
+	}
+	client.selectEndpoint(client.upstreams[1], func() {})
+	client.approveCandidate()
+	if _, err := client.Services(context.Background()); err != nil {
+		t.Fatalf("canonical alternate HTTPS request: %v", err)
+	}
+}
+
+func TestChannelURLPreservesSourceTransportScheme(t *testing.T) {
+	for _, tc := range []struct{ source, want string }{{"http", "ws"}, {"https", "wss"}} {
+		client := &Client{base: &url.URL{Scheme: tc.source, Host: "source.example", Path: "/relay"}}
+		channel := &Channel{client: client}
+		want := tc.want + "://source.example/relay" + APIPrefix + "/channel"
+		if got := channel.channelURL(); got != want {
+			t.Fatalf("%s channel URL = %s, want %s", tc.source, got, want)
+		}
 	}
 }
