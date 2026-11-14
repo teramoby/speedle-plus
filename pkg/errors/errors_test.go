@@ -59,8 +59,8 @@ func TestStandardErrorChain(t *testing.T) {
 	if goerrors.Unwrap(wrapped) != root {
 		t.Fatal("Unwrap lost the direct cause")
 	}
-	if Cause(outer) != os.ErrNotExist {
-		t.Fatalf("Cause did not traverse standard wrappers: %v", Cause(outer))
+	if Cause(outer) != outer {
+		t.Fatalf("Cause must preserve a standard wrapper: %v", Cause(outer))
 	}
 	if Code(outer) != UnknownError {
 		t.Fatal("Code's direct error semantics changed")
@@ -74,7 +74,7 @@ func (e legacyCause) Cause() error  { return e.cause }
 
 func TestCauseCompatibility(t *testing.T) {
 	root := goerrors.New("disk full")
-	for _, err := range []error{root, Wrap(Wrap(root, StoreError, "inner"), ConfigError, "outer"), legacyCause{root}, fmt.Errorf("outer: %w", legacyCause{root})} {
+	for _, err := range []error{root, Wrap(Wrap(root, StoreError, "inner"), ConfigError, "outer"), legacyCause{root}} {
 		if Cause(err) != root {
 			t.Fatalf("Cause(%v) = %v", err, Cause(err))
 		}
@@ -93,5 +93,23 @@ func TestCauseCompatibility(t *testing.T) {
 	var pathErr *os.PathError
 	if goerrors.As(Wrap(root, StoreError, "write"), &pathErr) {
 		t.Fatal("unrelated type matched")
+	}
+}
+
+// github.com/pkg/errors.Cause stopped at standard-library wrappers. Preserve
+// that result even when the wrapped Speedle/legacy error has a nil Cause.
+func TestCausePreservesStandardWrappers(t *testing.T) {
+	root := goerrors.New("disk full")
+	for _, inner := range []error{New(StoreError, "no cause"), legacyCause{}, legacyCause{root}, Wrap(root, StoreError, "write"), &os.PathError{Op: "open", Path: "policy.json", Err: root}} {
+		wrapped := fmt.Errorf("load: %w", inner)
+		if Cause(wrapped) != wrapped {
+			t.Fatalf("Cause(%v) = %v, want unchanged wrapper", wrapped, Cause(wrapped))
+		}
+		if Cause(Wrap(wrapped, ConfigError, "config")) != wrapped {
+			t.Fatal("legacy traversal must stop at the standard wrapper")
+		}
+		if !goerrors.Is(wrapped, inner) || !goerrors.Is(Wrap(wrapped, ConfigError, "config"), inner) {
+			t.Fatal("standard errors.Is must still traverse both wrapper types")
+		}
 	}
 }

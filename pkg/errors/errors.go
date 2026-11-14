@@ -4,7 +4,6 @@
 package errors
 
 import (
-	stderrors "errors"
 	"fmt"
 )
 
@@ -37,20 +36,15 @@ func (e *speedleError) Code() ErrorCode {
 	return e.code
 }
 
-// Cause returns the cause error of this error
+// Cause returns the deepest legacy Cause() error, preserving the historical
+// traversal contract. Use standard errors.Is/As for chains containing %w wrappers.
 func Cause(err error) error {
-	// Keep compatibility with callers implementing the historical Cause method,
-	// including its nil-cause behavior, and traverse standard %w wrappers too.
 	for err != nil {
-		if legacy, ok := err.(interface{ Cause() error }); ok {
-			err = legacy.Cause()
-			continue
+		legacy, ok := err.(interface{ Cause() error })
+		if !ok {
+			break
 		}
-		if next := stderrors.Unwrap(err); next != nil {
-			err = next
-			continue
-		}
-		break
+		err = legacy.Cause()
 	}
 	return err
 }
