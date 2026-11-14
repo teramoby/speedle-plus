@@ -2,13 +2,15 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 ROOT=$(git rev-parse --show-toplevel)
-REVISION=dd628a6df3f2ce46126896c1322cb6ef21f75449
+REVISION=944c6217693107a4230263ea8d4c4cffa4858678
 GO_BIN="${GO_BIN:-go}"
-export GOTOOLCHAIN=local
+# Select the pinned toolchain even when the trusted worker preinstalls an
+# older Playground Go. This does not alter the worker or host configuration.
+export GOTOOLCHAIN=go1.27.4
 # The build tree is a git archive; never read VCS state from an enclosing checkout.
 export GOFLAGS=-buildvcs=false
-if [[ "$("$GO_BIN" env GOVERSION)" != go1.26.3 ]]; then
-  echo 'Use Go 1.26.3 for a reproducible build (set GO_BIN=/path/to/go).' >&2
+if [[ "$("$GO_BIN" env GOVERSION)" != go1.27.4 ]]; then
+  echo 'Use Go 1.27.4 for a reproducible build (set GO_BIN=/path/to/go).' >&2
   exit 1
 fi
 # Build the real engine from an immutable archive. Later server/dependency edits
@@ -24,6 +26,9 @@ git -C "$ROOT" archive "$REVISION" api pkg 3rdparty go.mod go.sum LICENSE THIRD_
 mkdir -p "$BUILD_ROOT/website/playground-engine"
 cp -R cmd playground go.mod go.sum "$BUILD_ROOT/website/playground-engine/"
 OUT="$ROOT/docs/hugo/static/playground"
+# License files are generated from the actual dependency graph. Remove stale
+# notices when a dependency disappears from the WASM build.
+rm -rf "$OUT/licenses"
 mkdir -p "$OUT/licenses"
 cd "$BUILD_ROOT/website/playground-engine"
 "$GO_BIN" test -count=1 -mod=readonly ./playground
@@ -44,6 +49,7 @@ GOOS=js GOARCH=wasm "$GO_BIN" list -mod=readonly -deps -f '{{with .Module}}{{.Pa
   done
 done
 # Hugo source is authoritative; GitHub Pages serves the checked-in docs copy.
+rm -rf "$ROOT/docs/playground/licenses"
 cp -R "$OUT/." "$ROOT/docs/playground/"
 mkdir -p "$ROOT/docs/zh/playground"
 cp "$ROOT/docs/hugo/static/zh/playground/index.html" "$ROOT/docs/zh/playground/index.html"
