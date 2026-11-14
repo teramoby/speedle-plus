@@ -18,4 +18,7 @@ bref = "使用自定义策略存储或服务适配器。"
 存储可实现 `gate.GateProvider.RequestGate() gate.Gate`，REST 和 gRPC 会通过求值器的底层存储访问器发现它。嵌入式调用者可用 `eval.NewWithStore`，再调用 `adsrest.NewRouter(evaluator, adsrest.WithGate(g))` 或 `adsgrpc.NewGRPCService(evaluator, adsgrpc.WithGate(g))`。省略选项会发现存储提供的门控；显式 nil 禁用门控。没有门控时，本地行为不变。
 
 明确存储生命周期：`store.WatchRequirement.RequireWatch()` 即使在配置关闭监听时也会强制订阅。可选的 `ReadPolicyStoreForReload() (*pms.PolicyStore, func(), error)` 提供快照和确认回调，只有安装成功后才调用回调。`(*eval.PolicyEvalImpl).DistributionStore()` 为适配器提供底层存储。关闭求值器会停止监听并关闭可关闭的存储；`ads.Run` 负责此清理。显式传入的门控由调用者管理。
+
+取消上下文时先停止 gRPC，再给 HTTP 请求五秒宽限期，之后关闭活动连接。`ads.WithShutdownTimeout(d)` 可设置正的宽限期；自定义处理器和门控应响应请求上下文的取消。两个协议均在本地令牌断言之前分流：后备收到原始令牌和主体信息，自行负责认证；本地路径保留正常断言。求值错误始终将 `Allowed` 清为 false，`Reason` 设为 `ERROR_IN_EVALUATION`，并审计 `evaluation_error`，即使后备响应声称允许。
+
 参见[仅供测试的外部存储与门控示例](https://github.com/teramoby/speedle-plus/blob/master/pkg/ads/extensions_test.go)、[存储接口](https://github.com/teramoby/speedle-plus/tree/master/pkg/store)和[嵌入式部署](/zh/docs/deployment/embedded/)。

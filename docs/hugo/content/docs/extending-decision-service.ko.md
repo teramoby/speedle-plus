@@ -18,4 +18,7 @@ bref = "사용자 정의 정책 저장소나 서비스 어댑터를 사용합니
 저장소가 `gate.GateProvider.RequestGate() gate.Gate`를 구현하면 REST와 gRPC가 평가기의 저장소 접근자로 이를 탐색합니다. 임베디드 환경은 `eval.NewWithStore` 후 `adsrest.NewRouter(evaluator, adsrest.WithGate(g))` 또는 `adsgrpc.NewGRPCService(evaluator, adsgrpc.WithGate(g))`를 사용할 수 있습니다. 옵션 생략 시 저장소 게이트를 탐색하고 명시적인 nil은 비활성화합니다. 게이트가 없으면 로컬 동작은 그대로입니다.
 
 `store.WatchRequirement.RequireWatch()`는 설정에서 감시를 꺼도 구독을 강제합니다. 선택적인 `ReadPolicyStoreForReload() (*pms.PolicyStore, func(), error)`는 스냅샷과 설치 성공 후에만 호출되는 확인 콜백을 제공합니다. `(*eval.PolicyEvalImpl).DistributionStore()`는 어댑터에 기반 저장소를 제공합니다. 평가기를 닫으면 감시를 중지하고 닫을 수 있는 저장소를 닫습니다. `ads.Run`이 정리하며 명시적으로 전달한 게이트는 호출자가 소유합니다.
+
+취소 시 gRPC를 먼저 중지하고 HTTP 요청에 5초의 유예 기간을 준 뒤 연결을 닫습니다. `ads.WithShutdownTimeout(d)`로 양의 유예 기간을 설정합니다. 자체 핸들러와 게이트는 요청 컨텍스트 취소를 따라야 합니다. 두 프로토콜 모두 로컬 토큰 검증 전에 경로를 선택하며 대체 처리는 원래 토큰과 주체의 인증을 담당합니다. 로컬 경로는 정상 검증을 유지합니다. 평가 오류가 있으면 응답이 허용을 주장해도 `Allowed`를 false, `Reason`을 `ERROR_IN_EVALUATION`으로 바꾸고 `evaluation_error`를 감사에 기록합니다.
+
 [테스트 전용 저장소와 게이트](https://github.com/teramoby/speedle-plus/blob/master/pkg/ads/extensions_test.go), [저장소 인터페이스](https://github.com/teramoby/speedle-plus/tree/master/pkg/store), [임베디드 배포](/ko/docs/deployment/embedded/)를 참조하세요.

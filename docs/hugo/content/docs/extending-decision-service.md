@@ -58,6 +58,16 @@ and an acknowledgement callback, called only after successful installation.
 `(*eval.PolicyEvalImpl).DistributionStore()` exposes the backing store for
 adapters. Closing the evaluator stops its watch and closes a closable store;
 `ads.Run` performs that cleanup. An explicitly supplied gate remains caller-owned.
+
+Cancelling the context stops gRPC first, then allows HTTP requests a five-second
+grace period before closing active connections. `ads.WithShutdownTimeout(d)`
+sets a positive grace period. Custom handlers and gates should observe request
+context cancellation. Both transports route before local token assertion:
+fallback receives the original token and principals and owns their authentication;
+local routes retain normal assertion. An evaluation error always clears
+`Allowed`, sets `Reason` to `ERROR_IN_EVALUATION`, and audits `evaluation_error`,
+even if the supplied fallback response claimed a grant.
+
 See the [test-only external store and gate](https://github.com/teramoby/speedle-plus/blob/master/pkg/ads/extensions_test.go)
 for REST/gRPC examples, the [store interfaces](https://github.com/teramoby/speedle-plus/tree/master/pkg/store)
 and [embedded deployment](/docs/deployment/embedded/).

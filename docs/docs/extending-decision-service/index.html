@@ -222,8 +222,18 @@ subscription even if config disables watching. Optional
 and an acknowledgement callback, called only after successful installation.
 <code>(*eval.PolicyEvalImpl).DistributionStore()</code> exposes the backing store for
 adapters. Closing the evaluator stops its watch and closes a closable store;
-<code>ads.Run</code> performs that cleanup. An explicitly supplied gate remains caller-owned.
-See the <a href="https://github.com/teramoby/speedle-plus/blob/master/pkg/ads/extensions_test.go">test-only external store and gate</a>
+<code>ads.Run</code> performs that cleanup. An explicitly supplied gate remains caller-owned.</p>
+
+<p>Cancelling the context stops gRPC first, then allows HTTP requests a five-second
+grace period before closing active connections. <code>ads.WithShutdownTimeout(d)</code>
+sets a positive grace period. Custom handlers and gates should observe request
+context cancellation. Both transports route before local token assertion:
+fallback receives the original token and principals and owns their authentication;
+local routes retain normal assertion. An evaluation error always clears
+<code>Allowed</code>, sets <code>Reason</code> to <code>ERROR_IN_EVALUATION</code>, and audits <code>evaluation_error</code>,
+even if the supplied fallback response claimed a grant.</p>
+
+<p>See the <a href="https://github.com/teramoby/speedle-plus/blob/master/pkg/ads/extensions_test.go">test-only external store and gate</a>
 for REST/gRPC examples, the <a href="https://github.com/teramoby/speedle-plus/tree/master/pkg/store">store interfaces</a>
 and <a href="/docs/deployment/embedded/">embedded deployment</a>.</p>
 </div>

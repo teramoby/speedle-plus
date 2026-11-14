@@ -18,4 +18,7 @@ bref = "独自のポリシーストアやサービスアダプターを使用し
 ストアが `gate.GateProvider.RequestGate() gate.Gate` を実装すると、REST と gRPC は評価器のストアアクセサーから検出します。組み込み用途では `eval.NewWithStore` の後に `adsrest.NewRouter(evaluator, adsrest.WithGate(g))` または `adsgrpc.NewGRPCService(evaluator, adsgrpc.WithGate(g))` を使います。オプション省略時はストアから検出し、明示的な nil は無効化します。ゲートなしのローカル動作は変わりません。
 
 `store.WatchRequirement.RequireWatch()` は設定で無効でも購読を強制します。任意の `ReadPolicyStoreForReload() (*pms.PolicyStore, func(), error)` はスナップショットと、インストール成功後にのみ呼ばれる確認コールバックを提供します。`(*eval.PolicyEvalImpl).DistributionStore()` はアダプター向けのストアアクセサーです。評価器を閉じると監視を停止し、閉じられるストアを閉じます。`ads.Run` はこの後始末を行います。明示的に渡したゲートの所有者は呼び出し側です。
+
+キャンセル時は先に gRPC を停止し、HTTP に五秒の猶予を与えてから接続を閉じます。`ads.WithShutdownTimeout(d)` で正の猶予期間を指定できます。独自ハンドラーとゲートはリクエストコンテキストのキャンセルに従ってください。両プロトコルはローカルのトークン検証前に経路を選択し、後備側は元のトークンと主体の認証を担当します。ローカル経路の検証は維持されます。評価エラーでは、応答が許可を主張しても `Allowed` を false、`Reason` を `ERROR_IN_EVALUATION` にし、`evaluation_error` を監査に記録します。
+
 [テスト専用ストアとゲート](https://github.com/teramoby/speedle-plus/blob/master/pkg/ads/extensions_test.go)、[ストアインターフェース](https://github.com/teramoby/speedle-plus/tree/master/pkg/store)、[組み込みデプロイ](/ja/docs/deployment/embedded/)を参照してください。
