@@ -99,7 +99,7 @@ jobs:
         if: steps.scope.outputs.ci == 'true'
         run: |
           set -euo pipefail
-          DOCKER_CONFIG=$(mktemp -d)
+          DOCKER_CONFIG=$(mktemp -d "${TMPDIR:-/tmp}/speedle-docker-config.XXXXXX")
           export DOCKER_CONFIG
           trap 'rm -rf "${DOCKER_CONFIG}"' EXIT
           node --test scripts/tests/*.cjs

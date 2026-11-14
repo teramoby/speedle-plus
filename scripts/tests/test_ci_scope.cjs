@@ -89,6 +89,8 @@ test('CI discovers every script suite, isolates Docker config and propagates fai
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-script-suites-'));
   try {
     fs.mkdirSync(path.join(dir, 'bin'));
+    const temporary = path.join(dir, 'temp dir');
+    fs.mkdirSync(temporary);
     fs.mkdirSync(path.join(dir, 'scripts/tests'), {recursive: true});
     // Include new filenames to catch a return to an explicit subset of suites.
     const suites = [...fs.readdirSync(path.join(root, 'scripts/tests')).filter(name => name.endsWith('.cjs')), 'test_future.cjs'].sort();
@@ -110,7 +112,8 @@ process.exit(process.env.FAIL_TOOL === ${JSON.stringify(tool)} ? 7 : 0);
     for (const failure of ['', 'node', 'python3']) {
       fs.writeFileSync(record, '');
       const result = spawnSync('bash', ['-c', script(ci, 'Test CI scripts')], {cwd: dir, encoding: 'utf8', env: {...process.env,
-        PATH: path.join(dir, 'bin') + path.delimiter + process.env.PATH, RECORD: record, FAIL_TOOL: failure, DOCKER_CONFIG: '/unused-host-config'}});
+        PATH: path.join(dir, 'bin') + path.delimiter + process.env.PATH, RECORD: record, FAIL_TOOL: failure,
+        TMPDIR: temporary, DOCKER_CONFIG: '/unused-host-config'}});
       assert.equal(result.status, failure ? 7 : 0, result.stderr);
       const calls = fs.readFileSync(record, 'utf8').trim().split('\n').map(JSON.parse);
       assert.deepEqual(calls[0].args, ['--test', ...suites.map(name => `scripts/tests/${name}`)]);
@@ -118,6 +121,8 @@ process.exit(process.env.FAIL_TOOL === ${JSON.stringify(tool)} ? 7 : 0);
       if (calls.length === 2) assert.deepEqual(calls[1].args, ['-m', 'unittest', 'discover', '-s', 'scripts/tests', '-p', 'test_*.py']);
       for (const call of calls) {
         assert.notEqual(call.config, '/unused-host-config');
+        assert.equal(path.dirname(call.config), temporary);
+        assert.match(path.basename(call.config), /^speedle-docker-config\.[A-Za-z0-9]+$/);
         assert.deepEqual(call.files, []);
         assert.equal(fs.existsSync(call.config), false, 'temporary Docker config must be cleaned on success and failure');
       }

@@ -106,13 +106,23 @@ Maintainers merge in this order:
    explicitly cancel any unfinished old-head runs and wait for their runner
    slots to release; removing the label alone does not stop them.
 
-Before changing routing, run `actionlint` on the modified workflows and
-`node --test scripts/tests/test_ci_scope.cjs scripts/tests/test_go_ci_worker.cjs`.
-Workflow and script changes run all CI script suites in the hosted `changes`
-job on both the quick and full routes: `node --test scripts/tests/*.cjs` and
-`python3 -m unittest discover -s scripts/tests -p 'test_*.py'`. Use an empty
-`DOCKER_CONFIG` directory when running the Node suites locally so container
-fixtures cannot read the host's Docker credentials.
+Before changing workflows or scripts, run `actionlint` on the modified workflows
+and all CI script suites:
+
+```sh
+(
+  set -e
+  DOCKER_CONFIG=$(mktemp -d "${TMPDIR:-/tmp}/speedle-docker-config.XXXXXX")
+  export DOCKER_CONFIG
+  trap 'rm -rf "${DOCKER_CONFIG}"' EXIT
+  node --test scripts/tests/*.cjs
+  python3 -m unittest discover -s scripts/tests -p 'test_*.py'
+)
+```
+
+The empty `DOCKER_CONFIG` keeps container fixtures from reading the host's
+Docker credentials. Workflow and script changes run these same suites in the
+hosted `changes` job on both the quick and full routes.
 
 The nightly suite runs the same full regression, every Go package plus the
 tagged ADS authorization/cache tests against native PMS/ADS, once each with the
