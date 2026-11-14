@@ -300,7 +300,7 @@ func writeInstanceIDWithCheck(path, id string, link func(string, string) error, 
 			!errors.Is(err, syscall.ENOTSUP) && !errors.Is(err, syscall.ENOSYS) {
 			return err
 		}
-		file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+		file, err := openInstanceIDPublication(path)
 		if err != nil {
 			return err
 		}

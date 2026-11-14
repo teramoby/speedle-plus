@@ -99,9 +99,14 @@ func TestInstanceIDVerifiesPublication(t *testing.T) {
 							t.Fatal(err)
 						}
 					case "replace":
-						// Only the production handle/temp link keeps the inode
-						// alive; the test must not artificially preserve it.
-						if err := os.Remove(path); err != nil {
+						if fallback && runtime.GOOS == "windows" {
+							// DeleteFile keeps an open file delete-pending and
+							// forbids reusing its name until close. Rename models
+							// replacement while the delete-sharing handle is live.
+							if err := os.Rename(path, path+".old"); err != nil {
+								t.Fatal(err)
+							}
+						} else if err := os.Remove(path); err != nil {
 							t.Fatal(err)
 						}
 						writeTestFile(t, dir, InstanceIDFile, []byte(winner+"\n"), 0o600)
@@ -115,8 +120,13 @@ func TestInstanceIDVerifiesPublication(t *testing.T) {
 				err = writeInstanceIDWithCheck(path, testInstanceID, link, check)
 				switch change {
 				case "remove":
-					if !errors.Is(err, os.ErrNotExist) {
+					// Windows can report access denied while deletion is
+					// pending on the original handle, which is also a failure.
+					if err == nil || (runtime.GOOS != "windows" && !errors.Is(err, os.ErrNotExist)) {
 						t.Fatalf("missing publication reported success: %v", err)
+					}
+					if _, err := os.Lstat(path); !errors.Is(err, os.ErrNotExist) {
+						t.Fatalf("publication survived handle close: %v", err)
 					}
 				case "replace", "content":
 					if !errors.Is(err, ErrCacheCorrupt) {
