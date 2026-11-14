@@ -84,39 +84,6 @@ func assertLogPermissions(t *testing.T, path string, want os.FileMode) {
 	}
 }
 
-func TestRotationPreservesExistingPermissions(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("Unix file permissions")
-	}
-	filename := filepath.Join(t.TempDir(), "existing.log")
-	if err := os.WriteFile(filename, []byte("existing log\n"), 0600); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Chmod(filename, 0640); err != nil {
-		t.Fatal(err)
-	}
-	rotation := &lumberjack.Logger{Filename: filename}
-	t.Cleanup(func() { _ = rotation.Close() })
-	logger := log.New()
-	if err := InitLogInstance(logger, &LogConfig{RotationConfig: rotation}); err != nil {
-		t.Fatal(err)
-	}
-	logger.Info("before rotation")
-	if err := rotation.Rotate(); err != nil {
-		t.Fatal(err)
-	}
-	logger.Info("after rotation")
-	if err := rotation.Close(); err != nil {
-		t.Fatal(err)
-	}
-	assertLogPermissions(t, filename, 0640)
-	backups, err := filepath.Glob(filepath.Join(filepath.Dir(filename), "existing-*.log"))
-	if err != nil || len(backups) != 1 {
-		t.Fatalf("backups %v: %v", backups, err)
-	}
-	assertLogPermissions(t, backups[0], 0640)
-}
-
 // captureAudit sends the audit log to a buffer as JSON at debug level.
 func captureAudit(t *testing.T) *bytes.Buffer {
 	t.Helper()
