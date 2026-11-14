@@ -420,6 +420,58 @@ func TestInstanceIDRepairWarning(t *testing.T) {
 			t.Fatalf("expected one operator-visible repair warning for %s: %s (%v)", dir, &output, err)
 		}
 	}
+
+	t.Run("blocked log sink", func(t *testing.T) {
+		dir := t.TempDir()
+		writeStaleInstanceID(t, dir, "")
+		sink := &instanceIDBlockingLogWriter{entered: make(chan struct{}, 1), release: make(chan struct{})}
+		log.SetOutput(sink)
+		done := make(chan error, 1)
+		func() {
+			defer close(sink.release)
+			go func() {
+				id, created, err := LoadOrCreateInstanceID(dir)
+				if err == nil && (!created || !ValidInstanceID(id)) {
+					err = fmt.Errorf("repair = %q, %v", id, created)
+				}
+				done <- err
+			}()
+			select {
+			case <-sink.entered:
+			case <-time.After(10 * time.Second):
+				t.Fatal("repair did not reach the log sink")
+			}
+			if id, err := loadInstanceID(filepath.Join(dir, InstanceIDFile)); err != nil || !ValidInstanceID(id) {
+				t.Fatalf("repair not published before logging: %q, %v", id, err)
+			}
+			lock, err := os.OpenFile(filepath.Join(dir, instanceIDLockFile), os.O_RDWR, 0o600)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer lock.Close()
+			if err := waitInstanceIDLock(lock, tryLockInstanceID, 20*time.Millisecond); err != nil {
+				t.Fatalf("repair lock still held during logging: %v", err)
+			}
+			unlockInstanceID(lock)
+		}()
+		if err := <-done; err != nil {
+			t.Fatal(err)
+		}
+	})
+}
+
+type instanceIDBlockingLogWriter struct {
+	entered chan struct{}
+	release chan struct{}
+}
+
+func (writer *instanceIDBlockingLogWriter) Write(data []byte) (int, error) {
+	select {
+	case writer.entered <- struct{}{}:
+	default:
+	}
+	<-writer.release
+	return len(data), nil
 }
 
 func TestInstanceIDFrozenLockHolder(t *testing.T) {

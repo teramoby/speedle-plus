@@ -102,7 +102,15 @@ func loadOrCreateInstanceIDWithLock(dir string, link func(string, string) error,
 		err = acquire(lock)
 		locked = err == nil
 	}
+	repaired := false
 	if locked {
+		// Log only after publication and unlocking. A slow log sink must
+		// not extend the gap between removing a partial and publishing an ID.
+		defer func() {
+			if repaired {
+				log.WithField("directory", dir).Warn("adsync: removed stale partial instance id for repair; stop older releases using this directory before upgrading")
+			}
+		}()
 		defer unlockInstanceID(lock)
 	} else {
 		instanceIDLockWarning.Do(func() {
@@ -128,7 +136,7 @@ func loadOrCreateInstanceIDWithLock(dir string, link func(string, string) error,
 			if err := os.Remove(path); err != nil && !errors.Is(err, fs.ErrNotExist) {
 				return "", false, fmt.Errorf("adsync: remove partial instance id: %w", err)
 			}
-			log.WithField("directory", dir).Warn("adsync: removed stale partial instance id for repair; stop older releases using this directory before upgrading")
+			repaired = true
 		} else if !errors.Is(err, fs.ErrNotExist) {
 			return "", false, err
 		}
