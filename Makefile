@@ -4,12 +4,12 @@ gopath := $(shell go env GOPATH)
 gitCommit := $(shell git rev-parse --short HEAD)
 # go version output is "go version go1.11.2 linux/amd64"
 goVersion := $(word 3,$(shell go version))
-goLDFlags := -ldflags "-X main.gitCommit=${gitCommit} -X main.productVersion=0.1 -X main.goVersion=${goVersion}"
+goLDFlags := -ldflags "-X main.gitCommit=${gitCommit} -X main.productVersion=1.8.0 -X main.goVersion=${goVersion}"
 
 pmsImageRepo := speedle-pms
-pmsImageTag := v0.1
+pmsImageTag := v1.8.0
 adsImageRepo := speedle-ads
-adsImageTag := v0.1
+adsImageTag := v1.8.0
 
 all: build
 
