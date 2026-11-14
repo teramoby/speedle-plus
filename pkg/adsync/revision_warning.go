@@ -20,8 +20,8 @@ type revisionWarningLimiter struct {
 	lastCleanup time.Time
 }
 
-// Capture values under the machine lock and emit only after releasing it: a
-// slow log sink must not block other readers or updates of the state machine.
+// Capture values under the owner's lock and emit only after releasing it: a
+// slow log sink must not block other readers or updates of the owner.
 type revisionWarning struct {
 	serviceID, epoch, source string
 	upstream, local, head    uint64

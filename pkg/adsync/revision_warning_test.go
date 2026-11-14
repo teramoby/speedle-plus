@@ -178,6 +178,17 @@ func TestNotifiedCatchUpDoesNotWarnForReusedDiscovery(t *testing.T) {
 			t.Fatalf("notified head = %d, want 2", state.Revision)
 		}
 	}
+	// Plain Sync and SyncByName do not carry minRevision. Once the copy is
+	// in memory, a lagging discovery result alone must not warn either.
+	if _, err := syncer.Sync(context.Background(), discovery.Services[0]); err != nil {
+		t.Fatal(err)
+	}
+	fixture.source.configure(func(source *fixtureSource) {
+		source.services[service.ID] = newFixtureService(service.ID, "books")
+	})
+	if _, err := syncer.SyncByName(context.Background(), "books"); err != nil {
+		t.Fatal(err)
+	}
 	if buffer.Len() != 0 {
 		t.Fatalf("reusing discovery after notified catch-up warned: %s", buffer.String())
 	}
@@ -265,6 +276,12 @@ func TestRevisionWarningBudgetSharedAcrossSourcesAndServicesIndependent(t *testi
 	mustAck(t, machine, ackWith(testAckService(testServiceID1, "books", 4), testAckService(testServiceID2, "orders", 5)))
 	requireRevisionWarning(t, buffer, testServiceID1, testServiceID1, "ack", 4, 0)
 	buffer.Reset()
+	// The issue specifies a per-service budget, so an epoch change does not
+	// create another budget for the same service within that minute.
+	revisionWarnings.warn(testServiceID1, testServiceID2, 3, 5, 5, "ack")
+	if buffer.Len() != 0 {
+		t.Fatalf("epoch change reset the service warning budget: %s", buffer.String())
+	}
 	clock.Advance(time.Minute - time.Nanosecond)
 	if err := machine.ObserveHead(Head{ID: testServiceID1, Epoch: testServiceID1, Revision: 3}); err != nil {
 		t.Fatal(err)
@@ -348,6 +365,71 @@ func TestRevisionWarningDoesNotHoldMachineLock(t *testing.T) {
 				}
 			case <-time.After(5 * time.Second):
 				t.Fatal("blocked log sink held the machine lock")
+			}
+		})
+	}
+}
+
+func TestRevisionWarningDoesNotHoldSyncLock(t *testing.T) {
+	for _, source := range []string{"cache", "snapshot"} {
+		t.Run(source, func(t *testing.T) {
+			captureRevisionWarnings(t)
+			service := newFixtureService(testServiceID1, "books")
+			fixture := newFixture(t, service)
+			cacheDir := ""
+			if source == "cache" {
+				cacheDir = t.TempDir()
+			}
+			syncer := fixture.newSyncer(cacheDir, nil)
+			local := syncFixtureService(t, syncer, "books")
+			local.Revision = 5
+			if err := syncer.store(local); err != nil {
+				t.Fatal(err)
+			}
+			revision := uint64(1)
+			if source == "cache" {
+				syncer = fixture.newSyncer(cacheDir, nil)
+			} else {
+				revision = 6
+				fixture.source.configure(func(source *fixtureSource) {
+					response := fixtureSnapshot(service)
+					response.Revision = 4
+					source.snapshotOverride = response
+					source.changesReason = "history_unavailable"
+				})
+			}
+			writer := &blockedRevisionLog{started: make(chan struct{}), release: make(chan struct{})}
+			log.SetOutput(writer)
+			done := make(chan error, 1)
+			t.Cleanup(func() {
+				close(writer.release)
+				err := <-done
+				if source == "snapshot" {
+					if !errors.Is(err, ErrProtocol) {
+						t.Errorf("Sync error = %v, want ErrProtocol", err)
+					}
+				} else if err != nil {
+					t.Error(err)
+				}
+			})
+			go func() {
+				_, err := syncer.Sync(context.Background(), testAckService(service.ID, "books", revision))
+				done <- err
+			}()
+			select {
+			case <-writer.started:
+			case <-time.After(5 * time.Second):
+				t.Fatal("warning did not reach the blocked sink")
+			}
+			forgotten := make(chan error, 1)
+			go func() { forgotten <- syncer.Forget(service.ID) }()
+			select {
+			case err := <-forgotten:
+				if err != nil {
+					t.Fatal(err)
+				}
+			case <-time.After(5 * time.Second):
+				t.Fatal("blocked log sink held the service sync lock")
 			}
 		})
 	}
