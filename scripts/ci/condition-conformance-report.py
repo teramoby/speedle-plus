@@ -118,7 +118,7 @@ GO126_SPANS = {('EvaluableExpression.go', '81.16,83.3', 1): ('82.3,83.1', 1),
  ('stagePlanner.go', '696.16,698.3', 1): ('697.3,698.1', 1),
  ('stagePlanner.go', '717.16,719.3', 1): ('718.3,719.1', 1)}
 
-def report(profile, matrix=None, *, go_version):
+def report(profile, matrix, *, go_version):
     # Unknown compiler layouts require a reachability audit, not dozens of
     # misleading per-block gaps. Respect the caller's toolchain override while
     # explicitly restricting this audit to the two verified stable series.
@@ -188,17 +188,39 @@ def report(profile, matrix=None, *, go_version):
     print('| File:block | Statements | Reason |\n|---|---:|---|')
     for file, span, n, reason in exclusions:
         print(f'| `{file}:{span}` | {n} | {reason} |')
-    if matrix:
+    if matrix is None:
+        failures.append('missing decision matrix evidence')
+    else:
         print('\nGenerated decision matrix (each case runs through both paths):\n')
+        matrix_rows = 0
+        matrix_totals = [0, 0, 0]
+        declared_totals = None
         for line in Path(matrix).read_text().splitlines():
             match = re.search(r'condition_conformance_test.go:\d+:\s?(.*)', line)
+            content = match.group(1).strip() if match else line.strip()
             if match:
-                content = match.group(1).strip()
                 if content.startswith(('|', 'Section ', 'Known differences', 'Difference:',
                                        'Matrix cells ', 'Outcome totals:', 'Error cases ', 'Error:')):
                     print(content)
-            elif line.strip().startswith('|'):
-                print(line.strip())
+            elif content.startswith('|'):
+                print(content)
+            cells = re.findall(r'\|\s*(\d+)/(\d+)/(\d+)\s*(?=\|)', content) if content.startswith('|') else []
+            if cells:
+                matrix_rows += 1
+                for cell in cells:
+                    for i, count in enumerate(cell):
+                        matrix_totals[i] += int(count)
+            outcome = re.fullmatch(r'Outcome totals: (\d+) match / (\d+) no-match / (\d+) error', content)
+            if outcome:
+                declared_totals = [int(n) for n in outcome.groups()]
+        if not matrix_rows:
+            failures.append('decision matrix has no case rows (matrix test missing or skipped)')
+        if declared_totals is None:
+            failures.append('decision matrix is missing Outcome totals')
+        elif not sum(declared_totals):
+            failures.append('decision matrix contains no cases')
+        elif matrix_totals != declared_totals:
+            failures.append(f'decision matrix row counts {matrix_totals} do not match Outcome totals {declared_totals}')
     for failure in failures:
         print(f'ERROR: {failure}')
     return bool(failures)
@@ -208,6 +230,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--go-version', required=True, help='go env GOVERSION from the coverage run')
     parser.add_argument('profile')
-    parser.add_argument('matrix', nargs='?')
+    parser.add_argument('matrix')
     args = parser.parse_args()
     raise SystemExit(report(args.profile, args.matrix, go_version=args.go_version))
