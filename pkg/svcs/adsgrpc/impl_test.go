@@ -270,7 +270,7 @@ func TestConvertAPIPolicies(t *testing.T) {
 	if policyResp.ID != "id" || policyResp.Condition != "a > 1" ||
 		!reflect.DeepEqual(policyResp.Principals[0].Principals, []string{"user:alice", "group:g"}) ||
 		policyResp.Permissions[0].Resource != "r" {
-		t.Fatalf("policy response = %+v", policyResp)
+		t.Fatalf("policy response = %+v", &policyResp)
 	}
 	convertAPIPolicy2PolicyResponse(nil, &policyResp) // must not panic
 
@@ -279,7 +279,7 @@ func TestConvertAPIPolicies(t *testing.T) {
 	var rolePolicyResp pb.RolePolicy
 	convertAPIRolePolicy2RolePolicyResponse(rolePolicy, &rolePolicyResp)
 	if rolePolicyResp.ID != "rid" || rolePolicyResp.Effect != "deny" || rolePolicyResp.ResourceExpressions[0] != "y.*" {
-		t.Fatalf("role policy response = %+v", rolePolicyResp)
+		t.Fatalf("role policy response = %+v", &rolePolicyResp)
 	}
 	convertAPIRolePolicy2RolePolicyResponse(nil, &rolePolicyResp)
 	convertAPIPolicy2EvaluatedPolicyResponse(nil, nil)

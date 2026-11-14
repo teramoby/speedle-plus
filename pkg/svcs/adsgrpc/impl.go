@@ -17,6 +17,14 @@ import (
 	"github.com/teramoby/speedle-plus/pkg/logging"
 )
 
+// isAllowedAuditResponse preserves the legacy protobuf value's text and JSON
+// audit representation without copying a generated message's internal lock.
+type isAllowedAuditResponse struct {
+	Allowed bool   `json:"allowed,omitempty"`
+	Reason  int32  `json:"reason,omitempty"`
+	ErrMsg  string `json:"errMsg,omitempty"`
+}
+
 // GRPCService is the ADS GRPC implementation
 type GRPCService struct {
 	evaluator eval.InternalEvaluator
@@ -108,7 +116,9 @@ func (impl *GRPCService) IsAllowed(ctx context.Context, in *pb.ContextRequest) (
 	}
 
 	// Audit log
-	logging.WriteSimpleSucceededAuditLog("[gRPC]IsAllowed", reqCtx, response)
+	logging.WriteSimpleSucceededAuditLog("[gRPC]IsAllowed", reqCtx, isAllowedAuditResponse{
+		Allowed: response.Allowed, Reason: response.Reason, ErrMsg: response.ErrMsg,
+	})
 
 	return &response, nil
 }
@@ -176,7 +186,7 @@ func (impl *GRPCService) GetAllPermissions(ctx context.Context, in *pb.ContextRe
 	}
 
 	// Audit log
-	logging.WriteSimpleSucceededAuditLog("[gRPC]GetAllGrantedPermissions", reqCtx, ret.Permissions)
+	logging.WriteSimpleSucceededAuditLog("[gRPC]GetAllGrantedPermissions", reqCtx, auditPermissions(ret.Permissions))
 
 	return &ret, nil
 }
@@ -418,7 +428,7 @@ func (impl *GRPCService) Diagnose(ctx context.Context, in *pb.ContextRequest) (*
 	}
 
 	// Audit log
-	logging.WriteSimpleSucceededAuditLog("[gRPC]Diagnose", reqCtx, &response)
+	logging.WriteSimpleSucceededAuditLog("[gRPC]Diagnose", reqCtx, protoAuditValue{&response})
 
 	return &response, nil
 }
