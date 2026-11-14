@@ -76,6 +76,63 @@ func TestInstanceIDFallbackConflictReloadsWinner(t *testing.T) {
 	}
 }
 
+func TestInstanceIDVerifiesPublication(t *testing.T) {
+	for _, fallback := range []bool{false, true} {
+		for _, change := range []string{"unchanged", "remove", "replace"} {
+			t.Run(fmt.Sprintf("fallback=%t/%s", fallback, change), func(t *testing.T) {
+				dir := t.TempDir()
+				path := filepath.Join(dir, InstanceIDFile)
+				link := os.Link
+				if fallback {
+					link = func(string, string) error { return syscall.ENOTSUP }
+				}
+				winner, err := NewInstanceID()
+				if err != nil {
+					t.Fatal(err)
+				}
+				check := func(path string, published os.FileInfo) error {
+					// Simulate a resumed writer whose open inode was already
+					// unlinked by a repairer, immediately before verification.
+					switch change {
+					case "remove":
+						if err := os.Remove(path); err != nil {
+							t.Fatal(err)
+						}
+					case "replace":
+						// Keep the original inode alive to prevent inode reuse.
+						if err := os.Rename(path, path+".old"); err != nil {
+							t.Fatal(err)
+						}
+						writeTestFile(t, dir, InstanceIDFile, []byte(winner+"\n"), 0o600)
+					}
+					return checkPublishedInstanceID(path, published)
+				}
+				err = writeInstanceIDWithCheck(path, testInstanceID, link, check)
+				switch change {
+				case "remove":
+					if !errors.Is(err, os.ErrNotExist) {
+						t.Fatalf("missing publication reported success: %v", err)
+					}
+				case "replace":
+					if !errors.Is(err, ErrCacheCorrupt) {
+						t.Fatalf("replaced publication reported success: %v", err)
+					}
+					if id, err := loadInstanceID(path); err != nil || id != winner {
+						t.Fatalf("publication check deleted the winner: %q, %v", id, err)
+					}
+				case "unchanged":
+					if err != nil {
+						t.Fatal(err)
+					}
+					if id, err := loadInstanceID(path); err != nil || id != testInstanceID {
+						t.Fatalf("persisted publication = %q, %v", id, err)
+					}
+				}
+			})
+		}
+	}
+}
+
 func TestInstanceIDRetriesDisappearingPublication(t *testing.T) {
 	for _, failures := range []int{1, 3} {
 		t.Run(map[int]string{1: "recover", 3: "bounded"}[failures], func(t *testing.T) {

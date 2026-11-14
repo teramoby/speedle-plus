@@ -66,7 +66,8 @@ func ValidInstanceID(value string) bool {
 //
 // Concurrent writers sharing dir must all use this creation-lock protocol.
 // Stop older releases using dir before upgrading: file age cannot prove that
-// an older writer, which does not acquire the lock, has exited.
+// an unlocked writer has exited. Each publication verifies that its opened
+// inode is still at the canonical path before reporting success.
 func LoadOrCreateInstanceID(dir string) (string, bool, error) {
 	return loadOrCreateInstanceID(dir, os.Link)
 }
@@ -265,6 +266,10 @@ func cleanupInstanceIDTemps(dir string) {
 // Filesystems without hard links use exclusive creation instead; neither path
 // replaces an existing identity.
 func writeInstanceID(path, id string, link func(string, string) error) error {
+	return writeInstanceIDWithCheck(path, id, link, checkPublishedInstanceID)
+}
+
+func writeInstanceIDWithCheck(path, id string, link func(string, string) error, check func(string, fs.FileInfo) error) error {
 	directory := filepath.Dir(path)
 	temporary, err := os.CreateTemp(directory, ".adsync-instance-*")
 	if err != nil {
@@ -276,6 +281,11 @@ func writeInstanceID(path, id string, link func(string, string) error) error {
 		return err
 	}
 	if err := temporary.Sync(); err != nil {
+		temporary.Close()
+		return err
+	}
+	published, err := temporary.Stat()
+	if err != nil {
 		temporary.Close()
 		return err
 	}
@@ -294,17 +304,55 @@ func writeInstanceID(path, id string, link func(string, string) error) error {
 		if _, err = file.WriteString(id + "\n"); err == nil {
 			err = file.Sync()
 		}
+		// Capture the opened inode before closing, including on Windows.
+		var statErr error
+		published, statErr = file.Stat()
+		if err == nil {
+			err = statErr
+		}
 		if closeErr := file.Close(); err == nil {
 			err = closeErr
 		}
 		if err != nil {
-			_ = os.Remove(path)
+			// A paused unlocked writer may have lost its publication to a
+			// repairer. Do not clean up a different writer's winning inode.
+			if statErr == nil && checkPublishedInstanceID(path, published) == nil {
+				_ = os.Remove(path)
+			}
 			return err
 		}
+	}
+	if err := check(path, published); err != nil {
+		return err
 	}
 	if handle, err := os.Open(directory); err == nil {
 		_ = handle.Sync()
 		_ = handle.Close()
 	}
 	return nil
+}
+
+// A fallback writer can resume after a repairer removed its stale open inode.
+// Verify the published path before reporting success on either publication path.
+func checkPublishedInstanceID(path string, published fs.FileInfo) error {
+	info, err := os.Lstat(path)
+	if err != nil {
+		return fmt.Errorf("adsync: verify published instance id %s: %w", path, err)
+	}
+	if err := checkInstanceIDFile(info); err != nil {
+		return err
+	}
+	file, err := os.Open(path)
+	if err != nil {
+		return fmt.Errorf("adsync: open published instance id %s: %w", path, err)
+	}
+	defer file.Close()
+	current, err := file.Stat()
+	if err != nil {
+		return fmt.Errorf("adsync: stat published instance id %s: %w", path, err)
+	}
+	if !os.SameFile(published, current) {
+		return fmt.Errorf("%w: published instance id %s was replaced", ErrCacheCorrupt, path)
+	}
+	return checkInstanceIDFile(current)
 }
