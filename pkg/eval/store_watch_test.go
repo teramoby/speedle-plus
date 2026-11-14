@@ -11,7 +11,7 @@ import (
 )
 
 // watchRequiringStore stands in for a store that publishes through events
-// only, such as the policy-source store.
+// only.
 type watchRequiringStore struct {
 	pms.PolicyStoreManagerADS
 	required bool

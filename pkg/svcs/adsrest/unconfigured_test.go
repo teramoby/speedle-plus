@@ -12,20 +12,13 @@ import (
 	"testing"
 
 	"github.com/gorilla/mux"
-	"github.com/teramoby/speedle-plus/pkg/adsync"
 	"github.com/teramoby/speedle-plus/pkg/cfg"
 	"github.com/teramoby/speedle-plus/pkg/eval"
-	"github.com/teramoby/speedle-plus/pkg/svcs"
-	"github.com/teramoby/speedle-plus/pkg/svcs/adsgate"
 	"github.com/teramoby/speedle-plus/testutil/storetest"
 )
 
-// TestEngineWithoutPolicySourceStoreIsUnchanged pins that an Engine whose
-// store is not the policy-source store behaves as it did before policy
-// distribution existed: no distribution gate, the original route table,
-// local decisions without a decision-source header, no policy-source
-// endpoints and a ready readiness probe.
-func TestEngineWithoutPolicySourceStoreIsUnchanged(t *testing.T) {
+// TestLocalDecisionService pins the local routes, decisions and readiness.
+func TestLocalDecisionService(t *testing.T) {
 	location := filepath.Join(t.TempDir(), "policies.json")
 	if err := os.WriteFile(location, []byte(handlerPolicies), 0o600); err != nil {
 		t.Fatal(err)
@@ -35,9 +28,6 @@ func TestEngineWithoutPolicySourceStoreIsUnchanged(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { _ = evaluator.(*eval.PolicyEvalImpl).Close() })
-	if gate := adsgate.Of(evaluator); gate.Enabled() {
-		t.Fatal("a file-store evaluator has an enabled distribution gate")
-	}
 	router, err := NewRouter(evaluator)
 	if err != nil {
 		t.Fatal(err)
@@ -57,7 +47,7 @@ func TestEngineWithoutPolicySourceStoreIsUnchanged(t *testing.T) {
 
 	for _, path := range []string{"is-allowed", "all-granted-roles", "all-granted-permissions"} {
 		rec := post(t, router, path, `{`+alice+`,"resource":"res1","action":"read"}`, http.StatusOK)
-		if source := rec.Header().Get(svcs.DecisionSourceHeader); source != "" {
+		if source := rec.Header().Get("X-Speedle-Decision-Source"); source != "" {
 			t.Fatalf("%s: decision source %q on a local decision", path, source)
 		}
 	}
@@ -68,7 +58,7 @@ func TestEngineWithoutPolicySourceStoreIsUnchanged(t *testing.T) {
 	}
 
 	probe := httptest.NewRecorder()
-	router.ServeHTTP(probe, httptest.NewRequest(http.MethodGet, adsync.APIPrefix+"/services", nil))
+	router.ServeHTTP(probe, httptest.NewRequest(http.MethodGet, "/policy-source/v1/services", nil))
 	if probe.Code != http.StatusNotFound {
 		t.Fatalf("policy-source endpoint status = %d", probe.Code)
 	}

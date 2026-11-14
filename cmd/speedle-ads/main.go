@@ -11,10 +11,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"syscall"
 
 	adsapi "github.com/teramoby/speedle-plus/api/ads"
-	"github.com/teramoby/speedle-plus/pkg/adsproxy"
 	"github.com/teramoby/speedle-plus/pkg/assertion"
 	"github.com/teramoby/speedle-plus/pkg/cfg"
 	"github.com/teramoby/speedle-plus/pkg/cmd/flags"
@@ -61,99 +59,6 @@ func main() {
 	}
 }
 
-// newDownstreamListener builds the dedicated mutual-TLS listener of a relay.
-// It returns nil for a store that does not serve downstream instances. The
-// listener's TLS material and CRLs reload on a poll and on SIGHUP.
-func newDownstreamListener(params *flags.Parameters, evaluator eval.InternalEvaluator) (*adsproxy.Listener, error) {
-	provider, ok := evaluator.(interface{ DistributionStore() any })
-	if !ok {
-		return nil, nil
-	}
-	downstream, ok := provider.DistributionStore().(interface{ DownstreamHandler() http.Handler })
-	if !ok {
-		return nil, nil
-	}
-	data := downstream.DownstreamHandler()
-	if data == nil {
-		return nil, nil
-	}
-	config, err := params.DownstreamListenerConfig()
-	if err != nil {
-		return nil, err
-	}
-	authz, err := adsrest.NewRESTServiceWithEvaluator(evaluator)
-	if err != nil {
-		return nil, err
-	}
-	handler, err := adsproxy.DownstreamHandler(data, adsproxy.AuthzHandlers{
-		IsAllowed:             http.HandlerFunc(authz.IsAllowed),
-		AllGrantedRoles:       http.HandlerFunc(authz.GetAllGrantedRoles),
-		AllGrantedPermissions: http.HandlerFunc(authz.GetAllGrantedPermissions),
-	})
-	if err != nil {
-		return nil, err
-	}
-	listener, err := adsproxy.NewListener(config, handler)
-	if err != nil {
-		return nil, err
-	}
-	return listener, nil
-}
-
-// startUpstreamTLSReload is the process owner's SIGHUP registration for a
-// cascade store, whose upstream client owns the reloadable TLS material. A
-// store without it, such as a direct engine, keeps its signal behavior.
-func startUpstreamTLSReload(evaluator eval.InternalEvaluator) func() {
-	reload := upstreamTLSReloadAction(evaluator)
-	if reload == nil {
-		return func() {}
-	}
-	reloadSignals := make(chan os.Signal, 1)
-	signal.Notify(reloadSignals, syscall.SIGHUP)
-	reloadStop := make(chan struct{})
-	reloadStopped := make(chan struct{})
-	go func() {
-		defer close(reloadStopped)
-		runTLSReload(reloadSignals, reloadStop, reload)
-	}()
-	return func() {
-		signal.Stop(reloadSignals)
-		close(reloadStop)
-		<-reloadStopped
-	}
-}
-
-// upstreamTLSReloadAction returns the cascade store's coalesced reload request,
-// or nil when the store has no reloadable upstream TLS material.
-func upstreamTLSReloadAction(evaluator eval.InternalEvaluator) func() {
-	provider, ok := evaluator.(interface{ DistributionStore() any })
-	if !ok {
-		return nil
-	}
-	upstream, ok := provider.DistributionStore().(interface {
-		UpstreamTLSReloadEnabled() bool
-		RequestTLSReload()
-	})
-	if !ok || !upstream.UpstreamTLSReloadEnabled() {
-		return nil
-	}
-	return upstream.RequestTLSReload
-}
-
-func runTLSReload(signals <-chan os.Signal, stop <-chan struct{}, reload func()) {
-	for {
-		select {
-		case <-stop:
-			return
-		case _, ok := <-signals:
-			if !ok {
-				return
-			}
-			reload()
-		}
-	}
-}
-
 // run starts the servers and serves until one of them fails or stop
 // receives a signal.
 func run(params *flags.Parameters, conf *cfg.Config, stop <-chan os.Signal) error {
@@ -185,27 +90,6 @@ func run(params *flags.Parameters, conf *cfg.Config, stop <-chan os.Signal) erro
 		defer closer.Close()
 	}
 
-	// Both signal registrations coexist: the store's upstream TLS material and
-	// the relay listener's downstream material reload on the same SIGHUP.
-	stopUpstreamTLSReload := startUpstreamTLSReload(evaluator)
-	defer stopUpstreamTLSReload()
-
-	downstreamListener, err := newDownstreamListener(params, evaluator)
-	if err != nil {
-		return err
-	}
-	if downstreamListener != nil {
-		defer downstreamListener.Close()
-		watchCtx, stopWatch := context.WithCancel(context.Background())
-		defer stopWatch()
-		reloadSignals := make(chan os.Signal, 1)
-		signal.Notify(reloadSignals, syscall.SIGHUP)
-		defer signal.Stop(reloadSignals)
-		go downstreamListener.Watch(watchCtx, reloadSignals)
-	} else if params.DownstreamEndpoint.Value != "" {
-		log.Warn("The downstream listener is configured but the policy-source store does not enable ServeDownstream; it will not start.")
-	}
-
 	httpServer, err := newHTTPServer(params, evaluator)
 	if err != nil {
 		return err
@@ -222,13 +106,7 @@ func run(params *flags.Parameters, conf *cfg.Config, stop <-chan os.Signal) erro
 		log.Info("The gRPC server is off; set --grpc-endpoint to start it.")
 	}
 
-	errChan := make(chan error, 3)
-	if downstreamListener != nil {
-		go func() {
-			log.Infof("Starting the downstream mTLS listener on %s...", params.DownstreamEndpoint.Value)
-			errChan <- downstreamListener.ListenAndServe()
-		}()
-	}
+	errChan := make(chan error, 2)
 	if grpcServer != nil {
 		go func() {
 			log.Infof("Starting the gRPC server for authorization service on %s...", grpcEndpoint)

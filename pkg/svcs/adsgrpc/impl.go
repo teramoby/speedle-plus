@@ -9,9 +9,7 @@ import (
 
 	adsapi "github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/api/pms"
-	"github.com/teramoby/speedle-plus/pkg/adsync"
 	"github.com/teramoby/speedle-plus/pkg/eval"
-	"github.com/teramoby/speedle-plus/pkg/svcs/adsgate"
 	"github.com/teramoby/speedle-plus/pkg/svcs/adsgrpc/pb"
 
 	"github.com/teramoby/speedle-plus/pkg/logging"
@@ -20,9 +18,6 @@ import (
 // GRPCService is the ADS GRPC implementation
 type GRPCService struct {
 	evaluator eval.InternalEvaluator
-	// gate routes requests by the per-service distribution state. It is nil
-	// for a store without distribution support.
-	gate *adsgate.Gate
 }
 
 // NewGRPCService constructs a new ADS GRPC service instance
@@ -30,7 +25,6 @@ func NewGRPCService(evaluator eval.InternalEvaluator) (*GRPCService, error) {
 
 	return &GRPCService{
 		evaluator: evaluator,
-		gate:      adsgate.Of(evaluator),
 	}, nil
 }
 
@@ -88,13 +82,6 @@ func (impl *GRPCService) IsAllowed(ctx context.Context, in *pb.ContextRequest) (
 		return nil, err
 	}
 
-	switch route := impl.route(in.GetServiceName()); route.Kind {
-	case adsgate.RouteUnavailable:
-		return nil, unavailableError(route.Reason)
-	case adsgate.RouteFallback:
-		return impl.fallbackIsAllowed(ctx, in)
-	}
-
 	allowed, reason, err := impl.evaluator.IsAllowed(*reqCtx)
 	if err != nil {
 		// Audit log
@@ -121,13 +108,6 @@ func (impl *GRPCService) GetAllGrantedRoles(ctx context.Context, in *pb.ContextR
 		return nil, err
 	}
 
-	switch route := impl.route(in.GetServiceName()); route.Kind {
-	case adsgate.RouteUnavailable:
-		return nil, unavailableError(route.Reason)
-	case adsgate.RouteFallback:
-		return impl.fallbackAllGrantedRoles(ctx, in)
-	}
-
 	roles, err := impl.evaluator.GetAllGrantedRoles(*reqCtx)
 	if err != nil {
 		// Audit log
@@ -149,13 +129,6 @@ func (impl *GRPCService) GetAllPermissions(ctx context.Context, in *pb.ContextRe
 	// assert token
 	if err := impl.evaluator.AssertToken(reqCtx); err != nil {
 		return nil, err
-	}
-
-	switch route := impl.route(in.GetServiceName()); route.Kind {
-	case adsgate.RouteUnavailable:
-		return nil, unavailableError(route.Reason)
-	case adsgate.RouteFallback:
-		return impl.fallbackAllGrantedPermissions(ctx, in)
 	}
 
 	perms, err := impl.evaluator.GetAllGrantedPermissions(*reqCtx)
@@ -187,15 +160,6 @@ func (impl *GRPCService) Discover(ctx context.Context, in *pb.ContextRequest) (*
 	// assert token
 	if err := impl.evaluator.AssertToken(reqCtx); err != nil {
 		return nil, err
-	}
-
-	switch route := impl.route(in.GetServiceName()); route.Kind {
-	case adsgate.RouteUnavailable:
-		return nil, unavailableError(route.Reason)
-	case adsgate.RouteFallback:
-		// Cloud exposes no discover endpoint, so a syncing service cannot
-		// answer this request through the fallback.
-		return nil, unavailableError(adsync.ReasonFallbackUnavailable)
 	}
 
 	allowed, reason, err := impl.evaluator.Discover(*reqCtx)
@@ -373,15 +337,6 @@ func (impl *GRPCService) Diagnose(ctx context.Context, in *pb.ContextRequest) (*
 	// assert token
 	if err := impl.evaluator.AssertToken(reqCtx); err != nil {
 		return nil, err
-	}
-
-	switch route := impl.route(in.GetServiceName()); route.Kind {
-	case adsgate.RouteUnavailable:
-		return nil, unavailableError(route.Reason)
-	case adsgate.RouteFallback:
-		// Cloud exposes no diagnose endpoint, so a syncing service cannot
-		// answer this request through the fallback.
-		return nil, unavailableError(adsync.ReasonFallbackUnavailable)
 	}
 
 	evaResult, err := impl.evaluator.Diagnose(*reqCtx)

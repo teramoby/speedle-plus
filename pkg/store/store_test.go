@@ -5,6 +5,7 @@ package store
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/teramoby/speedle-plus/api/pms"
@@ -51,5 +52,12 @@ func TestRegistry(t *testing.T) {
 	}
 	if _, err := NewStore("missing", nil); errors.Code(err) != errors.ConfigError {
 		t.Errorf("NewStore(missing) = %v", err)
+	}
+}
+
+func TestRemovedPolicySourceStore(t *testing.T) {
+	result, err := NewStore("policy-source", nil)
+	if result != nil || errors.Code(err) != errors.ConfigError || !strings.Contains(err.Error(), "v1.8.0") || !strings.Contains(err.Error(), "policy-source") {
+		t.Fatalf("removed store: %v, %v", result, err)
 	}
 }

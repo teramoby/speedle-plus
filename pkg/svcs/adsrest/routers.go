@@ -29,8 +29,7 @@ func initRouters(evaluator eval.InternalEvaluator) (*routes, error) {
 	return initRoutersForService(restService), nil
 }
 
-// initRoutersForService builds the route table around one service. Tests use
-// it to supply a gate without a real policy source.
+// initRoutersForService builds the route table around one service.
 func initRoutersForService(restService *RESTService) *routes {
 	return &routes{
 		route{
@@ -99,7 +98,5 @@ func NewRouter(evaluator eval.InternalEvaluator) (*mux.Router, error) {
 			Name(route.Name).
 			Handler(handler)
 	}
-	// The downstream policy-source protocol is served only by the dedicated
-	// downstream mTLS listener, never by the application listener.
 	return router, nil
 }

@@ -11,13 +11,11 @@ import (
 	"time"
 
 	adsapi "github.com/teramoby/speedle-plus/api/ads"
-	"github.com/teramoby/speedle-plus/pkg/adsync"
 	"github.com/teramoby/speedle-plus/pkg/cfg"
 	"github.com/teramoby/speedle-plus/pkg/errors"
 	"github.com/teramoby/speedle-plus/pkg/eval"
 	"github.com/teramoby/speedle-plus/pkg/httputils"
 	"github.com/teramoby/speedle-plus/pkg/logging"
-	"github.com/teramoby/speedle-plus/pkg/svcs/adsgate"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/pkg/svcs"
@@ -51,10 +49,6 @@ type JsonContext struct {
 
 type RESTService struct {
 	Evaluator eval.InternalEvaluator
-	// Gate routes requests by the per-service distribution state. It is nil
-	// for a store without distribution support, and then every request is
-	// evaluated locally as before.
-	Gate *adsgate.Gate
 }
 
 type IsAllowedResponse struct {
@@ -124,14 +118,12 @@ func NewRESTService(conf *cfg.Config) (*RESTService, error) {
 	}
 	return &RESTService{
 		Evaluator: Evaluator,
-		Gate:      adsgate.Of(Evaluator),
 	}, nil
 }
 
 func NewRESTServiceWithEvaluator(evaluator eval.InternalEvaluator) (*RESTService, error) {
 	return &RESTService{
 		Evaluator: evaluator,
-		Gate:      adsgate.Of(evaluator),
 	}, nil
 }
 
@@ -327,18 +319,9 @@ func constructEvaluationResultForAudit(allowed bool, reason adsapi.Reason) *Audi
 }
 
 func (e *RESTService) IsAllowed(w http.ResponseWriter, r *http.Request) {
-	jsonRequest, body, err := decodeJSONContextBody(r)
+	jsonRequest, err := decodeBoundedJSONContext(r)
 	if err != nil {
 		httputils.HandleError(w, err)
-		return
-	}
-
-	switch route := e.route(jsonRequest.ServiceName); route.Kind {
-	case adsgate.RouteUnavailable:
-		writeUnavailable(w, route.Reason)
-		return
-	case adsgate.RouteFallback:
-		e.forward(w, r.Context(), adsync.FallbackIsAllowed, jsonRequest.ServiceName, body)
 		return
 	}
 
@@ -377,18 +360,9 @@ func (e *RESTService) IsAllowed(w http.ResponseWriter, r *http.Request) {
 }
 
 func (e *RESTService) GetAllGrantedRoles(w http.ResponseWriter, r *http.Request) {
-	jsonRequest, body, err := decodeJSONContextBody(r)
+	jsonRequest, err := decodeBoundedJSONContext(r)
 	if err != nil {
 		httputils.HandleError(w, err)
-		return
-	}
-
-	switch route := e.route(jsonRequest.ServiceName); route.Kind {
-	case adsgate.RouteUnavailable:
-		writeUnavailable(w, route.Reason)
-		return
-	case adsgate.RouteFallback:
-		e.forward(w, r.Context(), adsync.FallbackAllGrantedRoles, jsonRequest.ServiceName, body)
 		return
 	}
 
@@ -417,18 +391,9 @@ func (e *RESTService) GetAllGrantedRoles(w http.ResponseWriter, r *http.Request)
 }
 
 func (e *RESTService) GetAllGrantedPermissions(w http.ResponseWriter, r *http.Request) {
-	jsonRequest, body, err := decodeJSONContextBody(r)
+	jsonRequest, err := decodeBoundedJSONContext(r)
 	if err != nil {
 		httputils.HandleError(w, err)
-		return
-	}
-
-	switch route := e.route(jsonRequest.ServiceName); route.Kind {
-	case adsgate.RouteUnavailable:
-		writeUnavailable(w, route.Reason)
-		return
-	case adsgate.RouteFallback:
-		e.forward(w, r.Context(), adsync.FallbackAllGrantedPermissions, jsonRequest.ServiceName, body)
 		return
 	}
 
@@ -523,17 +488,6 @@ func (e *RESTService) Diagnose(w http.ResponseWriter, r *http.Request) {
 	jsonRequest, err := DecodeJSONContext(r)
 	if err != nil {
 		httputils.HandleError(w, err)
-		return
-	}
-
-	switch route := e.route(jsonRequest.ServiceName); route.Kind {
-	case adsgate.RouteUnavailable:
-		writeUnavailable(w, route.Reason)
-		return
-	case adsgate.RouteFallback:
-		// Cloud exposes no diagnose endpoint, so a syncing service cannot
-		// answer this request through the fallback.
-		writeUnavailable(w, adsync.ReasonFallbackUnavailable)
 		return
 	}
 

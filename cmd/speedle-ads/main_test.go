@@ -10,16 +10,13 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"syscall"
 	"testing"
 	"time"
 
 	adsapi "github.com/teramoby/speedle-plus/api/ads"
-	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/assertion"
 	"github.com/teramoby/speedle-plus/pkg/cfg"
 	"github.com/teramoby/speedle-plus/pkg/cmd/flags"
-	"github.com/teramoby/speedle-plus/pkg/eval"
 	"github.com/teramoby/speedle-plus/pkg/logging"
 	"github.com/teramoby/speedle-plus/pkg/svcs"
 	"github.com/teramoby/speedle-plus/testutil/storetest"
@@ -187,44 +184,4 @@ func TestIsAllowedReturnsAssertedUser(t *testing.T) {
 func TestPrintVersionInfo(t *testing.T) {
 	productVersion, goVersion, gitCommit = "1.0", "go1.26", "abc"
 	printVersionInfo()
-}
-
-type cascadeReloadFixture struct {
-	pms.PolicyStoreManagerADS
-	enabled  bool
-	requests chan struct{}
-}
-
-func (s *cascadeReloadFixture) UpstreamTLSReloadEnabled() bool { return s.enabled }
-func (s *cascadeReloadFixture) RequestTLSReload()              { s.requests <- struct{}{} }
-
-func TestCascadeCommandRoutesReloadSignal(t *testing.T) {
-	if upstreamTLSReloadAction(nil) != nil {
-		t.Fatal("non-distribution store registered reload")
-	}
-	if upstreamTLSReloadAction(&eval.PolicyEvalImpl{Store: &cascadeReloadFixture{}}) != nil {
-		t.Fatal("direct mode registered reload")
-	}
-	store := &cascadeReloadFixture{enabled: true, requests: make(chan struct{}, 1)}
-	var evaluator eval.InternalEvaluator = &eval.PolicyEvalImpl{Store: store}
-	reload := upstreamTLSReloadAction(evaluator)
-	if reload == nil {
-		t.Fatal("cascade reload not registered")
-	}
-	signals := make(chan os.Signal, 1)
-	stop := make(chan struct{})
-	done := make(chan struct{})
-	go func() { defer close(done); runTLSReload(signals, stop, reload) }()
-	signals <- syscall.SIGHUP
-	select {
-	case <-store.requests:
-	case <-time.After(time.Second):
-		t.Fatal("SIGHUP did not reach the owned watcher")
-	}
-	close(stop)
-	select {
-	case <-done:
-	case <-time.After(time.Second):
-		t.Fatal("command reload loop did not stop")
-	}
 }
