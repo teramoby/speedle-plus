@@ -6,7 +6,7 @@
     <description>Recent content in Speedle: 빠르고 간단한 인가 엔진 on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>ko-kr</language>
-    <lastBuildDate>Thu, 12 Nov 2026 10:00:00 +0800</lastBuildDate>
+    <lastBuildDate>Wed, 27 May 2020 07:48:20 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/ko/index.xml" rel="self" type="application/rss+xml" />
     
@@ -107,17 +107,6 @@ plugins { application } repositories { mavenCentral() } dependencies { implement
     </item>
     
     <item>
-      <title>Speedle Cloud 빠른 시작</title>
-      <link>https://engine.speedle.io/ko/docs/cloud/getting-started/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/ko/docs/cloud/getting-started/</guid>
-      <description>Speedle Cloud는 출시 예정입니다. 이 가이드는 프로덕션 로그인과 인증된 인가 API가 제공될 때의 사용 절차를 설명합니다. 예제는 실제 Cloud 환경에서 실행하지 않았습니다.
-GitHub 또는 Google을 통한 로그인(출시 예정) 브라우저에서 Cloud 콘솔을 열고 사용 가능한 공급자로 로그인합니다. 아직 사용되지 않은 인증된 이메일로 처음 로그인하는 경우 계정 생성을 확인합니다. 이메일이 이미 사용 중이라면 콘솔에 표시된 연결된 공급자로 로그인하십시오.
-서비스와 정책 생성 서비스 워크스페이스를 열고 books를 입력한 뒤 서비스 생성을 선택합니다. 기존 정책이 결과에 영향을 주지 않도록 새 서비스로 예제를 실행하십시오.</description>
-    </item>
-    
-    <item>
       <title>Speedle 임베디드 모드</title>
       <link>https://engine.speedle.io/ko/docs/deployment/embedded/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -172,17 +161,6 @@ speedle-users 및 speedle-developers 메일링 리스트에도 참여하실 수 
       <guid>https://engine.speedle.io/ko/docs/performance-testing/</guid>
       <description>여기서는 성능 보고서를 게시하지 않으며, 결과는 하드웨어, 정책 및 고정한 버전에 따라 달라집니다.
 먼저 Speedle과 비교할 오픈 소스 인가 프로젝트가 무엇인지 저에게 물어보세요. 정책 집합 크기와 시간 예산도 물어보고 기본값으로 정책 10, 100, 1,000개와 30분을 제안하세요. 제가 답할 때까지 다른 작업을 하지 마세요. 그런 다음 새 로컬 디렉터리에서 같은 머신을 사용해 예산 내에서 공정하게 비교하세요. 모든 엔진과 도구의 버전을 고정하세요. 동등한 RBAC 및 ABAC 정책과 예상 허용/거부 결정이 있는 공통 요청을 만들고, 시간을 측정하기 전에 모든 엔진의 결정을 검증하세요.</description>
-    </item>
-    
-    <item>
-      <title>Speedle Cloud API 키</title>
-      <link>https://engine.speedle.io/ko/docs/cloud/tokens/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/ko/docs/cloud/tokens/</guid>
-      <description>API 키는 계정에 속하며 범위에 따라 해당 계정의 서비스에 접근합니다. 최종 사용자가 아닌 애플리케이션을 인증합니다. API 키, 세션, 연결된 신원 관리에는 로그인한 콘솔 세션이 필요합니다.
-Speedle Cloud는 출시 예정입니다. 이 가이드는 프로덕션 로그인과 인증된 인가 API가 제공될 때의 사용 절차를 설명합니다. 예제는 실제 Cloud 환경에서 실행하지 않았습니다.
-API 키 생성 API 키에서 앞뒤 공백을 제외한 1–128자 이름, 범위, 만료 기간(7d, 30d, 90d, 180d, 365d. 콘솔 기본값은 3개월)을 지정하고 생성을 선택합니다.</description>
     </item>
     
     <item>
@@ -257,18 +235,6 @@ MongoDB는 복제본 세트 또는 샤딩된 클러스터로 실행해야 합니
     </item>
     
     <item>
-      <title>Speedle Cloud 인가 API</title>
-      <link>https://engine.speedle.io/ko/docs/cloud/authorization-api/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/ko/docs/cloud/authorization-api/</guid>
-      <description>Speedle Cloud는 출시 예정입니다. 이 가이드는 프로덕션 로그인과 인증된 인가 API가 제공될 때의 사용 절차를 설명합니다. 예제는 실제 Cloud 환경에서 실행하지 않았습니다.
-계정 API 키로 서버에서 인가를 확인합니다. 키를 생성하려면 로그인이 가능해야 합니다. 관리 범위는 ADS를 호출할 수 없습니다. ads가 아니면 403 insufficient_scope입니다.
-서버에서 IsAllowed 호출 ads 범위 API 키를 하나의 Authorization: Bearer 헤더에 넣고 POST로 보냅니다.
-POST /authz-check/v1/is-allowed Authorization: Bearer &amp;lt;API key&amp;gt; Content-Type: application/json {&amp;#34;subject&amp;#34;:{&amp;#34;principals&amp;#34;:[{&amp;#34;type&amp;#34;:&amp;#34;user&amp;#34;,&amp;#34;name&amp;#34;:&amp;#34;alice&amp;#34;,&amp;#34;idd&amp;#34;:&amp;#34;corp&amp;#34;}]},&amp;#34;serviceName&amp;#34;:&amp;#34;books&amp;#34;,&amp;#34;resource&amp;#34;:&amp;#34;/books&amp;#34;,&amp;#34;action&amp;#34;:&amp;#34;get&amp;#34;,&amp;#34;attributes&amp;#34;:[{&amp;#34;name&amp;#34;:&amp;#34;level&amp;#34;,&amp;#34;type&amp;#34;:&amp;#34;numeric&amp;#34;,&amp;#34;value&amp;#34;:3},{&amp;#34;name&amp;#34;:&amp;#34;when&amp;#34;,&amp;#34;type&amp;#34;:&amp;#34;datetime&amp;#34;,&amp;#34;value&amp;#34;:&amp;#34;2026-11-05T03:00:00Z&amp;#34;}]} 본문은 자체 호스팅 Speedle ADS와 같은 REST 형식입니다.</description>
-    </item>
-    
-    <item>
       <title>인가 결정</title>
       <link>https://engine.speedle.io/ko/docs/decisions/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -276,16 +242,6 @@ POST /authz-check/v1/is-allowed Authorization: Bearer &amp;lt;API key&amp;gt; Co
       <guid>https://engine.speedle.io/ko/docs/decisions/</guid>
       <description>인가 결정이란 무엇인가 Speedle은 지정된 서비스 내에서 주체, 작업 및 리소스를 평가하며 애플리케이션이 그 결과를 적용합니다. 평가 오류나 타임아웃은 일반적인 Deny(거부)와 구분하여 처리하고 오류 발생 시 접근을 기본적으로 차단(fail closed)해야 합니다. REST, gRPC, 임베디드 Go API는 데이터 표현 방식이 다르므로 각각의 API 계약을 따르십시오.
 예제 실행 전 준비 빠른 시작의 설명에 따라 저장소 루트에서 ./bin/spctl, ./bin/speedle-pms, ./bin/speedle-ads를 빌드합니다. Go 1.27.4(또는 동일 릴리스 브랜치의 최신 패치 버전), Bash, curl, Python 3이 필요합니다.</description>
-    </item>
-    
-    <item>
-      <title>API 레퍼런스</title>
-      <link>https://engine.speedle.io/ko/docs/cloud/api-reference/</link>
-      <pubDate>Thu, 12 Nov 2026 10:00:00 +0800</pubDate>
-      
-      <guid>https://engine.speedle.io/ko/docs/cloud/api-reference/</guid>
-      <description>인가 API 프리뷰에서 IsAllowed 호출을 설명합니다. 제한 및 오류에 쿼터와 오류 응답이 있습니다.
-   document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/openapi/cloud-public.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34;, supportedSubmitMethods: [] }); window.ui = ui; });  </description>
     </item>
     
     <item>
@@ -309,17 +265,6 @@ POST /authz-check/v1/is-allowed Authorization: Bearer &amp;lt;API key&amp;gt; Co
 의존성 추가 새 콘솔 프로젝트를 생성하고 패키지를 추가합니다:
 dotnet new console -o SpeedleExample cd SpeedleExample dotnet add package Speedle.Sdk --version 0.2.0 로컬 Speedle 호출 SDK 개요의 설명에 따라 Speedle을 시작하고 예제 정책을 생성합니다. Program.cs를 다음과 같이 대체합니다:
 using Speedle.Sdk; try { await using var speedle = new SpeedleClient(new SpeedleClientOptions { Backend = Backend.</description>
-    </item>
-    
-    <item>
-      <title>Speedle Cloud 제한과 오류</title>
-      <link>https://engine.speedle.io/ko/docs/cloud/limits-and-errors/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/ko/docs/cloud/limits-and-errors/</guid>
-      <description>Speedle Cloud는 출시 예정입니다. 이 가이드는 프로덕션 로그인과 인증된 인가 API가 제공될 때의 사용 절차를 설명합니다. 예제는 실제 Cloud 환경에서 실행하지 않았습니다.
-별도 표시가 없으면 한도는 계정 전체에서 공유합니다. API 키를 바꿔도 일일 할당량은 늘지 않습니다.
-제한    대상 한도 도달 시 처리     계정 서비스 100개 409 quota_exceeded. 미사용 서비스 삭제. 시간에 따른 초기화 없음.   모든 서비스의 인가 정책과 역할 정책 합계 계정당 200개 409 quota_exceeded.</description>
     </item>
     
     <item>
@@ -356,6 +301,16 @@ cargo new speedle-example cd speedle-example cargo add speedle@0.2.0 --features 
 의존성 추가 새 ES 모듈 패키지를 생성하고 설치합니다:
 mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm install @speedle/sdk@0.2.1 로컬 Speedle 호출 SDK 개요의 설명에 따라 Speedle을 시작하고 예제 정책을 생성합니다. 이 프로그램을 main.ts로 저장합니다:
 import { Auth, Reason, SpeedleClient, SpeedleError } from &amp;#34;@speedle/sdk&amp;#34;; try { const speedle = new SpeedleClient({ backend: &amp;#34;speedle&amp;#34;, endpoint: &amp;#34;http://localhost:6734&amp;#34;, auth: Auth.</description>
+    </item>
+    
+    <item>
+      <title>결정 서비스 확장</title>
+      <link>https://engine.speedle.io/ko/docs/extending-decision-service/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/extending-decision-service/</guid>
+      <description>store.StoreBuilder를 구현하고 store.Register로 고유한 이름을 등록한 뒤 실행 프로그램에서 패키지를 가져옵니다. GetStoreParams는 추가 플래그를 저장소 속성에 연결합니다. 자체 플래그는 시작 전에 파싱합니다. 라이브러리는 플래그를 파싱하거나 신호 처리기를 설치하지 않습니다.
+github.com/teramoby/speedle-plus/pkg/ads의 ads.Run(ctx, params, conf, options...)로 표준 ADS 시작을 재사용합니다. params는 *flags.Parameters, conf는 *cfg.Config이며 ctx 취소 시 두 서버가 중지됩니다. ads.WithGate(g)는 두 프로토콜의 게이트 탐색을 재정의하고 ads.WithGate(nil)은 비활성화합니다. ads.WithListeners(rest, rpc)는 미리 바인딩한 net.Listener를 받으며 nil은 설정된 엔드포인트를 사용합니다. Run은 시작 실패 시에도 리스너를 소유하고 닫습니다.</description>
     </item>
     
     <item>
@@ -415,9 +370,9 @@ TLS는 연결을 암호화하고 서버를 인증합니다. 인증된 클라이�
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ko/about/</guid>
-      <description>Speedle은 SPDL 정책 언어를 채택한 오픈 소스(UPL-1.0) 인가 엔진입니다. ADS(인가 결정)와 PMS(정책 관리), 6개 언어의 SDK, Speedle Cloud(호스팅형 서비스), Speedle AI(AI 에이전트를 위한 인가 및 AI 지원 인가, MCP 서버, policy-modeler 스킬)로 구성됩니다.
+      <description>Speedle은 SPDL 정책 언어를 채택한 오픈 소스(UPL-1.0) 인가 엔진입니다. ADS(인가 결정)와 PMS(정책 관리), 6개 언어의 SDK, Speedle AI(AI 에이전트를 위한 인가 및 AI 지원 인가, MCP 서버, policy-modeler 스킬)로 구성됩니다.
 Speedle은 Oracle Entitlements Server(OES)를 개발한 팀이 구축했습니다. 그 설계는 OES, BEA ALES/WLES, CrossLogix 등 이전 인가 제품에 대한 해당 팀의 수년간의 제품 반복 경험을 바탕으로 합니다.
-이 프로젝트는 오픈 소스 프로젝트 Oracle Speedle에서 시작되었으며, 주요 관리자는 원래 Oracle Speedle의 개발자들입니다.</description>
+이 프로젝트는 오픈 소스 프로젝트 Oracle Speedle에서 시작되었으며, 주요 관리자는 원래 Oracle Speedle의 개발자들입니다. 우리는 Oracle을 떠났지만 모든 사람이 자유롭게 사용할 수 있도록 프로젝트를 계속 유지 관리하고 있습니다.</description>
     </item>
     
     <item>

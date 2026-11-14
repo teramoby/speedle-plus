@@ -149,20 +149,8 @@
 </ul>
 
 </li>
-
-
-
-<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ja/docs/cloud/">Speedle Cloud</a></span>
-<ul class="">
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/getting-started/">Speedle Cloud クイックスタート</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/tokens/">API キー</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/authorization-api/">認可 API</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/api-reference/">API リファレンス</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/limits-and-errors/">制限とエラー</a></li>
-</ul>
-
-</li>
 <li data-docs-depth="0" class=""><a href="/ja/docs/security/">セキュリティ</a></li>
+<li data-docs-depth="0" class=""><a href="/ja/docs/extending-decision-service/">決定サービスの拡張</a></li>
 <li data-docs-depth="0" class=""><a href="/ja/docs/logging/">ロギングフレームワーク</a></li>
 <li data-docs-depth="0" class=""><a href="/ja/docs/versions/">バージョン</a></li>
 <li data-docs-depth="0" class=""><a href="/ja/docs/custom-function/">カスタム関数</a></li><li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">その他</span>
@@ -261,7 +249,7 @@ docker run -d --name speedle-pms <span style="color:#f1fa8c">\
 curl --fail --silent --show-error --retry <span style="color:#bd93f9">30</span> --retry-all-errors --retry-delay <span style="color:#bd93f9">1</span> --connect-timeout <span style="color:#bd93f9">2</span> <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/readyz</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">{&#34;status&#34;:&#34;ok&#34;}
 {&#34;ready&#34;:true,&#34;servicesTotal&#34;:0,&#34;servicesUsable&#34;:0}</code></pre></div>
-<p>プロセスが実行されている間、<code>/healthz</code> は <code>200 {&quot;status&quot;:&quot;ok&quot;}</code> を返します。<code>/readyz</code> は、ADS がリクエストを評価できる場合に <code>200</code> を返します。ファイルストアには分散状態がないため、サービスカウントはゼロのままになります。確認すべきフィールドは <code>ready</code> です。イメージにはシェルも <code>curl</code> もないため、これらのプローブはホスト上またはオーケストレーター内で公開されたポートに対して実行します。<code>http://localhost:6734/healthz</code> でも同じ公開ポートに到達します。</p>
+<p>プロセスが実行されている間、<code>/healthz</code> は <code>200 {&quot;status&quot;:&quot;ok&quot;}</code> を返します。ローカル ADS の <code>/readyz</code> は <code>200</code> と <code>ready: true</code> を返し、サービスカウントはゼロです。イメージにはシェルも <code>curl</code> もないため、これらのプローブはホスト上またはオーケストレーター内で公開されたポートに対して実行します。<code>http://localhost:6734/healthz</code> でも同じ公開ポートに到達します。</p>
 
 <h2 id="spctl-によるポリシーの作成">spctl によるポリシーの作成</h2>
 

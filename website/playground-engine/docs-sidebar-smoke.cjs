@@ -189,7 +189,7 @@ async function checkPhoneDrawer(page, expected) {
 }
 
 async function checkReadOnlySwagger(page, origin) {
-  for (const route of ['/docs/cloud/api-reference/', '/docs/api/decision_api/']) {
+  for (const route of ['/docs/api/management_api/', '/docs/api/decision_api/']) {
     await page.setViewportSize({width: 1440, height: 900});
     await page.goto(origin + route, {waitUntil: 'domcontentloaded'});
     await page.waitForSelector('#swagger-ui .opblock', {timeout: 20000});
@@ -198,7 +198,6 @@ async function checkReadOnlySwagger(page, origin) {
     // computed display stays "inline-block" when .auth-wrapper is hidden.
     const controls = page.locator('#swagger-ui .auth-wrapper, #swagger-ui .authorization__btn, #swagger-ui .btn.authorize');
     const count = await controls.count();
-    if (route === '/docs/cloud/api-reference/') assert.ok(count > 0, `${route} did not render an authorize control to hide`);
     for (let index = 0; index < count; index++) {
       assert.equal(await controls.nth(index).isVisible(), false, `${route} shows an authorize control`);
     }
@@ -230,7 +229,7 @@ async function checkReadOnlySwagger(page, origin) {
           links = await checkDesktop(page, width, expected);
           checks++;
         }
-        if (['docs/', 'docs/sdks/java/', 'docs/cloud/getting-started/', 'docs/performance-testing/'].includes(route.replace(/^\/(?:zh\/)?/, ''))) {
+        if (['docs/', 'docs/sdks/java/', 'docs/extending-decision-service/', 'docs/performance-testing/'].includes(route.replace(/^\/(?:zh\/)?/, ''))) {
           await page.setViewportSize({width: 375, height: 844});
           await checkPhoneDrawer(page, expected);
         }

@@ -4,7 +4,7 @@ icon = "Speedle_logo_about.svg"
 lastmod = 2026-11-08T19:23:52+08:00
 +++
 
-Speedle은 SPDL 정책 언어를 채택한 오픈 소스(UPL-1.0) 인가 엔진입니다. ADS(인가 결정)와 PMS(정책 관리), 6개 언어의 SDK, Speedle Cloud(호스팅형 서비스), Speedle AI(AI 에이전트를 위한 인가 및 AI 지원 인가, MCP 서버, policy-modeler 스킬)로 구성됩니다.
+Speedle은 SPDL 정책 언어를 채택한 오픈 소스(UPL-1.0) 인가 엔진입니다. ADS(인가 결정)와 PMS(정책 관리), 6개 언어의 SDK, Speedle AI(AI 에이전트를 위한 인가 및 AI 지원 인가, MCP 서버, policy-modeler 스킬)로 구성됩니다.
 
 Speedle은 Oracle Entitlements Server(OES)를 개발한 팀이 구축했습니다. 그 설계는 OES, BEA ALES/WLES, CrossLogix 등 이전 인가 제품에 대한 해당 팀의 수년간의 제품 반복 경험을 바탕으로 합니다.
 

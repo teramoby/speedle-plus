@@ -1,6 +1,6 @@
 +++
 title = "Rust SDK"
-description = "Add the Speedle Rust SDK and check authorization against a local Speedle or Speedle Cloud."
+description = "Add the Speedle Rust SDK and check authorization against a local Speedle."
 weight = 50
 aliases = ["/docs/api/sdk-rust/"]
 draft = false
@@ -8,7 +8,7 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "Add the speedle 0.2.0 crate with cargo add, then call is_allowed and check against a local Speedle or Speedle Cloud."
+bref = "Add the speedle 0.2.0 crate with cargo add, then call is_allowed and check against a local Speedle."
 lastmod = 2026-11-07T19:43:15+08:00
 +++
 
@@ -66,56 +66,6 @@ alice get /docs/public: allowed=true
 alice delete /docs/public: allowed=false reason=NoApplicablePolicies
 ```
 
-## Call Speedle Cloud
-
-> **Speedle Cloud is coming soon.**
-
-The program reads the service name from `SPEEDLE_SERVICE` and an account API key with the `ads` scope from `SPEEDLE_TOKEN`. `SPEEDLE_ENDPOINT` overrides the default endpoint `https://cloud.speedle.io`. Replace `src/main.rs` with:
-
-```rust
-use std::env;
-
-use speedle::blocking::Client;
-use speedle::{Auth, Backend};
-
-fn main() {
-    if let Err(e) = run() {
-        eprintln!("Speedle error: {e}");
-        std::process::exit(1);
-    }
-}
-
-fn run() -> Result<(), speedle::Error> {
-    let endpoint = env::var("SPEEDLE_ENDPOINT").unwrap_or_else(|_| "https://cloud.speedle.io".to_string());
-    let token = env::var("SPEEDLE_TOKEN").unwrap_or_default();
-    let service = env::var("SPEEDLE_SERVICE").unwrap_or_default();
-    let speedle = Client::builder(Backend::SpeedleCloud, &endpoint, Auth::bearer(token), service).build()?;
-
-    let allowed = speedle.is_allowed(&"alice".into(), "get", "/docs/public", &[])?;
-    println!("alice get /docs/public: allowed={allowed}");
-
-    let d = speedle.check(&"alice".into(), "delete", "/docs/public", &[])?;
-    println!("alice delete /docs/public: allowed={} reason={:?}", d.allowed, d.reason);
-    Ok(())
-}
-```
-
-Set the environment and run it. `read -rs` keeps the API key out of your shell history and screen:
-
-```bash
-export SPEEDLE_SERVICE=docs
-read -rs SPEEDLE_TOKEN && export SPEEDLE_TOKEN
-cargo run
-```
-
-Output, when the service has the example policy:
-
-```text
-alice get /docs/public: allowed=true
-alice delete /docs/public: allowed=false reason=NoApplicablePolicies
-```
-
-The API key is a server-side secret. Never ship it to browsers, mobile apps or desktop clients.
 
 ## Error handling
 

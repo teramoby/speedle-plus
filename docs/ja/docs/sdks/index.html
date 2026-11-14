@@ -148,20 +148,8 @@
 </ul>
 
 </li>
-
-
-
-<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ja/docs/cloud/">Speedle Cloud</a></span>
-<ul class="">
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/getting-started/">Speedle Cloud クイックスタート</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/tokens/">API キー</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/authorization-api/">認可 API</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/api-reference/">API リファレンス</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/limits-and-errors/">制限とエラー</a></li>
-</ul>
-
-</li>
 <li data-docs-depth="0" class=""><a href="/ja/docs/security/">セキュリティ</a></li>
+<li data-docs-depth="0" class=""><a href="/ja/docs/extending-decision-service/">決定サービスの拡張</a></li>
 <li data-docs-depth="0" class=""><a href="/ja/docs/logging/">ロギングフレームワーク</a></li>
 <li data-docs-depth="0" class=""><a href="/ja/docs/versions/">バージョン</a></li>
 <li data-docs-depth="0" class=""><a href="/ja/docs/custom-function/">カスタム関数</a></li><li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">その他</span>
@@ -181,7 +169,7 @@
   <h1>SDK</h1>
   <p></p>
 
-<p>Speedle SDK は、決定 API <code>POST /authz-check/v1/is-allowed</code> のクライアントライブラリです。セルフホストの Speedle ADS および Speedle Cloud の両方で動作します。各言語ページではパッケージの追加方法を説明し、両方の環境向けにテスト済みの完全なプログラムを提供しています。ソースコードと完全なリファレンスは <a href="https://github.com/teramoby/speedle-sdk">teramoby/speedle-sdk</a> にあります。これらのサンプルで PMS と ADS を実行する方法については、<a href="/ja/docs/deployment/">デプロイ</a> と <a href="/ja/docs/deployment/docker/">Docker イメージ</a> を参照してください。</p>
+<p>Speedle SDK は、決定 API <code>POST /authz-check/v1/is-allowed</code> のクライアントライブラリです。セルフホストの Speedle ADS で動作します。各言語ページではパッケージの追加方法を説明し、セルフホスト環境向けにテスト済みの完全なプログラムを提供しています。ソースコードと完全なリファレンスは <a href="https://github.com/teramoby/speedle-sdk">teramoby/speedle-sdk</a> にあります。これらのサンプルで PMS と ADS を実行する方法については、<a href="/ja/docs/deployment/">デプロイ</a> と <a href="/ja/docs/deployment/docker/">Docker イメージ</a> を参照してください。</p>
 
 <h2 id="パッケージ">パッケージ</h2>
 
@@ -221,11 +209,6 @@
 <td>セルフホストの Speedle ADS</td>
 <td>6 つの SDK すべて</td>
 </tr>
-
-<tr>
-<td>Speedle Cloud</td>
-<td>まもなく公開</td>
-</tr>
 </tbody>
 </table>
 
@@ -241,8 +224,6 @@
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service docs
 ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create policy -c <span style="color:#f1fa8c">&#34;grant user alice get,list /docs/public&#34;</span> --service-name<span style="color:#ff79c6">=</span>docs</code></pre></div>
 <p>ローカルの例は、認証情報なしで <code>http://localhost:6734</code> に接続します。SDK はループバックホストに対してのみ平文の <code>http://</code> を受け入れます。他の ADS には HTTPS を使用してください。</p>
-
-<p>Speedle Cloud のサンプルは <code>https://cloud.speedle.io</code> に接続し、環境変数 <code>SPEEDLE_SERVICE</code> と <code>SPEEDLE_TOKEN</code> からサービス名と<code>ads</code> スコープのアカウント API キーを読み取ります。そのサービス内で同じポリシーを作成すると、同じ回答が得られます。API キーはサーバー側のシークレットです。ブラウザ、モバイルアプリ、またはデスクトップクライアントには絶対に配布しないでください。</p>
 </div></main>
         </div>
     </div>

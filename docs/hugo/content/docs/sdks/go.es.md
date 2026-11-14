@@ -1,6 +1,6 @@
 +++
 title = "Go SDK"
-description = "Añada el SDK de Speedle para Go y compruebe autorizaciones frente a un Speedle local o Speedle Cloud."
+description = "Añada el SDK de Speedle para Go y compruebe autorizaciones frente a un Speedle local."
 weight = 30
 aliases = ["/es/docs/api/sdk-go/"]
 draft = false
@@ -8,7 +8,7 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "Añada github.com/teramoby/speedle-sdk/go v0.2.0 con go get, y llame a IsAllowed y Check frente a un Speedle local o Speedle Cloud."
+bref = "Añada github.com/teramoby/speedle-sdk/go v0.2.0 con go get, y llame a IsAllowed y Check frente a un Speedle local."
 lastmod = 2026-11-07T19:43:15+08:00
 +++
 
@@ -83,73 +83,6 @@ alice get /docs/public: allowed=true
 alice delete /docs/public: allowed=false reason=NO_APPLICABLE_POLICIES
 ```
 
-## Llamar a Speedle Cloud
-
-> **Speedle Cloud estará disponible próximamente.**
-
-El programa lee el nombre del servicio desde `SPEEDLE_SERVICE` y una clave API de cuenta con ámbito `ads` desde `SPEEDLE_TOKEN`. `SPEEDLE_ENDPOINT` anula el endpoint predeterminado `https://cloud.speedle.io`. Sustituya `main.go` por:
-
-```go
-package main
-
-import (
-	"context"
-	"fmt"
-	"os"
-
-	speedle "github.com/teramoby/speedle-sdk/go"
-)
-
-func main() {
-	endpoint := os.Getenv("SPEEDLE_ENDPOINT")
-	if endpoint == "" {
-		endpoint = "https://cloud.speedle.io"
-	}
-	client, err := speedle.NewClient(speedle.Config{
-		Backend:     speedle.BackendSpeedleCloud,
-		Endpoint:    endpoint,
-		Auth:        speedle.BearerToken(os.Getenv("SPEEDLE_TOKEN")),
-		ServiceName: os.Getenv("SPEEDLE_SERVICE"),
-	})
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Speedle error:", err)
-		os.Exit(1)
-	}
-	defer client.Close()
-
-	ctx := context.Background()
-	allowed, err := client.IsAllowed(ctx, speedle.User("alice"), "get", "/docs/public", nil)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Speedle error:", err)
-		os.Exit(1)
-	}
-	fmt.Printf("alice get /docs/public: allowed=%t\n", allowed)
-
-	d, err := client.Check(ctx, speedle.User("alice"), "delete", "/docs/public", nil)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Speedle error:", err)
-		os.Exit(1)
-	}
-	fmt.Printf("alice delete /docs/public: allowed=%t reason=%s\n", d.Allowed, d.Reason)
-}
-```
-
-Establezca las variables de entorno y ejecute. El comando `read -rs` evita que la clave API quede registrada en el historial del shell o se muestre en pantalla:
-
-```bash
-export SPEEDLE_SERVICE=docs
-read -rs SPEEDLE_TOKEN && export SPEEDLE_TOKEN
-go run .
-```
-
-Salida cuando la política de ejemplo existe en el servicio:
-
-```text
-alice get /docs/public: allowed=true
-alice delete /docs/public: allowed=false reason=NO_APPLICABLE_POLICIES
-```
-
-La clave API es un secreto del lado del servidor. Nunca lo distribuya a navegadores, aplicaciones móviles ni clientes de escritorio.
 
 ## Manejo de errores
 

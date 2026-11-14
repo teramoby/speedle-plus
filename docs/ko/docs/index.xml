@@ -92,6 +92,16 @@
     </item>
     
     <item>
+      <title>결정 서비스 확장</title>
+      <link>https://engine.speedle.io/ko/docs/extending-decision-service/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/extending-decision-service/</guid>
+      <description>store.StoreBuilder를 구현하고 store.Register로 고유한 이름을 등록한 뒤 실행 프로그램에서 패키지를 가져옵니다. GetStoreParams는 추가 플래그를 저장소 속성에 연결합니다. 자체 플래그는 시작 전에 파싱합니다. 라이브러리는 플래그를 파싱하거나 신호 처리기를 설치하지 않습니다.
+github.com/teramoby/speedle-plus/pkg/ads의 ads.Run(ctx, params, conf, options...)로 표준 ADS 시작을 재사용합니다. params는 *flags.Parameters, conf는 *cfg.Config이며 ctx 취소 시 두 서버가 중지됩니다. ads.WithGate(g)는 두 프로토콜의 게이트 탐색을 재정의하고 ads.WithGate(nil)은 비활성화합니다. ads.WithListeners(rest, rpc)는 미리 바인딩한 net.Listener를 받으며 nil은 설정된 엔드포인트를 사용합니다. Run은 시작 실패 시에도 리스너를 소유하고 닫습니다.</description>
+    </item>
+    
+    <item>
       <title>보안</title>
       <link>https://engine.speedle.io/ko/docs/security/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

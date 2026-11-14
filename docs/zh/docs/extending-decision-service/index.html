@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <script>document.documentElement.classList.add('docs-js','navigation-js');addEventListener('DOMContentLoaded',function(){if(!document.querySelector('header.site-header.navigation-ready'))document.documentElement.classList.remove('navigation-js')});</script>
+    <meta name="generator" content="Hugo 0.48" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1"><title>扩展决策服务 · Speedle Engine</title>
+<meta name="description" content="使用自定义策略存储或服务适配器。">
+<meta name="generator" content="Hugo 0.48" />
+<link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://engine.speedle.io/zh/docs/extending-decision-service/">
+
+<link rel="alternate" hreflang="en" href="https://engine.speedle.io/docs/extending-decision-service/">
+<link rel="alternate" hreflang="es" href="https://engine.speedle.io/es/docs/extending-decision-service/">
+<link rel="alternate" hreflang="ja" href="https://engine.speedle.io/ja/docs/extending-decision-service/">
+<link rel="alternate" hreflang="ko" href="https://engine.speedle.io/ko/docs/extending-decision-service/">
+<link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/extending-decision-service/">
+<link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/extending-decision-service/">
+<meta property="og:type" content="article">
+<meta property="article:modified_time" content="2026-11-14T18:30:00&#43;08:00">
+<meta property="og:site_name" content="Speedle Engine">
+<meta property="og:title" content="扩展决策服务 · Speedle Engine">
+<meta property="og:description" content="使用自定义策略存储或服务适配器。">
+<meta property="og:url" content="https://engine.speedle.io/zh/docs/extending-decision-service/">
+<meta property="og:image" content="https://engine.speedle.io/img/social/engine-zh.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:alt" content="Speedle Engine — 快速、简单的权限控制">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="扩展决策服务 · Speedle Engine">
+<meta name="twitter:description" content="使用自定义策略存储或服务适配器。">
+<meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-zh.png">
+<meta name="twitter:image:alt" content="Speedle Engine — 快速、简单的权限控制">
+
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/extending-decision-service/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-14T18:30:00+08:00","description":"使用自定义策略存储或服务适配器。","headline":"扩展决策服务","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/extending-decision-service/","@type":"WebPage"},"name":"扩展决策服务","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/extending-decision-service/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/extending-decision-service/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/zh/","name":"首页","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/","name":"文档","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/extending-decision-service/","name":"扩展决策服务","position":3}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
+
+
+    <link href="/css/navigation.css?v=header-20261106-v8" rel="stylesheet">
+    <script src="/js/navigation.js?v=header-20261106-v8" defer></script>
+    <script src="/js/docs.js" defer></script>
+
+</head>
+
+<body class="page-kube docs-page">
+    <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="/zh/#top" aria-label="Speedle Engine 首页"><img class="brand-logo" src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt=""><span class="brand-divider" aria-hidden="true"></span><span class="brand-product">Engine</span></a>
+      <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="展开导航">☰</button>
+      <nav class="nav-links" id="nav-links" aria-label="主导航">
+        <div class="products"><button class="products-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="products-panel">产品<svg class="products-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="products-heading" aria-hidden="true">产品</span><div class="products-panel" id="products-panel" role="group" aria-label="产品"><a class="product-row" href="https://engine.speedle.io/zh/" aria-current="page"><img class="product-mark" src="/img/speedle/speedle-mark-engine.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Engine</span><span class="product-desc">开源授权引擎</span></span><svg class="product-check" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a class="product-row" href="https://cloud.speedle.io/zh-CN/"><img class="product-mark" src="/img/speedle/speedle-mark-cloud.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Cloud <span class="product-badge">即将上线</span></span><span class="product-desc">面向开发者的托管授权服务</span></span></a><a class="product-row" href="https://ai.speedle.io/zh/"><img class="product-mark" src="/img/speedle/speedle-mark-ai.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle AI</span><span class="product-desc">用 AI 做权限，为 AI 管权限</span></span></a></div></div>
+        <a href="/zh/#about">关于</a><a href="/zh/#features">功能</a>
+        <a href="/zh/quick-start/">快速入门</a><a href="/zh/docs/">文档</a><a href="/zh/playground/">策略实验室</a>
+        <div class="languages"><button class="languages-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="languages-panel">中文<svg class="languages-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="languages-heading" aria-hidden="true">语言</span><div class="languages-panel" id="languages-panel" role="group" aria-label="语言"><a class="language-row" href="/docs/extending-decision-service/" lang="en" hreflang="en">English</a><a class="language-row" href="/ja/docs/extending-decision-service/" lang="ja" hreflang="ja">日本語</a><a class="language-row" href="/ko/docs/extending-decision-service/" lang="ko" hreflang="ko">한국어</a><a class="language-row" href="/es/docs/extending-decision-service/" lang="es" hreflang="es">Español</a><a class="language-row" href="/zh/docs/extending-decision-service/" lang="zh-CN" hreflang="zh-CN" aria-current="page">中文</a></div></div>
+        <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
+      </nav>
+    </div>
+  </header>
+    <div class="container">
+        <button class="docs-nav-toggle" type="button" aria-expanded="false" aria-controls="docs-navigation">
+            <span>菜单</span>
+            <svg class="docs-nav-toggle-icon" viewBox="0 0 18 14" width="18" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M1 1h16M1 7h16M1 13h16"/></svg>
+        </button>
+        <div class="content-container"><aside class="docs-sidebar" id="docs-navigation" aria-label="文档导航">
+<div class="docs-nav-head">
+<span class="docs-nav-title">文档</span>
+<button class="docs-nav-close" type="button" aria-label="关闭菜单"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="m3 3 10 10M13 3 3 13"/></svg></button>
+</div>
+<div class="sidebar">
+<nav>
+<ul>
+
+
+
+
+
+<li data-docs-depth="-1" class="docs-nav-section parent"><span class="docs-nav-heading">文档</span>
+<ul class="sub-menu">
+<li data-docs-depth="0" class=""><a href="/zh/docs/usecases/">使用场景</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/overview/">概览</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/spdl/">SPDL：Speedle 策略定义语言</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/architecture/">系统架构</a></li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">Speedle 策略</span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/zh/docs/pms/policy-mgmt/">策略管理</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/pms/global-policy/">全局角色策略</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/pms/diagnosis/">授权诊断</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/pms/discover/">策略发现</a></li>
+</ul>
+
+</li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/decisions/">授权决策</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/idd/">用户身份域</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/assertor/">令牌断言</a></li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/zh/docs/store/">存储扩展</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/zh/docs/store/mysql/">MySQL 配置指南</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/store/etcd/">etcd 配置指南</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/store/mongodb/">MongoDB 配置指南</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">API</span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/zh/docs/api/asserter_api/">令牌断言 API</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/api/decision_api/">授权决策 API</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/api/management_api/">策略管理 API</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/zh/docs/deployment/">部署</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/zh/docs/deployment/embedded/">Speedle 嵌入模式</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/deployment/docker/">Docker 镜像</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/deployment/homebrew/">Homebrew 安装</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/zh/docs/sdks/">SDK</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/zh/docs/sdks/java/">Java SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/sdks/python/">Python SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/sdks/go/">Go SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/sdks/dotnet/">C#/.NET SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/sdks/rust/">Rust SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/sdks/node/">Node.js/TypeScript SDK</a></li>
+</ul>
+
+</li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/security/">安全</a></li>
+<li data-docs-depth="0" class="active"><a href="/zh/docs/extending-decision-service/" aria-current="page">扩展决策服务</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/logging/">日志</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/versions/">版本</a></li>
+<li data-docs-depth="0" class=""><a href="/zh/docs/custom-function/">自定义函数</a></li><li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">其他</span>
+<ul>
+<li data-docs-depth="1" class=""><a href="/zh/docs/performance-testing/">性能测试指南</a></li></ul>
+</li>
+</ul>
+
+</li>
+</ul>
+</nav>
+
+
+</div>
+</aside>
+<main>
+<div id="main">
+
+  <h1>扩展决策服务</h1>
+  <p class="docs-lead">使用自定义策略存储或服务适配器。</p>
+
+
+
+  <div id="kube-component" class="content"><p>实现 <code>store.StoreBuilder</code>，用 <code>store.Register</code> 注册唯一名称，并在自己的可执行程序中导入该包。<code>GetStoreParams</code> 将附加命令行参数映射到存储属性。先解析自己的参数，再启动服务；库不解析参数，也不安装信号处理器。</p>
+
+<p>从 <code>github.com/teramoby/speedle-plus/pkg/ads</code> 调用 <code>ads.Run(ctx, params, conf, options...)</code>，复用标准 ADS 启动流程。<code>params</code> 为 <code>*flags.Parameters</code>，<code>conf</code> 为 <code>*cfg.Config</code>；取消 <code>ctx</code> 会停止两个服务。<code>ads.WithGate(g)</code> 覆盖两个协议的门控发现；<code>ads.WithGate(nil)</code> 禁用门控。<code>ads.WithListeners(rest, rpc)</code> 接受预先绑定的 <code>net.Listener</code>（nil 使用配置的端点）。Run 接管并关闭这些监听器，启动失败时也会关闭。REST 保留配置的 TLS，gRPC 保留服务端凭证。<code>ads.WithHTTPServer(func(*http.Server))</code> 可在服务启动前包装处理器或添加路由。<code>ads.WithGRPCOptions(...)</code> 添加服务端选项；附加拦截器请用 <code>grpc.ChainUnaryInterceptor(...)</code>，以保留标准的 panic 恢复拦截器。</p>
+
+<p>与协议无关的 <code>pkg/svcs/gate.Gate</code> 有两个方法：<code>Route(serviceName string) gate.Route</code> 选择 <code>gate.Local</code>、<code>gate.Fallback</code> 或 <code>gate.Unavailable</code>；<code>Forward(context.Context, gate.Operation, *ads.RequestContext) (*gate.Response, error)</code> 提供有类型的后备结果。Local 继续本地求值。Fallback 可返回允许、拒绝、角色或权限；失败时绝不转回本地求值。Diagnose 和 Discover 在选择 Fallback 时拒绝处理。<code>*gate.UnavailableError</code> 携带公开原因码；其他错误及 nil 响应映射为 <code>fallback_unavailable</code>。REST 返回 503，包含 <code>authorization_unavailable</code>、原因、<code>Cache-Control: no-store</code> 和 <code>Retry-After: 30</code>；gRPC 返回 Unavailable。响应的 <code>ErrorMessage</code> 表示求值错误：REST IsAllowed 返回正常的 200 错误体，其他 REST 操作返回 500，gRPC 返回 Internal。后备成功响应携带 <code>X-Speedle-Decision-Source: upstream</code>（gRPC 元数据使用小写键）。可选的 <code>gate.Auditor.Audit(ctx, event)</code> 对每个非本地路由接收一次事件，不包含主体、令牌或请求体；服务仍写入标准审计日志。门控实现须支持并发请求，自行管理后备认证和资源。</p>
+
+<p><code>gate.Response.Metadata</code>（<code>map[string][]string</code>）可为成功的后备决策提供响应元数据，包括拒绝结果和角色/权限列表。REST 将允许的值复制为响应头；gRPC 将相同键转为小写，作为响应头元数据发送，保留重复值。两个协议均过滤逐跳头（包括 <code>Connection</code> 列出的名称）、<code>Set-Cookie</code>、<code>Content-Length</code>、<code>Content-Type</code>，以及服务自行设置的头，例如 <code>Cache-Control</code>、<code>Retry-After</code>、<code>X-Speedle-Decision-Source</code>、<code>Speedle-Principals</code>、<code>WWW-Authenticate</code>、<code>Date</code> 和 <code>Server</code>。服务会重新序列化响应体，因此也过滤描述上游响应体的头，包括 <code>Content-Encoding</code>、<code>Content-Range</code>、摘要和验证标识。保留的 <code>grpc-*</code> 键、二进制 <code>*-bin</code> 键、无效文本键及不可打印或非 ASCII 值也被过滤。REST 保留中间件已设置的响应头。元数据为空时行为不变；求值错误和转发失败不复制元数据。请求处理期间，复用的映射须保持不可变。</p>
+
+<p>存储可实现 <code>gate.GateProvider.RequestGate() gate.Gate</code>，REST 和 gRPC 会通过求值器的底层存储访问器发现它。嵌入式调用者可用 <code>eval.NewWithStore</code>，再调用 <code>adsrest.NewRouter(evaluator, adsrest.WithGate(g))</code> 或 <code>adsgrpc.NewGRPCService(evaluator, adsgrpc.WithGate(g))</code>。省略选项会发现存储提供的门控；显式 nil 禁用门控。没有门控时，本地行为不变。</p>
+
+<p>明确存储生命周期：<code>store.WatchRequirement.RequireWatch()</code> 即使在配置关闭监听时也会强制订阅。可选的 <code>ReadPolicyStoreForReload() (*pms.PolicyStore, func(), error)</code> 提供快照和确认回调，只有安装成功后才调用回调。<code>(*eval.PolicyEvalImpl).DistributionStore()</code> 为适配器提供底层存储。关闭求值器会停止监听并关闭可关闭的存储；<code>ads.Run</code> 负责此清理。显式传入的门控由调用者管理。</p>
+
+<p>取消上下文时先停止 gRPC，再给 HTTP 请求五秒宽限期，之后关闭活动连接。<code>ads.WithShutdownTimeout(d)</code> 可设置正的宽限期；自定义处理器和门控应响应请求上下文的取消。两个协议均在本地令牌断言之前分流：后备收到原始令牌和主体信息，自行负责认证；本地路径保留正常断言。求值错误始终将 <code>Allowed</code> 清为 false，<code>Reason</code> 设为 <code>ERROR_IN_EVALUATION</code>，并审计 <code>evaluation_error</code>，即使后备响应声称允许。</p>
+
+<p>参见<a href="https://github.com/teramoby/speedle-plus/blob/master/pkg/ads/extensions_test.go">仅供测试的外部存储与门控示例</a>、<a href="https://github.com/teramoby/speedle-plus/tree/master/pkg/store">存储接口</a>和<a href="/zh/docs/deployment/embedded/">嵌入式部署</a>。</p>
+</div>
+</div>
+</main>
+        </div>
+    </div>
+    <div class="docs-nav-backdrop" hidden></div>
+    <footer class="site-footer">
+    <div class="wrap footer-main">
+      <div class="footer-brand">
+        <a class="footer-lockup" href="/zh/" aria-label="Speedle Engine 首页"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt="Speedle"><span class="footer-divider" aria-hidden="true"></span><span class="footer-product">Engine</span></a>
+        <p class="footer-tagline">开源授权引擎</p>
+        <nav class="social" aria-label="社区链接">
+          <a href="mailto:contact@speedle.io" aria-label="发送邮件至 contact@speedle.io" title="contact@speedle.io"><img src="/img/speedle/28.%20Mail.svg" width="40" height="40" alt=""></a>
+          <a href="https://groups.google.com/forum/#!forum/speedle-users" aria-label="Google Groups 讨论组" title="Google Groups — speedle-users"><img src="/img/speedle/Google-Groups.svg" width="24" height="24" alt=""></a>
+          <a href="https://github.com/teramoby/speedle-plus" aria-label="GitHub"><img src="/img/speedle/18.%20Github.svg" width="40" height="40" alt=""></a>
+          <a href="https://discord.gg/uaY2xVsbbT" aria-label="Discord"><img src="/img/speedle/Discord.svg" width="64" height="48" alt=""></a>
+        </nav>
+      </div>
+      <nav class="footer-family" aria-label="Speedle 产品"><svg class="sphere-sprite" width="0" height="0" aria-hidden="true" focusable="false"><symbol id="i-speedle-sphere" viewBox="22 22 114 114"><!-- Source: img/speedle/Speedle_logo_home_bold.svg, sphere group only. Colours changed only (stroke currentColor). No path edits. --><g fill="none" stroke="currentColor" stroke-linejoin="miter" stroke-miterlimit="3" stroke-linecap="butt"><polygon stroke-width="3.6" points="41.83 47.82 30.67 80.15 42.9 112.09 72.8 128.69 106.38 122.19 127.93 95.63 127.36 61.43 104.94 35.6 71.16 30.23"/><g stroke-width="2.4"><polygon points="81.97 43.92 52.19 57.23 44.03 88.8 63.62 114.87 96.22 115.81 117.28 90.9 110.94 58.91"/><polygon points="68.57 60.42 57.6 86.19 78.73 104.59 102.75 90.18 96.47 62.88"/><path d="M41.83 47.82L52.19 57.23 68.57 60.42 81.97 43.92 71.16 30.23 M30.67 80.15L44.03 88.8 42.9 112.09 M52.19 57.23L57.6 86.19 44.03 88.8 78.73 104.59 63.62 114.87 72.8 128.69 M78.73 104.59L96.22 115.81 106.38 122.19 M96.22 115.81L102.75 90.18 117.28 90.9 127.93 95.63 M117.28 90.9L127.36 61.43 110.94 58.91 104.94 35.6 81.97 43.92 M110.94 58.91L96.47 62.88 117.28 90.9"/></g></g></symbol></svg>
+        <ul>
+          <li><a class="footer-card" href="https://engine.speedle.io/zh/" aria-current="page"><svg class="product-sphere product-engine" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Engine</span><span class="footer-card-description">开源授权引擎</span><svg class="footer-card-check" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a></li>
+          <li><a class="footer-card" href="https://cloud.speedle.io/zh-CN/"><svg class="product-sphere product-cloud" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Cloud<span class="product-badge">即将上线</span></span><span class="footer-card-description">面向开发者的托管授权服务</span></a></li>
+          <li><a class="footer-card" href="https://ai.speedle.io/zh/"><svg class="product-sphere product-ai" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle AI</span><span class="footer-card-description">用 AI 做权限，为 AI 管权限</span></a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="wrap footer-bar">
+      <p class="footer-legal"><span>基于 Universal Permissive License v1.0 授权。</span><span class="footer-legal-sep"> · </span><span>版权所有 &copy; 2019–2026 The Speedle Authors。</span></p>
+    </div>
+  </footer>
+<!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "a7a746c498b940e58425123082a20520"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+
+</html>

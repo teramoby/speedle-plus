@@ -153,14 +153,6 @@ definitions:
     type: array
   PublicReadiness:
     properties:
-      lastConfirmedAckAt:
-        type: string
-      liveness:
-        enum:
-          - live
-          - stale
-          - stopped
-        type: string
       ready:
         type: boolean
       servicesTotal:
@@ -409,17 +401,13 @@ x-additional-paths:
         - health
   /readyz:
     get:
-      description: Readiness for authorization traffic, aggregated over the services the instance serves. It is unauthenticated and does not expose service identities or revisions.
+      description: Unauthenticated local decision-service probe. Always returns ready true with both service counters zero.
       operationId: readyz
       produces:
         - application/json
       responses:
         "200":
           description: The instance can answer authorization requests
-          schema:
-            $ref: '#/definitions/PublicReadiness'
-        "503":
-          description: The instance cannot currently answer authorization requests
           schema:
             $ref: '#/definitions/PublicReadiness'
       summary: Authorization readiness

@@ -11,7 +11,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1"><title>Java SDK · Speedle Engine</title>
-<meta name="description" content="Speedle Java SDK を追加し、ローカルの Speedle または Speedle Cloud に対して認可チェックを実行">
+<meta name="description" content="Speedle Java SDK を追加し、ローカルの Speedle に対して認可チェックを実行">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/ja/docs/sdks/java/">
@@ -26,7 +26,7 @@
 <meta property="article:modified_time" content="2026-11-08T19:23:52&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Java SDK · Speedle Engine">
-<meta property="og:description" content="Speedle Java SDK を追加し、ローカルの Speedle または Speedle Cloud に対して認可チェックを実行">
+<meta property="og:description" content="Speedle Java SDK を追加し、ローカルの Speedle に対して認可チェックを実行">
 <meta property="og:url" content="https://engine.speedle.io/ja/docs/sdks/java/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta property="og:image:width" content="1200">
@@ -35,11 +35,11 @@
 <meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Java SDK · Speedle Engine">
-<meta name="twitter:description" content="Speedle Java SDK を追加し、ローカルの Speedle または Speedle Cloud に対して認可チェックを実行">
+<meta name="twitter:description" content="Speedle Java SDK を追加し、ローカルの Speedle に対して認可チェックを実行">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/sdks/java/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T19:23:52+08:00","description":"Speedle Java SDK を追加し、ローカルの Speedle または Speedle Cloud に対して認可チェックを実行","headline":"Java SDK","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ja","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ja/docs/sdks/java/","@type":"WebPage"},"name":"Java SDK","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ja/docs/sdks/java/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/sdks/java/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T19:23:52+08:00","description":"Speedle Java SDK を追加し、ローカルの Speedle に対して認可チェックを実行","headline":"Java SDK","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ja","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ja/docs/sdks/java/","@type":"WebPage"},"name":"Java SDK","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ja/docs/sdks/java/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/sdks/java/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/ja/","name":"ホーム","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/","name":"ドキュメント","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/sdks/","name":"SDK","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/sdks/java/","name":"Java SDK","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -149,20 +149,8 @@
 </ul>
 
 </li>
-
-
-
-<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ja/docs/cloud/">Speedle Cloud</a></span>
-<ul class="">
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/getting-started/">Speedle Cloud クイックスタート</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/tokens/">API キー</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/authorization-api/">認可 API</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/api-reference/">API リファレンス</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/limits-and-errors/">制限とエラー</a></li>
-</ul>
-
-</li>
 <li data-docs-depth="0" class=""><a href="/ja/docs/security/">セキュリティ</a></li>
+<li data-docs-depth="0" class=""><a href="/ja/docs/extending-decision-service/">決定サービスの拡張</a></li>
 <li data-docs-depth="0" class=""><a href="/ja/docs/logging/">ロギングフレームワーク</a></li>
 <li data-docs-depth="0" class=""><a href="/ja/docs/versions/">バージョン</a></li>
 <li data-docs-depth="0" class=""><a href="/ja/docs/custom-function/">カスタム関数</a></li><li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">その他</span>
@@ -182,7 +170,7 @@
 <div id="main">
 
   <h1>Java SDK</h1>
-  <p class="docs-lead">Maven または Gradle で io.speedle:speedle-sdk 0.2.0 を追加し、ローカルの Speedle または Speedle Cloud に対して isAllowed と check を呼び出します。</p>
+  <p class="docs-lead">Maven または Gradle で io.speedle:speedle-sdk 0.2.0 を追加し、ローカルの Speedle に対して isAllowed と check を呼び出します。</p>
 
 
 
@@ -277,51 +265,6 @@ gradle -q run</code></pre></div>
 <p>出力:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">alice get /docs/public: allowed=true
 alice delete /docs/public: allowed=false reason=NO_APPLICABLE_POLICIES</code></pre></div>
-<h2 id="speedle-cloud-の呼び出し">Speedle Cloud の呼び出し</h2>
-
-<blockquote>
-<p><strong>Speedle Cloud はまもなく公開されます。</strong></p>
-</blockquote>
-
-<p>プログラムは <code>SPEEDLE_SERVICE</code> からサービス名を、<code>SPEEDLE_TOKEN</code> から<code>ads</code> スコープのアカウント API キーを読み取ります。<code>SPEEDLE_ENDPOINT</code> はデフォルトのエンドポイント <code>https://cloud.speedle.io</code> を上書きします。<code>src/main/java/Main.java</code> を以下に置き換えます:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-java" data-lang="java"><span style="color:#ff79c6">import</span> io.speedle.sdk.Auth<span style="color:#ff79c6">;</span>
-<span style="color:#ff79c6">import</span> io.speedle.sdk.Backend<span style="color:#ff79c6">;</span>
-<span style="color:#ff79c6">import</span> io.speedle.sdk.Decision<span style="color:#ff79c6">;</span>
-<span style="color:#ff79c6">import</span> io.speedle.sdk.SpeedleClient<span style="color:#ff79c6">;</span>
-<span style="color:#ff79c6">import</span> io.speedle.sdk.SpeedleException<span style="color:#ff79c6">;</span>
-<span style="color:#ff79c6">import</span> io.speedle.sdk.Subject<span style="color:#ff79c6">;</span>
-<span style="color:#ff79c6">import</span> java.net.URI<span style="color:#ff79c6">;</span>
-<span style="color:#ff79c6">import</span> java.util.List<span style="color:#ff79c6">;</span>
-
-<span style="color:#8be9fd;font-style:italic">public</span> <span style="color:#8be9fd;font-style:italic">class</span> <span style="color:#50fa7b">Main</span> <span style="color:#ff79c6">{</span>
-  <span style="color:#8be9fd;font-style:italic">public</span> <span style="color:#8be9fd;font-style:italic">static</span> <span style="color:#8be9fd">void</span> <span style="color:#50fa7b">main</span><span style="color:#ff79c6">(</span>String<span style="color:#ff79c6">[]</span> args<span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
-    String endpoint <span style="color:#ff79c6">=</span> System<span style="color:#ff79c6">.</span><span style="color:#50fa7b">getenv</span><span style="color:#ff79c6">().</span><span style="color:#50fa7b">getOrDefault</span><span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#34;SPEEDLE_ENDPOINT&#34;</span><span style="color:#ff79c6">,</span> <span style="color:#f1fa8c">&#34;https://cloud.speedle.io&#34;</span><span style="color:#ff79c6">);</span>
-    <span style="color:#ff79c6">try</span> <span style="color:#ff79c6">(</span>SpeedleClient speedle <span style="color:#ff79c6">=</span> SpeedleClient<span style="color:#ff79c6">.</span><span style="color:#50fa7b">builder</span><span style="color:#ff79c6">()</span>
-        <span style="color:#ff79c6">.</span><span style="color:#50fa7b">backend</span><span style="color:#ff79c6">(</span>Backend<span style="color:#ff79c6">.</span><span style="color:#50fa7b">SPEEDLE_CLOUD</span><span style="color:#ff79c6">)</span>
-        <span style="color:#ff79c6">.</span><span style="color:#50fa7b">endpoint</span><span style="color:#ff79c6">(</span>URI<span style="color:#ff79c6">.</span><span style="color:#50fa7b">create</span><span style="color:#ff79c6">(</span>endpoint<span style="color:#ff79c6">))</span>
-        <span style="color:#ff79c6">.</span><span style="color:#50fa7b">auth</span><span style="color:#ff79c6">(</span>Auth<span style="color:#ff79c6">.</span><span style="color:#50fa7b">bearer</span><span style="color:#ff79c6">(</span>System<span style="color:#ff79c6">.</span><span style="color:#50fa7b">getenv</span><span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#34;SPEEDLE_TOKEN&#34;</span><span style="color:#ff79c6">)))</span>
-        <span style="color:#ff79c6">.</span><span style="color:#50fa7b">serviceName</span><span style="color:#ff79c6">(</span>System<span style="color:#ff79c6">.</span><span style="color:#50fa7b">getenv</span><span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#34;SPEEDLE_SERVICE&#34;</span><span style="color:#ff79c6">))</span>
-        <span style="color:#ff79c6">.</span><span style="color:#50fa7b">build</span><span style="color:#ff79c6">())</span> <span style="color:#ff79c6">{</span>
-      <span style="color:#8be9fd">boolean</span> allowed <span style="color:#ff79c6">=</span> speedle<span style="color:#ff79c6">.</span><span style="color:#50fa7b">isAllowed</span><span style="color:#ff79c6">(</span>Subject<span style="color:#ff79c6">.</span><span style="color:#50fa7b">user</span><span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#34;alice&#34;</span><span style="color:#ff79c6">),</span> <span style="color:#f1fa8c">&#34;get&#34;</span><span style="color:#ff79c6">,</span> <span style="color:#f1fa8c">&#34;/docs/public&#34;</span><span style="color:#ff79c6">,</span> List<span style="color:#ff79c6">.</span><span style="color:#50fa7b">of</span><span style="color:#ff79c6">());</span>
-      System<span style="color:#ff79c6">.</span><span style="color:#50fa7b">out</span><span style="color:#ff79c6">.</span><span style="color:#50fa7b">println</span><span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#34;alice get /docs/public: allowed=&#34;</span> <span style="color:#ff79c6">+</span> allowed<span style="color:#ff79c6">);</span>
-
-      Decision d <span style="color:#ff79c6">=</span> speedle<span style="color:#ff79c6">.</span><span style="color:#50fa7b">check</span><span style="color:#ff79c6">(</span>Subject<span style="color:#ff79c6">.</span><span style="color:#50fa7b">user</span><span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#34;alice&#34;</span><span style="color:#ff79c6">),</span> <span style="color:#f1fa8c">&#34;delete&#34;</span><span style="color:#ff79c6">,</span> <span style="color:#f1fa8c">&#34;/docs/public&#34;</span><span style="color:#ff79c6">,</span> List<span style="color:#ff79c6">.</span><span style="color:#50fa7b">of</span><span style="color:#ff79c6">());</span>
-      System<span style="color:#ff79c6">.</span><span style="color:#50fa7b">out</span><span style="color:#ff79c6">.</span><span style="color:#50fa7b">println</span><span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#34;alice delete /docs/public: allowed=&#34;</span> <span style="color:#ff79c6">+</span> d<span style="color:#ff79c6">.</span><span style="color:#50fa7b">allowed</span><span style="color:#ff79c6">()</span> <span style="color:#ff79c6">+</span> <span style="color:#f1fa8c">&#34; reason=&#34;</span> <span style="color:#ff79c6">+</span> d<span style="color:#ff79c6">.</span><span style="color:#50fa7b">reason</span><span style="color:#ff79c6">());</span>
-    <span style="color:#ff79c6">}</span> <span style="color:#ff79c6">catch</span> <span style="color:#ff79c6">(</span>SpeedleException e<span style="color:#ff79c6">)</span> <span style="color:#ff79c6">{</span>
-      System<span style="color:#ff79c6">.</span><span style="color:#50fa7b">err</span><span style="color:#ff79c6">.</span><span style="color:#50fa7b">println</span><span style="color:#ff79c6">(</span><span style="color:#f1fa8c">&#34;Speedle error: &#34;</span> <span style="color:#ff79c6">+</span> e<span style="color:#ff79c6">.</span><span style="color:#50fa7b">getMessage</span><span style="color:#ff79c6">());</span>
-      System<span style="color:#ff79c6">.</span><span style="color:#50fa7b">exit</span><span style="color:#ff79c6">(</span>1<span style="color:#ff79c6">);</span>
-    <span style="color:#ff79c6">}</span>
-  <span style="color:#ff79c6">}</span>
-<span style="color:#ff79c6">}</span></code></pre></div>
-<p>環境変数を設定して実行します。<code>read -rs</code> を使用すると、API キーがシェルの履歴や画面に表示されません:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">export</span> <span style="color:#8be9fd;font-style:italic">SPEEDLE_SERVICE</span><span style="color:#ff79c6">=</span>docs
-<span style="color:#8be9fd;font-style:italic">read</span> -rs SPEEDLE_TOKEN <span style="color:#ff79c6">&amp;&amp;</span> <span style="color:#8be9fd;font-style:italic">export</span> SPEEDLE_TOKEN
-mvn -q compile exec:java -Dexec.mainClass<span style="color:#ff79c6">=</span>Main</code></pre></div>
-<p>サービスにサンプルポリシーが存在する場合の出力:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">alice get /docs/public: allowed=true
-alice delete /docs/public: allowed=false reason=NO_APPLICABLE_POLICIES</code></pre></div>
-<p>API キーはサーバー側のシークレットです。ブラウザ、モバイルアプリ、またはデスクトップクライアントには絶対に配布しないでください。</p>
-
 <h2 id="エラー処理">エラー処理</h2>
 
 <p>拒否されたリクエストはエラーではありません。上記の <code>delete</code> 呼び出しのように、<code>isAllowed</code> は <code>false</code> を返し、<code>check</code> は <code>allowed()</code> が false で理由を含む <code>Decision</code> を返します。デフォルト設定では、呼び出しが決定を返せない場合、SDK は <code>SpeedleException</code> をスローします。サンプルではそれをキャッチし、標準エラー出力に <code>Speedle error: &lt;message&gt;</code> を出力して終了ステータス 1 で終了します。</p>

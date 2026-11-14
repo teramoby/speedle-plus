@@ -8,11 +8,11 @@ linksection = true
 tocheading = "h2"
 tags = ["sdk"]
 categories = ["docs"]
-bref = "Speedle 決定 API の 6 言語クライアントライブラリ。セルフホストの Speedle ADS および Speedle Cloud（まもなく公開）に対応しています。"
+bref = "Speedle 決定 API の 6 言語クライアントライブラリ。セルフホストの Speedle ADS に対応しています。"
 lastmod = 2026-11-10T14:45:43+08:00
 +++
 
-Speedle SDK は、決定 API `POST /authz-check/v1/is-allowed` のクライアントライブラリです。セルフホストの Speedle ADS および Speedle Cloud の両方で動作します。各言語ページではパッケージの追加方法を説明し、両方の環境向けにテスト済みの完全なプログラムを提供しています。ソースコードと完全なリファレンスは [teramoby/speedle-sdk](https://github.com/teramoby/speedle-sdk) にあります。これらのサンプルで PMS と ADS を実行する方法については、[デプロイ](/ja/docs/deployment/) と [Docker イメージ](/ja/docs/deployment/docker/) を参照してください。
+Speedle SDK は、決定 API `POST /authz-check/v1/is-allowed` のクライアントライブラリです。セルフホストの Speedle ADS で動作します。各言語ページではパッケージの追加方法を説明し、セルフホスト環境向けにテスト済みの完全なプログラムを提供しています。ソースコードと完全なリファレンスは [teramoby/speedle-sdk](https://github.com/teramoby/speedle-sdk) にあります。これらのサンプルで PMS と ADS を実行する方法については、[デプロイ](/ja/docs/deployment/) と [Docker イメージ](/ja/docs/deployment/docker/) を参照してください。
 
 ## パッケージ
 
@@ -32,7 +32,6 @@ Java、Python、Go、.NET、Rust はバージョン 0.2.0 です。`@speedle/sdk
 | `isAllowed`: 認可決定を返す | 6 つの SDK すべて |
 | `check`: 認可決定と理由（該当するポリシーがない等）を返す | 6 つの SDK すべて |
 | セルフホストの Speedle ADS | 6 つの SDK すべて |
-| Speedle Cloud | まもなく公開 |
 
 メソッド名は各言語の命名規則に従っています。Python と Rust では `is_allowed` と `check`、Go では `IsAllowed` と `Check`、.NET では `IsAllowedAsync` と `CheckAsync` です。
 
@@ -49,5 +48,3 @@ Java、Python、Go、.NET、Rust はバージョン 0.2.0 です。`@speedle/sdk
 ```
 
 ローカルの例は、認証情報なしで `http://localhost:6734` に接続します。SDK はループバックホストに対してのみ平文の `http://` を受け入れます。他の ADS には HTTPS を使用してください。
-
-Speedle Cloud のサンプルは `https://cloud.speedle.io` に接続し、環境変数 `SPEEDLE_SERVICE` と `SPEEDLE_TOKEN` からサービス名と`ads` スコープのアカウント API キーを読み取ります。そのサービス内で同じポリシーを作成すると、同じ回答が得られます。API キーはサーバー側のシークレットです。ブラウザ、モバイルアプリ、またはデスクトップクライアントには絶対に配布しないでください。

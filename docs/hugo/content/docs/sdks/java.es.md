@@ -1,6 +1,6 @@
 +++
 title = "Java SDK"
-description = "Añada el SDK de Speedle para Java y compruebe autorizaciones frente a un Speedle local o Speedle Cloud."
+description = "Añada el SDK de Speedle para Java y compruebe autorizaciones frente a un Speedle local."
 weight = 10
 aliases = ["/es/docs/api/sdk-java/"]
 draft = false
@@ -8,7 +8,7 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "Añada io.speedle:speedle-sdk 0.2.0 con Maven o Gradle, y luego llame a isAllowed y check frente a un Speedle local o Speedle Cloud."
+bref = "Añada io.speedle:speedle-sdk 0.2.0 con Maven o Gradle, y luego llame a isAllowed y check frente a un Speedle local."
 lastmod = 2026-11-08T19:23:52+08:00
 +++
 
@@ -114,60 +114,6 @@ alice get /docs/public: allowed=true
 alice delete /docs/public: allowed=false reason=NO_APPLICABLE_POLICIES
 ```
 
-## Llamar a Speedle Cloud
-
-> **Speedle Cloud estará disponible próximamente.**
-
-El programa lee el nombre del servicio desde `SPEEDLE_SERVICE` y una clave API de cuenta con ámbito `ads` desde `SPEEDLE_TOKEN`. `SPEEDLE_ENDPOINT` anula el endpoint predeterminado `https://cloud.speedle.io`. Sustituya `src/main/java/Main.java` por:
-
-```java
-import io.speedle.sdk.Auth;
-import io.speedle.sdk.Backend;
-import io.speedle.sdk.Decision;
-import io.speedle.sdk.SpeedleClient;
-import io.speedle.sdk.SpeedleException;
-import io.speedle.sdk.Subject;
-import java.net.URI;
-import java.util.List;
-
-public class Main {
-  public static void main(String[] args) {
-    String endpoint = System.getenv().getOrDefault("SPEEDLE_ENDPOINT", "https://cloud.speedle.io");
-    try (SpeedleClient speedle = SpeedleClient.builder()
-        .backend(Backend.SPEEDLE_CLOUD)
-        .endpoint(URI.create(endpoint))
-        .auth(Auth.bearer(System.getenv("SPEEDLE_TOKEN")))
-        .serviceName(System.getenv("SPEEDLE_SERVICE"))
-        .build()) {
-      boolean allowed = speedle.isAllowed(Subject.user("alice"), "get", "/docs/public", List.of());
-      System.out.println("alice get /docs/public: allowed=" + allowed);
-
-      Decision d = speedle.check(Subject.user("alice"), "delete", "/docs/public", List.of());
-      System.out.println("alice delete /docs/public: allowed=" + d.allowed() + " reason=" + d.reason());
-    } catch (SpeedleException e) {
-      System.err.println("Speedle error: " + e.getMessage());
-      System.exit(1);
-    }
-  }
-}
-```
-
-Configure las variables de entorno y ejecútelo. `read -rs` evita que la clave API quede registrada en el historial de la terminal o en pantalla:
-
-```bash
-export SPEEDLE_SERVICE=docs
-read -rs SPEEDLE_TOKEN && export SPEEDLE_TOKEN
-mvn -q compile exec:java -Dexec.mainClass=Main
-```
-
-Salida, cuando el servicio cuenta con la política de ejemplo:
-
-```text
-alice get /docs/public: allowed=true
-alice delete /docs/public: allowed=false reason=NO_APPLICABLE_POLICIES
-```
-
-La clave API es un secreto del lado del servidor. Nunca lo distribuya a navegadores, aplicaciones móviles o clientes de escritorio.
 
 ## Gestión de errores
 

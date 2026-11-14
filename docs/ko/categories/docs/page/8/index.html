@@ -80,13 +80,13 @@
     
     <li>
   <h2 class="title2">
-    <a href="/ko/docs/store/etcd/" itemprop="headline">etcd 설정 가이드</a>
+    <a href="/ko/docs/store/" itemprop="headline">플러그형 저장소</a>
   </h2>
   
-  <p itemprop="about">PMS 및 ADS용 etcd 정책 저장소 구성 단계</p>
+  <p itemprop="about">파일, etcd, MySQL 또는 MongoDB를 사용하여 정책을 저장하거나 인터페이스를 구현하여 사용자 정의 저장소 백엔드 연결</p>
   
   
-  <p itemprop="about">독립 실행형 etcd 서버를 실행하고 PMS와 ADS를 연결하여 실시간 정책 업데이트를 확인하고 백업을 생성합니다.</p>
+  <p itemprop="about">Speedle에는 파일, etcd, MongoDB, MySQL 정책 저장소가 포함되어 있습니다. 이 문서에서는 해당 구성과 다른 저장소를 구현하거나 등록하는 방법을 설명합니다.</p>
   
   <hr />
 </li>
@@ -94,24 +94,10 @@
     
     <li>
   <h2 class="title2">
-    <a href="/ko/docs/deployment/" itemprop="headline">배포</a>
+    <a href="/ko/docs/security/" itemprop="headline">보안</a>
   </h2>
   
-  <p itemprop="about">Go 애플리케이션에 Speedle을 임베드하거나, 공개 컨테이너 이미지 또는 Homebrew로 실행하거나, 독립 실행형 PMS 및 ADS 서비스로 실행합니다.</p>
-  
-  
-  <p itemprop="about">임베디드 모드, Docker 이미지, Homebrew, 소스 빌드 및 독립 실행형 PMS와 ADS 서비스.</p>
-  
-  <hr />
-</li>
-
-    
-    <li>
-  <h2 class="title2">
-    <a href="/ko/docs/logging/" itemprop="headline">로깅 프레임워크</a>
-  </h2>
-  
-  <p itemprop="about">Speedle 로깅</p>
+  <p itemprop="about">Speedle의 REST 및 gRPC 엔드포인트에 TLS, 상호 TLS 및 접근 제어 구성</p>
   
   
   <hr />
@@ -127,6 +113,20 @@
   
   
   <p itemprop="about">릴리스 — Speedle은 시맨틱 버저닝을 따릅니다</p>
+  
+  <hr />
+</li>
+
+    
+    <li>
+  <h2 class="title2">
+    <a href="/ko/docs/custom-function/" itemprop="headline">사용자 정의 함수</a>
+  </h2>
+  
+  <p itemprop="about">SPDL 조건에서 사용자 정의 함수를 호출하여 인가 규칙의 계산 기능 확장</p>
+  
+  
+  <p itemprop="about">정책이나 역할 정책의 조건이 표현식과 기본 제공 함수로 작성하기에 너무 복잡한 경우, 사용자 정의 함수를 작성하여 조건에 포함할 수 있습니다.</p>
   
   <hr />
 </li>

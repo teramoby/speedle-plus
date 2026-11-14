@@ -80,11 +80,13 @@
     
     <li>
   <h2 class="title2">
-    <a href="/es/docs/cloud/limits-and-errors/" itemprop="headline">Speedle Cloud Límites y errores</a>
+    <a href="/es/docs/performance-testing/" itemprop="headline">Guía de pruebas de rendimiento</a>
   </h2>
   
-  <p itemprop="about">Límites de cuenta, códigos de error, restablecimiento y reintentos.</p>
+  <p itemprop="about">Ejecute una comparación justa y reproducible de motores de autorización en su propia máquina con ayuda de una herramienta de IA.</p>
   
+  
+  <p itemprop="about">Pegue este prompt en su agente de programación con IA para comparar Speedle con los proyectos de autorización que elija en su propia máquina.</p>
   
   <hr />
 </li>
@@ -92,13 +94,13 @@
     
     <li>
   <h2 class="title2">
-    <a href="/es/docs/assertor/" itemprop="headline">Asertor de tokens</a>
+    <a href="/es/docs/deployment/docker/" itemprop="headline">Imagen de Docker</a>
   </h2>
   
-  <p itemprop="about">Validar tokens de identidad para proporcionar entidades principales y dominios de identidad de confianza a las solicitudes de autorización de Speedle</p>
+  <p itemprop="about">Ejecute speedle-pms, speedle-ads y spctl desde la imagen publicada de Speedle.</p>
   
   
-  <p itemprop="about">Las solicitudes de evaluación pueden contener un token de identidad que representa a un usuario. En este caso, el motor de evaluación puede invocar el servicio de aserción para obtener las identidades explícitas del usuario</p>
+  <p itemprop="about">Una única imagen en Docker Hub y GHCR ejecuta el administrador de políticas, el servicio de decisiones y spctl, con un almacén de archivos compartido.</p>
   
   <hr />
 </li>
@@ -106,13 +108,13 @@
     
     <li>
   <h2 class="title2">
-    <a href="/es/docs/store/" itemprop="headline">Almacenamiento conectable</a>
+    <a href="/es/docs/sdks/go/" itemprop="headline">Go SDK</a>
   </h2>
   
-  <p itemprop="about">¡Traiga su propio almacenamiento de persistencia!</p>
+  <p itemprop="about">Añada el SDK de Speedle para Go y compruebe autorizaciones frente a un Speedle local.</p>
   
   
-  <p itemprop="about">Speedle incluye almacenes de políticas basados en archivos, etcd, MongoDB y MySQL. Este documento describe su configuración y cómo implementar o registrar un almacenamiento diferente.</p>
+  <p itemprop="about">Añada github.com/teramoby/speedle-sdk/go v0.2.0 con go get, y llame a IsAllowed y Check frente a un Speedle local.</p>
   
   <hr />
 </li>
@@ -120,13 +122,13 @@
     
     <li>
   <h2 class="title2">
-    <a href="/es/docs/api/" itemprop="headline">API</a>
+    <a href="/es/docs/deployment/homebrew/" itemprop="headline">Instalación con Homebrew</a>
   </h2>
   
-  <p itemprop="about">Documentación de especificación OpenAPI de Speedle</p>
+  <p itemprop="about">Instale speedle-spctl, speedle-pms y speedle-ads con Homebrew y ejecute una demostración local.</p>
   
   
-  <p itemprop="about">Documentación de la especificación OpenAPI. Utilice la API para modelar sus políticas simples y complejas de forma declarativa; obtenga decisiones, descubra políticas dinámicamente y depure la evaluación de políticas.</p>
+  <p itemprop="about">Homebrew instala la herramienta de línea de comandos y ambos servicios, y los ejecuta en 127.0.0.1 con un archivo de políticas compartido.</p>
   
   <hr />
 </li>

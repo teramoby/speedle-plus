@@ -11,7 +11,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1"><title>Go SDK · Speedle Engine</title>
-<meta name="description" content="Speedle Go SDK を追加し、ローカルの Speedle または Speedle Cloud に対して認可チェックを実行">
+<meta name="description" content="Speedle Go SDK を追加し、ローカルの Speedle に対して認可チェックを実行">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/ja/docs/sdks/go/">
@@ -26,7 +26,7 @@
 <meta property="article:modified_time" content="2026-11-07T19:43:15&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Go SDK · Speedle Engine">
-<meta property="og:description" content="Speedle Go SDK を追加し、ローカルの Speedle または Speedle Cloud に対して認可チェックを実行">
+<meta property="og:description" content="Speedle Go SDK を追加し、ローカルの Speedle に対して認可チェックを実行">
 <meta property="og:url" content="https://engine.speedle.io/ja/docs/sdks/go/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta property="og:image:width" content="1200">
@@ -35,11 +35,11 @@
 <meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Go SDK · Speedle Engine">
-<meta name="twitter:description" content="Speedle Go SDK を追加し、ローカルの Speedle または Speedle Cloud に対して認可チェックを実行">
+<meta name="twitter:description" content="Speedle Go SDK を追加し、ローカルの Speedle に対して認可チェックを実行">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/sdks/go/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-07T19:43:15+08:00","description":"Speedle Go SDK を追加し、ローカルの Speedle または Speedle Cloud に対して認可チェックを実行","headline":"Go SDK","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ja","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ja/docs/sdks/go/","@type":"WebPage"},"name":"Go SDK","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ja/docs/sdks/go/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/sdks/go/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-07T19:43:15+08:00","description":"Speedle Go SDK を追加し、ローカルの Speedle に対して認可チェックを実行","headline":"Go SDK","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ja","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ja/docs/sdks/go/","@type":"WebPage"},"name":"Go SDK","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ja/docs/sdks/go/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/sdks/go/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/ja/","name":"ホーム","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/","name":"ドキュメント","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/sdks/","name":"SDK","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/sdks/go/","name":"Go SDK","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -149,20 +149,8 @@
 </ul>
 
 </li>
-
-
-
-<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ja/docs/cloud/">Speedle Cloud</a></span>
-<ul class="">
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/getting-started/">Speedle Cloud クイックスタート</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/tokens/">API キー</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/authorization-api/">認可 API</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/api-reference/">API リファレンス</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/limits-and-errors/">制限とエラー</a></li>
-</ul>
-
-</li>
 <li data-docs-depth="0" class=""><a href="/ja/docs/security/">セキュリティ</a></li>
+<li data-docs-depth="0" class=""><a href="/ja/docs/extending-decision-service/">決定サービスの拡張</a></li>
 <li data-docs-depth="0" class=""><a href="/ja/docs/logging/">ロギングフレームワーク</a></li>
 <li data-docs-depth="0" class=""><a href="/ja/docs/versions/">バージョン</a></li>
 <li data-docs-depth="0" class=""><a href="/ja/docs/custom-function/">カスタム関数</a></li><li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">その他</span>
@@ -182,7 +170,7 @@
 <div id="main">
 
   <h1>Go SDK</h1>
-  <p class="docs-lead">go get で github.com/teramoby/speedle-sdk/go v0.2.0 を追加し、ローカルの Speedle または Speedle Cloud に対して IsAllowed と Check を呼び出します。</p>
+  <p class="docs-lead">go get で github.com/teramoby/speedle-sdk/go v0.2.0 を追加し、ローカルの Speedle に対して IsAllowed と Check を呼び出します。</p>
 
 
 
@@ -250,64 +238,6 @@ go get github.com/teramoby/speedle-sdk/go@v0.2.0</code></pre></div>
 <p>出力:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">alice get /docs/public: allowed=true
 alice delete /docs/public: allowed=false reason=NO_APPLICABLE_POLICIES</code></pre></div>
-<h2 id="speedle-cloud-の呼び出し">Speedle Cloud の呼び出し</h2>
-
-<blockquote>
-<p><strong>Speedle Cloud はまもなく公開されます。</strong></p>
-</blockquote>
-
-<p>プログラムは <code>SPEEDLE_SERVICE</code> からサービス名を、<code>SPEEDLE_TOKEN</code> から<code>ads</code> スコープのアカウント API キーを読み取ります。<code>SPEEDLE_ENDPOINT</code> はデフォルトのエンドポイント <code>https://cloud.speedle.io</code> を上書きします。<code>main.go</code> を以下に置き換えます:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#ff79c6">package</span> main
-
-<span style="color:#ff79c6">import</span> (
-	<span style="color:#f1fa8c">&#34;context&#34;</span>
-	<span style="color:#f1fa8c">&#34;fmt&#34;</span>
-	<span style="color:#f1fa8c">&#34;os&#34;</span>
-
-	speedle <span style="color:#f1fa8c">&#34;github.com/teramoby/speedle-sdk/go&#34;</span>
-)
-
-<span style="color:#8be9fd;font-style:italic">func</span> main() {
-	endpoint <span style="color:#ff79c6">:=</span> os.Getenv(<span style="color:#f1fa8c">&#34;SPEEDLE_ENDPOINT&#34;</span>)
-	<span style="color:#ff79c6">if</span> endpoint <span style="color:#ff79c6">==</span> <span style="color:#f1fa8c">&#34;&#34;</span> {
-		endpoint = <span style="color:#f1fa8c">&#34;https://cloud.speedle.io&#34;</span>
-	}
-	client, err <span style="color:#ff79c6">:=</span> speedle.NewClient(speedle.Config{
-		Backend:     speedle.BackendSpeedleCloud,
-		Endpoint:    endpoint,
-		Auth:        speedle.BearerToken(os.Getenv(<span style="color:#f1fa8c">&#34;SPEEDLE_TOKEN&#34;</span>)),
-		ServiceName: os.Getenv(<span style="color:#f1fa8c">&#34;SPEEDLE_SERVICE&#34;</span>),
-	})
-	<span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
-		fmt.Fprintln(os.Stderr, <span style="color:#f1fa8c">&#34;Speedle error:&#34;</span>, err)
-		os.Exit(<span style="color:#bd93f9">1</span>)
-	}
-	<span style="color:#ff79c6">defer</span> client.Close()
-
-	ctx <span style="color:#ff79c6">:=</span> context.Background()
-	allowed, err <span style="color:#ff79c6">:=</span> client.IsAllowed(ctx, speedle.User(<span style="color:#f1fa8c">&#34;alice&#34;</span>), <span style="color:#f1fa8c">&#34;get&#34;</span>, <span style="color:#f1fa8c">&#34;/docs/public&#34;</span>, <span style="color:#ff79c6">nil</span>)
-	<span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
-		fmt.Fprintln(os.Stderr, <span style="color:#f1fa8c">&#34;Speedle error:&#34;</span>, err)
-		os.Exit(<span style="color:#bd93f9">1</span>)
-	}
-	fmt.Printf(<span style="color:#f1fa8c">&#34;alice get /docs/public: allowed=%t\n&#34;</span>, allowed)
-
-	d, err <span style="color:#ff79c6">:=</span> client.Check(ctx, speedle.User(<span style="color:#f1fa8c">&#34;alice&#34;</span>), <span style="color:#f1fa8c">&#34;delete&#34;</span>, <span style="color:#f1fa8c">&#34;/docs/public&#34;</span>, <span style="color:#ff79c6">nil</span>)
-	<span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
-		fmt.Fprintln(os.Stderr, <span style="color:#f1fa8c">&#34;Speedle error:&#34;</span>, err)
-		os.Exit(<span style="color:#bd93f9">1</span>)
-	}
-	fmt.Printf(<span style="color:#f1fa8c">&#34;alice delete /docs/public: allowed=%t reason=%s\n&#34;</span>, d.Allowed, d.Reason)
-}</code></pre></div>
-<p>環境変数を設定して実行します。<code>read -rs</code> を使用すると、API キーがシェルの履歴や画面に表示されません:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">export</span> <span style="color:#8be9fd;font-style:italic">SPEEDLE_SERVICE</span><span style="color:#ff79c6">=</span>docs
-<span style="color:#8be9fd;font-style:italic">read</span> -rs SPEEDLE_TOKEN <span style="color:#ff79c6">&amp;&amp;</span> <span style="color:#8be9fd;font-style:italic">export</span> SPEEDLE_TOKEN
-go run .</code></pre></div>
-<p>サービスにサンプルポリシーが存在する場合の出力:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">alice get /docs/public: allowed=true
-alice delete /docs/public: allowed=false reason=NO_APPLICABLE_POLICIES</code></pre></div>
-<p>API キーはサーバー側のシークレットです。ブラウザ、モバイルアプリ、またはデスクトップクライアントには絶対に配布しないでください。</p>
-
 <h2 id="エラー処理">エラー処理</h2>
 
 <p>拒否されたリクエストはエラーではありません。上記の <code>delete</code> 呼び出しのように、<code>IsAllowed</code> は <code>false</code> を返し、<code>Check</code> は <code>Allowed</code> が false で理由を含む決定を返します。デフォルト設定では、呼び出しが決定を返せない場合に non-nil の <code>error</code> を返します（無効な構成の場合は <code>NewClient</code> も同様です）。サンプルでは標準エラー出力に <code>Speedle error: &lt;message&gt;</code> を出力し、終了ステータス 1 で終了します。</p>

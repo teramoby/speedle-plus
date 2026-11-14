@@ -155,20 +155,8 @@
 </ul>
 
 </li>
-
-
-
-<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ja/docs/cloud/">Speedle Cloud</a></span>
-<ul class="">
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/getting-started/">Speedle Cloud クイックスタート</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/tokens/">API キー</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/authorization-api/">認可 API</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/api-reference/">API リファレンス</a></li>
-<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/limits-and-errors/">制限とエラー</a></li>
-</ul>
-
-</li>
 <li data-docs-depth="0" class=""><a href="/ja/docs/security/">セキュリティ</a></li>
+<li data-docs-depth="0" class=""><a href="/ja/docs/extending-decision-service/">決定サービスの拡張</a></li>
 <li data-docs-depth="0" class=""><a href="/ja/docs/logging/">ロギングフレームワーク</a></li>
 <li data-docs-depth="0" class=""><a href="/ja/docs/versions/">バージョン</a></li>
 <li data-docs-depth="0" class=""><a href="/ja/docs/custom-function/">カスタム関数</a></li><li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">その他</span>
@@ -225,7 +213,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <p><code>GET /healthz</code> はプロセスの稼働状態を報告します。プロセス実行中は常に <code>200 {&quot;status&quot;:&quot;ok&quot;}</code> を返します。</p>
 
-<p><code>GET /readyz</code> はインスタンスが認可リクエストに応答可能かどうかを報告します。準備完了の場合は <code>200</code>、それ以外は <code>503</code> を返します。このエンドポイントは認証を必要とせず、集計カウントのみを返します。</p>
+<p><code>GET /readyz</code> は認証不要で、ローカル決定サービスでは <code>200 {&quot;ready&quot;:true,&quot;servicesTotal&quot;:0,&quot;servicesUsable&quot;:0}</code> を返します。カウントは常にゼロで、保存されたサービスを列挙するものではありません。</p>
 </div>
 </div>
 </main>

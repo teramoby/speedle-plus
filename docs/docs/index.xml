@@ -93,6 +93,16 @@ The Token Assertion Plugin API uses integer errCode and an optional attribute ob
     </item>
     
     <item>
+      <title>Extending the decision service</title>
+      <link>https://engine.speedle.io/docs/extending-decision-service/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/extending-decision-service/</guid>
+      <description>Implement store.StoreBuilder, register a unique name with store.Register, and import the package from your executable. GetStoreParams maps extra flags to store properties. Parse your own flags before starting the server; the Engine library does not parse flags or install signal handlers.
+Use ads.Run(ctx, params, conf, options...) from github.com/teramoby/speedle-plus/pkg/ads to reuse the standard ADS startup. params is *flags.Parameters, conf is *cfg.Config, and cancelling ctx stops both servers. ads.WithGate(g) overrides gate discovery on both transports; ads.</description>
+    </item>
+    
+    <item>
       <title>Security</title>
       <link>https://engine.speedle.io/docs/security/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>

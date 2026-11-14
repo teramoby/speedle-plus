@@ -1,6 +1,6 @@
 +++
 title = "Rust SDK"
-description = "Añada el SDK de Speedle para Rust y compruebe autorizaciones frente a un Speedle local o Speedle Cloud."
+description = "Añada el SDK de Speedle para Rust y compruebe autorizaciones frente a un Speedle local."
 weight = 50
 aliases = ["/es/docs/api/sdk-rust/"]
 draft = false
@@ -8,7 +8,7 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "Añada el crate speedle 0.2.0 con cargo add, y luego llame a is_allowed y check frente a un Speedle local o Speedle Cloud."
+bref = "Añada el crate speedle 0.2.0 con cargo add, y luego llame a is_allowed y check frente a un Speedle local."
 lastmod = 2026-11-07T19:43:15+08:00
 +++
 
@@ -66,56 +66,6 @@ alice get /docs/public: allowed=true
 alice delete /docs/public: allowed=false reason=NoApplicablePolicies
 ```
 
-## Llamar a Speedle Cloud
-
-> **Speedle Cloud estará disponible próximamente.**
-
-El programa lee el nombre del servicio desde `SPEEDLE_SERVICE` y una clave API de cuenta con ámbito `ads` desde `SPEEDLE_TOKEN`. `SPEEDLE_ENDPOINT` anula el endpoint predeterminado `https://cloud.speedle.io`. Sustituya `src/main.rs` por:
-
-```rust
-use std::env;
-
-use speedle::blocking::Client;
-use speedle::{Auth, Backend};
-
-fn main() {
-    if let Err(e) = run() {
-        eprintln!("Speedle error: {e}");
-        std::process::exit(1);
-    }
-}
-
-fn run() -> Result<(), speedle::Error> {
-    let endpoint = env::var("SPEEDLE_ENDPOINT").unwrap_or_else(|_| "https://cloud.speedle.io".to_string());
-    let token = env::var("SPEEDLE_TOKEN").unwrap_or_default();
-    let service = env::var("SPEEDLE_SERVICE").unwrap_or_default();
-    let speedle = Client::builder(Backend::SpeedleCloud, &endpoint, Auth::bearer(token), service).build()?;
-
-    let allowed = speedle.is_allowed(&"alice".into(), "get", "/docs/public", &[])?;
-    println!("alice get /docs/public: allowed={allowed}");
-
-    let d = speedle.check(&"alice".into(), "delete", "/docs/public", &[])?;
-    println!("alice delete /docs/public: allowed={} reason={:?}", d.allowed, d.reason);
-    Ok(())
-}
-```
-
-Configure las variables de entorno y ejecútelo. `read -rs` evita que la clave API quede registrada en el historial de la terminal o en pantalla:
-
-```bash
-export SPEEDLE_SERVICE=docs
-read -rs SPEEDLE_TOKEN && export SPEEDLE_TOKEN
-cargo run
-```
-
-Salida, cuando el servicio cuenta con la política de ejemplo:
-
-```text
-alice get /docs/public: allowed=true
-alice delete /docs/public: allowed=false reason=NoApplicablePolicies
-```
-
-La clave API es un secreto del lado del servidor. Nunca lo distribuya a navegadores, aplicaciones móviles o clientes de escritorio.
 
 ## Gestión de errores
 
