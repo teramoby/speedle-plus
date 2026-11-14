@@ -384,6 +384,11 @@ func TestConditionConformance(t *testing.T) {
 			effect = pms.Grant
 		}
 		if effect == pms.Deny {
+			// SPDL §1/§2.2.2 and #411 explicitly make a missing-attribute deny
+			// inapplicable. The independent base grant exposes that documented
+			// outcome; conditionError still requires the real runtime error on
+			// both paths. Making such denies fail closed changes production
+			// semantics and belongs to a separate decision, not this suite.
 			service.Policies = append(service.Policies, &pms.Policy{ID: fmt.Sprintf("base-%d", i), Effect: pms.Grant, Permissions: []*pms.Permission{{Resource: fmt.Sprint(i), Actions: []string{"read"}}}})
 		}
 		service.Policies = append(service.Policies, &pms.Policy{ID: fmt.Sprint(i), Name: fmt.Sprint(i), Effect: effect, Condition: c.expression, Permissions: []*pms.Permission{{Resource: fmt.Sprint(i), Actions: []string{"read"}}}})
