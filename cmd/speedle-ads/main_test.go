@@ -15,9 +15,11 @@ import (
 	"time"
 
 	adsapi "github.com/teramoby/speedle-plus/api/ads"
+	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/assertion"
 	"github.com/teramoby/speedle-plus/pkg/cfg"
 	"github.com/teramoby/speedle-plus/pkg/cmd/flags"
+	"github.com/teramoby/speedle-plus/pkg/eval"
 	"github.com/teramoby/speedle-plus/pkg/logging"
 	"github.com/teramoby/speedle-plus/pkg/svcs"
 	"github.com/teramoby/speedle-plus/testutil/storetest"
@@ -188,6 +190,7 @@ func TestPrintVersionInfo(t *testing.T) {
 }
 
 type cascadeReloadFixture struct {
+	pms.PolicyStoreManagerADS
 	enabled  bool
 	requests chan struct{}
 }
@@ -199,11 +202,12 @@ func TestCascadeCommandRoutesReloadSignal(t *testing.T) {
 	if upstreamTLSReloadAction(nil) != nil {
 		t.Fatal("non-distribution store registered reload")
 	}
-	if upstreamTLSReloadAction(&cascadeReloadFixture{}) != nil {
+	if upstreamTLSReloadAction(&eval.PolicyEvalImpl{Store: &cascadeReloadFixture{}}) != nil {
 		t.Fatal("direct mode registered reload")
 	}
 	store := &cascadeReloadFixture{enabled: true, requests: make(chan struct{}, 1)}
-	reload := upstreamTLSReloadAction(store)
+	var evaluator eval.InternalEvaluator = &eval.PolicyEvalImpl{Store: store}
+	reload := upstreamTLSReloadAction(evaluator)
 	if reload == nil {
 		t.Fatal("cascade reload not registered")
 	}

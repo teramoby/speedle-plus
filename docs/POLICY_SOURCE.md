@@ -11,6 +11,8 @@ with an error naming both authentication choices.
 A cascade client sends its generated instance ID and authenticates with its
 certificate; it sends no Authorization bearer header. `TLSReloadInterval` and
 the `CRL*` properties are cascade-only; direct mode rejects these settings.
+Configure the intended private CA in `CAFile`. The bundle is trusted for both
+relay verification and HTTPS CRL hosts; adding a CA expands both trust domains.
 
 ```json
 {
@@ -104,9 +106,10 @@ the previous generation. Preserve this directory to retain rollback protection,
 and use a separate directory for each running instance. Two CRLs with equal
 number/time but different contents retain separate floors; dropping either
 requires a newer CRL that covers its floor. Cancellation and expiry are checked
-after staging the watermark file, before publication and its atomic rename.
-A rejected generation leaves both the retained floor and active generation
-unchanged; a failed rename also restores the previous generation.
+after staging the watermark file, immediately before its atomic rename.
+The floor is committed first, followed by in-memory generation publication in
+the same locked step. A rejected generation or failed rename leaves both the
+retained floor and active generation unchanged.
 
 `DownstreamCredentialsFile`, `Services`, `MaxDownstream`, `MaxChainDepth` and
 `MaxConnectionsPerDownstream` are removed store properties. They fail startup,

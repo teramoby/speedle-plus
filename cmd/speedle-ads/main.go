@@ -104,11 +104,7 @@ func newDownstreamListener(params *flags.Parameters, evaluator eval.InternalEval
 // cascade store, whose upstream client owns the reloadable TLS material. A
 // store without it, such as a direct engine, keeps its signal behavior.
 func startUpstreamTLSReload(evaluator eval.InternalEvaluator) func() {
-	provider, ok := evaluator.(interface{ DistributionStore() any })
-	if !ok {
-		return func() {}
-	}
-	reload := upstreamTLSReloadAction(provider.DistributionStore())
+	reload := upstreamTLSReloadAction(evaluator)
 	if reload == nil {
 		return func() {}
 	}
@@ -129,8 +125,12 @@ func startUpstreamTLSReload(evaluator eval.InternalEvaluator) func() {
 
 // upstreamTLSReloadAction returns the cascade store's coalesced reload request,
 // or nil when the store has no reloadable upstream TLS material.
-func upstreamTLSReloadAction(distribution any) func() {
-	upstream, ok := distribution.(interface {
+func upstreamTLSReloadAction(evaluator eval.InternalEvaluator) func() {
+	provider, ok := evaluator.(interface{ DistributionStore() any })
+	if !ok {
+		return nil
+	}
+	upstream, ok := provider.DistributionStore().(interface {
 		UpstreamTLSReloadEnabled() bool
 		RequestTLSReload()
 	})

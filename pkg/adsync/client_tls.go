@@ -51,19 +51,33 @@ type crlIssuer struct{ subject, publicKey string }
 
 type clientTLSConn struct {
 	net.Conn
-	owner   *clientTLS
-	timer   *time.Timer
-	expires time.Time
+	owner    *clientTLS
+	timer    *time.Timer
+	expires  time.Time
+	closed   bool
+	closeErr error
 }
 
 func (c *clientTLSConn) Close() error {
 	c.owner.mu.Lock()
+	defer c.owner.mu.Unlock()
+	return c.closeLocked()
+}
+
+// closeLocked is the single close path, including reload, shutdown and expiry.
+// Keep removal and the underlying close in the same critical section so an
+// owner shutdown cannot miss a connection whose Close is still in progress.
+func (c *clientTLSConn) closeLocked() error {
+	if c.closed {
+		return c.closeErr
+	}
+	c.closed = true
 	delete(c.owner.connections, c)
 	if c.timer != nil {
 		c.timer.Stop()
 	}
-	c.owner.mu.Unlock()
-	return c.Conn.Close()
+	c.closeErr = c.Conn.Close()
+	return c.closeErr
 }
 
 func newClientTLS(ctx context.Context, config Config, host string) (*clientTLS, error) {
@@ -272,8 +286,8 @@ func (m *clientTLS) reload(ctx context.Context) error {
 		return net.ErrClosed
 	}
 
-	// Network progress has no total-duration cap. Recheck validity at the
-	// publication point: material may have expired while a CRL was downloading.
+	// Recheck validity at publication: material may have expired while a
+	// CRL was downloading.
 	if err := ctx.Err(); err != nil {
 		return err
 	}
@@ -281,9 +295,9 @@ func (m *clientTLS) reload(ctx context.Context) error {
 		return err
 	}
 	old := m.material
-	// Stage and flush before the final validity/cancellation checks. Install
-	// the generation before advancing its floor; mu hides it until the rename
-	// commits both. A failed rename restores the old generation before unlock.
+	// Stage and flush, check cancellation/validity, and commit the floor first.
+	// Publication below cannot fail and mu hides both updates until complete.
+	// A failed write or rename never publishes a tentative generation.
 	if err := m.persistCRLFloors(next, func() error {
 		if err := ctx.Err(); err != nil {
 			return err
@@ -291,25 +305,17 @@ func (m *clientTLS) reload(ctx context.Context) error {
 		if err := next.validateAt(time.Now(), m.configFiles.CRLMaxAge); err != nil {
 			return err
 		}
-		m.material = next
 		return nil
 	}); err != nil {
-		m.material = old
 		return err
 	}
 
-	if old != nil {
-		if sameTLSMaterial(old, next) {
-			m.material = old
-			return nil
-		}
+	if old != nil && sameTLSMaterial(old, next) {
+		return nil
 	}
+	m.material = next
 	for connection := range m.connections {
-		connection.Conn.Close()
-		if connection.timer != nil {
-			connection.timer.Stop()
-		}
-		delete(m.connections, connection)
+		connection.closeLocked()
 	}
 	return nil
 }
@@ -370,14 +376,16 @@ func chainIssuer(chain []*x509.Certificate, index int) *x509.Certificate {
 
 func (m *clientTLS) verifyConnection(state tls.ConnectionState) error {
 	m.mu.Lock()
-	defer m.mu.Unlock()
-	if m.closed {
+	generation, floors, closed := m.material, m.crlFloors, m.closed
+	m.mu.Unlock()
+	if closed {
 		return net.ErrClosed
 	}
+	// Generations and floor slices are immutable once published. Expensive
+	// path building and CRL signatures must not hold the lifecycle mutex.
 	if len(state.PeerCertificates) == 0 {
 		return fmt.Errorf("adsync: relay sent no certificate")
 	}
-	generation := m.material
 	intermediates := x509.NewCertPool()
 	for _, certificate := range state.PeerCertificates[1:] {
 		intermediates.AddCert(certificate)
@@ -410,7 +418,7 @@ func (m *clientTLS) verifyConnection(state tls.ConnectionState) error {
 				// one-element chain whose issuer is absent. Configured CRLs,
 				// or a retained floor whose issuer name matches, cannot be
 				// verified against that chain, so it fails closed.
-				if i == 0 && (len(generation.crls) > 0 || m.mayRetainFloorForName(certificate.RawIssuer)) {
+				if i == 0 && (len(generation.crls) > 0 || mayRetainFloorForName(floors, certificate.RawIssuer)) {
 					valid = false
 				}
 				continue
@@ -434,7 +442,7 @@ func (m *clientTLS) verifyConnection(state tls.ConnectionState) error {
 			// retained floor still applies. The floor's issuer need not be
 			// listed in CAFile: a relay can present an intermediate that
 			// chains to a CAFile root, so the verified chain decides.
-			if !covered && (len(generation.crls) > 0 || m.retainsFloor(issuer)) {
+			if !covered && (len(generation.crls) > 0 || retainsFloor(floors, issuer)) {
 				valid = false
 				if missingIssuer == "" {
 					missingIssuer = issuer.Subject.String()
@@ -450,6 +458,14 @@ func (m *clientTLS) verifyConnection(state tls.ConnectionState) error {
 		}
 		if !valid {
 			continue
+		}
+		m.mu.Lock()
+		defer m.mu.Unlock()
+		if m.closed {
+			return net.ErrClosed
+		}
+		if m.material != generation {
+			return fmt.Errorf("adsync: TLS material changed while verifying relay")
 		}
 		// Conservatively expire connections at the earliest authenticated peer
 		// deadline. Reload closes all of them, including handshakes in progress.
@@ -548,11 +564,7 @@ func (c *Client) Close() error {
 		m.mu.Lock()
 		m.closed = true
 		for connection := range m.connections {
-			connection.Conn.Close()
-			if connection.timer != nil {
-				connection.timer.Stop()
-			}
-			delete(m.connections, connection)
+			connection.closeLocked()
 		}
 		m.mu.Unlock()
 	}

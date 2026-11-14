@@ -530,13 +530,13 @@ func TestCRLWatermarkEnvelopeValidation(t *testing.T) {
 // can rule a floor out.
 func TestRetainedFloorNameMatch(t *testing.T) {
 	manager := &clientTLS{crlFloors: []crlWatermark{{Subject: []byte("issuer-a"), PublicKey: []byte("key")}}}
-	if !manager.mayRetainFloorForName([]byte("issuer-a")) {
+	if !mayRetainFloorForName(manager.crlFloors, []byte("issuer-a")) {
 		t.Fatal("a floor with the peer's issuer name was not treated as applicable")
 	}
-	if manager.mayRetainFloorForName([]byte("issuer-b")) {
+	if mayRetainFloorForName(manager.crlFloors, []byte("issuer-b")) {
 		t.Fatal("a floor for another issuer name was treated as applicable")
 	}
-	if manager.mayRetainFloorForName(nil) {
+	if mayRetainFloorForName(manager.crlFloors, nil) {
 		t.Fatal("an empty issuer name matched a retained floor")
 	}
 }

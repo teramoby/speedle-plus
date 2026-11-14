@@ -104,9 +104,9 @@ func trustedCRLIssuers(caPEM []byte) map[crlIssuer]struct{} {
 // CRL watermark. Path building can accept an issuer that is not itself listed
 // in CAFile when it chains to a listed CA, so CAFile membership alone cannot
 // decide whether the issuer is still trusted.
-func (m *clientTLS) retainsFloor(issuer *x509.Certificate) bool {
+func retainsFloor(floors []crlWatermark, issuer *x509.Certificate) bool {
 	identity := crlIssuer{subject: string(issuer.RawSubject), publicKey: string(issuer.RawSubjectPublicKeyInfo)}
-	for _, floor := range m.crlFloors {
+	for _, floor := range floors {
 		if floor.issuer() == identity {
 			return true
 		}
@@ -118,8 +118,8 @@ func (m *clientTLS) retainsFloor(issuer *x509.Certificate) bool {
 // issuer whose certificate is absent from the verified chain. Floors are keyed
 // by subject and key; the peer's issuer name rules out every other subject but
 // cannot confirm the key, so a matching name is treated as possibly applicable.
-func (m *clientTLS) mayRetainFloorForName(rawIssuer []byte) bool {
-	for _, floor := range m.crlFloors {
+func mayRetainFloorForName(floors []crlWatermark, rawIssuer []byte) bool {
+	for _, floor := range floors {
 		if bytes.Equal(floor.Subject, rawIssuer) {
 			return true
 		}
@@ -127,7 +127,7 @@ func (m *clientTLS) mayRetainFloorForName(rawIssuer []byte) bool {
 	return false
 }
 
-func (m *clientTLS) persistCRLFloors(next *clientTLSGeneration, publish func() error) error {
+func (m *clientTLS) persistCRLFloors(next *clientTLSGeneration, beforeCommit func() error) error {
 	candidates := make([]crlWatermark, 0, len(next.crls))
 	for _, crl := range next.crls {
 		issuer := next.crlIssuers[crl]
@@ -160,7 +160,7 @@ func (m *clientTLS) persistCRLFloors(next *clientTLSGeneration, publish func() e
 		}
 	}
 	if len(m.crlFloors) == 0 && len(candidates) == 0 {
-		return publish()
+		return beforeCommit()
 	}
 	floors := append([]crlWatermark(nil), m.crlFloors...)
 	for _, candidate := range candidates {
@@ -184,13 +184,13 @@ func (m *clientTLS) persistCRLFloors(next *clientTLSGeneration, publish func() e
 		return fmt.Errorf("adsync: encode CRL watermarks: %w", err)
 	}
 	if bytes.Equal(payload, m.floorPayload) {
-		return publish()
+		return beforeCommit()
 	}
 	data, err := json.Marshal(cacheEnvelope{Format: crlWatermarksFormat, Checksum: hashOf(payload), Payload: payload})
 	if err != nil {
 		return err
 	}
-	if err := writeFileAtomicChecked(filepath.Join(m.configFiles.InstanceIDDir, crlWatermarksFile), data, publish); err != nil {
+	if err := writeFileAtomicChecked(filepath.Join(m.configFiles.InstanceIDDir, crlWatermarksFile), data, beforeCommit); err != nil {
 		return fmt.Errorf("adsync: persist CRL watermarks: %w", err)
 	}
 	m.crlFloors, m.floorPayload = floors, payload
