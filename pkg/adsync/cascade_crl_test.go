@@ -4,6 +4,7 @@ package adsync
 
 import (
 	"context"
+	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
@@ -14,6 +15,7 @@ import (
 	"fmt"
 	"io"
 	"math/big"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -38,6 +40,94 @@ func (p *cascadePKI) crl(t *testing.T, serial int64, number int64, start, end ti
 		t.Fatal(err)
 	}
 	return pem.EncodeToMemory(&pem.Block{Type: "X509 CRL", Bytes: data})
+}
+
+// newPinnedRelayPKI returns a self-signed certificate that is both the relay's
+// TLS certificate and the CAFile trust anchor, so Verify produces a
+// one-element peer chain.
+func newPinnedRelayPKI(t *testing.T) *cascadePKI {
+	t.Helper()
+	public, private, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Now()
+	template := &x509.Certificate{
+		SerialNumber:          big.NewInt(11),
+		Subject:               pkix.Name{CommonName: "pinned relay"},
+		NotBefore:             now.Add(-time.Hour),
+		NotAfter:              now.Add(time.Hour),
+		KeyUsage:              x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign | x509.KeyUsageCRLSign,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
+		IsCA:                  true,
+		BasicConstraintsValid: true,
+		IPAddresses:           []net.IP{net.ParseIP("127.0.0.1")},
+	}
+	der, err := x509.CreateCertificate(rand.Reader, template, template, public, private)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ca, err := x509.ParseCertificate(der)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return &cascadePKI{ca: ca, key: private, pem: pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})}
+}
+
+// TestCascadePinnedRelayLeafEnforcesCRL covers a CAFile that pins the relay's
+// own certificate: the verified chain is the leaf alone, and the leaf is also
+// its own CRL issuer. Configuring CRLs must not skip that check.
+func TestCascadePinnedRelayLeafEnforcesCRL(t *testing.T) {
+	pki := newPinnedRelayPKI(t)
+	key, err := x509.MarshalPKCS8PrivateKey(pki.key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pair, err := tls.X509KeyPair(pki.pem, pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: key}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	server := cascadeServer(t, pki, pair, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		io.WriteString(w, `{"servicesVersion":1,"services":[]}`)
+	}))
+	config := cascadeConfig(t, pki, server.URL)
+	now := time.Now().Truncate(time.Second)
+	path := writeTestFile(t, t.TempDir(), "relay.crl", pki.crl(t, 0, 1, now.Add(-time.Minute), now.Add(time.Hour), false), 0600)
+	config.CRLFiles = []string{path}
+	client := mustCascadeClient(t, config)
+	if _, err := client.Services(context.Background()); err != nil {
+		t.Fatalf("fresh CRL for the pinned relay: %v", err)
+	}
+	revoked := pki.crl(t, 11, 2, now, now.Add(time.Hour), false)
+	writeTestFile(t, filepath.Dir(path), "relay.crl", revoked, 0600)
+	if err := client.ReloadTLS(); err != nil {
+		t.Fatalf("reload CRL revoking the pinned relay: %v", err)
+	}
+	if _, err := client.Services(context.Background()); err == nil || !strings.Contains(err.Error(), "revoked") {
+		t.Fatalf("pinned revoked relay accepted: %v", err)
+	}
+}
+
+// TestCascadePinnedLeafWithoutIssuerFailsClosed pins a relay leaf whose issuer
+// is not in CAFile while a CRL for another trusted CA is configured. No
+// configured CRL can cover the pinned leaf, so the connection fails closed
+// instead of silently skipping revocation.
+func TestCascadePinnedLeafWithoutIssuerFailsClosed(t *testing.T) {
+	pki := newCascadePKI(t)
+	other := newCascadePKI(t)
+	now := time.Now().Truncate(time.Second)
+	serverCert, serverPEM, _ := pki.issue(t, 2, x509.ExtKeyUsageServerAuth, "127.0.0.1", now.Add(time.Hour))
+	server := cascadeServer(t, pki, serverCert, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		io.WriteString(w, `{"servicesVersion":1,"services":[]}`)
+	}))
+	config := cascadeConfig(t, pki, server.URL)
+	bundle := append(append([]byte{}, serverPEM...), other.pem...)
+	config.CAFile = writeTestFile(t, t.TempDir(), "pinned.pem", bundle, 0600)
+	config.CRLFiles = []string{writeTestFile(t, t.TempDir(), "other.crl", other.crl(t, 0, 1, now.Add(-time.Minute), now.Add(time.Hour), false), 0600)}
+	client := mustCascadeClient(t, config)
+	if _, err := client.Services(context.Background()); err == nil || !strings.Contains(err.Error(), "CRL coverage") {
+		t.Fatalf("pinned relay leaf without issuer coverage accepted: %v", err)
+	}
 }
 
 func TestCascadeCRLValidationAndReload(t *testing.T) {

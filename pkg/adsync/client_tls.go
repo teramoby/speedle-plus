@@ -349,6 +349,25 @@ func (m *clientTLS) config() *tls.Config {
 	}
 }
 
+// chainIssuer returns the certificate that issued chain[index], or nil when
+// the element is a trust anchor and needs no revocation check. The last
+// element of a chain is normally the anchor. When CAFile pins the peer's own
+// certificate, Verify returns a one-element chain: the peer is the anchor but
+// must still be checked, against itself when it is self-signed.
+func chainIssuer(chain []*x509.Certificate, index int) *x509.Certificate {
+	if index+1 < len(chain) {
+		return chain[index+1]
+	}
+	if index != 0 {
+		return nil
+	}
+	leaf := chain[0]
+	if bytes.Equal(leaf.RawIssuer, leaf.RawSubject) && leaf.CheckSignatureFrom(leaf) == nil {
+		return leaf
+	}
+	return nil
+}
+
 func (m *clientTLS) verifyConnection(state tls.ConnectionState) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -379,12 +398,20 @@ func (m *clientTLS) verifyConnection(state tls.ConnectionState) error {
 			if certificate.NotAfter.Before(chainExpiry) {
 				chainExpiry = certificate.NotAfter
 			}
-			if i == len(chain)-1 {
+			issuer := chainIssuer(chain, i)
+			if issuer == nil {
+				// The trust anchor needs no revocation check. When CAFile
+				// pins the peer's own certificate, Verify returns a
+				// one-element chain whose issuer is absent; configured CRLs
+				// cannot cover it, so the chain fails closed.
+				if i == 0 && len(generation.crls) > 0 {
+					valid = false
+				}
 				continue
 			}
 			covered := false
 			for _, crl := range generation.crls {
-				if !bytes.Equal(crl.RawIssuer, chain[i+1].RawSubject) || crl.CheckSignatureFrom(chain[i+1]) != nil || freshCRL(crl, now, m.configFiles.CRLMaxAge) != nil {
+				if !bytes.Equal(crl.RawIssuer, issuer.RawSubject) || crl.CheckSignatureFrom(issuer) != nil || freshCRL(crl, now, m.configFiles.CRLMaxAge) != nil {
 					continue
 				}
 				covered = true
@@ -401,7 +428,7 @@ func (m *clientTLS) verifyConnection(state tls.ConnectionState) error {
 			// retained floor still applies. The floor's issuer need not be
 			// listed in CAFile: a relay can present an intermediate that
 			// chains to a CAFile root, so the verified chain decides.
-			if !covered && (len(generation.crls) > 0 || m.retainsFloor(chain[i+1])) {
+			if !covered && (len(generation.crls) > 0 || m.retainsFloor(issuer)) {
 				valid = false
 			}
 		}
