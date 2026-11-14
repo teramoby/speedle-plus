@@ -108,7 +108,7 @@ func (impl *GRPCService) IsAllowed(ctx context.Context, in *pb.ContextRequest) (
 	}
 
 	// Audit log
-	logging.WriteSimpleSucceededAuditLog("[gRPC]IsAllowed", reqCtx, response)
+	logging.WriteSimpleSucceededAuditLog("[gRPC]IsAllowed", reqCtx, &response)
 
 	return &response, nil
 }
