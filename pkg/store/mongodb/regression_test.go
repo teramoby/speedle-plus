@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/teramoby/speedle-plus/api/pms"
-	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 func isolatedStore(t *testing.T) *Store {

@@ -24,7 +24,7 @@ import (
 	_ "github.com/teramoby/speedle-plus/pkg/store/file"
 	"github.com/teramoby/speedle-plus/pkg/svcs/adsrest"
 	"github.com/teramoby/speedle-plus/pkg/svcs/pmsrest"
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v3"
 )
 
 type schema map[string]interface{}

@@ -15,8 +15,8 @@ import (
 	_ "github.com/teramoby/speedle-plus/pkg/store/mongodb"
 	"github.com/teramoby/speedle-plus/pkg/suid"
 	clientv3 "go.etcd.io/etcd/client/v3"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 func SelectedBackend() string {
@@ -150,7 +150,7 @@ func NewFixture(initial *pms.PolicyStore) (*Fixture, error) {
 		if configuration.StoreType == "mongodb" {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
-			client, err := mongo.Connect(ctx, options.Client().ApplyURI(mongoURI))
+			client, err := mongo.Connect(options.Client().ApplyURI(mongoURI))
 			if err == nil {
 				_ = client.Database(mongoDatabase).Drop(ctx)
 				_ = client.Disconnect(ctx)

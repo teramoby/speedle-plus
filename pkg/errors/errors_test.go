@@ -5,6 +5,8 @@ package errors
 
 import (
 	goerrors "errors"
+	"fmt"
+	"os"
 	"testing"
 )
 
@@ -33,5 +35,81 @@ func TestWrap(t *testing.T) {
 	}
 	if Code(root) != UnknownError {
 		t.Fatalf("a plain error has code %s", Code(root))
+	}
+}
+
+func TestStandardErrorChain(t *testing.T) {
+	root := &os.PathError{Op: "open", Path: "policy.json", Err: os.ErrNotExist}
+	wrapped := Wrapf(root, StoreError, "read %s", "snapshot")
+	outer := fmt.Errorf("request failed: %w", wrapped)
+	if outer.Error() != "request failed: SPDL-1001 read snapshot: open policy.json: file does not exist" {
+		t.Fatalf("error text changed: %q", outer)
+	}
+	if !goerrors.Is(outer, root) || !goerrors.Is(outer, os.ErrNotExist) {
+		t.Fatal("errors.Is lost the cause")
+	}
+	var pathErr *os.PathError
+	if !goerrors.As(outer, &pathErr) || pathErr != root {
+		t.Fatal("errors.As lost the typed cause")
+	}
+	var coded *speedleError
+	if !goerrors.As(outer, &coded) || coded.Code() != StoreError {
+		t.Fatal("errors.As lost the Speedle code")
+	}
+	if goerrors.Unwrap(wrapped) != root {
+		t.Fatal("Unwrap lost the direct cause")
+	}
+	if Cause(outer) != outer {
+		t.Fatalf("Cause must preserve a standard wrapper: %v", Cause(outer))
+	}
+	if Code(outer) != UnknownError {
+		t.Fatal("Code's direct error semantics changed")
+	}
+}
+
+type legacyCause struct{ cause error }
+
+func (e legacyCause) Error() string { return "legacy" }
+func (e legacyCause) Cause() error  { return e.cause }
+
+func TestCauseCompatibility(t *testing.T) {
+	root := goerrors.New("disk full")
+	for _, err := range []error{root, Wrap(Wrap(root, StoreError, "inner"), ConfigError, "outer"), legacyCause{root}} {
+		if Cause(err) != root {
+			t.Fatalf("Cause(%v) = %v", err, Cause(err))
+		}
+	}
+	for _, err := range []error{nil, New(StoreError, "no cause"), legacyCause{}} {
+		if Cause(err) != nil {
+			t.Fatalf("nil cause behavior changed: %v", Cause(err))
+		}
+	}
+	if goerrors.Unwrap(New(StoreError, "no cause")) != nil {
+		t.Fatal("new error has a cause")
+	}
+	if goerrors.Is(Wrap(root, StoreError, "write"), goerrors.New("disk full")) {
+		t.Fatal("unrelated errors matched")
+	}
+	var pathErr *os.PathError
+	if goerrors.As(Wrap(root, StoreError, "write"), &pathErr) {
+		t.Fatal("unrelated type matched")
+	}
+}
+
+// github.com/pkg/errors.Cause stopped at standard-library wrappers. Preserve
+// that result even when the wrapped Speedle/legacy error has a nil Cause.
+func TestCausePreservesStandardWrappers(t *testing.T) {
+	root := goerrors.New("disk full")
+	for _, inner := range []error{New(StoreError, "no cause"), legacyCause{}, legacyCause{root}, Wrap(root, StoreError, "write"), &os.PathError{Op: "open", Path: "policy.json", Err: root}} {
+		wrapped := fmt.Errorf("load: %w", inner)
+		if Cause(wrapped) != wrapped {
+			t.Fatalf("Cause(%v) = %v, want unchanged wrapper", wrapped, Cause(wrapped))
+		}
+		if Cause(Wrap(wrapped, ConfigError, "config")) != wrapped {
+			t.Fatal("legacy traversal must stop at the standard wrapper")
+		}
+		if !goerrors.Is(wrapped, inner) || !goerrors.Is(Wrap(wrapped, ConfigError, "config"), inner) {
+			t.Fatal("standard errors.Is must still traverse both wrapper types")
+		}
 	}
 }
