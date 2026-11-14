@@ -7,13 +7,13 @@ const {spawnSync} = require('node:child_process');
 const test = require('node:test');
 
 const source = fs.readFileSync(path.resolve(__dirname, '../../.github/workflows/release.yml'), 'utf8');
-function step(name) {
-  const parts = source.split(`      - name: ${name}\n`);
+function step(name, workflow = source) {
+  const parts = workflow.split(`      - name: ${name}\n`);
   assert.equal(parts.length, 2, `Missing or ambiguous step ${name}`);
   return parts[1].split(/^      - /m, 1)[0];
 }
-function script(name) {
-  const literal = step(name).split('        run: |\n')[1];
+function script(name, workflow = source) {
+  const literal = step(name, workflow).split('        run: |\n')[1];
   assert.ok(literal, `Missing shell script ${name}`);
   const lines = [];
   for (const line of literal.split('\n')) {
@@ -476,6 +476,32 @@ test('Helm render check rejects missing and empty appVersion before calling Helm
       assert.notEqual(result.status, 0);
       assert.match(result.stderr, /appVersion missing/);
       assert.ok(!fs.existsSync(marker), 'invalid appVersion must fail before Helm runs');
+    }
+  } finally { fs.rmSync(directory, {recursive: true, force: true}); }
+});
+
+test('Helm candidate image tag accepts YAML quoting and rejects invalid versions before builds', () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-helm-tag-'));
+  try {
+    const chart = path.join(directory, 'deployment/helm/speedle/Chart.yaml');
+    fs.mkdirSync(path.dirname(chart), {recursive: true});
+    const workflow = fs.readFileSync(path.resolve(__dirname, '../../.github/workflows/helm.yml'), 'utf8');
+    const build = script('Build and load the candidate image', workflow);
+    const end = build.indexOf('host_arch=$(go env GOHOSTARCH)');
+    assert.ok(end > 0);
+    const tagScript = build.slice(0, end) + '\nprintf "%s\\n" "$image"\n';
+    for (const [version, quote] of [['1.8.0', '"'], ['1.9.0', "'"], ['1.9.1', '']]) {
+      fs.writeFileSync(chart, `appVersion: ${quote}${version}${quote} # release\n`);
+      const result = spawnSync('bash', ['-c', tagScript], {cwd: directory, encoding: 'utf8'});
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal(result.stdout.trim(), `speedle/speedle:${version}`);
+    }
+    for (const contents of ['name: speedle\n', 'appVersion: ""\n', 'appVersion: # unset\n', 'appVersion: null\n', 'appVersion: latest\n']) {
+      fs.writeFileSync(chart, contents);
+      const result = spawnSync('bash', ['-c', tagScript], {cwd: directory, encoding: 'utf8'});
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /Expected chart appVersion X.Y.Z/);
+      assert.equal(result.stdout, '');
     }
   } finally { fs.rmSync(directory, {recursive: true, force: true}); }
 });
