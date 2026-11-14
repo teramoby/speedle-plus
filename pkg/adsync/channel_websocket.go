@@ -41,7 +41,11 @@ func (c *Channel) runWebSocket(ctx context.Context) wsOutcome {
 		return wsOutcome{err: &terminalError{err: err}}
 	}
 	dialCtx, cancel := context.WithTimeout(ctx, c.client.requestTimeout)
-	conn, response, err := c.dialer.DialContext(dialCtx, c.channelURL(), header)
+	dialer := *c.dialer
+	if c.client.tlsMaterial != nil {
+		dialer.TLSClientConfig = c.client.tlsMaterial.configForHost(c.client.selectedBase().Hostname())
+	}
+	conn, response, err := dialer.DialContext(dialCtx, c.channelURL(), header)
 	cancel()
 	if err != nil {
 		if response != nil {
@@ -58,7 +62,7 @@ func (c *Channel) runWebSocket(ctx context.Context) wsOutcome {
 				if terminal := c.terminalStatusError(http.MethodGet, APIPrefix+"/channel", response.StatusCode, body); terminal != nil {
 					return wsOutcome{terminal: true, err: terminal}
 				}
-			} else if response.StatusCode == http.StatusUnauthorized || response.StatusCode == http.StatusForbidden {
+			} else if !c.client.cascade() && (response.StatusCode == http.StatusUnauthorized || response.StatusCode == http.StatusForbidden) {
 				c.machine.Stop(ReasonRevoked)
 				return wsOutcome{
 					terminal: true,
@@ -259,6 +263,14 @@ func (c *Channel) writeChannelJSON(conn *websocket.Conn, value any) error {
 		return fmt.Errorf("adsync: encode channel frame: %w", err)
 	}
 	c.sentFrameBytes.Store(int64(len(payload)))
+	switch frame := value.(type) {
+	case channelHello:
+		if frame.Seq != nil {
+			c.recordSent(*frame.Seq)
+		}
+	case channelHeartbeat:
+		c.recordSent(frame.Seq)
+	}
 	_ = conn.SetWriteDeadline(time.Now().Add(c.writeTimeout()))
 	if err := conn.WriteMessage(websocket.TextMessage, payload); err != nil {
 		return fmt.Errorf("adsync: write channel frame: %w", err)

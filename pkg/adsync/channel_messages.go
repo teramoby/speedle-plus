@@ -44,6 +44,7 @@ type channelHelloService struct {
 
 // channelHello is the first client frame after a WebSocket upgrade.
 type channelHello struct {
+	Seq          *uint64               `json:"seq,omitempty"`
 	Type         string                `json:"type"`
 	InstanceID   string                `json:"instanceId"`
 	Services     []channelHelloService `json:"services"`
@@ -98,14 +99,18 @@ type channelAckService struct {
 
 // channelAck confirms a heartbeat and carries the authoritative service set.
 type channelAck struct {
-	Type              string              `json:"type"`
-	ServicesVersion   int64               `json:"servicesVersion"`
-	Services          []channelAckService `json:"services"`
-	ServerTime        int64               `json:"serverTime"`
-	HeartbeatInterval string              `json:"heartbeatInterval"`
-	StaleAfter        string              `json:"staleAfter"`
-	StopAfter         string              `json:"stopAfter"`
-	Commands          []channelCommand    `json:"commands"`
+	AckSeq             *uint64             `json:"ackSeq,omitempty"`
+	Type               string              `json:"type"`
+	Chain              []string            `json:"chain,omitempty"`
+	UpstreamState      string              `json:"upstreamState,omitempty"`
+	UpstreamFreshForMs *int64              `json:"upstreamFreshForMs,omitempty"`
+	ServicesVersion    int64               `json:"servicesVersion"`
+	Services           []channelAckService `json:"services"`
+	ServerTime         int64               `json:"serverTime"`
+	HeartbeatInterval  string              `json:"heartbeatInterval"`
+	StaleAfter         string              `json:"staleAfter"`
+	StopAfter          string              `json:"stopAfter"`
+	Commands           []channelCommand    `json:"commands"`
 }
 
 // channelNotify announces that one service's head advanced.
@@ -154,6 +159,9 @@ func (s channelAckService) validate() error {
 }
 
 func (a *channelAck) validate() error {
+	if err := validateCascadeMetadata(a); err != nil {
+		return err
+	}
 	if a.Type != channelTypeAck {
 		return fmt.Errorf("%w: unexpected channel message %q", ErrProtocol, a.Type)
 	}

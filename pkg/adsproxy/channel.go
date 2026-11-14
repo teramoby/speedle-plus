@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -18,13 +19,6 @@ import (
 )
 
 const (
-	// maxChannelFrameBytes is the application-level bound on one channel frame.
-	// An ack carries every advertised service, and the mirror holds at most
-	// maxTombstones services; one worst-case entry (36-byte id, 64-byte name,
-	// two 20-digit revisions, 36-byte epoch and a 64-character state hash) is
-	// under 320 bytes, so a full ack stays well under this bound. It matches
-	// the one-megabyte response-page bound of the protocol.
-	maxChannelFrameBytes = 1 << 20
 	// maxPollWait is the longest hold a long-poll request may ask for.
 	maxPollWait = 30 * time.Second
 	// defaultPollWait matches the contract's wait=25 default.
@@ -42,6 +36,7 @@ const (
 
 // helloMessage is the downstream's first WebSocket frame.
 type helloMessage struct {
+	Seq          *uint64          `json:"seq,omitempty"`
 	Type         string           `json:"type"`
 	InstanceID   string           `json:"instanceId"`
 	Services     []helloService   `json:"services"`
@@ -88,14 +83,18 @@ type fallbackMessage struct {
 
 // ackMessage confirms a heartbeat and carries the authoritative service set.
 type ackMessage struct {
-	Type              string           `json:"type"`
-	ServicesVersion   int64            `json:"servicesVersion"`
-	Services          []ackService     `json:"services"`
-	ServerTime        int64            `json:"serverTime"`
-	HeartbeatInterval string           `json:"heartbeatInterval"`
-	StaleAfter        string           `json:"staleAfter"`
-	StopAfter         string           `json:"stopAfter"`
-	Commands          []commandMessage `json:"commands"`
+	AckSeq             *uint64          `json:"ackSeq,omitempty"`
+	Type               string           `json:"type"`
+	Chain              []string         `json:"chain"`
+	UpstreamState      string           `json:"upstreamState"`
+	UpstreamFreshForMs int64            `json:"upstreamFreshForMs"`
+	ServicesVersion    int64            `json:"servicesVersion"`
+	Services           []ackService     `json:"services"`
+	ServerTime         int64            `json:"serverTime"`
+	HeartbeatInterval  string           `json:"heartbeatInterval"`
+	StaleAfter         string           `json:"staleAfter"`
+	StopAfter          string           `json:"stopAfter"`
+	Commands           []commandMessage `json:"commands"`
 }
 
 type ackService struct {
@@ -122,7 +121,16 @@ type notifyMessage struct {
 	Head      uint64 `json:"head"`
 }
 
-func (s *Server) ack() ackMessage {
+func (s *Server) ack(seq ...uint64) ackMessage {
+	var ackSeq *uint64
+	if len(seq) > 0 {
+		v := seq[0]
+		ackSeq = &v
+	}
+	s.mu.Lock()
+	chain := append([]string(nil), s.chain...)
+	s.mu.Unlock()
+	upstream := s.upstreamStatus()
 	// The service list and the version it belongs to must come from one read,
 	// or a downstream that records the version could skip a refresh that was
 	// already reflected in a different list.
@@ -139,14 +147,18 @@ func (s *Server) ack() ackMessage {
 		})
 	}
 	return ackMessage{
-		Type:              "ack",
-		ServicesVersion:   version,
-		Services:          entries,
-		ServerTime:        s.now().UnixMilli(),
-		HeartbeatInterval: formatChannelDuration(s.heartbeat),
-		StaleAfter:        formatChannelDuration(s.stale),
-		StopAfter:         formatChannelDuration(s.stop),
-		Commands:          []commandMessage{},
+		AckSeq:             ackSeq,
+		Type:               "ack",
+		Chain:              chain,
+		UpstreamState:      upstream.State,
+		UpstreamFreshForMs: max(int64(0), upstream.FreshFor.Milliseconds()),
+		ServicesVersion:    version,
+		Services:           entries,
+		ServerTime:         s.now().UnixMilli(),
+		HeartbeatInterval:  formatChannelDuration(s.heartbeat),
+		StaleAfter:         formatChannelDuration(s.stale),
+		StopAfter:          formatChannelDuration(s.stop),
+		Commands:           []commandMessage{},
 	}
 }
 
@@ -176,7 +188,6 @@ func (s *Server) handleChannel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer conn.Close()
-	conn.SetReadLimit(maxChannelFrameBytes)
 
 	_ = conn.SetReadDeadline(time.Now().Add(helloTimeout))
 	messageType, payload, err := conn.ReadMessage()
@@ -227,13 +238,17 @@ func (s *Server) handleChannel(w http.ResponseWriter, r *http.Request) {
 		return conn.SetReadDeadline(time.Now().Add(readTimeout))
 	})
 
+	var sequence atomic.Uint64
+	if hello.Seq != nil {
+		sequence.Store(*hello.Seq)
+	}
 	acks := make(chan struct{}, 1)
 	stop := make(chan struct{})
 	var writer sync.WaitGroup
 	writer.Add(1)
 	go func() {
 		defer writer.Done()
-		s.channelWriter(conn, subscriber, acks, stop)
+		s.channelWriter(conn, subscriber, acks, stop, &sequence)
 	}()
 	defer func() {
 		close(stop)
@@ -279,6 +294,7 @@ func (s *Server) handleChannel(w http.ResponseWriter, r *http.Request) {
 				closeWithReason(conn, websocket.ClosePolicyViolation, "distribution_paused")
 				return
 			}
+			sequence.Store(heartbeat.Seq)
 			select {
 			case acks <- struct{}{}:
 			default:
@@ -300,10 +316,17 @@ func (s *Server) handleChannel(w http.ResponseWriter, r *http.Request) {
 // before entering the loop: a downstream initializes its service state from
 // that ack, so a notification that raced ahead of it would make the client
 // reject an unknown head.
-func (s *Server) channelWriter(conn *websocket.Conn, subscriber *Subscriber, acks <-chan struct{}, stop <-chan struct{}) {
+func (s *Server) channelWriter(conn *websocket.Conn, subscriber *Subscriber, acks <-chan struct{}, stop <-chan struct{}, sequences ...*atomic.Uint64) {
+	writeAck := func() error {
+		if len(sequences) > 0 {
+			return s.writeChannelAck(conn, sequences[0].Load())
+		}
+		return s.writeChannelAck(conn)
+	}
+	stateChanged := s.chainChangeSignal()
 	// Distribution can stop while the connection waits for its hello frame;
 	// the initial ack must not go out as if it were still active.
-	if err := s.writeChannelAck(conn); err != nil {
+	if err := writeAck(); err != nil {
 		if errors.Is(err, errDistributionStopped) {
 			closeWithReason(conn, websocket.ClosePolicyViolation, "distribution_paused")
 		}
@@ -316,12 +339,18 @@ func (s *Server) channelWriter(conn *websocket.Conn, subscriber *Subscriber, ack
 		select {
 		case <-stop:
 			return
+		case <-stateChanged:
+			stateChanged = s.chainChangeSignal()
+			if err := writeAck(); err != nil {
+				_ = conn.Close()
+				return
+			}
 		case <-acks:
 			// The availability watcher closes the connection when the state
 			// flips; the write itself is serialized with the flip, so an ack
 			// never confirms distribution while the relay is paused or no
 			// longer live.
-			if err := s.writeChannelAck(conn); err != nil {
+			if err := writeAck(); err != nil {
 				if errors.Is(err, errDistributionStopped) {
 					closeWithReason(conn, websocket.ClosePolicyViolation, "distribution_paused")
 				}
@@ -356,9 +385,6 @@ func writeChannelJSON(conn *websocket.Conn, value any) error {
 	if err != nil {
 		return err
 	}
-	if len(payload) > maxChannelFrameBytes {
-		return fmt.Errorf("%w: channel frame exceeds %d bytes", ErrConfig, maxChannelFrameBytes)
-	}
 	_ = conn.SetWriteDeadline(time.Now().Add(channelWriteTimeout))
 	return conn.WriteMessage(websocket.TextMessage, payload)
 }
@@ -391,13 +417,9 @@ func (s *Server) handlePoll(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "invalid_request", "")
 		return
 	}
-	body, err := io.ReadAll(io.LimitReader(r.Body, maxChannelFrameBytes+1))
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_request", "")
-		return
-	}
-	if len(body) > maxChannelFrameBytes {
-		writeError(w, http.StatusRequestEntityTooLarge, "request_too_large", "")
 		return
 	}
 	var heartbeat heartbeatMessage
@@ -413,6 +435,7 @@ func (s *Server) handlePoll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	identity := sessionIdentity{fingerprint: certificate.fingerprint, uuid: heartbeat.InstanceID}
+	chainChanged := s.chainChangeSignal()
 	if !s.beginPollSession(identity) {
 		writeError(w, http.StatusServiceUnavailable, "source_unavailable", "")
 		return
@@ -437,6 +460,7 @@ func (s *Server) handlePoll(w http.ResponseWriter, r *http.Request) {
 		case <-subscriber.C():
 		case <-timer.C:
 		case <-unavailable:
+		case <-chainChanged:
 		case <-s.done:
 			// The server is closing; do not keep the request held.
 			writeError(w, http.StatusServiceUnavailable, "source_unavailable", "")
@@ -452,13 +476,18 @@ func (s *Server) handlePoll(w http.ResponseWriter, r *http.Request) {
 	s.availabilityMu.RLock()
 	closed := s.isClosed()
 	stopped := s.distributionUnavailable()
-	if !closed && !stopped {
+	loop := s.chainLoop(identity.uuid)
+	if !closed && !stopped && !loop {
 		// The availability read lock is held across the write so a flip waits
 		// for it; bound the write so a stalled client cannot hold the flip up.
 		_ = http.NewResponseController(w).SetWriteDeadline(time.Now().Add(channelWriteTimeout))
-		writeJSON(w, http.StatusOK, s.ack())
+		writeJSON(w, http.StatusOK, s.ack(heartbeat.Seq))
 	}
 	s.availabilityMu.RUnlock()
+	if loop {
+		writeError(w, http.StatusForbidden, "chain_loop", "")
+		return
+	}
 	if closed {
 		writeError(w, http.StatusServiceUnavailable, "source_unavailable", "")
 		return

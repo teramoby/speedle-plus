@@ -617,7 +617,7 @@ func (m *Mirror) MarkAvailable(serviceID string) {
 // maxTombstones. A tombstone is a deletion guard and is never evicted, so once
 // the store is full the new service is refused rather than forgetting a guard.
 // The shared bound also keeps one channel ack encodable (see
-// maxChannelFrameBytes); service counts themselves are a Cloud product
+// the protocol page bound); service counts themselves are a Cloud product
 // concern, not an engine one.
 func (m *Mirror) reserveServiceLocked() error {
 	if len(m.services) >= maxTombstones {

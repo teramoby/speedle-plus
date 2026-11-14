@@ -156,6 +156,10 @@ type ChannelOptions struct {
 	// OnServiceSetChange and OnNotify. The store uses it to
 	// reconcile every service against every ack. It should return quickly.
 	OnAck func()
+	// OnChain installs validated ancestry before accepting an upstream ack.
+	OnChain func([]string) error
+	// SelectUpstream serializes selection with the owner's data synchronization.
+	SelectUpstream func(selectEndpoint func())
 	// OnCommand is called for every delivered command. A source may repeat a
 	// command in several acks, so the callback must ignore an id it has already
 	// executed. A nil result means no result is sent. In long-poll mode the
@@ -233,9 +237,15 @@ type Channel struct {
 	onNotify           func(Notify)
 	onServiceSetChange func(ServiceSetChange)
 	onAck              func()
+	onChain            func([]string) error
+	selectUpstream     func(func())
+	healthySince       time.Time
+	failbackInterval   time.Duration
 	onCommand          func(Command) *CommandResult
 
-	startedAt time.Time
+	sentAt     map[uint64]time.Time
+	lastAckSeq uint64
+	startedAt  time.Time
 
 	// instanceID is resolved by Run before the first hello.
 	instanceID string
@@ -333,6 +343,9 @@ func NewChannel(client *Client, options ChannelOptions) (*Channel, error) {
 		onNotify:           options.OnNotify,
 		onServiceSetChange: options.OnServiceSetChange,
 		onAck:              options.OnAck,
+		onChain:            options.OnChain,
+		selectUpstream:     options.SelectUpstream,
+		failbackInterval:   time.Minute,
 		onCommand:          options.OnCommand,
 		startedAt:          time.Now(),
 		current:            current,
@@ -387,6 +400,13 @@ func (c *Channel) Run(ctx context.Context) error {
 	}
 	c.instanceID = instanceID
 
+	if c.client.cascade() {
+		return c.runCascade(ctx)
+	}
+	return c.runTransport(ctx)
+}
+
+func (c *Channel) runTransport(ctx context.Context) error {
 	switch c.mode {
 	case TransportWebSocket:
 		if c.dialer == nil {
@@ -502,6 +522,12 @@ func (c *Channel) runWebSocketLoop(ctx context.Context) error {
 // sleepBeforeRetry waits with jittered exponential backoff. A source that asked
 // for a longer Retry-After is honoured up to the maximum delay.
 func (c *Channel) sleepBeforeRetry(ctx context.Context, attempt int, cause error) error {
+	if c.client.cascade() {
+		if cause != nil {
+			return cause
+		}
+		return ErrUnavailable
+	}
 	delay := c.backoff.delay(attempt)
 	if retryAfter := retryAfterOf(cause); retryAfter > delay {
 		if retryAfter > c.backoff.Max {
@@ -546,6 +572,9 @@ func (c *Channel) runLongPollLoop(ctx context.Context, probeAt time.Time) error 
 // change and delivers commands. When cadence is non-nil, a confirmed ack also
 // signals that the source may have changed the heartbeat thresholds.
 func (c *Channel) applyAck(ack *channelAck, results chan<- channelCommandResult, cadence chan<- struct{}) error {
+	if err := c.applyCascadeMetadata(ack); err != nil {
+		return err
+	}
 	heartbeat, err := parseChannelDuration(ack.HeartbeatInterval)
 	if err != nil {
 		return err
@@ -763,7 +792,13 @@ func (c *Channel) helloMessage(transport Transport) channelHello {
 	}
 	host := c.refreshHost()
 	host.Transport = string(transport)
+	var seq *uint64
+	if c.client.cascade() {
+		v := c.sequence.Add(1)
+		seq = &v
+	}
 	return channelHello{
+		Seq:          seq,
 		Type:         channelTypeHello,
 		InstanceID:   c.instanceID,
 		Services:     services,
@@ -835,20 +870,20 @@ func (c *Channel) heartbeatMessage(transport Transport) channelHeartbeat {
 }
 
 func (c *Channel) channelURL() string {
-	target := *c.client.base
+	target := *c.client.selectedBase()
 	target.Scheme = "wss"
-	if c.client.base.Scheme == "http" {
+	if target.Scheme == "http" {
 		target.Scheme = "ws"
 	}
-	target.Path = c.client.base.Path + APIPrefix + "/channel"
+	target.Path = target.Path + APIPrefix + "/channel"
 	target.RawQuery = ""
 	target.Fragment = ""
 	return target.String()
 }
 
 func (c *Channel) pollURL() string {
-	target := *c.client.base
-	target.Path = c.client.base.Path + APIPrefix + "/channel/poll"
+	target := *c.client.selectedBase()
+	target.Path = target.Path + APIPrefix + "/channel/poll"
 	seconds := int(c.pollWait / time.Second)
 	if seconds < 0 {
 		seconds = 0
@@ -908,6 +943,9 @@ func (c *Channel) frameRejected() error {
 
 func (c *Channel) terminalStatusError(method, path string, status int, body []byte) error {
 	statusErr := newStatusError(method, path, status, body)
+	if c.client.cascade() {
+		return nil
+	}
 	switch status {
 	case http.StatusUnauthorized, http.StatusForbidden:
 		c.machine.Stop(ReasonRevoked)

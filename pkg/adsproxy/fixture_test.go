@@ -425,6 +425,7 @@ type testServer struct {
 }
 
 type testServerOptions struct {
+	upstream       func() adsync.UpstreamStatus
 	coalesceWindow time.Duration
 	hub            *Hub
 	paused         func() bool
@@ -440,6 +441,7 @@ func newTestServer(t *testing.T, mirror *Mirror, options *testServerOptions) *te
 	server, err := NewServer(Config{
 		InstanceID:     testProxyID,
 		Chain:          options.chain,
+		Upstream:       options.upstream,
 		Mirror:         mirror,
 		CoalesceWindow: options.coalesceWindow,
 		Hub:            options.hub,

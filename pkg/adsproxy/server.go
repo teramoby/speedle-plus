@@ -45,6 +45,8 @@ type Config struct {
 	// this proxy (an upstream URL aimed at the relay's own downstream
 	// endpoint) or one of its ancestors — and is refused.
 	Chain []string
+	// Upstream reports the relay's end-to-end freshness and synchronization state.
+	Upstream func() adsync.UpstreamStatus
 	// Mirror holds the verified copies served downstream. It is required.
 	Mirror *Mirror
 	// CoalesceWindow is how long notifications are collected per service.
@@ -86,6 +88,8 @@ type Server struct {
 	// loopGuard holds this proxy and its upstream ancestors. A downstream
 	// that reports one of these ids would close a chain loop.
 	loopGuard map[string]struct{}
+	chain     []string
+	upstream  func() adsync.UpstreamStatus
 	mirror    *Mirror
 	hub       *Hub
 	ownsHub   bool
@@ -114,8 +118,10 @@ type Server struct {
 	// unavailable mirrors the paused callback. It is true while distribution
 	// must stop, and unavailableCh is closed in that state so a held poll
 	// answers immediately instead of waiting out its hold.
-	unavailable   bool
-	unavailableCh chan struct{}
+	unavailable       bool
+	unavailableCh     chan struct{}
+	chainChangedCh    chan struct{}
+	lastUpstreamState string
 	// availabilityMu serializes confirming writes with an availability flip.
 	// A writer holds the read lock across its check and response; the watcher
 	// holds the write lock while it flips the state and closes connections.
@@ -136,18 +142,9 @@ func NewServer(config Config) (*Server, error) {
 	if len(chain) == 0 {
 		chain = []string{config.InstanceID}
 	}
-	if chain[len(chain)-1] != config.InstanceID {
-		return nil, fmt.Errorf("%w: Chain must end with InstanceID", ErrConfig)
-	}
-	loopGuard := make(map[string]struct{}, len(chain))
-	for _, instanceID := range chain {
-		if !adsync.ValidInstanceID(instanceID) {
-			return nil, fmt.Errorf("%w: Chain entries must be UUIDv7 values, got %q", ErrConfig, instanceID)
-		}
-		if _, duplicate := loopGuard[instanceID]; duplicate {
-			return nil, fmt.Errorf("%w: Chain repeats instance %q", ErrConfig, instanceID)
-		}
-		loopGuard[instanceID] = struct{}{}
+	loopGuard, err := validateChain(chain, config.InstanceID)
+	if err != nil {
+		return nil, err
 	}
 	if config.Mirror == nil {
 		return nil, fmt.Errorf("%w: Mirror is required", ErrConfig)
@@ -174,6 +171,8 @@ func NewServer(config Config) (*Server, error) {
 	server := &Server{
 		instanceID:         config.InstanceID,
 		loopGuard:          loopGuard,
+		chain:              append([]string(nil), chain...),
+		upstream:           config.Upstream,
 		mirror:             config.Mirror,
 		hub:                hub,
 		ownsHub:            ownsHub,
@@ -186,6 +185,7 @@ func NewServer(config Config) (*Server, error) {
 		sessions:           make(map[sessionIdentity]int),
 		fingerprintsByUUID: make(map[string]map[string]struct{}),
 		unavailableCh:      make(chan struct{}),
+		chainChangedCh:     make(chan struct{}),
 		done:               make(chan struct{}),
 	}
 	server.upgrader = websocket.Upgrader{
@@ -269,7 +269,13 @@ func (s *Server) changeDistribution(change func()) []*websocket.Conn {
 // in-flight confirming response and later writes observe it.
 func (s *Server) applyAvailabilityLocked() []*websocket.Conn {
 	unavailable := s.distributionUnavailable()
+	upstreamState := s.upstreamStatus().State
 	s.mu.Lock()
+	if upstreamState != s.lastUpstreamState && !s.closed {
+		s.lastUpstreamState = upstreamState
+		close(s.chainChangedCh)
+		s.chainChangedCh = make(chan struct{})
+	}
 	if s.closed || unavailable == s.unavailable {
 		s.mu.Unlock()
 		return nil
@@ -308,13 +314,13 @@ func closeDistributedChannels(connections []*websocket.Conn) {
 // The availability read lock makes the check and the write atomic against a
 // flip: a pause or liveness change cannot complete between them, so an ack
 // that reaches a downstream was current when it was written.
-func (s *Server) writeChannelAck(conn *websocket.Conn) error {
+func (s *Server) writeChannelAck(conn *websocket.Conn, seq ...uint64) error {
 	s.availabilityMu.RLock()
 	defer s.availabilityMu.RUnlock()
 	if s.distributionUnavailable() {
 		return errDistributionStopped
 	}
-	return writeChannelJSON(conn, s.ack())
+	return writeChannelJSON(conn, s.ack(seq...))
 }
 
 // unavailableSignal returns a channel that is closed while distribution is
@@ -333,6 +339,8 @@ func (s *Server) InstanceID() string { return s.instanceID }
 // chain loop: a relay that syncs from its own circle removes services from its
 // authoritative set and stops serving its real children.
 func (s *Server) chainLoop(instanceID string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	_, loop := s.loopGuard[instanceID]
 	return loop
 }
@@ -393,7 +401,7 @@ func (s *Server) isClosed() bool {
 func (s *Server) beginChannelSession(identity sessionIdentity, conn *websocket.Conn) (*websocket.Conn, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.closed {
+	if _, loop := s.loopGuard[identity.uuid]; s.closed || loop {
 		return nil, false
 	}
 	previous := s.channels[identity]
@@ -416,7 +424,7 @@ func (s *Server) endChannelSession(identity sessionIdentity, conn *websocket.Con
 func (s *Server) beginPollSession(identity sessionIdentity) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.closed {
+	if _, loop := s.loopGuard[identity.uuid]; s.closed || loop {
 		return false
 	}
 	s.retainLocked(identity)
@@ -542,6 +550,16 @@ func (s *Server) serveData(w http.ResponseWriter, r *http.Request, next http.Han
 }
 
 func (s *Server) dataAvailable(w http.ResponseWriter) bool {
+	upstream := s.upstreamStatus()
+	if upstream.State != "live" || upstream.FreshFor <= 0 {
+		code := "upstream_syncing"
+		if upstream.State == "stale" || (upstream.State == "live" && upstream.FreshFor <= 0) {
+			code = "upstream_stale"
+		}
+		writeError(w, http.StatusServiceUnavailable, code, "")
+		return false
+	}
+
 	if s.isClosed() {
 		writeError(w, http.StatusServiceUnavailable, "source_unavailable", "")
 		return false

@@ -17,6 +17,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -112,6 +113,8 @@ type Config struct {
 	// https://cloud.speedle.io. HTTPS is required; a non-443 port is allowed
 	// for testing and internal proxies.
 	BaseURL string
+	// UpstreamURLs is the ordered cascade list; BaseURL must be its first entry.
+	UpstreamURLs []string
 	// APIKey selects direct mode and authenticates every request: synchronization, the channel and
 	// forwarded authorization requests. It is sent only in the Authorization
 	// header to BaseURL and never appears in an error. Without it, complete
@@ -164,6 +167,10 @@ type Config struct {
 // per-service state; Syncer adds resume and caching.
 type Client struct {
 	base            *url.URL
+	activeBase      atomic.Pointer[url.URL]
+	upstreams       []*url.URL
+	upstreamMu      sync.Mutex
+	upstreamCancel  context.CancelFunc
 	tlsMaterial     *clientTLS
 	apiKey          string
 	http            *http.Client
@@ -252,6 +259,10 @@ func NewClientContext(ctx context.Context, config Config) (*Client, error) {
 		return nil, fmt.Errorf("adsync: BaseURL must not contain a query or fragment")
 	}
 	base.Path = strings.TrimSuffix(base.Path, "/")
+	upstreams, err := parseUpstreams(config, base)
+	if err != nil {
+		return nil, err
+	}
 
 	requestTimeout := config.RequestTimeout
 	if requestTimeout == 0 {
@@ -300,6 +311,7 @@ func NewClientContext(ctx context.Context, config Config) (*Client, error) {
 		userAgent = defaultUserAgent
 	}
 	return &Client{
+		upstreams:       upstreams,
 		base:            base,
 		tlsMaterial:     config.tlsMaterial,
 		apiKey:          config.APIKey,
@@ -377,7 +389,7 @@ func newHTTPClient(config Config) (*http.Client, error) {
 		transport.DialContext = config.tlsMaterial.dialContext
 	}
 	return &http.Client{
-		Transport: transport,
+		Transport: cascadeTransport(config, transport),
 		// A policy source is a fixed endpoint. Following a redirect could move
 		// the request (and its credential) somewhere else, so surface the 3xx
 		// as a protocol error instead.
@@ -463,8 +475,8 @@ func loadCertPool(path string) (*x509.CertPool, error) {
 }
 
 func (c *Client) endpoint(parts ...string) string {
-	target := *c.base
-	path := c.base.Path + APIPrefix
+	target := *c.selectedBase()
+	path := target.Path + APIPrefix
 	for _, part := range parts {
 		path += "/" + url.PathEscape(part)
 	}

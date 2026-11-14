@@ -337,7 +337,9 @@ func sameTLSMaterial(a, b *clientTLSGeneration) bool {
 	return true
 }
 
-func (m *clientTLS) config() *tls.Config {
+func (m *clientTLS) config() *tls.Config { return m.configForHost(m.host) }
+
+func (m *clientTLS) configForHost(host string) *tls.Config {
 	return &tls.Config{
 		MinVersion: tls.VersionTLS12,
 		// Verification below uses the current explicit roots, host SAN and
@@ -351,7 +353,7 @@ func (m *clientTLS) config() *tls.Config {
 			}
 			return &m.material.certificate, nil
 		},
-		VerifyConnection: m.verifyConnection,
+		VerifyConnection: func(state tls.ConnectionState) error { return m.verifyConnectionForHost(state, host) },
 	}
 }
 
@@ -375,6 +377,10 @@ func chainIssuer(chain []*x509.Certificate, index int) *x509.Certificate {
 }
 
 func (m *clientTLS) verifyConnection(state tls.ConnectionState) error {
+	return m.verifyConnectionForHost(state, m.host)
+}
+
+func (m *clientTLS) verifyConnectionForHost(state tls.ConnectionState, host string) error {
 	m.mu.Lock()
 	generation, floors, closed := m.material, m.crlFloors, m.closed
 	m.mu.Unlock()
@@ -392,7 +398,7 @@ func (m *clientTLS) verifyConnection(state tls.ConnectionState) error {
 	}
 	now := time.Now()
 	chains, err := state.PeerCertificates[0].Verify(x509.VerifyOptions{
-		Roots: generation.roots, Intermediates: intermediates, DNSName: m.host,
+		Roots: generation.roots, Intermediates: intermediates, DNSName: host,
 		CurrentTime: now, KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 	})
 	if err != nil {

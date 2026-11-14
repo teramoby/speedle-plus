@@ -59,6 +59,17 @@ func (s *Store) startRuntime() error {
 		Transport:       s.options.Transport,
 		Fallback:        s.fallbackState,
 		DownstreamCount: s.downstreamSessionCount,
+		SelectUpstream: func(selectEndpoint func()) {
+			s.syncMu.Lock()
+			defer s.syncMu.Unlock()
+			selectEndpoint()
+		},
+		OnChain: func(chain []string) error {
+			if s.downstream != nil {
+				return s.downstream.server.SetChain(chain)
+			}
+			return nil
+		},
 		OnNotify: func(adsync.Notify) {
 			s.triggerSync()
 		},
@@ -290,9 +301,10 @@ func newDownstreamServing(client *adsync.Client, machine *adsync.Machine, option
 		HeartbeatInterval: options.HeartbeatInterval,
 		StaleAfter:        options.StaleAfter,
 		StopAfter:         options.StopAfter,
+		Upstream:          machine.Upstream,
 		Paused: func() bool {
 			instance := machine.Instance()
-			return instance.Paused || instance.Liveness != adsync.LivenessLive
+			return instance.Paused || (instance.Liveness == adsync.LivenessStopped && instance.Reason.Terminal())
 		},
 	})
 	if err != nil {

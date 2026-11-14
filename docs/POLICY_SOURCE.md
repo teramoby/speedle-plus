@@ -31,9 +31,13 @@ relay verification and HTTPS CRL hosts; adding a CA expands both trust domains.
 
 `UpstreamURL` also accepts a single string. Lists preserve preference order;
 empty lists, duplicate addresses, non-HTTPS addresses, user information,
-queries and fragments are rejected. The downstream client retains the
-candidates and connects to the first entry; priority failover is a separate
-implementation step. `ServeDownstream` enables relay serving: the process
+queries and fragments are rejected. The downstream client starts at the first entry, then tries the remaining
+candidates in order after connection, TLS, protocol, authentication, stale or
+syncing errors. After a minute on a healthy alternate it retries the first
+entry; exhausting the list uses bounded reconnect backoff. Data synchronization
+and authorization forwarding follow the selected endpoint. A stale candidate,
+a lower head within the same epoch or an equal-revision conflicting hash cannot
+replace retained verified data. Epoch changes require full resynchronization. `ServeDownstream` enables relay serving: the process
 serves the policy-source protocol on the dedicated downstream mTLS listener
 configured by the `downstream-*` server settings.
 
@@ -122,3 +126,22 @@ including when explicitly set to an empty value. Downstream credentials and
 service subsets are not migrated automatically. Use `ClientCertFile`,
 `ClientKeyFile`, `CAFile` and the relay's `downstreamClientCAPath`; a downstream
 receives the relay's service set.
+
+
+Relay acks carry `chain`, `upstreamState` and `upstreamFreshForMs`. The chain
+contains the ancestor UUIDs followed by the relay UUID, and populates the next
+relay's runtime loop guard. A hello or poll from an ancestor or the relay itself
+is rejected with `chain_loop`; topology updates also close an existing ancestor
+session. There is no chain-depth or channel-frame-size limit.
+
+Freshness is an end-to-end budget. A relay sends the minimum of its own
+confirming-ack window and its inherited remaining budget. Cascade frames carry
+`seq` and acks echo it as `ackSeq`; children subtract the full monotonic RTT
+(including a held poll and queues) before installing a local deadline, so delays
+cannot extend ancestor freshness. This conservative accounting can shorten the
+usable window on slow links or long-held polls. Unsolicited acks keep aging their
+last echoed frame; a later frame supplies a newer reference. No wall-clock
+synchronization is required. A syncing ancestor answers data requests with 503
+`upstream_syncing`; an exhausted budget answers with 503 `upstream_stale`.
+Channels propagate those states without treating temporarily withheld services
+as authoritative removals. Direct-child counts remain part of heartbeats.

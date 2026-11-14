@@ -54,7 +54,8 @@ func (c *Channel) runLongPoll(ctx context.Context, probeAt time.Time) (probe boo
 
 // pollOnce performs one long-poll request and applies its ack.
 func (c *Channel) pollOnce(ctx context.Context) error {
-	payload, err := json.Marshal(c.heartbeatMessage(TransportLongPoll))
+	frame := c.heartbeatMessage(TransportLongPoll)
+	payload, err := json.Marshal(frame)
 	if err != nil {
 		return fmt.Errorf("adsync: encode heartbeat: %w", err)
 	}
@@ -75,6 +76,7 @@ func (c *Channel) pollOnce(ctx context.Context) error {
 	request.Header = header
 	request.Header.Set("Content-Type", "application/json")
 
+	c.recordSent(frame.Seq)
 	response, err := c.client.http.Do(request)
 	if err != nil {
 		if ctxErr := ctx.Err(); ctxErr != nil {

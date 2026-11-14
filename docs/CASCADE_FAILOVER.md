@@ -17,7 +17,13 @@ Design for #385 (builds on #380 and #383).
   the existing full-resynchronization contract.
 - Relay acks carry `upstreamState` (`live`, `syncing`, `stale`) and
   `upstreamFreshForMs`, the remaining upstream freshness budget. A child keeps
-  an absolute local deadline, capped by its own stale window; another ack can
+  an absolute local deadline, capped by its own stale window. Cascade hello and
+  heartbeat frames carry `seq`; every relay ack echoes the most recently
+  received sequence as `ackSeq`. The child subtracts the entire monotonic
+  round-trip time from that frame's send through ack receipt before installing
+  the budget. This conservatively includes server hold/queue time and needs no
+  synchronized clocks. Unsolicited acks keep aging the same reference; unknown
+  or reordered sequences are rejected. Another ack can
   only renew the budget advertised by its parent. Relay output takes the
   minimum of its direct-ack and inherited deadlines. Syncing ancestors prevent
   data serving with `upstream_syncing`; exhausted freshness prevents serving

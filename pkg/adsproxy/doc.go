@@ -34,6 +34,12 @@
 // of waiting out its hold. Distribution resumes without a restart once the
 // instance is live and unpaused again.
 //
+// Relay acks advertise the runtime ancestor chain and an end-to-end upstream
+// freshness budget. Data responses refuse syncing and stale ancestors with
+// upstream_syncing and upstream_stale; channels keep carrying these states.
+// Client frame sequences are echoed so children can conservatively deduct RTT.
+// Runtime chain updates also evict existing ancestor sessions.
+//
 // # CRL revocation
 //
 // CRLs come from PEM or DER files and/or HTTPS URLs (conditional fetches, no
@@ -88,7 +94,7 @@
 // proxy enforces is the replay-protection store shared by active service
 // copies and removed-service tombstones: a tombstone is a deletion guard and
 // is never evicted, so a new service is refused once the store is full rather
-// than forgetting a guard. The same bound keeps one channel ack encodable.
+// than forgetting a guard. Channel frames and ancestor chains have no size bound.
 //
 // The package never logs policy content or credentials.
 package adsproxy

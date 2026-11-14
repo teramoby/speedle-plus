@@ -53,8 +53,8 @@ func TestAckFrameFitsTheLargestServiceSet(t *testing.T) {
 	if err != nil {
 		t.Fatalf("encode ack: %v", err)
 	}
-	if len(encoded) > maxChannelFrameBytes {
-		t.Fatalf("ack of %d bytes exceeds the %d-byte channel frame bound", len(encoded), maxChannelFrameBytes)
+	if len(encoded) > (1 << 20) {
+		t.Fatalf("ack of %d bytes exceeds the %d-byte channel frame bound", len(encoded), (1 << 20))
 	}
 	if len(encoded) <= 64<<10 {
 		t.Fatalf("ack of %d bytes does not exercise the previous 64 KiB bound", len(encoded))

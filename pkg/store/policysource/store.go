@@ -158,6 +158,7 @@ func Open(ctx context.Context, options Options) (_ *Store, err error) {
 
 	client, err := adsync.NewClientContext(ctx, adsync.Config{
 		BaseURL:            options.UpstreamURL,
+		UpstreamURLs:       options.UpstreamURLs,
 		APIKey:             string(options.APIKey),
 		InstanceID:         options.InstanceID,
 		InstanceIDDir:      options.CacheDir,
@@ -278,7 +279,12 @@ func (s *Store) RequireWatch() bool { return true }
 // Sync is safe for concurrent use; passes are serialized. The notification
 // channel can call it whenever a revision is announced and after a confirmed
 // ack.
-func (s *Store) Sync(ctx context.Context) error {
+func (s *Store) Sync(ctx context.Context) (syncErr error) {
+	defer func() {
+		if syncErr != nil {
+			s.client.FailUpstream()
+		}
+	}()
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -297,7 +303,7 @@ func (s *Store) Sync(ctx context.Context) error {
 	} else {
 		discovery, err := s.syncer.Services(ctx)
 		if err != nil {
-			if stderrors.Is(err, adsync.ErrUnauthorized) || stderrors.Is(err, adsync.ErrForbidden) {
+			if s.options.APIKey != "" && (stderrors.Is(err, adsync.ErrUnauthorized) || stderrors.Is(err, adsync.ErrForbidden)) {
 				s.machine.Stop(adsync.ReasonRevoked)
 			}
 			return err

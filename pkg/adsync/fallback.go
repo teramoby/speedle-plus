@@ -201,8 +201,8 @@ func (c *Client) forwardOnce(ctx context.Context, operation FallbackOperation, b
 	requestCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	target := *c.base
-	target.Path = c.base.Path + AuthzCheckAPIPrefix + string(operation)
+	target := *c.selectedBase()
+	target.Path = target.Path + AuthzCheckAPIPrefix + string(operation)
 	request, err := http.NewRequestWithContext(requestCtx, http.MethodPost, target.String(), bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("adsync: build fallback request: %w", err)

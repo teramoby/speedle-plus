@@ -283,6 +283,8 @@ type Machine struct {
 	ackSinceStop bool
 
 	lastConfirmedAckAt time.Time
+	upstreamState      string
+	upstreamDeadline   time.Time
 
 	setKnown bool
 	records  map[string]*serviceRecord
@@ -1185,6 +1187,9 @@ func (m *Machine) livenessLocked(now time.Time) Liveness {
 
 func (m *Machine) instanceStatusLocked(now time.Time) InstanceStatus {
 	liveness := m.livenessLocked(now)
+	if liveness == LivenessLive && (m.upstreamState == "syncing" || m.upstreamState == "stale" || (!m.upstreamDeadline.IsZero() && !now.Before(m.upstreamDeadline))) {
+		liveness = LivenessStale
+	}
 	status := InstanceStatus{
 		Liveness:           liveness,
 		Paused:             m.paused,

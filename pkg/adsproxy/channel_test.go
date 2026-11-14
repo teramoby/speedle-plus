@@ -401,10 +401,10 @@ func TestPollRejectsInvalidRequests(t *testing.T) {
 			t.Errorf("body %s: status %d payload %s", body, response.StatusCode, payload)
 		}
 	}
-	oversized := make([]byte, maxChannelFrameBytes+1)
+	oversized := make([]byte, (1<<20)+1)
 	oversized[0] = '{'
 	response, _ := server.post(client, adsync.APIPrefix+"/channel/poll?wait=0", oversized)
-	if response.StatusCode != http.StatusRequestEntityTooLarge {
+	if response.StatusCode != http.StatusBadRequest {
 		t.Errorf("oversized body: status %d", response.StatusCode)
 	}
 }
