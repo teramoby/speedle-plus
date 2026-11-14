@@ -14,13 +14,15 @@ the `CRL*` properties are cascade-only; direct mode rejects these settings.
 
 ```json
 {
-  "storeType": "policy-source",
-  "storeProps": {
-    "UpstreamURL": ["https://relay-one.example:7443", "https://relay-two.example:7443"],
-    "ClientCertFile": "/etc/speedle/client.pem",
-    "ClientKeyFile": "/etc/speedle/client.key",
-    "CAFile": "/etc/speedle/relay-ca.pem",
-    "CacheDir": "/var/lib/speedle/downstream"
+  "storeConfig": {
+    "storeType": "policy-source",
+    "storeProps": {
+      "UpstreamURL": ["https://relay-one.example:7443", "https://relay-two.example:7443"],
+      "ClientCertFile": "/etc/speedle/client.pem",
+      "ClientKeyFile": "/etc/speedle/client.key",
+      "CAFile": "/etc/speedle/relay-ca.pem",
+      "CacheDir": "/var/lib/speedle/downstream"
+    }
   }
 }
 ```
@@ -70,7 +72,9 @@ TLS handshakes, response headers and gaps between response bytes. One transfer
 also has a fixed ten-minute hard limit, so a publisher that keeps sending
 bytes cannot hold startup or a reload forever. Sources are fetched in sequence,
 so each configured source can add up to that limit to startup or a reload.
-There is no response-size limit and no setting for one. Configured CRLs must have
+Startup requires every configured source: an unreadable file or an unreachable
+URL fails startup rather than running with a configured revocation check
+disabled. There is no response-size limit and no setting for one. Configured CRLs must have
 trusted signatures and current validity windows. Unsupported critical CRL
 extensions are rejected; delta and scoped CRLs are not supported. Revoked certificates
 and chains without fresh issuer coverage fail verification. `CRLMaxAge`
