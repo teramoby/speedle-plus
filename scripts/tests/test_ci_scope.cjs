@@ -306,3 +306,16 @@ test('quick formatting rejects parse errors, command failures and unformatted fi
     }
   } finally {fs.rmSync(dir, {recursive: true, force: true});}
 });
+
+// The chart integration job consumes these candidate-image inputs, including
+// transitive packages, rather than an already-published image.
+test('Helm pull requests and pushes select every candidate image input', () => {
+  const helm = fs.readFileSync(path.join(root, '.github/workflows/helm.yml'), 'utf8');
+  for (const event of ['pull_request', 'push']) {
+    const block = helm.split(`  ${event}:\n`)[1].split(/\n  [a-z_]+:|\npermissions:/)[0];
+    const paths = [...block.matchAll(/^      - (.+)$/gm)].map(match => match[1]);
+    for (const input of ['deployment/helm/**', 'deployment/container/**', 'cmd/**', 'pkg/**', 'go.mod', 'go.sum']) {
+      assert.ok(paths.includes(input), `${event} must select ${input}`);
+    }
+  }
+});

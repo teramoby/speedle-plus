@@ -418,3 +418,30 @@ test('the release image is scratch, unprivileged, has no default command and car
   assert.match(dockerfile, /^ENTRYPOINT \["\/dispatch"\]$/m);
   assert.doesNotMatch(dockerfile, /^CMD /m);
 });
+
+test('Makefile binaries and development images follow the chart version at the next release', () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-make-version-'));
+  try {
+    const repo = path.resolve(__dirname, '../..');
+    const chart = path.join(directory, 'deployment/helm/speedle/Chart.yaml');
+    fs.mkdirSync(path.dirname(chart), {recursive: true});
+    for (const [tool, body] of Object.entries({
+      go: 'if [ "$1" = env ]; then echo /tmp/speedle-make-fixture; else echo "go version go1.27.4 linux/amd64"; fi',
+      git: 'echo abc1234',
+    })) {
+      const file = path.join(directory, tool);
+      fs.writeFileSync(file, '#!/bin/sh\n' + body + '\n');
+      fs.chmodSync(file, 0o755);
+    }
+    for (const version of ['1.8.0', '1.9.0']) {
+      fs.writeFileSync(chart, `appVersion: "${version}"\n`);
+      const result = spawnSync('make', ['-f', path.join(repo, 'Makefile'), '-n', 'build', 'image'], {
+        cwd: directory, encoding: 'utf8', env: {...process.env, PATH: directory + path.delimiter + process.env.PATH},
+      });
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal(result.stdout.match(new RegExp(`main.productVersion=${version.replaceAll('.', '\\.')} `, 'g')).length, 3);
+      for (const service of ['pms', 'ads']) assert.ok(result.stdout.includes(`speedle-${service}:v${version}`));
+      assert.ok(!result.stdout.includes('main.productVersion=0.1'));
+    }
+  } finally { fs.rmSync(directory, {recursive: true, force: true}); }
+});

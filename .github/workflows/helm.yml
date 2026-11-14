@@ -8,6 +8,11 @@ on:
   pull_request:
     paths:
       - deployment/helm/**
+      - deployment/container/**
+      - cmd/**
+      - pkg/**
+      - go.mod
+      - go.sum
       - scripts/ci/install-helm.sh
       - scripts/ci/install-kind.sh
       - .github/workflows/helm.yml
@@ -16,6 +21,11 @@ on:
     branches: [master]
     paths:
       - deployment/helm/**
+      - deployment/container/**
+      - cmd/**
+      - pkg/**
+      - go.mod
+      - go.sum
       - scripts/ci/install-helm.sh
       - scripts/ci/install-kind.sh
       - .github/workflows/helm.yml
