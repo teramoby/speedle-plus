@@ -8,7 +8,7 @@ linksection = true
 tocheading = "h2"
 categories = ["docs"]
 bref = "組み込みモード、Docker イメージ、Homebrew、ソースからのビルド、およびスタンドアロンの PMS と ADS サービス。"
-lastmod = 2026-11-10T14:45:43+08:00
+lastmod = 2026-11-14T10:30:00+08:00
 +++
 
 Speedle は Go アプリケーション内への組み込み、1 つの公開コンテナイメージからの実行、またはスタンドアロンの PMS および ADS サービスとして実行できます。
@@ -53,34 +53,34 @@ PMS を実行したままにし、同じチェックアウトの別のターミ�
 
 リリースワークフローによって公開される各リリースには、macOS および Linux（amd64、arm64）向けの事前ビルド済み `spctl`、`speedle-pms`、`speedle-ads` バイナリ（ファイル名 `<コマンド>_<OS>_<アーキテクチャ>`）と `checksums.txt` ファイルが添付されます。[Releases ページ](https://github.com/teramoby/speedle-plus/releases) からダウンロードし、実行前にダウンロードした各ファイルの SHA-256 チェックサムを検証してください。チェックサムファイルは同じリリースに添付されているため、リリースの真正性確認ではなく、ダウンロードの不完全性や破損の検出を目的としています。バイナリとコンテナイメージはリリースワークフローによって生成されるため、ワークフローが追加された後の最初のリリースから利用可能です。
 
-リリースワークフローは、Linux amd64 および arm64 向けの 2 つのマルチアーキテクチャコンテナイメージも公開します:
+リリースワークフローは、Linux amd64 および arm64 向けの 1 つのマルチアーキテクチャコンテナイメージも公開します。このイメージには `speedle-pms`、`speedle-ads`、`spctl` が含まれ、最初の引数で起動するプログラムを選択します:
 
-- `ghcr.io/teramoby/speedle-pms`
-- `ghcr.io/teramoby/speedle-ads`
+- Docker Hub: `docker.io/speedle/speedle`
+- GHCR: `ghcr.io/teramoby/speedle`
 
-匿名プルにはパッケージがパブリックである必要があります。パッケージがプライベートな場合は、まず `docker login ghcr.io` で認証してください。
+匿名プルは可能です。GHCR が匿名プルを拒否する場合は、まず `docker login ghcr.io` で認証してください。
 
 デプロイするリリースをプルします。`latest` は最新のリリースに追従します:
 
 <!-- deployment-template: image-pull -->
 ```bash
-docker pull ghcr.io/teramoby/speedle-pms:latest
-docker pull ghcr.io/teramoby/speedle-ads:latest
+docker pull docker.io/speedle/speedle:latest
+docker pull ghcr.io/teramoby/speedle:latest
 ```
 
-ダイジェストでイメージを固定するには、`docker buildx imagetools inspect ghcr.io/teramoby/speedle-pms:<tag>` を実行して公開されたダイジェストを確認します。
+ダイジェストでイメージを固定するには、`docker buildx imagetools inspect docker.io/speedle/speedle:<tag>` を実行して公開されたダイジェストを確認します。
 
-両方のイメージは UID 65532 としてサービスを実行し、ファイルストア用の書き込み可能な `/data` ディレクトリを含んでいます。イメージ名の後にサーバーフラグを渡し、各コマンドを独自のターミナルで実行します:
+イメージは UID 65532 として実行され、ファイルストア用の書き込み可能な `/data` ディレクトリを含んでいます。イメージ名の後にプログラム名とそのフラグを渡し、各コマンドを独自のターミナルで実行します:
 
 <!-- deployment-template: image-run -->
 ```bash
-docker run --rm -p 127.0.0.1:6733:6733 -v speedle-policies:/data ghcr.io/teramoby/speedle-pms:latest --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6733 --insecure=true
-docker run --rm -p 127.0.0.1:6734:6734 -v speedle-policies:/data ghcr.io/teramoby/speedle-ads:latest --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6734 --insecure=true
+docker run --rm -p 127.0.0.1:6733:6733 -v speedle-policies:/data docker.io/speedle/speedle:latest speedle-pms --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6733 --insecure=true
+docker run --rm -p 127.0.0.1:6734:6734 -v speedle-policies:/data docker.io/speedle/speedle:latest speedle-ads --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6734 --insecure=true
 ```
 
 PMS には組み込みの呼び出し元認証がありません。`127.0.0.1` へのバインドにより、未認証の管理 API をこのマシン内のみに留めます。これらのポートをホストインターフェースに公開したり、信頼できないネットワークに公開したりしないでください。
 
-イメージには CA 証明書が含まれていません。TLS エンドポイント用の CA ファイルを提供してください。`--insecure=true` はこのローカルサンプル専用です。[セキュリティ](../security/) を参照してください。
+イメージには公開 CA 証明書バンドルが含まれています。1.7.0 と 1.7.1 はこのバンドルが追加される前に公開されたため、これらのタグで TLS エンドポイントに接続する場合は CA ファイルを指定してください。`--insecure=true` はこのローカルサンプル専用です。[セキュリティ](../security/) を参照してください。[Docker イメージ](/docs/deployment/docker/) ページでは、`spctl`、ヘルスチェック、Compose、プロベナンスについて説明しています。
 
 ## Kubernetes 開発サンプル
 
@@ -113,8 +113,8 @@ spec:
               mountPath: /data
       containers:
         - name: pms
-          image: ghcr.io/teramoby/speedle-pms:<release-tag>
-          args: ["--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6733", "--insecure=true"]
+          image: docker.io/speedle/speedle:<release-tag>
+          args: ["speedle-pms", "--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6733", "--insecure=true"]
           ports:
             - containerPort: 6733
           readinessProbe:
@@ -124,8 +124,8 @@ spec:
             - name: policies
               mountPath: /data
         - name: ads
-          image: ghcr.io/teramoby/speedle-ads:<release-tag>
-          args: ["--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6734", "--insecure=true"]
+          image: docker.io/speedle/speedle:<release-tag>
+          args: ["speedle-ads", "--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6734", "--insecure=true"]
           ports:
             - containerPort: 6734
           readinessProbe:
@@ -155,11 +155,11 @@ spec:
       targetPort: 6734
 ```
 
-`PMS_IMAGE` と `ADS_IMAGE` を、デプロイする正確なイメージ（リリースタグやダイジェストなど）に設定します。適用前にローカルで置換し、クイックスタートのクライアントを使用している間はポートフォワードを実行したままにしてください:
+`SPEEDLE_IMAGE` を、デプロイする正確なイメージ（リリースタグやダイジェストなど）に設定します。適用前にローカルで置換し、クイックスタートのクライアントを使用している間はポートフォワードを実行したままにしてください:
 
 <!-- deployment-template: apply -->
 ```bash
-kubectl set image --local -f speedle-dev.yaml pms="$PMS_IMAGE" ads="$ADS_IMAGE" -o yaml | kubectl apply -f -
+kubectl set image --local -f speedle-dev.yaml pms="$SPEEDLE_IMAGE" ads="$SPEEDLE_IMAGE" -o yaml | kubectl apply -f -
 kubectl rollout status deployment/speedle-dev
 kubectl port-forward service/speedle-dev 6733:6733 6734:6734
 ```

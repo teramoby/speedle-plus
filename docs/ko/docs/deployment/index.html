@@ -38,7 +38,7 @@
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ko/docs/deployment/#webpage","@type":"WebPage","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-10T14:45:43+08:00","description":"Go 애플리케이션에 Speedle을 임베드하거나, 공개 컨테이너 이미지 또는 Homebrew로 실행하거나, 독립 실행형 PMS 및 ADS 서비스로 실행합니다.","headline":"배포","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ko","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ko/docs/deployment/","@type":"WebPage"},"name":"배포","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ko/docs/deployment/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ko/docs/deployment/#webpage","@type":"WebPage","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-14T10:30:00+08:00","description":"Go 애플리케이션에 Speedle을 임베드하거나, 공개 컨테이너 이미지 또는 Homebrew로 실행하거나, 독립 실행형 PMS 및 ADS 서비스로 실행합니다.","headline":"배포","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ko","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ko/docs/deployment/","@type":"WebPage"},"name":"배포","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ko/docs/deployment/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ko/docs/deployment/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/ko/","name":"홈","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/ko/docs/","name":"문서","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/ko/docs/deployment/","name":"배포","position":3}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -240,8 +240,8 @@ spec:
     spec:
       containers:
         - name: pms
-          image: ghcr.io/teramoby/speedle-pms:&lt;release-tag<span style="color:#f1fa8c">&gt;
-</span><span style="color:#f1fa8c">          args: [&#34;--store-type&#34;, &#34;file&#34;, &#34;--filestore-loc&#34;, &#34;/data/policies.json&#34;, &#34;--endpoint&#34;, &#34;0.0.0.0:6733&#34;, &#34;--insecure=true&#34;]
+          image: docker.io/speedle/speedle:&lt;release-tag<span style="color:#f1fa8c">&gt;
+</span><span style="color:#f1fa8c">          args: [&#34;speedle-pms&#34;, &#34;--store-type&#34;, &#34;file&#34;, &#34;--filestore-loc&#34;, &#34;/data/policies.json&#34;, &#34;--endpoint&#34;, &#34;0.0.0.0:6733&#34;, &#34;--insecure=true&#34;]
 </span><span style="color:#f1fa8c">          ports:
 </span><span style="color:#f1fa8c">            - containerPort: 6733
 </span><span style="color:#f1fa8c">          readinessProbe:
@@ -251,8 +251,8 @@ spec:
 </span><span style="color:#f1fa8c">            - name: policies
 </span><span style="color:#f1fa8c">              mountPath: /data</span>
         - name: ads
-          image: ghcr.io/teramoby/speedle-ads:&lt;release-tag<span style="color:#f1fa8c">&gt;
-</span><span style="color:#f1fa8c">          args: [&#34;--store-type&#34;, &#34;file&#34;, &#34;--filestore-loc&#34;, &#34;/data/policies.json&#34;, &#34;--endpoint&#34;, &#34;0.0.0.0:6734&#34;, &#34;--insecure=true&#34;]
+          image: docker.io/speedle/speedle:&lt;release-tag<span style="color:#f1fa8c">&gt;
+</span><span style="color:#f1fa8c">          args: [&#34;speedle-ads&#34;, &#34;--store-type&#34;, &#34;file&#34;, &#34;--filestore-loc&#34;, &#34;/data/policies.json&#34;, &#34;--endpoint&#34;, &#34;0.0.0.0:6734&#34;, &#34;--insecure=true&#34;]
 </span><span style="color:#f1fa8c">          ports:
 </span><span style="color:#f1fa8c">            - containerPort: 6734
 </span><span style="color:#f1fa8c">          readinessProbe:
@@ -280,10 +280,10 @@ spec:
     - name: ads
       port: <span style="color:#bd93f9">6734</span>
       targetPort: <span style="color:#bd93f9">6734</span></code></pre></div>
-<p><code>PMS_IMAGE</code>와 <code>ADS_IMAGE</code>를 배포할 정확한 이미지(예: 릴리스 태그 또는 다이제스트)로 설정합니다. 적용하기 전에 로컬에서 대체하고, 빠른 시작 클라이언트를 사용하는 동안 포트 포워딩을 유지합니다:</p>
+<p><code>SPEEDLE_IMAGE</code>를 배포할 정확한 이미지(예: 릴리스 태그 또는 다이제스트)로 설정합니다. 적용하기 전에 로컬에서 대체하고, 빠른 시작 클라이언트를 사용하는 동안 포트 포워딩을 유지합니다:</p>
 
 <!-- deployment-template: apply -->
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kubectl <span style="color:#8be9fd;font-style:italic">set</span> image --local -f speedle-dev.yaml <span style="color:#8be9fd;font-style:italic">pms</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$PMS_IMAGE</span><span style="color:#f1fa8c">&#34;</span> <span style="color:#8be9fd;font-style:italic">ads</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$ADS_IMAGE</span><span style="color:#f1fa8c">&#34;</span> -o yaml | kubectl apply -f -
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kubectl <span style="color:#8be9fd;font-style:italic">set</span> image --local -f speedle-dev.yaml <span style="color:#8be9fd;font-style:italic">pms</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$SPEEDLE_IMAGE</span><span style="color:#f1fa8c">&#34;</span> <span style="color:#8be9fd;font-style:italic">ads</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$SPEEDLE_IMAGE</span><span style="color:#f1fa8c">&#34;</span> -o yaml | kubectl apply -f -
 kubectl rollout status deployment/speedle-dev
 kubectl port-forward service/speedle-dev <span style="color:#bd93f9">6733</span>:6733 <span style="color:#bd93f9">6734</span>:6734</code></pre></div>
 <h2 id="프로덕션-배포">프로덕션 배포</h2>

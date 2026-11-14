@@ -6,7 +6,7 @@
     <description>Recent content in Docs on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Thu, 12 Nov 2026 21:00:00 +0800</lastBuildDate>
+    <lastBuildDate>Sat, 14 Nov 2026 10:30:00 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/categories/docs/index.xml" rel="self" type="application/rss+xml" />
     
@@ -196,7 +196,7 @@ REST APIs These are reference contracts for your configured PMS/ADS or asserter 
     <item>
       <title>Deployment</title>
       <link>https://engine.speedle.io/docs/deployment/</link>
-      <pubDate>Tue, 10 Nov 2026 14:45:43 +0800</pubDate>
+      <pubDate>Sat, 14 Nov 2026 10:30:00 +0800</pubDate>
       
       <guid>https://engine.speedle.io/docs/deployment/</guid>
       <description>Speedle runs inside a Go application, from one published container image, or as standalone PMS and ADS services.

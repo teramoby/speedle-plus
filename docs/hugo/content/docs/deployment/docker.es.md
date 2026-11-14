@@ -8,7 +8,7 @@ toc = true
 tocheading = "h2"
 categories = ["docs"]
 bref = "Una única imagen en Docker Hub y GHCR ejecuta el administrador de políticas, el servicio de decisiones y spctl, con un almacén de archivos compartido."
-lastmod = 2026-11-10T14:45:43+08:00
+lastmod = 2026-11-14T10:30:00+08:00
 +++
 
 Speedle publica una imagen que contiene `speedle-pms`, `speedle-ads` y `spctl`. La imagen se compila `FROM scratch`, se ejecuta como UID 65532 y no contiene ningún shell. El primer argumento selecciona el programa a ejecutar.
@@ -76,7 +76,7 @@ docker run -d --name speedle-pms \
   speedle-pms --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6733 --insecure=true
 ```
 
-El nuevo volumen con nombre se rellena a partir del directorio `/data` de la imagen, en el que el UID 65532 puede escribir. PMS crea `/data/policies.json` si no existe. La imagen no incluye certificados de CA. `--insecure=true` es para este ejemplo HTTP local. Consulte [Seguridad](/es/docs/security/) para configurar TLS.
+El nuevo volumen con nombre se rellena a partir del directorio `/data` de la imagen, en el que el UID 65532 puede escribir. PMS crea `/data/policies.json` si no existe. La imagen incluye el paquete de certificados de CA públicos. Las versiones 1.7.0 y 1.7.1 se publicaron antes de añadir ese paquete; proporcione un archivo de CA para los endpoints TLS cuando use esas etiquetas. `--insecure=true` es para este ejemplo HTTP local. Consulte [Seguridad](/es/docs/security/) para configurar TLS.
 
 Docker puede aceptar el puerto publicado y reiniciar la conexión antes de que el proceso comience a escuchar. Reintente en caso de error, incluido ese reinicio:
 

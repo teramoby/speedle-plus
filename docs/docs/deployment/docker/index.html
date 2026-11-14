@@ -23,7 +23,7 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/deployment/docker/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/deployment/docker/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-11-10T14:45:43&#43;08:00">
+<meta property="article:modified_time" content="2026-11-14T10:30:00&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Docker image · Speedle Engine">
 <meta property="og:description" content="Run speedle-pms, speedle-ads and spctl from the published Speedle image.">
@@ -39,7 +39,7 @@
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/deployment/docker/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-10T14:45:43+08:00","description":"Run speedle-pms, speedle-ads and spctl from the published Speedle image.","headline":"Docker image","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/deployment/docker/","@type":"WebPage"},"name":"Docker image","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/deployment/docker/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/deployment/docker/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-14T10:30:00+08:00","description":"Run speedle-pms, speedle-ads and spctl from the published Speedle image.","headline":"Docker image","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/deployment/docker/","@type":"WebPage"},"name":"Docker image","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/deployment/docker/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/deployment/docker/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/","name":"Home","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/docs/","name":"Documentation","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/docs/deployment/","name":"Deployment","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/docs/deployment/docker/","name":"Docker image","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -238,7 +238,7 @@ docker run -d --name speedle-pms <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  -v speedle-policies:/data <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  docker.io/speedle/speedle:1.7.0 <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  speedle-pms --store-type file --filestore-loc /data/policies.json --endpoint <span style="color:#bd93f9">0</span>.0.0.0:6733 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
-<p>A new named volume is filled from the image&rsquo;s <code>/data</code> directory, which UID 65532 can write. PMS creates <code>/data/policies.json</code> when it is missing. The image has no CA certificates. <code>--insecure=true</code> is for this local HTTP example. See <a href="/docs/security/">Security</a> for TLS.</p>
+<p>A new named volume is filled from the image&rsquo;s <code>/data</code> directory, which UID 65532 can write. PMS creates <code>/data/policies.json</code> when it is missing. The image includes the public CA bundle. Releases 1.7.0 and 1.7.1 were published before the bundle was added; pass a CA file for TLS endpoints when using those tags. <code>--insecure=true</code> is for this local HTTP example. See <a href="/docs/security/">Security</a> for TLS.</p>
 
 <p>Docker can accept the published port and reset the connection before the process listens. Retry every error, including that reset:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --retry <span style="color:#bd93f9">30</span> --retry-all-errors --retry-delay <span style="color:#bd93f9">1</span> --connect-timeout <span style="color:#bd93f9">2</span> <span style="color:#f1fa8c">\

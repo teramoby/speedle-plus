@@ -23,7 +23,7 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/deployment/docker/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/deployment/docker/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-11-10T14:45:43&#43;08:00">
+<meta property="article:modified_time" content="2026-11-14T10:30:00&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Docker 镜像 · Speedle Engine">
 <meta property="og:description" content="用已发布的 Speedle 镜像运行 speedle-pms、speedle-ads 和 spctl。">
@@ -39,7 +39,7 @@
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-zh.png">
 <meta name="twitter:image:alt" content="Speedle Engine — 快速、简单的权限控制">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/deployment/docker/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-10T14:45:43+08:00","description":"用已发布的 Speedle 镜像运行 speedle-pms、speedle-ads 和 spctl。","headline":"Docker 镜像","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/deployment/docker/","@type":"WebPage"},"name":"Docker 镜像","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/deployment/docker/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/deployment/docker/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-14T10:30:00+08:00","description":"用已发布的 Speedle 镜像运行 speedle-pms、speedle-ads 和 spctl。","headline":"Docker 镜像","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/deployment/docker/","@type":"WebPage"},"name":"Docker 镜像","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/deployment/docker/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/deployment/docker/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/zh/","name":"首页","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/","name":"文档","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/deployment/","name":"部署","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/deployment/docker/","name":"Docker 镜像","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -238,7 +238,7 @@ docker run -d --name speedle-pms <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  -v speedle-policies:/data <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  docker.io/speedle/speedle:1.7.0 <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  speedle-pms --store-type file --filestore-loc /data/policies.json --endpoint <span style="color:#bd93f9">0</span>.0.0.0:6733 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
-<p>新建的命名卷会放入镜像里的 <code>/data</code> 目录，UID 65532 可以写入。策略文件不存在时，PMS 会创建 <code>/data/policies.json</code>。镜像不包含 CA 证书。<code>--insecure=true</code> 只用于这个本地 HTTP 示例。TLS 见<a href="/zh/docs/security/">安全</a>。</p>
+<p>新建的命名卷会放入镜像里的 <code>/data</code> 目录，UID 65532 可以写入。策略文件不存在时，PMS 会创建 <code>/data/policies.json</code>。镜像包含公共 CA 证书包。1.7.0 和 1.7.1 发布时还没有该证书包；使用这些标签时，连接 TLS 端点需要提供 CA 文件。<code>--insecure=true</code> 只用于这个本地 HTTP 示例。TLS 见<a href="/zh/docs/security/">安全</a>。</p>
 
 <p>Docker 可能在进程开始监听之前就接受已发布的端口，然后重置连接。请重试所有错误，包括这种重置：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --retry <span style="color:#bd93f9">30</span> --retry-all-errors --retry-delay <span style="color:#bd93f9">1</span> --connect-timeout <span style="color:#bd93f9">2</span> <span style="color:#f1fa8c">\
