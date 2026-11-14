@@ -23,7 +23,7 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/deployment/docker/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/deployment/docker/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-11-10T14:45:43&#43;08:00">
+<meta property="article:modified_time" content="2026-11-14T10:30:00&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Docker イメージ · Speedle Engine">
 <meta property="og:description" content="公開されている Speedle イメージから speedle-pms、speedle-ads、spctl を実行">
@@ -39,7 +39,7 @@
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/deployment/docker/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-10T14:45:43+08:00","description":"公開されている Speedle イメージから speedle-pms、speedle-ads、spctl を実行","headline":"Docker イメージ","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ja","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ja/docs/deployment/docker/","@type":"WebPage"},"name":"Docker イメージ","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ja/docs/deployment/docker/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/deployment/docker/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-14T10:30:00+08:00","description":"公開されている Speedle イメージから speedle-pms、speedle-ads、spctl を実行","headline":"Docker イメージ","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ja","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ja/docs/deployment/docker/","@type":"WebPage"},"name":"Docker イメージ","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ja/docs/deployment/docker/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/deployment/docker/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/ja/","name":"ホーム","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/","name":"ドキュメント","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/deployment/","name":"デプロイ","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/deployment/docker/","name":"Docker イメージ","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -238,7 +238,7 @@ docker run -d --name speedle-pms <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  -v speedle-policies:/data <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  docker.io/speedle/speedle:1.7.0 <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  speedle-pms --store-type file --filestore-loc /data/policies.json --endpoint <span style="color:#bd93f9">0</span>.0.0.0:6733 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
-<p>新しい名前付きボリュームには、UID 65532 が書き込み可能なイメージの <code>/data</code> ディレクトリの内容が入力されます。<code>/data/policies.json</code> が見つからない場合、PMS が作成します。イメージには CA 証明書が含まれていません。<code>--insecure=true</code> はこのローカル HTTP サンプル用です。TLS については <a href="/ja/docs/security/">セキュリティ</a> を参照してください。</p>
+<p>新しい名前付きボリュームには、UID 65532 が書き込み可能なイメージの <code>/data</code> ディレクトリの内容が入力されます。<code>/data/policies.json</code> が見つからない場合、PMS が作成します。イメージには公開 CA 証明書バンドルが含まれています。1.7.0 と 1.7.1 はこのバンドルが追加される前に公開されたため、これらのタグで TLS エンドポイントに接続する場合は CA ファイルを指定してください。<code>--insecure=true</code> はこのローカル HTTP サンプル用です。TLS については <a href="/ja/docs/security/">セキュリティ</a> を参照してください。</p>
 
 <p>Docker は公開されたポートを受け入れ、プロセスがリッスンを開始する前に接続をリセットする場合があります。そのリセットを含め、すべてのエラーで再試行してください:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --retry <span style="color:#bd93f9">30</span> --retry-all-errors --retry-delay <span style="color:#bd93f9">1</span> --connect-timeout <span style="color:#bd93f9">2</span> <span style="color:#f1fa8c">\

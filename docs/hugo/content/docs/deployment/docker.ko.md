@@ -8,7 +8,7 @@ toc = true
 tocheading = "h2"
 categories = ["docs"]
 bref = "Docker Hub 및 GHCR의 단일 이미지로 공유 파일 저장소를 사용하는 정책 관리 서비스, 인가 결정 서비스 및 spctl을 실행합니다."
-lastmod = 2026-11-10T14:45:43+08:00
+lastmod = 2026-11-14T10:30:00+08:00
 +++
 
 Speedle은 `speedle-pms`, `speedle-ads`, `spctl`이 포함된 단일 이미지를 배포합니다. 이 이미지는 `FROM scratch`로 빌드되며 UID 65532로 실행되고 셸이 포함되어 있지 않습니다. 첫 번째 인수로 실행할 프로그램을 선택합니다.
@@ -76,7 +76,7 @@ docker run -d --name speedle-pms \
   speedle-pms --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6733 --insecure=true
 ```
 
-새로 명명된 볼륨은 UID 65532가 쓸 수 있는 이미지의 `/data` 디렉터리로 채워집니다. PMS는 `/data/policies.json`이 없으면 새로 생성합니다. 이미지에는 CA 인증서가 없습니다. `--insecure=true`는 이 로컬 HTTP 예제를 위한 것입니다. TLS에 대해서는 [보안](/docs/security/)을 참조하십시오.
+새로 명명된 볼륨은 UID 65532가 쓸 수 있는 이미지의 `/data` 디렉터리로 채워집니다. PMS는 `/data/policies.json`이 없으면 새로 생성합니다. 이미지에는 공개 CA 인증서 번들이 포함되어 있습니다. 1.7.0과 1.7.1은 이 번들이 추가되기 전에 게시되었으므로, 해당 태그로 TLS 엔드포인트에 연결할 때는 CA 파일을 지정하십시오. `--insecure=true`는 이 로컬 HTTP 예제를 위한 것입니다. TLS에 대해서는 [보안](/docs/security/)을 참조하십시오.
 
 Docker는 포트를 게시한 후 프로세스가 수신 대기하기 전에 연결을 리셋할 수 있습니다. 해당 리셋을 포함하여 모든 오류에 대해 재시도하십시오:
 

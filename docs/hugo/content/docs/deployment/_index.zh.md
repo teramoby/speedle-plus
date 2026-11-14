@@ -8,7 +8,7 @@ linksection = true
 tocheading = "h2"
 categories = ["docs"]
 bref = "嵌入模式、Docker 镜像、Homebrew、源码构建，以及独立的 PMS 和 ADS。"
-lastmod = 2026-11-10T14:45:43+08:00
+lastmod = 2026-11-14T10:30:00+08:00
 +++
 
 Speedle 可以嵌入 Go 应用，也可以用一个已发布的容器镜像运行，或者作为独立的 PMS 和 ADS 服务运行。
@@ -53,34 +53,34 @@ go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads
 
 发布流程生成的每个发布版本都会附带适用于 macOS 和 Linux（amd64、arm64）的 `spctl`、`speedle-pms` 和 `speedle-ads` 预编译二进制，文件名格式为 `<命令>_<系统>_<架构>`，并附带 `checksums.txt`。请从 [Releases 页面](https://github.com/teramoby/speedle-plus/releases)下载，运行前先用 SHA-256 校验和核对每个文件；校验和文件与二进制位于同一发布版本中，只能用于发现下载不完整或文件损坏，不能验证发布内容是否遭到篡改。二进制和容器映像都由发布流程生成，因此从该流程加入后的第一个发布版本开始提供。
 
-发布流程还会发布两个面向 Linux amd64 和 arm64 的多架构容器映像：
+发布流程还会发布一个面向 Linux amd64 和 arm64 的多架构容器映像。其中包含 `speedle-pms`、`speedle-ads` 和 `spctl`，第一个参数决定启动哪个程序：
 
-- `ghcr.io/teramoby/speedle-pms`
-- `ghcr.io/teramoby/speedle-ads`
+- Docker Hub：`docker.io/speedle/speedle`
+- GHCR：`ghcr.io/teramoby/speedle`
 
-匿名拉取要求 GHCR 软件包为公开；如果软件包是私有的，请先执行 `docker login ghcr.io` 登录。
+匿名拉取可用。如果 GHCR 拒绝匿名拉取，请先执行 `docker login ghcr.io` 登录。
 
 请拉取要部署的发布版本；`latest` 跟随最新发布版本：
 
 <!-- deployment-template: image-pull -->
 ```bash
-docker pull ghcr.io/teramoby/speedle-pms:latest
-docker pull ghcr.io/teramoby/speedle-ads:latest
+docker pull docker.io/speedle/speedle:latest
+docker pull ghcr.io/teramoby/speedle:latest
 ```
 
-需要按摘要固定时，可用 `docker buildx imagetools inspect ghcr.io/teramoby/speedle-pms:<标签>` 查看发布映像的摘要。
+需要按摘要固定时，可用 `docker buildx imagetools inspect docker.io/speedle/speedle:<标签>` 查看发布映像的摘要。
 
-两个映像都以 UID 65532 运行服务，并包含可写的 `/data` 目录用于文件存储。在映像名之后传入服务参数，每条命令各用一个终端运行：
+映像以 UID 65532 运行，并包含可写的 `/data` 目录用于文件存储。在映像名之后传入程序名和该程序的参数，每条命令各用一个终端运行：
 
 <!-- deployment-template: image-run -->
 ```bash
-docker run --rm -p 127.0.0.1:6733:6733 -v speedle-policies:/data ghcr.io/teramoby/speedle-pms:latest --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6733 --insecure=true
-docker run --rm -p 127.0.0.1:6734:6734 -v speedle-policies:/data ghcr.io/teramoby/speedle-ads:latest --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6734 --insecure=true
+docker run --rm -p 127.0.0.1:6733:6733 -v speedle-policies:/data docker.io/speedle/speedle:latest speedle-pms --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6733 --insecure=true
+docker run --rm -p 127.0.0.1:6734:6734 -v speedle-policies:/data docker.io/speedle/speedle:latest speedle-ads --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6734 --insecure=true
 ```
 
 PMS 没有内置的调用方身份认证；`127.0.0.1` 绑定把未认证的管理 API 限制在本机。请勿将这些端口发布到主机网络接口，也不要暴露给不受信任的网络。
 
-映像不包含 CA 证书；连接 TLS 端点时需要提供 CA 文件。`--insecure=true` 仅用于本机示例，详见[安全配置](../security/)。
+映像包含公共 CA 证书包。1.7.0 和 1.7.1 发布时还没有该证书包；使用这些标签时，连接 TLS 端点需要提供 CA 文件。`--insecure=true` 仅用于本机示例，详见[安全配置](../security/)。[Docker 镜像](/docs/deployment/docker/)页面介绍 `spctl`、健康检查、Compose 和来源证明。
 
 ## Kubernetes 开发示例
 
@@ -113,8 +113,8 @@ spec:
               mountPath: /data
       containers:
         - name: pms
-          image: ghcr.io/teramoby/speedle-pms:<release-tag>
-          args: ["--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6733", "--insecure=true"]
+          image: docker.io/speedle/speedle:<release-tag>
+          args: ["speedle-pms", "--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6733", "--insecure=true"]
           ports:
             - containerPort: 6733
           readinessProbe:
@@ -124,8 +124,8 @@ spec:
             - name: policies
               mountPath: /data
         - name: ads
-          image: ghcr.io/teramoby/speedle-ads:<release-tag>
-          args: ["--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6734", "--insecure=true"]
+          image: docker.io/speedle/speedle:<release-tag>
+          args: ["speedle-ads", "--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6734", "--insecure=true"]
           ports:
             - containerPort: 6734
           readinessProbe:
@@ -155,11 +155,11 @@ spec:
       targetPort: 6734
 ```
 
-将 `PMS_IMAGE`、`ADS_IMAGE` 设置为实际部署的完整映像，例如发布标签或摘要（digest）。先在本地替换清单中的映像，再应用；使用快速入门客户端时保持端口转发运行：
+将 `SPEEDLE_IMAGE` 设置为实际部署的完整映像，例如发布标签或摘要（digest）。先在本地替换清单中的映像，再应用；使用快速入门客户端时保持端口转发运行：
 
 <!-- deployment-template: apply -->
 ```bash
-kubectl set image --local -f speedle-dev.yaml pms="$PMS_IMAGE" ads="$ADS_IMAGE" -o yaml | kubectl apply -f -
+kubectl set image --local -f speedle-dev.yaml pms="$SPEEDLE_IMAGE" ads="$SPEEDLE_IMAGE" -o yaml | kubectl apply -f -
 kubectl rollout status deployment/speedle-dev
 kubectl port-forward service/speedle-dev 6733:6733 6734:6734
 ```

@@ -6,7 +6,7 @@
     <description>Recent content in Docs on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Thu, 12 Nov 2026 21:00:00 +0800</lastBuildDate>
+    <lastBuildDate>Sat, 14 Nov 2026 10:30:00 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/zh/categories/docs/index.xml" rel="self" type="application/rss+xml" />
     
@@ -497,7 +497,7 @@ docker run --name speedle-mongodb --detach \  --publish 127.</description>
     <item>
       <title>部署</title>
       <link>https://engine.speedle.io/zh/docs/deployment/</link>
-      <pubDate>Tue, 10 Nov 2026 14:45:43 +0800</pubDate>
+      <pubDate>Sat, 14 Nov 2026 10:30:00 +0800</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/deployment/</guid>
       <description>Speedle 可以嵌入 Go 应用，也可以用一个已发布的容器镜像运行，或者作为独立的 PMS 和 ADS 服务运行。

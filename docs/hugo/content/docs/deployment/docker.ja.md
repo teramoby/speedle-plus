@@ -8,7 +8,7 @@ toc = true
 tocheading = "h2"
 categories = ["docs"]
 bref = "Docker Hub と GHCR 上の同一イメージが、共有ファイルストアを使用してポリシーマネージャー、決定サービス、spctl を実行します。"
-lastmod = 2026-11-10T14:45:43+08:00
+lastmod = 2026-11-14T10:30:00+08:00
 +++
 
 Speedle は、`speedle-pms`、`speedle-ads`、および `spctl` を含む 1 つのイメージを公開しています。イメージは `FROM scratch` でビルドされ、UID 65532 として実行され、シェルは含まれていません。最初の引数でプログラムを選択します。
@@ -76,7 +76,7 @@ docker run -d --name speedle-pms \
   speedle-pms --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6733 --insecure=true
 ```
 
-新しい名前付きボリュームには、UID 65532 が書き込み可能なイメージの `/data` ディレクトリの内容が入力されます。`/data/policies.json` が見つからない場合、PMS が作成します。イメージには CA 証明書が含まれていません。`--insecure=true` はこのローカル HTTP サンプル用です。TLS については [セキュリティ](/ja/docs/security/) を参照してください。
+新しい名前付きボリュームには、UID 65532 が書き込み可能なイメージの `/data` ディレクトリの内容が入力されます。`/data/policies.json` が見つからない場合、PMS が作成します。イメージには公開 CA 証明書バンドルが含まれています。1.7.0 と 1.7.1 はこのバンドルが追加される前に公開されたため、これらのタグで TLS エンドポイントに接続する場合は CA ファイルを指定してください。`--insecure=true` はこのローカル HTTP サンプル用です。TLS については [セキュリティ](/ja/docs/security/) を参照してください。
 
 Docker は公開されたポートを受け入れ、プロセスがリッスンを開始する前に接続をリセットする場合があります。そのリセットを含め、すべてのエラーで再試行してください:
 

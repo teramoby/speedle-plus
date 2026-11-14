@@ -23,7 +23,7 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/deployment/docker/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/deployment/docker/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-11-10T14:45:43&#43;08:00">
+<meta property="article:modified_time" content="2026-11-14T10:30:00&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Docker 이미지 · Speedle Engine">
 <meta property="og:description" content="공개된 Speedle 이미지로 speedle-pms, speedle-ads 및 spctl 실행">
@@ -39,7 +39,7 @@
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ko/docs/deployment/docker/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-10T14:45:43+08:00","description":"공개된 Speedle 이미지로 speedle-pms, speedle-ads 및 spctl 실행","headline":"Docker 이미지","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ko","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ko/docs/deployment/docker/","@type":"WebPage"},"name":"Docker 이미지","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ko/docs/deployment/docker/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ko/docs/deployment/docker/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-14T10:30:00+08:00","description":"공개된 Speedle 이미지로 speedle-pms, speedle-ads 및 spctl 실행","headline":"Docker 이미지","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ko","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ko/docs/deployment/docker/","@type":"WebPage"},"name":"Docker 이미지","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ko/docs/deployment/docker/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ko/docs/deployment/docker/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/ko/","name":"홈","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/ko/docs/","name":"문서","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/ko/docs/deployment/","name":"배포","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/ko/docs/deployment/docker/","name":"Docker 이미지","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -238,7 +238,7 @@ docker run -d --name speedle-pms <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  -v speedle-policies:/data <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  docker.io/speedle/speedle:1.7.0 <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  speedle-pms --store-type file --filestore-loc /data/policies.json --endpoint <span style="color:#bd93f9">0</span>.0.0.0:6733 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
-<p>새로 명명된 볼륨은 UID 65532가 쓸 수 있는 이미지의 <code>/data</code> 디렉터리로 채워집니다. PMS는 <code>/data/policies.json</code>이 없으면 새로 생성합니다. 이미지에는 CA 인증서가 없습니다. <code>--insecure=true</code>는 이 로컬 HTTP 예제를 위한 것입니다. TLS에 대해서는 <a href="/ko/docs/security/">보안</a>을 참조하십시오.</p>
+<p>새로 명명된 볼륨은 UID 65532가 쓸 수 있는 이미지의 <code>/data</code> 디렉터리로 채워집니다. PMS는 <code>/data/policies.json</code>이 없으면 새로 생성합니다. 이미지에는 공개 CA 인증서 번들이 포함되어 있습니다. 1.7.0과 1.7.1은 이 번들이 추가되기 전에 게시되었으므로, 해당 태그로 TLS 엔드포인트에 연결할 때는 CA 파일을 지정하십시오. <code>--insecure=true</code>는 이 로컬 HTTP 예제를 위한 것입니다. TLS에 대해서는 <a href="/ko/docs/security/">보안</a>을 참조하십시오.</p>
 
 <p>Docker는 포트를 게시한 후 프로세스가 수신 대기하기 전에 연결을 리셋할 수 있습니다. 해당 리셋을 포함하여 모든 오류에 대해 재시도하십시오:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --retry <span style="color:#bd93f9">30</span> --retry-all-errors --retry-delay <span style="color:#bd93f9">1</span> --connect-timeout <span style="color:#bd93f9">2</span> <span style="color:#f1fa8c">\

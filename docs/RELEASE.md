@@ -41,7 +41,8 @@ dispatch of the same version finishes the tap update.
 
 ## Smoke test
 
-`scripts/release-smoke.sh` starts `speedle-pms` and then `speedle-ads` from
+`scripts/release-smoke.sh` runs `spctl --help` in the image, which exercises
+the dispatch entrypoint, then starts `speedle-pms` and then `speedle-ads` from
 the local image `speedle:smoke`, using one shared volume. It retries each
 request until the service answers or 30 seconds pass. Each attempt stops
 after at most 5 seconds, and sooner when less time remains, so an accepted
@@ -56,8 +57,9 @@ for the job's architecture, and runs that script before it creates a tag.
 
 A pull request that changes `deployment/container/`, `cmd/`,
 `.github/workflows/release.yml`, `.github/workflows/image-smoke.yml` or
-`scripts/release-smoke.sh` builds the image for the job's architecture and
-runs the same script.
+`scripts/release-smoke.sh` builds the image for `linux/amd64` and
+`linux/arm64`, loads the job's architecture and runs the same script. It
+pushes nothing.
 
 ## Container image
 
@@ -103,8 +105,10 @@ docker run --rm docker.io/speedle/speedle:X.Y.Z spctl --help
 `ghcr.io/teramoby/speedle` is the same image. The push build attaches maximum
 provenance and an SBOM (`docker buildx build --provenance=mode=max --sbom=true`).
 
-The image has no CA certificates. Pass a CA file when a service calls a TLS
-endpoint.
+The image carries the public CA bundle that Go reads from
+`/etc/ssl/certs/ca-certificates.crt`, copied from the runner into the build
+context. Images published before this bundle was added (1.7.0 and 1.7.1) have
+no CA certificates; pass a CA file for a TLS endpoint when using those tags.
 
 ## Helm chart
 

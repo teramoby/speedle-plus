@@ -8,7 +8,7 @@ linksection = true
 tocheading = "h2"
 categories = ["docs"]
 bref = "Embedded mode, the Docker image, Homebrew, source builds, and standalone PMS and ADS services."
-lastmod = 2026-11-10T14:45:43+08:00
+lastmod = 2026-11-14T10:30:00+08:00
 +++
 
 Speedle runs inside a Go application, from one published container image, or as standalone PMS and ADS services.
@@ -53,34 +53,34 @@ Use a fresh policy file; PMS creates it if absent. Follow [Quick Start](../../qu
 
 Each release published by the release workflow attaches prebuilt `spctl`, `speedle-pms` and `speedle-ads` binaries for macOS and Linux on amd64 and arm64, named `<command>_<os>_<arch>`, plus a `checksums.txt` file. Download them from the [Releases page](https://github.com/teramoby/speedle-plus/releases) and verify each downloaded file against its SHA-256 checksum before running it; the checksum file is attached to the same release, so it detects incomplete or corrupted downloads rather than authenticating the release. Binaries and container images are produced by the release workflow, so they are available starting with the first release created after the workflow was added.
 
-The release workflow also publishes two multi-architecture container images for Linux amd64 and arm64:
+The release workflow also publishes one multi-architecture container image for Linux amd64 and arm64. It contains `speedle-pms`, `speedle-ads` and `spctl`; the first argument selects the program:
 
-- `ghcr.io/teramoby/speedle-pms`
-- `ghcr.io/teramoby/speedle-ads`
+- Docker Hub: `docker.io/speedle/speedle`
+- GHCR: `ghcr.io/teramoby/speedle`
 
-Anonymous pulls require the packages to be public; if a package is private, authenticate first with `docker login ghcr.io`.
+Anonymous pulls work. If GHCR refuses an anonymous pull, authenticate first with `docker login ghcr.io`.
 
 Pull the release you deploy; `latest` follows the newest release:
 
 <!-- deployment-template: image-pull -->
 ```bash
-docker pull ghcr.io/teramoby/speedle-pms:latest
-docker pull ghcr.io/teramoby/speedle-ads:latest
+docker pull docker.io/speedle/speedle:latest
+docker pull ghcr.io/teramoby/speedle:latest
 ```
 
-To pin an image by digest, read the released digest with `docker buildx imagetools inspect ghcr.io/teramoby/speedle-pms:<tag>`.
+To pin an image by digest, read the released digest with `docker buildx imagetools inspect docker.io/speedle/speedle:<tag>`.
 
-Both images run the service as UID 65532 and include a writable `/data` directory for the file store. Pass the server flags after the image name, and run each command in its own terminal:
+The image runs as UID 65532 and includes a writable `/data` directory for the file store. Pass the program name and its flags after the image name, and run each command in its own terminal:
 
 <!-- deployment-template: image-run -->
 ```bash
-docker run --rm -p 127.0.0.1:6733:6733 -v speedle-policies:/data ghcr.io/teramoby/speedle-pms:latest --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6733 --insecure=true
-docker run --rm -p 127.0.0.1:6734:6734 -v speedle-policies:/data ghcr.io/teramoby/speedle-ads:latest --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6734 --insecure=true
+docker run --rm -p 127.0.0.1:6733:6733 -v speedle-policies:/data docker.io/speedle/speedle:latest speedle-pms --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6733 --insecure=true
+docker run --rm -p 127.0.0.1:6734:6734 -v speedle-policies:/data docker.io/speedle/speedle:latest speedle-ads --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6734 --insecure=true
 ```
 
 PMS has no built-in caller authentication; the `127.0.0.1` binding keeps the unauthenticated management API on this machine. Never publish these ports on a host interface or expose them to an untrusted network.
 
-The images do not include CA certificates; provide the CA file for TLS endpoints. `--insecure=true` is for this local example only; see [Security](../security/).
+The image includes the public CA bundle. Releases 1.7.0 and 1.7.1 were published before the bundle was added; pass a CA file for TLS endpoints when using those tags. `--insecure=true` is for this local example only; see [Security](../security/). The [Docker image](/docs/deployment/docker/) page covers `spctl`, health checks, Compose and provenance.
 
 ## Kubernetes development example
 
@@ -113,8 +113,8 @@ spec:
               mountPath: /data
       containers:
         - name: pms
-          image: ghcr.io/teramoby/speedle-pms:<release-tag>
-          args: ["--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6733", "--insecure=true"]
+          image: docker.io/speedle/speedle:<release-tag>
+          args: ["speedle-pms", "--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6733", "--insecure=true"]
           ports:
             - containerPort: 6733
           readinessProbe:
@@ -124,8 +124,8 @@ spec:
             - name: policies
               mountPath: /data
         - name: ads
-          image: ghcr.io/teramoby/speedle-ads:<release-tag>
-          args: ["--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6734", "--insecure=true"]
+          image: docker.io/speedle/speedle:<release-tag>
+          args: ["speedle-ads", "--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6734", "--insecure=true"]
           ports:
             - containerPort: 6734
           readinessProbe:
@@ -155,11 +155,11 @@ spec:
       targetPort: 6734
 ```
 
-Set `PMS_IMAGE` and `ADS_IMAGE` to the exact images you deploy, for example a release tag or a digest. Substitute them locally before applying; keep port-forward running while using Quick Start clients:
+Set `SPEEDLE_IMAGE` to the exact image you deploy, for example a release tag or a digest. Substitute it locally before applying; keep port-forward running while using Quick Start clients:
 
 <!-- deployment-template: apply -->
 ```bash
-kubectl set image --local -f speedle-dev.yaml pms="$PMS_IMAGE" ads="$ADS_IMAGE" -o yaml | kubectl apply -f -
+kubectl set image --local -f speedle-dev.yaml pms="$SPEEDLE_IMAGE" ads="$SPEEDLE_IMAGE" -o yaml | kubectl apply -f -
 kubectl rollout status deployment/speedle-dev
 kubectl port-forward service/speedle-dev 6733:6733 6734:6734
 ```
