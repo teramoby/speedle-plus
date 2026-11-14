@@ -13,6 +13,11 @@ carry `speedle-runner`; only the two charming instances carry `speedle-linux`.
 accepts it for the same tasks as `charming-speedle` and `charming-speedle-2`.
 Weekly runs stay on `fiona-speedle`.
 
+`fiona` (macOS ARM64) is registered at repository level. The Go CI worker
+accepts it for the same tasks as `fiona-speedle`, rejecting `build` because it
+needs Linux. Its scheduling labels are assigned by a runner administrator after
+the identity change merges.
+
 ReviewBot selects `[self-hosted, speedle-runner]`, so `charming-speedle`,
 `charming-speedle-2` and `fiona-speedle` may take it. Go lint, test, post-merge
 regression and the nightly use the same label, and the Go CI worker also
@@ -130,8 +135,8 @@ gh workflow run ci.yml --ref master
 ```
 
 Inspect each run's jobs and confirm `runner_name` is an accepted Speedle
-runner for `speedle-runner` jobs (including the nightly): `charming-speedle`,
-`charming-speedle-2`, `donkey-speedle` or `fiona-speedle`. The weekly runs on
+runner for Go `speedle-runner` jobs (including the nightly): `charming-speedle`,
+`charming-speedle-2`, `donkey-speedle`, `fiona-speedle` or `fiona`. The weekly runs on
 `fiona-speedle` and build runs on a charming runner.
 The regression job prints its workspace and temp paths; verify both registrations
 have distinct paths. An online/idle runner listing alone does not prove checkout,
