@@ -126,7 +126,7 @@ func testConcurrentInstanceIDCreation(t *testing.T, link func(string, string) er
 			t.Fatalf("persisted id = %q, %v, %v; want %q", persisted, created, err, first.id)
 		}
 		entries, err := os.ReadDir(dir)
-		if err != nil || len(entries) != 1 || entries[0].Name() != InstanceIDFile {
+		if err != nil || len(entries) != 2 || entries[0].Name() != instanceIDLockFile || entries[1].Name() != InstanceIDFile {
 			t.Fatalf("temporary files left behind: %v, %v", entries, err)
 		}
 	}
@@ -412,21 +412,17 @@ func TestChannelMessagesCarryIdentityAndHost(t *testing.T) {
 			t.Fatalf("ips not bounded: %d", len(ips))
 		}
 	}
-	// The hello keeps the start time and transport inside the host block and
-	// names no chain; the heartbeat has no chain or top-level start time but
-	// keeps its transport.
+	// Both frames keep the start time and transport inside the host block and
+	// name no chain.
 	for _, key := range []string{"chain", "startedAt", "transport"} {
 		if _, found := hello[key]; found {
 			t.Fatalf("hello carries a top-level %s: %v", key, hello)
 		}
 	}
-	for _, key := range []string{"chain", "startedAt"} {
+	for _, key := range []string{"chain", "startedAt", "transport"} {
 		if _, found := poll[key]; found {
 			t.Fatalf("heartbeat carries a top-level %s: %v", key, poll)
 		}
-	}
-	if poll["transport"] != string(TransportLongPoll) {
-		t.Fatalf("heartbeat transport = %v", poll["transport"])
 	}
 	for name, message := range map[string]map[string]any{"hello": hello, "heartbeat": poll} {
 		if started, _ := message["host"].(map[string]any)["startedAt"].(string); started == "" {

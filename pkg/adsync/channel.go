@@ -817,7 +817,6 @@ func (c *Channel) heartbeatMessage(transport Transport) channelHeartbeat {
 		Liveness:     string(c.machine.Instance().Liveness),
 		Fallback:     fallback,
 		AgentVersion: c.agentVersion,
-		Transport:    string(transport),
 	}
 	if transport == TransportLongPoll {
 		// A long poll has no hello, so each heartbeat carries the host object.
