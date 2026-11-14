@@ -111,7 +111,7 @@ jobs:
         run: |
           set -euo pipefail
           while IFS= read -r -d '' file; do
-            formatted=$(gofmt -l "${file}") || { printf 'gofmt failed for %q\n' "${file}" >&2; exit 1; }
+            formatted=$(gofmt -l "${file}" 2>&1) || { printf 'gofmt failed for %q: %q\n' "${file}" "${formatted}" >&2; exit 1; }
             if [[ -n "${formatted}" ]]; then
               printf 'Run gofmt on %q\n' "${file}" >&2
               exit 1

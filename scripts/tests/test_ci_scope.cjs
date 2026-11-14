@@ -198,7 +198,7 @@ test('quick formatting rejects parse errors, command failures and unformatted fi
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-quick-gofmt-'));
   try {
     fs.writeFileSync(path.join(dir, 'quick-go-files.txt'), 'changed.go\0');
-    fs.writeFileSync(path.join(dir, 'gofmt'), `#!${process.execPath}\nprocess.stdout.write(process.env.FORMAT_OUTPUT);process.exit(Number(process.env.FORMAT_EXIT));\n`);
+    fs.writeFileSync(path.join(dir, 'gofmt'), `#!${process.execPath}\nprocess.stdout.write(process.env.FORMAT_OUTPUT);process.stderr.write(process.env.FORMAT_ERROR||'');process.exit(Number(process.env.FORMAT_EXIT));\n`);
     fs.chmodSync(path.join(dir, 'gofmt'), 0o755);
     for (const [FORMAT_EXIT, FORMAT_OUTPUT, allowed] of [['0', '', true], ['0', 'changed.go', false], ['2', '', false]]) {
       const result = spawnSync('/bin/bash', ['-c', script(worker, 'Check changed Go formatting')], {
@@ -209,7 +209,7 @@ test('quick formatting rejects parse errors, command failures and unformatted fi
     fs.writeFileSync(path.join(dir, 'quick-go-files.txt'), 'changed\n::warning::spoof.go\0');
     for (const FORMAT_EXIT of ['0', '2']) {
       const result = spawnSync('/bin/bash', ['-c', script(worker, 'Check changed Go formatting')], {
-        cwd: dir, encoding: 'utf8', env: {...process.env, FORMAT_EXIT, FORMAT_OUTPUT: 'unformatted', PATH: dir + path.delimiter + process.env.PATH},
+        cwd: dir, encoding: 'utf8', env: {...process.env, FORMAT_EXIT, FORMAT_OUTPUT: 'unformatted', FORMAT_ERROR: 'changed\n::warning::spoof.go: parse error\n', PATH: dir + path.delimiter + process.env.PATH},
       });
       assert.notEqual(result.status, 0);
       assert.doesNotMatch(result.stdout + result.stderr, /^::/m);
