@@ -132,7 +132,9 @@ func TestPrintVersionInfo(t *testing.T) {
 
 func TestRunRejectsRemovedPolicySource(t *testing.T) {
 	conf := &cfg.Config{StoreConfig: &cfg.StoreConfig{StoreType: "policy-source"}}
-	err := run(insecureParams("127.0.0.1:0", ""), conf, nil)
+	stop := make(chan os.Signal)
+	close(stop)
+	err := run(insecureParams("127.0.0.1:0", ""), conf, stop)
 	if err == nil || !strings.Contains(err.Error(), "v1.8.0") || !strings.Contains(err.Error(), "policy-source") {
 		t.Fatalf("startup error = %v", err)
 	}

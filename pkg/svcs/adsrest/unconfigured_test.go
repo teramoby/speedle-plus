@@ -68,3 +68,19 @@ func TestLocalDecisionService(t *testing.T) {
 		t.Fatalf("readyz = %d (%s)", ready.Code, ready.Body.String())
 	}
 }
+
+func TestLocalReadinessResponse(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	(&RESTService{}).Readyz(recorder, httptest.NewRequest(http.MethodGet, "/readyz", nil))
+	if recorder.Code != http.StatusOK || recorder.Header().Get("Cache-Control") != "no-store" {
+		t.Fatalf("readiness: %d, %v", recorder.Code, recorder.Header())
+	}
+	var response map[string]interface{}
+	if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]interface{}{"ready": true, "servicesTotal": float64(0), "servicesUsable": float64(0)}
+	if !reflect.DeepEqual(response, want) {
+		t.Fatalf("readiness: %v, want %v", response, want)
+	}
+}
