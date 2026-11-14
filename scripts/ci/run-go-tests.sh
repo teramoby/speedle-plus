@@ -120,6 +120,10 @@ case "${mode}" in
     STORE_TYPE=etcd go test -p 1 -count=1 -timeout 300s "${store_dependent[@]}"
     python3 scripts/ci/coverage.py coverage.out --merge coverage-cli.out \
       --min-file scripts/ci/coverage-min.txt "${pkgs[@]}"
+    # The fork's tests are outside packages()'s product-package list. Run the
+    # condition suite and its statement audit explicitly, retaining the global
+    # coverage threshold above and reporting every audited exclusion separately.
+    bash scripts/ci/condition-conformance.sh
     # Read the candidate's documentation on every run. These execute the actual
     # fenced commands/program/policy blocks; failures block the same test job.
     toolchain=$(go env GOVERSION)

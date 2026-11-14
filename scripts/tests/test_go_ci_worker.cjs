@@ -249,7 +249,11 @@ const fail=process.env.FIXTURE_FAIL;process.exit(fail&&a.join(' ').includes(fail
 }
 const goTests = records => records.filter(r => r.tool === 'go' && r.args[0] === 'test');
 test('gate runs every package once, only store-dependent packages again with etcd, then the coverage gate', () => {
-  const {result, records} = runSuite('test'); assert.equal(result.status, 0, result.stderr);
+  const {result, records: allRecords} = runSuite('test'); assert.equal(result.status, 0, result.stderr);
+  const conditionReports = allRecords.filter(r => r.tool === 'python3' &&
+    (r.args[0] === 'scripts/ci/condition-conformance-report.py' || r.args.includes('test_condition_conformance_report.py')));
+  // Check condition auditing separately from the existing documentation calls.
+  const records = allRecords.filter(r => !conditionReports.includes(r));
   const [file, etcd] = goTests(records);
   assert.deepEqual(file.args.slice(0, 3), ['test', '-p', '1']);
   assert.equal(file.env.STORE_TYPE, 'file'); assert.ok(file.args.includes('example.invalid/pkg/a'));
@@ -258,8 +262,21 @@ test('gate runs every package once, only store-dependent packages again with etc
   assert.equal(file.env.SPEEDLE_CLI_COVERPROFILE, path.join(repoRoot, 'coverage-cli.out'));
   assert.equal(etcd.env.SPEEDLE_CLI_COVERPROFILE, undefined);
   assert.equal(etcd.env.STORE_TYPE, 'etcd'); assert.deepEqual(etcd.args.slice(-2), ['./pkg/eval', './cmd/spctl/command']);
-  assert.equal(goTests(records).length, 3);
-  assert.deepEqual(goTests(records)[2].args, ['test', '-count=1', './website/tests/docscheck']);
+  assert.equal(goTests(records).length, 5);
+  const [coverage, matrix, docs] = goTests(records).slice(2);
+  for (const record of [coverage, matrix]) {
+    assert.equal(record.env.STORE_TYPE, 'file');
+    assert.deepEqual(record.args.slice(0, 7), ['test', '-p', '1', '-count=1', '-timeout', '300s',
+      record === coverage ? '-coverpkg=./pkg/eval/condition,./pkg/eval/function,./3rdparty/github.com/Knetic/govaluate' : '-v']);
+  }
+  const profile = coverage.args.find(a => a.startsWith('-coverprofile=')).slice('-coverprofile='.length);
+  assert.deepEqual(coverage.args.slice(-3), ['./pkg/eval/...', './pkg/svcs/adsrest/...', './3rdparty/github.com/Knetic/govaluate']);
+  assert.deepEqual(matrix.args.slice(-3), ['./pkg/eval', '-run', '^TestConditionConformanceMatrix$']);
+  assert.deepEqual(docs.args, ['test', '-count=1', './website/tests/docscheck']);
+  assert.deepEqual(conditionReports.map(r => r.args), [
+    ['scripts/ci/condition-conformance-report.py', '--go-version', 'go1.27.4', profile, profile.replace(/coverage\.out$/, 'matrix.log')],
+    ['-m', 'unittest', 'discover', '-s', 'scripts/tests', '-p', 'test_condition_conformance_report.py'],
+  ]);
   const gate = records.find(r => r.tool === 'python3');
   assert.deepEqual(gate.args.slice(0, 6),
     ['scripts/ci/coverage.py', 'coverage.out', '--merge', 'coverage-cli.out', '--min-file', 'scripts/ci/coverage-min.txt']);
@@ -268,9 +285,19 @@ test('gate runs every package once, only store-dependent packages again with etc
     ['website/tests/check_embedded.py', '--toolchain', 'go1.27.4', '--candidate'],
     ['website/tests/check_docs.py'],
   ]);
-  for (const record of records) {
+  for (const record of allRecords) {
     for (const key of cleanKeys) assert.equal(record.env[key], '', key);
     assert.equal(record.env.PMS_ENDPOINT, 'http://127.0.0.1:6733'); assert.equal(record.env.ADS_ENDPOINT, 'http://127.0.0.1:6734');
+  }
+});
+test('a failed condition test, matrix, coverage audit or reporter regression blocks the gate', () => {
+  for (const failure of ['-coverpkg=./pkg/eval/condition', '^TestConditionConformanceMatrix$',
+    'scripts/ci/condition-conformance-report.py', 'test_condition_conformance_report.py']) {
+    const {result, records} = runSuite('test', {failMatching: failure});
+    assert.equal(result.status, 7, failure);
+    assert.ok(records.some(r => r.args.some(arg => arg.includes(failure))), failure);
+    assert.ok(!records.some(r => r.args.includes('website/tests/check_quick_start.py')),
+      'the failing condition audit stops before documentation checks');
   }
 });
 test('a failure in either executable guide blocks the merge-gating test job', () => {
