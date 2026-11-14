@@ -27,7 +27,12 @@ func (impl *GRPCService) dispatch(ctx context.Context, op gate.Operation, reques
 		logging.WriteSimpleFailedAuditLog("[gRPC]"+string(op), fields, response.ErrorMessage)
 		return nil, true, status.Error(codes.Internal, response.ErrorMessage)
 	}
-	_ = grpc.SetHeader(ctx, metadata.Pairs("x-speedle-decision-source", "upstream"))
+	headers := metadata.MD(gate.FilterMetadata(response.Metadata))
+	if headers == nil {
+		headers = metadata.MD{}
+	}
+	headers.Set("x-speedle-decision-source", "upstream")
+	_ = grpc.SetHeader(ctx, headers)
 	logging.WriteSimpleSucceededAuditLog("[gRPC]"+string(op), fields, map[string]interface{}{"allowed": response.Allowed, "reason": response.Reason, "roles": response.Roles, "permissions": response.Permissions})
 	return response, true, nil
 }

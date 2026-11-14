@@ -38,6 +38,16 @@ func (e *RESTService) dispatch(w http.ResponseWriter, r *http.Request, op gate.O
 		}{response.ErrorMessage})
 		return true
 	}
+	if response.ErrorMessage == "" {
+		for key, values := range gate.FilterMetadata(response.Metadata) {
+			// Middleware may already own additional headers on this response.
+			if _, exists := w.Header()[http.CanonicalHeaderKey(key)]; !exists {
+				for _, value := range values {
+					w.Header().Add(key, value)
+				}
+			}
+		}
+	}
 	switch op {
 	case gate.AllGrantedRoles:
 		if len(response.Roles) == 0 {

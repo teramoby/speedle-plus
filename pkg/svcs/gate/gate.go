@@ -46,6 +46,10 @@ type Response struct {
 	ErrorMessage string
 	Roles        []string
 	Permissions  []pms.Permission
+	// Metadata carries response headers for successful forwarded decisions.
+	// Services filter transport-owned and hop-by-hop headers before sending them.
+	// A gate may reuse this map if it remains immutable during requests.
+	Metadata map[string][]string
 }
 
 // Gate chooses a route by service name before local evaluation. Forward handles
