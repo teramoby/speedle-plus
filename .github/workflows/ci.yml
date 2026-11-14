@@ -58,35 +58,7 @@ jobs:
           PR_BASE: ${{ github.event.pull_request.base.sha }}
           PUSH_BEFORE: ${{ github.event.before }}
         run: |
-          set -euo pipefail
-          case "${EVENT_NAME}" in
-            pull_request) base="${PR_BASE}" ;;
-            push) base="${PUSH_BEFORE}" ;;
-            *) base="" ;;
-          esac
-          go=true website=true docs=true ci=true
-          if [[ -n "${base}" && "${base}" != 0000000000000000000000000000000000000000 ]] && git cat-file -e "${base}^{commit}" 2>/dev/null; then
-            changed=$(git diff --name-only "${base}" "${GITHUB_SHA}")
-            go=false website=false docs=false ci=false
-            while IFS= read -r file; do
-              case "${file}" in
-                '') ;;
-                docs/*) docs=true ;;
-                website/*) website=true ;;
-                .github/workflows/*|scripts/*) go=true ci=true ;;
-                */*) go=true ;;
-                *.md) ;;
-                *) go=true ;;
-              esac
-            done <<< "${changed}"
-          fi
-          {
-            echo "go=${go}"
-            echo "website=${website}"
-            echo "docs=${docs}"
-            echo "ci=${ci}"
-          } >> "${GITHUB_OUTPUT}"
-          echo "Go: ${go}; website tooling: ${website}; docs: ${docs}"
+          bash scripts/ci/classify-changes.sh
 
       - name: Setup Node for CI script tests
         if: steps.scope.outputs.ci == 'true'
