@@ -18,6 +18,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -629,14 +630,34 @@ func TestCascadeCRLFetchRequiresExplicitTrust(t *testing.T) {
 	defer publisher.Close()
 	roots := x509.NewCertPool()
 	roots.AddCert(pki.ca)
-	if _, err := fetchRelayCRL(context.Background(), publisher.URL, roots, 0, 0); err != nil {
+	if _, err := fetchRelayCRL(context.Background(), publisher.URL, roots, 0, 0, nil); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := fetchRelayCRL(context.Background(), publisher.URL, x509.NewCertPool(), 0, 0); err == nil {
+	if _, err := fetchRelayCRL(context.Background(), publisher.URL, x509.NewCertPool(), 0, 0, nil); err == nil {
 		t.Fatal("empty explicit trust fell back to system roots")
 	}
-	if _, err := fetchRelayCRL(context.Background(), publisher.URL, nil, 0, 0); err == nil {
+	if _, err := fetchRelayCRL(context.Background(), publisher.URL, nil, 0, 0, nil); err == nil {
 		t.Fatal("missing explicit trust accepted")
+	}
+}
+
+// TestCascadeCRLFetchUsesConfiguredProxy covers a library user that pins egress
+// through Config.Proxy: the CRL transport must consult the same proxy as the
+// relay transport instead of the environment.
+func TestCascadeCRLFetchUsesConfiguredProxy(t *testing.T) {
+	pki := newCascadePKI(t)
+	now := time.Now().Truncate(time.Second)
+	data := pki.crl(t, 0, 1, now.Add(-time.Minute), now.Add(time.Hour), false)
+	publisher := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.Write(data) }))
+	cert, _, _ := pki.issue(t, 2, x509.ExtKeyUsageServerAuth, "127.0.0.1", now.Add(time.Hour))
+	publisher.TLS = &tls.Config{Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS12}
+	publisher.StartTLS()
+	defer publisher.Close()
+	config := cascadeConfig(t, pki, "https://relay.example")
+	config.CRLURLs = []string{publisher.URL}
+	config.Proxy = func(*http.Request) (*url.URL, error) { return nil, fmt.Errorf("proxy denied") }
+	if _, err := NewClient(config); err == nil || !strings.Contains(err.Error(), "CRLURLs") {
+		t.Fatalf("configured proxy was not used for the CRL fetch: %v", err)
 	}
 }
 
@@ -714,7 +735,7 @@ func TestCascadeCRLFetchBoundsSlowDrip(t *testing.T) {
 			roots := x509.NewCertPool()
 			roots.AddCert(pki.ca)
 			started := time.Now()
-			if _, err := fetchRelayCRL(context.Background(), publisher.URL, roots, test.stall, test.total); !errors.Is(err, test.want) {
+			if _, err := fetchRelayCRL(context.Background(), publisher.URL, roots, test.stall, test.total, nil); !errors.Is(err, test.want) {
 				t.Fatalf("slow drip: %v", err)
 			}
 			if elapsed := time.Since(started); elapsed > 5*time.Second {

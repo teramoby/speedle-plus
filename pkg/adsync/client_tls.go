@@ -140,7 +140,7 @@ func (m *clientTLS) load(ctx context.Context) (*clientTLSGeneration, error) {
 			return nil, fmt.Errorf("adsync: CRLURLs must contain HTTPS URLs without credentials, query or fragment")
 		}
 
-		data, err := fetchRelayCRL(ctx, address, generation.roots, m.configFiles.RequestTimeout, crlDownloadTimeout)
+		data, err := fetchRelayCRL(ctx, address, generation.roots, m.configFiles.RequestTimeout, crlDownloadTimeout, newProxyFunc(m.configFiles))
 		if err != nil {
 			return nil, err
 		}
@@ -558,8 +558,8 @@ var (
 )
 
 // fetchRelayCRL has a stall deadline and a fixed total-transfer cap; there is
-// no response-size limit.
-func fetchRelayCRL(parent context.Context, address string, roots *x509.CertPool, timeout, total time.Duration) ([]byte, error) {
+// no response-size limit. The proxy selection matches the relay transport.
+func fetchRelayCRL(parent context.Context, address string, roots *x509.CertPool, timeout, total time.Duration, proxy func(*http.Request) (*url.URL, error)) ([]byte, error) {
 	if roots == nil {
 		return nil, fmt.Errorf("adsync: CRL fetch requires explicit CAFile roots")
 	}
@@ -579,8 +579,11 @@ func fetchRelayCRL(parent context.Context, address string, roots *x509.CertPool,
 	if err != nil {
 		return nil, fmt.Errorf("adsync: invalid CRLURLs request")
 	}
+	if proxy == nil {
+		proxy = http.ProxyFromEnvironment
+	}
 	transport := &http.Transport{
-		Proxy:                 http.ProxyFromEnvironment,
+		Proxy:                 proxy,
 		TLSClientConfig:       &tls.Config{MinVersion: tls.VersionTLS12, RootCAs: roots},
 		ForceAttemptHTTP2:     true,
 		TLSHandshakeTimeout:   timeout,
