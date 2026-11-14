@@ -28,6 +28,7 @@ import (
 // neither is required to grant. Allowed cells have both grant and nonmatch probes.
 type conditionCase struct {
 	section, row, op, name, expression string
+	effect                             string
 	attributes                         []*adsrest.JsonAttribute
 	want                               bool
 	difference                         string
@@ -49,7 +50,7 @@ func conditionCases() []conditionCase {
 	numeric := map[string][2]string{
 		"+": {"x + 2 == 7", "x + 2 == 8"}, "-": {"x - 2 == 3", "x - 2 == 4"},
 		"*": {"x * 2 == 10", "x * 2 == 11"}, "/": {"x / 2 == 2.5", "x / 2 == 3"}, "%": {"x % 2 == 1", "x % 2 == 0"},
-		"==": {"x == 5", "x == 6"}, "! =": {"", ""}, "!=": {"x != 6", "x != 5"},
+		"==": {"x == 5", "x == 6"}, "!=": {"x != 6", "x != 5"},
 		">": {"x > 4", "x > 5"}, ">=": {"x >= 5", "x >= 6"}, "<": {"x < 6", "x < 5"}, "<=": {"x <= 5", "x <= 4"},
 		"in": {"x in (4, 5)", "x in (4, 6)"},
 	}
@@ -84,7 +85,29 @@ func conditionCases() []conditionCase {
 				name := []string{"positive", "negative"}[i]
 				want := ok && i == 0
 				add("2.1", typ.name, op, name, expression, want, attr("x", typ.kind, typ.value), attr("other", "bool", false))
+				if typ.name == "datetime" && strings.Contains("+-*/%", op) || typ.name == "array" && (op == "==" || op == "!=") {
+					cases[len(cases)-1].difference = "known difference, behaviour pinned"
+				}
 			}
+		}
+	}
+	for _, kind := range []string{"string", "numeric", "bool", "datetime"} {
+		value := interface{}(5.0)
+		other := interface{}("5")
+		otherKind := "string"
+		switch kind {
+		case "string":
+			value = "5"
+			other = 5.0
+			otherKind = "numeric"
+		case "bool":
+			value = true
+		case "datetime":
+			value = "1970-01-01T00:00:05Z"
+		}
+		for _, op := range []string{"==", "!=", ">", ">=", "<", "<=", "=~", "&&", "||"} {
+			// known difference, behaviour pinned: != compares different types as unequal.
+			add("2.1", kind, "mismatch-"+op, "wrong-type", "x "+op+" y", (op == "!=" || kind == "bool" && op == "||"), attr("x", kind, value), attr("y", otherKind, other))
 		}
 	}
 	// Every built-in attribute uses every operator valid for its injected type.
@@ -112,6 +135,7 @@ func conditionCases() []conditionCase {
 				"==": {x + " == " + x, x + " == -1"}, "!=": {x + " != -1", x + " != " + x},
 				">": {x + " > -1", x + " > " + x}, ">=": {x + " >= " + x, x + " >= 99999999999"},
 				"<": {x + " < 99999999999", x + " < " + x}, "<=": {x + " <= " + x, x + " <= -1"},
+				"in": {x + " in (" + x + ", -1)", x + " in (-1, -2)"},
 			}
 			if a.kind == "numeric" {
 				for _, op := range []string{"+", "-", "*", "/", "%"} {
@@ -119,9 +143,17 @@ func conditionCases() []conditionCase {
 					expected := x
 					switch op {
 					case "+":
-						expected = x + " + 1"
+						expression = "(" + x + " + 1) - " + x
+						expected = "1"
 					case "-":
-						expected = x + " - 1"
+						expression = x + " - " + x
+						expected = "0"
+					case "*":
+						expression = x + " * 0"
+						expected = "0"
+					case "/":
+						expression = x + " / 1 - " + x
+						expected = "0"
 					case "%":
 						expected = "0"
 					}
@@ -164,7 +196,14 @@ func conditionCases() []conditionCase {
 		{"Sum", "Sum(1,2) == 4", "nonmatch", false}, {"Sum", "Sum() == 0", "empty", true},
 		{"Avg", "Avg(1,2,3,2) == 2", "duplicates", true}, {"Avg", "Avg(1) == 1", "singleton", true},
 		{"Avg", "Avg(1,2) == 2", "nonmatch", false}, {"Avg", "Avg() == 0", "empty", true},
+		{"Max", "Max((1,2)) == 2", "flattened-array", true},
+		{"Min", "Min((1,2)) == 1", "flattened-array", true},
+		{"Sum", "Sum((1,2)) == 3", "flattened-array", true},
+		{"Avg", "Avg((1,2)) == 1.5", "flattened-array", true},
 		{"Sum", "Sum(huge,huge) > 0", "overflow", false},
+		{"Avg", "Avg(huge,huge,huge,huge,huge,huge,huge,huge,huge,huge,huge) > 0", "scaled-rounding-overflow", false},
+		{"IsSubSet", "IsSubSet((0/0,1),(1,2))", "nan-first", false},
+		{"IsSubSet", "IsSubSet((1,2),(1,1/0))", "infinity-last", false},
 		{"Avg", "Avg(huge,huge) == huge", "scaled-overflow", true},
 		{"Avg", "Avg(huge,-huge,1) == 1/3", "cancellation", true},
 		{"IsSubSet", "IsSubSet((1,1,2),(1,2,3))", "duplicates", true},
@@ -177,6 +216,8 @@ func conditionCases() []conditionCase {
 		{"IsSubSet", "IsSubSet(empty,empty)", "empty-both", false},
 		{"IsSubSet", "IsSubSet()", "arity-zero", false}, {"IsSubSet", "IsSubSet(1)", "arity-one", false},
 		{"IsSubSet", "IsSubSet(1,2)", "wrong-last", false},
+		{"IsSubSet", "IsSubSet((1,2),(1,2),(1,2))", "arity-three-arrays", false},
+		{"IsSubSet", "IsSubSet(1,2,(1,2))", "flattened-first", true},
 		{"IsSubSet", "IsSubSet((1,'a'),(1,2))", "mixed-first", false},
 		{"IsSubSet", "IsSubSet((1,2),(1,'a'))", "mixed-last", false},
 	} {
@@ -184,7 +225,11 @@ func conditionCases() []conditionCase {
 	}
 	for _, fn := range []string{"Sqrt", "Max", "Min", "Sum", "Avg"} {
 		for _, value := range []string{"'a'", "true", "(1,2)", "0/0", "1/0", "-1/0"} {
-			add("2.4", fn, "call", "reject-"+value, fn+"("+value+") == 0", false)
+			expression := fn + "(" + value + ") == 0"
+			if value == "(1,2)" {
+				expression = fn + "(1,(1,2)) == 0"
+			}
+			add("2.4", fn, "call", "reject-"+value, expression, false)
 		}
 	}
 	for i, e := range []string{
@@ -202,6 +247,12 @@ func conditionCases() []conditionCase {
 		{"missing && false", false}, {"false && missing", false}, {"!(missing == 1)", false}, {"!(true || missing)", false},
 	} {
 		add("1 / 2.2.2", "missing", "logic", c.expression, c.expression, c.want)
+		add("1 / 2.2.2", "missing-deny", "logic", c.expression, c.expression, !c.want)
+		cases[len(cases)-1].effect = pms.Deny
+		if c.expression == "true || missing" {
+			cases[len(cases)-1].difference = "known difference, behaviour pinned"
+			cases[len(cases)-2].difference = "known difference, behaviour pinned"
+		}
 	}
 	// known difference, behaviour pinned: the fork accepts these extensions;
 	// pin both results so acceptance alone cannot hide a broken evaluation.
@@ -231,7 +282,14 @@ func TestConditionConformance(t *testing.T) {
 	cases := conditionCases()
 	service := &pms.Service{Name: "conformance"}
 	for i, c := range cases {
-		service.Policies = append(service.Policies, &pms.Policy{ID: fmt.Sprint(i), Name: fmt.Sprint(i), Effect: pms.Grant, Condition: c.expression, Permissions: []*pms.Permission{{Resource: fmt.Sprint(i), Actions: []string{"read"}}}})
+		effect := c.effect
+		if effect == "" {
+			effect = pms.Grant
+		}
+		if effect == pms.Deny {
+			service.Policies = append(service.Policies, &pms.Policy{ID: fmt.Sprintf("base-%d", i), Effect: pms.Grant, Permissions: []*pms.Permission{{Resource: fmt.Sprint(i), Actions: []string{"read"}}}})
+		}
+		service.Policies = append(service.Policies, &pms.Policy{ID: fmt.Sprint(i), Name: fmt.Sprint(i), Effect: effect, Condition: c.expression, Permissions: []*pms.Permission{{Resource: fmt.Sprint(i), Actions: []string{"read"}}}})
 	}
 	data, err := json.Marshal(&pms.PolicyStore{Services: []*pms.Service{service}})
 	if err != nil {
@@ -260,9 +318,13 @@ func TestConditionConformance(t *testing.T) {
 		t.Run(c.section+"/"+c.row+"/"+c.op+"/"+c.name, func(t *testing.T) {
 			attrs := map[string]interface{}{}
 			for _, a := range c.attributes {
-				v, err := adsrest.ConvValue(a.Type, a.Value)
-				if err != nil {
-					t.Fatal(err)
+				v := a.Value
+				if a.Type == "datetime" {
+					timestamp, err := time.Parse(time.RFC3339Nano, a.Value.(string))
+					if err != nil {
+						t.Fatal(err)
+					}
+					v = float64(timestamp.Unix())
 				}
 				attrs[a.Name] = v
 			}
@@ -271,6 +333,8 @@ func TestConditionConformance(t *testing.T) {
 			expectedReason := ads.NO_APPLICABLE_POLICIES
 			if c.want {
 				expectedReason = ads.GRANT_POLICY_FOUND
+			} else if c.effect == pms.Deny {
+				expectedReason = ads.DENY_POLICY_FOUND
 			}
 			if err != nil || direct != c.want || reason != expectedReason {
 				t.Errorf("direct %q: allowed=%v reason=%v err=%v; want %v/%v", c.expression, direct, reason, err, c.want, expectedReason)
@@ -311,7 +375,11 @@ func TestConditionConformanceMatrix(t *testing.T) {
 		rows = append(rows, row)
 	}
 	sort.Strings(rows)
-	t.Log("\n| Reference / row | " + strings.Join(conditionOperators, " | ") + " | other |\n|---|" + strings.Repeat("---|", len(conditionOperators)+1))
+	header := append([]string(nil), conditionOperators...)
+	for i := range header {
+		header[i] = strings.ReplaceAll(header[i], "|", `\|`)
+	}
+	t.Log("\n| Reference / row | " + strings.Join(header, " | ") + " | other |\n|---|" + strings.Repeat("---|", len(conditionOperators)+1))
 	for _, row := range rows {
 		line := "| " + row + " |"
 		total := 0
@@ -326,6 +394,12 @@ func TestConditionConformanceMatrix(t *testing.T) {
 		}
 		t.Log(line + fmt.Sprintf(" %d |", other-total))
 	}
+	t.Log("Known differences (name / expression / expected authorization):")
+	for _, c := range conditionCases() {
+		if c.difference != "" {
+			t.Logf("Difference: %s/%s/%s: %s => %v (%s)", c.row, c.op, c.name, c.expression, c.want, c.difference)
+		}
+	}
 	var names []string
 	for s := range sections {
 		names = append(names, s)
@@ -336,7 +410,7 @@ func TestConditionConformanceMatrix(t *testing.T) {
 	}
 	for _, typ := range []string{"string", "numeric", "bool", "datetime", "array"} {
 		for _, op := range conditionOperators {
-			if counts["2.1 / "+typ][op] < 2 {
+			if counts["2.1 / "+typ][op] != 2 {
 				t.Errorf("missing positive/negative cell %s %s", typ, op)
 			}
 		}
@@ -347,7 +421,7 @@ func TestConditionConformanceMatrix(t *testing.T) {
 // integer values to float64. No PEP overrides are used in these assertions.
 func TestConditionConformanceInjectedTypes(t *testing.T) {
 	location := filepath.Join(t.TempDir(), "policies.json")
-	if err := os.WriteFile(location, []byte(`{"services":[{"name":"app"}]}`), 0600); err != nil {
+	if err := os.WriteFile(location, []byte(`{"services":[{"name":"app","policies":[{"id":"p","effect":"grant"}]}]}`), 0600); err != nil {
 		t.Fatal(err)
 	}
 	evaluator, err := eval.NewFromFile(location, false)
