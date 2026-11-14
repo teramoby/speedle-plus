@@ -14,8 +14,11 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // InstanceIDFile is the file in the cache directory that keeps the instance
@@ -25,6 +28,8 @@ const InstanceIDFile = "instance-id"
 const instanceIDLockFile = ".instance-id.lock"
 
 var errPartialInstanceID = fmt.Errorf("%w: incomplete instance id publication", ErrCacheCorrupt)
+
+var instanceIDLockWarning sync.Once
 
 // InstanceHeader carries the instance ID on every request.
 const InstanceHeader = "X-SC-ADS-Instance"
@@ -54,8 +59,10 @@ func ValidInstanceID(value string) bool {
 // boolean reports whether the ID was created by this call. Empty files and
 // truncated UUIDv7 publications older than an hour are repaired under the
 // exclusive creation lock. Recent partial publications, other corrupt files,
-// and unsafe files remain errors. Without filesystem locking, creation still
-// works, but partial files cannot be repaired safely.
+// and unsafe files remain errors. If the lock cannot be opened or acquired
+// within five seconds, creation still works via exclusive publication, but
+// partial files cannot be repaired safely. Degraded locking is warned once
+// per process.
 //
 // Concurrent writers sharing dir must all use this creation-lock protocol.
 // Stop older releases using dir before upgrading: file age cannot prove that
@@ -89,17 +96,18 @@ func loadOrCreateInstanceIDWithLock(dir string, link func(string, string) error,
 	// The lock file is stable and never unlinked: waiters must lock the same
 	// inode. The OS releases the lock on exit, including a creator's crash.
 	lock, err := os.OpenFile(filepath.Join(dir, instanceIDLockFile), os.O_CREATE|os.O_RDWR, 0o600)
-	if err != nil {
-		return "", false, fmt.Errorf("adsync: open instance id create lock: %w", err)
-	}
-	defer lock.Close()
-	err = acquire(lock)
-	locked := err == nil
-	if err != nil && !errors.Is(err, errInstanceIDLockUnsupported) {
-		return "", false, fmt.Errorf("adsync: lock instance id creation: %w", err)
+	locked := false
+	if err == nil {
+		defer lock.Close()
+		err = acquire(lock)
+		locked = err == nil
 	}
 	if locked {
 		defer unlockInstanceID(lock)
+	} else {
+		instanceIDLockWarning.Do(func() {
+			log.WithError(err).Warn("adsync: instance id creation lock unavailable; continuing with exclusive publication, partial-file repair disabled")
+		})
 	}
 	cleanupInstanceIDTemps(dir)
 	for range 3 {
@@ -213,8 +221,9 @@ func checkInstanceIDFile(info fs.FileInfo) error {
 	return nil
 }
 
-// Re-stat immediately before removal: a writer that made progress or replaced
-// the inode since the last read must not have its publication removed.
+// Re-stat immediately before removal under the creation lock. This detects
+// changes since the last read, but cannot exclude a nonparticipating writer
+// changing the file after this check (see LoadOrCreateInstanceID).
 func checkPartialInstanceID(path string, partial fs.FileInfo) error {
 	current, err := os.Lstat(path)
 	if err != nil {

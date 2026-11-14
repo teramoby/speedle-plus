@@ -3,9 +3,12 @@
 package adsync
 
 import (
+	"bufio"
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,6 +17,8 @@ import (
 	"syscall"
 	"testing"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func TestInstanceIDLinkFallback(t *testing.T) {
@@ -281,29 +286,204 @@ func TestInstanceIDWhitespaceCorruption(t *testing.T) {
 }
 
 func TestInstanceIDWithoutFilesystemLock(t *testing.T) {
-	unsupported := func(*os.File) error { return errInstanceIDLockUnsupported }
+	for _, lockErr := range []error{errInstanceIDLockUnsupported, os.ErrDeadlineExceeded, syscall.EIO} {
+		for _, partial := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s/partial=%t", lockErr, partial), func(t *testing.T) {
+				dir := t.TempDir()
+				if partial {
+					writeStaleInstanceID(t, dir, testInstanceID[:10])
+				}
+				id, created, err := loadOrCreateInstanceIDWithLock(dir, func(string, string) error { return syscall.ENOTSUP }, func(*os.File) error { return lockErr })
+				if partial {
+					if !errors.Is(err, ErrCacheCorrupt) || created || id != "" {
+						t.Fatalf("unlocked repair = %q, %v, %v", id, created, err)
+					}
+					data, err := os.ReadFile(filepath.Join(dir, InstanceIDFile))
+					if err != nil || string(data) != testInstanceID[:10] {
+						t.Fatalf("unlocked partial changed: %q, %v", data, err)
+					}
+				} else if err != nil || !created || !ValidInstanceID(id) {
+					t.Fatalf("unlocked creation = %q, %v, %v", id, created, err)
+				}
+			})
+		}
+	}
+
+}
+
+func TestInstanceIDLockPathDirectory(t *testing.T) {
 	for _, partial := range []bool{false, true} {
 		t.Run(fmt.Sprint(partial), func(t *testing.T) {
 			dir := t.TempDir()
-			if partial {
-				writeStaleInstanceID(t, dir, testInstanceID[:10])
+			lockPath := filepath.Join(dir, instanceIDLockFile)
+			if err := os.Mkdir(lockPath, 0o700); err != nil {
+				t.Fatal(err)
 			}
-			id, created, err := loadOrCreateInstanceIDWithLock(dir, func(string, string) error { return syscall.ENOTSUP }, unsupported)
+			var before os.FileInfo
+			if partial {
+				path := writeStaleInstanceID(t, dir, testInstanceID[:10])
+				var err error
+				before, err = os.Stat(path)
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+			id, created, err := LoadOrCreateInstanceID(dir)
 			if partial {
 				if !errors.Is(err, ErrCacheCorrupt) || created || id != "" {
 					t.Fatalf("unlocked repair = %q, %v, %v", id, created, err)
 				}
-				data, err := os.ReadFile(filepath.Join(dir, InstanceIDFile))
-				if err != nil || string(data) != testInstanceID[:10] {
-					t.Fatalf("unlocked partial changed: %q, %v", data, err)
+				after, err := os.Stat(filepath.Join(dir, InstanceIDFile))
+				data, readErr := os.ReadFile(filepath.Join(dir, InstanceIDFile))
+				if err != nil || !os.SameFile(before, after) || readErr != nil || string(data) != testInstanceID[:10] {
+					t.Fatalf("unlocked partial replaced: %v, %q, %v, %v", after, data, err, readErr)
 				}
-			} else if err != nil || !created || !ValidInstanceID(id) {
-				t.Fatalf("unlocked creation = %q, %v, %v", id, created, err)
+			} else {
+				if err != nil || !created || !ValidInstanceID(id) {
+					t.Fatalf("unlocked creation = %q, %v, %v", id, created, err)
+				}
+				if again, created, err := LoadOrCreateInstanceID(dir); err != nil || created || again != id {
+					t.Fatalf("unlocked persistence = %q, %v, %v", again, created, err)
+				}
+			}
+			if info, err := os.Stat(lockPath); err != nil || !info.IsDir() {
+				t.Fatalf("lock directory replaced: %v, %v", info, err)
 			}
 		})
 	}
-	if _, _, err := loadOrCreateInstanceIDWithLock(t.TempDir(), os.Link, func(*os.File) error { return syscall.EIO }); !errors.Is(err, syscall.EIO) {
-		t.Fatalf("unexpected lock error swallowed: %v", err)
+}
+
+func TestInstanceIDLockWarningOnce(t *testing.T) {
+	if os.Getenv("SPEEDLE_INSTANCE_ID_WARNING_TEST") == "" {
+		command := exec.Command(os.Args[0], "-test.run=^TestInstanceIDLockWarningOnce$")
+		command.Env = append(os.Environ(), "SPEEDLE_INSTANCE_ID_WARNING_TEST=1")
+		if output, err := command.CombinedOutput(); err != nil {
+			t.Fatalf("warning process: %v\n%s", err, output)
+		}
+		return
+	}
+	// Isolate the process-wide Once and logger from the other package tests.
+	var output bytes.Buffer
+	previous := log.StandardLogger().Out
+	log.SetOutput(&output)
+	defer log.SetOutput(previous)
+	for _, lockErr := range []error{errInstanceIDLockUnsupported, os.ErrDeadlineExceeded, syscall.EIO} {
+		id, created, err := loadOrCreateInstanceIDWithLock(t.TempDir(), os.Link, func(*os.File) error { return lockErr })
+		if err != nil || !created || !ValidInstanceID(id) {
+			t.Fatalf("unlocked creation = %q, %v, %v", id, created, err)
+		}
+	}
+	if strings.Count(output.String(), "instance id creation lock unavailable") != 1 ||
+		!strings.Contains(output.String(), errInstanceIDLockUnsupported.Error()) ||
+		!strings.Contains(output.String(), "partial-file repair disabled") {
+		t.Fatalf("expected one actionable warning: %s", &output)
+	}
+}
+
+func TestInstanceIDFrozenLockHolder(t *testing.T) {
+	requireInstanceIDRepairLock(t)
+	for _, state := range []string{"create", "winner", "partial"} {
+		t.Run(state, func(t *testing.T) {
+			dir := t.TempDir()
+			var before os.FileInfo
+			if state == "partial" {
+				path := writeStaleInstanceID(t, dir, testInstanceID[:10])
+				var err error
+				before, err = os.Stat(path)
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+			holder := exec.CommandContext(ctx, os.Args[0], "-test.run=^TestInstanceIDFrozenLockProcessHelper$")
+			holder.Env = append(os.Environ(), "SPEEDLE_INSTANCE_ID_LOCK_TEST_DIR="+dir)
+			input, err := holder.StdinPipe()
+			if err != nil {
+				t.Fatal(err)
+			}
+			output, err := holder.StdoutPipe()
+			if err != nil {
+				t.Fatal(err)
+			}
+			var stderr bytes.Buffer
+			holder.Stderr = &stderr
+			if err := holder.Start(); err != nil {
+				t.Fatal(err)
+			}
+			defer func() {
+				input.Close()
+				if err := holder.Wait(); err != nil {
+					t.Errorf("lock holder: %v\n%s", err, &stderr)
+				}
+			}()
+			scanner := bufio.NewScanner(output)
+			if !scanner.Scan() || scanner.Text() != "locked" {
+				t.Fatalf("holder did not acquire lock: %q, %v", scanner.Text(), scanner.Err())
+			}
+			// The child holds the native lock without making progress until
+			// stdin closes, modelling a frozen process beyond the real timeout.
+			// Publish a winner after the fast-path miss to test reloading it
+			// after the timeout as well as first creation and refusal to repair.
+			acquire := func(file *os.File) error {
+				if state == "winner" {
+					if err := writeInstanceID(filepath.Join(dir, InstanceIDFile), testInstanceID, os.Link); err != nil {
+						t.Fatal(err)
+					}
+				}
+				start := time.Now()
+				err := lockInstanceID(file)
+				if !errors.Is(err, os.ErrDeadlineExceeded) || time.Since(start) < 5*time.Second {
+					t.Fatalf("frozen holder lock attempt = %v after %v", err, time.Since(start))
+				}
+				return err
+			}
+			id, created, err := loadOrCreateInstanceIDWithLock(dir, func(string, string) error { return syscall.ENOTSUP }, acquire)
+			switch state {
+			case "create":
+				if err != nil || !created || !ValidInstanceID(id) {
+					t.Fatalf("frozen holder creation = %q, %v, %v", id, created, err)
+				}
+			case "winner":
+				if err != nil || created || id != testInstanceID {
+					t.Fatalf("frozen holder winner = %q, %v, %v", id, created, err)
+				}
+			case "partial":
+				if !errors.Is(err, ErrCacheCorrupt) || created || id != "" {
+					t.Fatalf("frozen holder repair = %q, %v, %v", id, created, err)
+				}
+				after, err := os.Stat(filepath.Join(dir, InstanceIDFile))
+				data, readErr := os.ReadFile(filepath.Join(dir, InstanceIDFile))
+				if err != nil || !os.SameFile(before, after) || readErr != nil || string(data) != testInstanceID[:10] {
+					t.Fatalf("frozen holder partial replaced: %v, %q, %v, %v", after, data, err, readErr)
+				}
+			}
+			if state != "partial" {
+				if again, created, err := LoadOrCreateInstanceID(dir); err != nil || created || again != id {
+					t.Fatalf("frozen holder persistence = %q, %v, %v", again, created, err)
+				}
+			}
+		})
+	}
+}
+
+func TestInstanceIDFrozenLockProcessHelper(t *testing.T) {
+	dir := os.Getenv("SPEEDLE_INSTANCE_ID_LOCK_TEST_DIR")
+	if dir == "" {
+		return
+	}
+	file, err := os.OpenFile(filepath.Join(dir, instanceIDLockFile), os.O_CREATE|os.O_RDWR, 0o600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+	if err := lockInstanceID(file); err != nil {
+		t.Fatal(err)
+	}
+	defer unlockInstanceID(file)
+	fmt.Println("locked")
+	if _, err := io.Copy(io.Discard, os.Stdin); err != nil {
+		t.Fatal(err)
 	}
 }
 
