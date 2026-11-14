@@ -49,6 +49,7 @@ func requireRevisionWarning(t *testing.T, buffer *bytes.Buffer, id, epoch, sourc
 		t.Fatalf("expected exactly one JSON warning, got %q: %v", buffer.String(), err)
 	}
 	for field, want := range map[string]any{
+		"msg":   "policy-source revision is below the verified local copy or known head in the same epoch; ignoring rollback",
 		"level": "warning", "service_id": id, "epoch": epoch, "source": source,
 		"upstream_revision": float64(upstream), "local_revision": float64(local),
 	} {

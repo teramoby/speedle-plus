@@ -63,5 +63,5 @@ func (l *revisionWarningLimiter) warn(serviceID, epoch string, upstream, local, 
 		"local_revision":      local,
 		"known_head_revision": head,
 		"source":              source,
-	}).Warn("policy-source revision is lower than a locally held revision in the same epoch; ignoring rollback")
+	}).Warn("policy-source revision is below the verified local copy or known head in the same epoch; ignoring rollback")
 }
