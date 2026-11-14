@@ -37,3 +37,9 @@
   variadic `...Option` arguments. Existing direct calls still compile. Code
   assigning a constructor to a function value with its old signature must wrap
   the call in a function with that signature and omit the optional arguments.
+
+- Removed the Cloud getting-started guides, API and Swagger reference, SDK
+  examples and `cloud-public.yaml` specification from the Engine site in all
+  five languages. The old documentation and `/openapi/cloud-public.yaml` URLs
+  are not redirected. This repository no longer publishes replacement Cloud
+  documentation; the shared `cloud.speedle.io` product links remain.
