@@ -30,10 +30,10 @@ def guide_paths(root):
     """Discover the default guide and every locale, including future additions."""
     directory = Path(root) / "docs/hugo/content"
     guides = sorted(directory.glob("quick-start*.md"))
-    if guides and not (directory / "quick-start.md").is_file():
-        raise SystemExit("default Quick Start guide is required: quick-start.md")
     config = Path(root) / "docs/hugo/config.toml"
-    if guides and config.is_file():
+    if (guides or config.is_file()) and not (directory / "quick-start.md").is_file():
+        raise SystemExit("default Quick Start guide is required: quick-start.md")
+    if config.is_file():
         settings = config.read_text()
         default = re.search(r'^defaultContentLanguage\s*=\s*"([^"\n]+)"', settings, re.M)
         default = default[1] if default else "en"

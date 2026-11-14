@@ -141,6 +141,21 @@ class PublishTapRetryTest(unittest.TestCase):
                 with self.assertRaisesRegex(SystemExit, "default Quick Start guide is required"):
                     operation()
 
+    def test_configured_site_rejects_zero_guides_but_pre_site_tree_is_supported(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            self.assertFalse(bump_pin.bump_tree(root, "v1.8.0"))
+            self.assertFalse(bump_pin.stamp_tree(root, "2024-05-01T00:00:00Z"))
+            self.assertEqual(bump_pin.tracked_paths(root), [])
+            config = root / "docs/hugo/config.toml"
+            config.parent.mkdir(parents=True)
+            config.write_text('defaultContentLanguage = "en"\n[languages.en]\n')
+            for operation in (lambda: bump_pin.bump_tree(root, "v1.8.0"),
+                              lambda: bump_pin.stamp_tree(root, "2024-05-01T00:00:00Z"),
+                              lambda: bump_pin.tracked_paths(root)):
+                with self.assertRaisesRegex(SystemExit, "default Quick Start guide is required"):
+                    operation()
+
     def test_missing_configured_locale_guide_is_rejected(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
