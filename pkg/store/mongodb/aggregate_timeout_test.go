@@ -13,13 +13,18 @@ import (
 
 func TestAggregationPreservesServerAndClientBudgets(t *testing.T) {
 	s := isolatedStore(t)
-	if err := s.WritePolicyStore(legacySnapshot(t)); err != nil {
+	// Aggregation works on standalone MongoDB too; seed without a transaction.
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if _, err := s.client.Database(s.Database).Collection("services").InsertOne(ctx, legacySnapshot(t).Services[0]); err != nil {
 		t.Fatal(err)
 	}
 	type command struct {
-		maxTime     int64
-		deadline    time.Time
-		hasDeadline bool
+		maxTime       int64
+		maxTimeFields int
+		parseErr      error
+		deadline      time.Time
+		hasDeadline   bool
 	}
 	var mu sync.Mutex
 	var commands []command
@@ -29,8 +34,15 @@ func TestAggregationPreservesServerAndClientBudgets(t *testing.T) {
 		}
 		deadline, ok := ctx.Deadline()
 		maxTime, _ := e.Command.Lookup("maxTimeMS").AsInt64OK()
+		elements, parseErr := e.Command.Elements()
+		fields := 0
+		for _, element := range elements {
+			if element.Key() == "maxTimeMS" {
+				fields++
+			}
+		}
 		mu.Lock()
-		commands = append(commands, command{maxTime, deadline, ok})
+		commands = append(commands, command{maxTime: maxTime, maxTimeFields: fields, parseErr: parseErr, deadline: deadline, hasDeadline: ok})
 		mu.Unlock()
 	}}
 	client, err := mongo.Connect(options.Client().ApplyURI(storeConfig.StoreProps[MongoURIKey].(string)).SetMonitor(monitor))
@@ -66,16 +78,21 @@ func TestAggregationPreservesServerAndClientBudgets(t *testing.T) {
 			mu.Lock()
 			observed := append([]command(nil), commands...)
 			mu.Unlock()
-			if len(observed) != 1 {
-				t.Fatalf("got %d aggregate commands, want 1", len(observed))
+			if len(observed) == 0 {
+				t.Fatal("no aggregate command observed")
 			}
-			got := observed[0]
-			if got.maxTime != test.maxTime {
-				t.Fatalf("server maxTimeMS=%d, want %d", got.maxTime, test.maxTime)
-			}
-			budget := got.deadline.Sub(started)
-			if !got.hasDeadline || budget < 4500*time.Millisecond || budget > 5500*time.Millisecond {
-				t.Fatalf("client budget=%s, want 5s", budget)
+			// A retry must preserve the same command and original deadline.
+			for _, got := range observed {
+				if got.parseErr != nil || got.maxTimeFields != 1 {
+					t.Fatalf("maxTimeMS fields=%d, parse error=%v; want exactly one", got.maxTimeFields, got.parseErr)
+				}
+				if got.maxTime != test.maxTime {
+					t.Fatalf("server maxTimeMS=%d, want %d", got.maxTime, test.maxTime)
+				}
+				budget := got.deadline.Sub(started)
+				if !got.hasDeadline || budget < 4500*time.Millisecond || budget > 5500*time.Millisecond {
+					t.Fatalf("client budget=%s, want 5s", budget)
+				}
 			}
 		})
 	}
