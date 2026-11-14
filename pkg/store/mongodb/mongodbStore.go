@@ -7,10 +7,10 @@ import (
 	"sync"
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readconcern"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/mongo/readconcern"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/api/pms"
@@ -60,7 +60,7 @@ func (s *Store) ReadPolicyStore() (*pms.PolicyStore, error) {
 		return nil, err
 	}
 	defer session.EndSession(context.Background())
-	ps, err := session.WithTransaction(ctx, func(ctx mongo.SessionContext) (interface{}, error) {
+	ps, err := session.WithTransaction(ctx, func(ctx context.Context) (interface{}, error) {
 		return read(ctx)
 	}, options.Transaction().SetReadConcern(readconcern.Snapshot()))
 	if err != nil {
@@ -141,7 +141,7 @@ func (s *Store) WritePolicyStore(ps *pms.PolicyStore) error {
 		return err
 	}
 	defer session.EndSession(context.Background())
-	_, err = session.WithTransaction(ctx, func(ctx mongo.SessionContext) (interface{}, error) {
+	_, err = session.WithTransaction(ctx, func(ctx context.Context) (interface{}, error) {
 		database := s.client.Database(s.Database)
 		serviceCollection := database.Collection("services")
 		functionCollection := database.Collection("functions")
@@ -200,11 +200,10 @@ func (s *Store) findServices(ctx context.Context) ([]*pms.Service, error) {
 // GetServiceNames reads all the service names
 func (s *Store) GetServiceNames() ([]string, error) {
 	serviceCollection := s.client.Database(s.Database).Collection("services")
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	projectstag := bson.D{{"$project", bson.D{{"_id", 1}}}}
-	opts := options.Aggregate().SetMaxTime(2 * time.Second)
-	cur, err := serviceCollection.Aggregate(ctx, mongo.Pipeline{projectstag}, opts)
+	cur, err := serviceCollection.Aggregate(ctx, mongo.Pipeline{projectstag})
 	if err != nil {
 		return nil, err
 	}
@@ -240,8 +239,7 @@ func (s *Store) GetPolicyAndRolePolicyCounts() (map[string]*pms.PolicyAndRolePol
 				}}}},
 		}}}
 
-	opts := options.Aggregate().SetMaxTime(5 * time.Second)
-	cur, err := serviceCollection.Aggregate(ctx, mongo.Pipeline{matchstag, projectstag}, opts)
+	cur, err := serviceCollection.Aggregate(ctx, mongo.Pipeline{matchstag, projectstag})
 	if err != nil {
 		return nil, err
 	}
@@ -606,7 +604,7 @@ func parseFilter(filterStr string) (bson.D, error) {
 // For policy manager
 func (s *Store) ListAllPolicies(serviceName string, filter string) ([]*pms.Policy, error) {
 	serviceCollection := s.client.Database(s.Database).Collection("services")
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	matchstag := bson.D{{"$match", bson.D{{"_id", serviceName}}}}
 	condition, err := parseFilter(filter)
@@ -623,8 +621,7 @@ func (s *Store) ListAllPolicies(serviceName string, filter string) ([]*pms.Polic
 				}},
 			}},
 		}}
-	opts := options.Aggregate().SetMaxTime(2 * time.Second)
-	cur, err := serviceCollection.Aggregate(ctx, mongo.Pipeline{matchstag, projectstag}, opts)
+	cur, err := serviceCollection.Aggregate(ctx, mongo.Pipeline{matchstag, projectstag})
 	if err != nil {
 		return nil, err
 	}
@@ -653,8 +650,7 @@ func (s *Store) GetPolicyCount(serviceName string) (int64, error) {
 
 	projectstag := bson.D{{"$project", bson.D{{"policycount", bson.D{{"$size", bson.D{{"$ifNull", bson.A{"$policies", bson.A{}}}}}}}}}}
 
-	opts := options.Aggregate().SetMaxTime(5 * time.Second)
-	cur, err := serviceCollection.Aggregate(ctx, mongo.Pipeline{matchstag, projectstag}, opts)
+	cur, err := serviceCollection.Aggregate(ctx, mongo.Pipeline{matchstag, projectstag})
 	if err != nil {
 		return -1, err
 	}
@@ -694,8 +690,7 @@ func (s *Store) GetPolicy(serviceName string, id string) (*pms.Policy, error) {
 				}},
 			}},
 		}}
-	opts := options.Aggregate().SetMaxTime(5 * time.Second)
-	cur, err := serviceCollection.Aggregate(ctx, mongo.Pipeline{matchstag, projectstag}, opts)
+	cur, err := serviceCollection.Aggregate(ctx, mongo.Pipeline{matchstag, projectstag})
 	if err != nil {
 		return nil, err
 	}
@@ -770,7 +765,7 @@ func (s *Store) CreatePolicy(serviceName string, policy *pms.Policy) (*pms.Polic
 // For role policy manager
 func (s *Store) ListAllRolePolicies(serviceName string, filter string) ([]*pms.RolePolicy, error) {
 	serviceCollection := s.client.Database(s.Database).Collection("services")
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	matchstag := bson.D{{"$match", bson.D{{"_id", serviceName}}}}
 	condition, err := parseFilter(filter)
@@ -787,8 +782,7 @@ func (s *Store) ListAllRolePolicies(serviceName string, filter string) ([]*pms.R
 				}},
 			}},
 		}}
-	opts := options.Aggregate().SetMaxTime(2 * time.Second)
-	cur, err := serviceCollection.Aggregate(ctx, mongo.Pipeline{matchstag, projectstag}, opts)
+	cur, err := serviceCollection.Aggregate(ctx, mongo.Pipeline{matchstag, projectstag})
 	if err != nil {
 		return nil, err
 	}
@@ -817,8 +811,7 @@ func (s *Store) GetRolePolicyCount(serviceName string) (int64, error) {
 
 	projectstag := bson.D{{"$project", bson.D{{"policycount", bson.D{{"$size", bson.D{{"$ifNull", bson.A{"$rolepolicies", bson.A{}}}}}}}}}}
 
-	opts := options.Aggregate().SetMaxTime(5 * time.Second)
-	cur, err := serviceCollection.Aggregate(ctx, mongo.Pipeline{matchstag, projectstag}, opts)
+	cur, err := serviceCollection.Aggregate(ctx, mongo.Pipeline{matchstag, projectstag})
 	if err != nil {
 		return -1, err
 	}
@@ -858,8 +851,7 @@ func (s *Store) GetRolePolicy(serviceName string, id string) (*pms.RolePolicy, e
 				}},
 			}},
 		}}
-	opts := options.Aggregate().SetMaxTime(5 * time.Second)
-	cur, err := serviceCollection.Aggregate(ctx, mongo.Pipeline{matchstag, projectstag}, opts)
+	cur, err := serviceCollection.Aggregate(ctx, mongo.Pipeline{matchstag, projectstag})
 	if err != nil {
 		return nil, err
 	}
