@@ -220,9 +220,13 @@ is read only by that publish step.
 The pin helper updates the first release-install command and the current-release
 note immediately after its code block. That paragraph's first version code span
 names the installed release. Put historical versions and other installation
-examples in separate paragraphs. The helper repairs that note even when a retry
-has already updated the command. If generated RSS text differs from the source
-note beyond rendering and escaping, regenerate the site before retrying.
+examples in separate paragraphs. Use plain text and inline code spans only in
+this note, and keep it short enough that any RSS summary quoting the install
+command includes the complete note. The helper repairs it even when a retry has
+already updated the command. A missing note is an error. If RSS text does not
+match, the error names the feed: remove unsupported markup or shorten the note,
+then regenerate the site before retrying. Regeneration alone does not repair
+unsupported formatting or a truncated summary.
 
 When `HOMEBREW_TAP_TOKEN` is unset, the workflow logs that the Homebrew tap
 update was skipped and the release still succeeds. `brew install` reads the

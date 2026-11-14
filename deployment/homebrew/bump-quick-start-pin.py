@@ -159,7 +159,7 @@ def bump_text(text, version, plain=False, note=None):
                     last = spans[match.end("tag") - 1][1]
                     tail = tail[:first] + version + tail[last:]
                 elif TAG.search(decoded):
-                    raise SystemExit("RSS release note differs from source; regenerate the site")
+                    raise SystemExit("RSS release note differs from source; check plain-text/code formatting and RSS summary truncation, then simplify or shorten the note and regenerate the site")
                 updated = updated[:pin.end()] + tail
     else:
         span = release_note(updated)
@@ -184,6 +184,10 @@ def bump_tree(root, version):
             if INSTALL.search(original) is None:
                 raise SystemExit(f"{path} does not contain the install pin")
             text, did = bump_text(original, version)
+            span = release_note(text)
+            tag = CODE_TAG.search(text[span[0]:span[1]]) if span else None
+            if tag is None or (tag[1] or tag[2]) != version:
+                raise SystemExit(f"{path}: current-release note must be the paragraph immediately after the install block and contain its version code span")
             if did:
                 path.write_text(text)
                 changed = True
@@ -193,8 +197,11 @@ def bump_tree(root, version):
             source = guide.read_text()
             span = release_note(source)
             note = source[span[0]:span[1]] if span else None
-            text = re.sub(r"<item>[\s\S]*?</item>",
-                          lambda item: bump_text(item.group(), version, plain=True, note=note)[0], original)
+            try:
+                text = re.sub(r"<item>[\s\S]*?</item>",
+                              lambda item: bump_text(item.group(), version, plain=True, note=note)[0], original)
+            except SystemExit as error:
+                raise SystemExit(f"{feed}: {error}") from error
             if text != original:
                 feed.write_text(text)
                 changed = True

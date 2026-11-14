@@ -143,6 +143,49 @@ class PublishTapRetryTest(unittest.TestCase):
                 self.assertEqual(updated, text.replace("v1.7.1", "v1.8.0"))
                 self.assertFalse(bump_pin.bump_text(updated, "v1.8.0", plain=True, note=note)[1])
 
+    def test_moved_or_missing_current_release_note_aborts_tree_update(self):
+        for first_paragraph in ("### Route B", "Install complete."):
+            with self.subTest(first_paragraph=first_paragraph), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                self._write_quick_start(root, "v1.7.1")
+                guide = root / "docs/hugo/content/quick-start.md"
+                text = guide.read_text()
+                span = bump_pin.release_note(text)
+                guide.write_text(text[:span[0]] + first_paragraph + "\n\n" + text[span[0]:])
+                with self.assertRaisesRegex(SystemExit, "quick-start.md: current-release note must be"):
+                    bump_pin.bump_tree(root, "v1.8.0")
+
+    def test_unsupported_markup_or_truncated_rss_note_has_actionable_error(self):
+        for note in ("**GOBIN** latest: `v1.8.0`.", "GOBIN latest: `v1.8.0`. Extra sentence."):
+            text = "go install github.com/teramoby/speedle-plus/cmd/...@v1.8.0 GOBIN latest: v1.7.1."
+            with self.subTest(note=note), self.assertRaisesRegex(
+                    SystemExit, "check plain-text/code formatting and RSS summary truncation"):
+                bump_pin.bump_text(text, "v1.8.0", plain=True, note=note)
+
+    def test_real_quick_start_sources_and_generated_feeds_support_next_release(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            for rel in [*bump_pin.tracked_paths(ROOT), Path("docs/hugo/config.toml")]:
+                destination = root / rel
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(ROOT / rel, destination)
+            target = "v999.0.0"  # local copies only; no release/tag/registry operation
+            self.assertTrue(bump_pin.bump_tree(root, target))
+            for guide in bump_pin.guide_paths(root):
+                page, feed, _, _ = bump_pin.outputs(root, guide)
+                for path in (guide, page):
+                    text = path.read_text()
+                    self.assertEqual(bump_pin.INSTALL.search(text)[2], target)
+                    span = bump_pin.release_note(text)
+                    tag = bump_pin.CODE_TAG.search(text[span[0]:span[1]])
+                    self.assertEqual(tag[1] or tag[2], target)
+                if feed.is_file():
+                    for pin in bump_pin.INSTALL.finditer(feed.read_text()):
+                        self.assertEqual(pin[2], target)
+            before = {path: path.read_bytes() for path in root.rglob("*") if path.is_file()}
+            self.assertFalse(bump_pin.bump_tree(root, target))
+            self.assertEqual(before, {path: path.read_bytes() for path in before})
+
     def test_missing_default_guide_is_rejected_by_every_discovery_consumer(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
