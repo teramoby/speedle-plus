@@ -179,10 +179,11 @@ test('image smoke runs for all full PRs and master pushes with isolated ignored 
         const ignored = action === 'unlabeled' || (action === 'labeled' && label === 'other');
         assert.equal(evaluate(condition, c), !ignored && labels.some(x => ['full-ci', 'merge-head'].includes(x)));
         assert.equal(selectedGroup(c) === selectedGroup(context()), !ignored);
-        assert.equal(evaluate(name, c) === 'image smoke', !ignored);
+        assert.equal(evaluate(name, c) === 'image smoke', !ignored && labels.some(x => ['full-ci', 'merge-head'].includes(x)));
       }
     }
   }
   const push = context('push'); delete push.github.event.pull_request;
   assert.equal(evaluate(condition, push), true);
+  assert.equal(evaluate(name, push), 'image smoke');
 });

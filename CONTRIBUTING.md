@@ -70,8 +70,10 @@ the selected route, so a quick pass alone is not approval to merge.
 Runner variables contain a JSON runner string or label array. `QUICK_RUNS_ON`
 defaults to `"ubuntu-latest"` and supports Linux x64 or macOS ARM64 without
 Docker. `HEAD_RUNS_ON`, when set, routes full jobs on a PR carrying `merge-head`
-to that pool; otherwise the existing task pools apply. Build still needs Linux
-and weekly benchmarks still need their approved runner. Labels are scheduling
+to that pool, including build; otherwise the existing task pools apply.
+`HEAD_RUNS_ON` must therefore select approved Linux runners, as build's identity
+check rejects macOS. Weekly schedules never use this PR-only override and keep
+their approved runner. Labels are scheduling
 hints, not a security boundary. All Go jobs use the allow-listed reusable worker
 at `@master`, retaining trusted-event and runner-identity checks. A PR changing
 that worker cannot exercise the new worker implementation until it reaches

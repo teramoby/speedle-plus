@@ -19,10 +19,13 @@ jobs:
     # integration services and supports Linux x64 and macOS ARM64.
     # Every other task but build and weekly goes to any Speedle runner
     # (speedle-runner: both charming instances and fiona). Build needs the
-    # Linux Hugo release, so it stays on the charming pool. Weekly stays on
+    # Linux Hugo release, so its default is the Linux pool. Weekly stays on
     # fiona to reduce timing noise in its benchmark comparison. The identity
     # check also accepts donkey-speedle (Linux x64) for every task but weekly.
-    # merge-head may reserve HEAD_RUNS_ON (a JSON string or labels array).
+    # merge-head may reserve HEAD_RUNS_ON (a JSON string or labels array)
+    # for full jobs, including build. That pool must supply an approved Linux
+    # runner; identity checks still reject build on macOS. Scheduled weekly
+    # jobs never use the PR-only override.
     # Without it, retain the existing task pools. Labels only select scheduling;
     # the trusted-event predicate and runner identity checks still apply.
     # The host lock below keeps fixed-port tests from overlapping on the charming host.
@@ -118,6 +121,9 @@ jobs:
         if: inputs.mode == 'quick'
         env:
           STORE_TYPE: file
+          SPEEDLE_TEST_STORE_PROPS: ''
+          SPEEDLE_MYSQL_TEST_DSN: ''
+          SPEEDLE_REQUIRE_MYSQL: ''
           SP_APP_NAME: ''
           PMS_ADMIN_TOKEN: ''
           ADS_ADMIN_TOKEN: ''

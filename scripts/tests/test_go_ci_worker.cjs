@@ -169,7 +169,7 @@ test('build caches the locked browser and makes the axe contrast gate mandatory'
   }
 });
 function testEnvironment(mode) {
-  const block = step('Run Go tests').split('        env:\n')[1]?.split('        run:', 1)[0];
+  const block = step(mode === 'quick' ? 'Test changed packages without integration services' : 'Run Go tests').split('        env:\n')[1]?.split('        run:', 1)[0];
   assert.ok(block, 'Missing sanitized test environment');
   const env = {};
   for (const line of block.trimEnd().split('\n')) {
@@ -418,7 +418,7 @@ test('SO_REUSEADDR allows a recently closed test connection instead of mistaking
   const result = guard(ports); assert.equal(result.status, 0, result.stderr);
 });
 
-test('queue runner overrides retain trusted-event eligibility and default task pools', () => {
+test('queue runner overrides retain trusted eligibility and replace task defaults only for the head', () => {
   for (const mode of allModes) {
     for (const event of ['pull_request', 'push', 'schedule', 'workflow_dispatch']) {
       for (const label of ['', 'full-ci', 'merge-head']) {
@@ -449,4 +449,11 @@ test('quick steps support macOS Bash without Docker or Linux-only tooling', () =
   assert.equal(identity.status, 0, identity.stderr);
   assert.match(step('Checkout code'), /inputs\.mode == 'quick'/);
   for (const name of ['go vet', 'go mod tidy check', 'Build']) assert.match(step(name), /inputs\.mode == 'quick'/);
+});
+test('quick clears inherited integration configuration so MySQL tests use their no-DSN skip', () => {
+  const env = testEnvironment('quick');
+  assert.equal(env.STORE_TYPE, 'file');
+  for (const key of [...cleanKeys, 'SPEEDLE_TEST_STORE_PROPS', 'SPEEDLE_MYSQL_TEST_DSN', 'SPEEDLE_REQUIRE_MYSQL']) {
+    assert.equal(env[key], '', key);
+  }
 });

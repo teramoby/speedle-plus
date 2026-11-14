@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   smoke:
-    name: ${{ (github.event.action == 'unlabeled' || (github.event.action == 'labeled' && github.event.label.name != 'full-ci' && github.event.label.name != 'merge-head')) && format('Ignored image event {0}', github.run_id) || 'image smoke' }}
+    name: ${{ (github.event.action == 'unlabeled' || (github.event.action == 'labeled' && github.event.label.name != 'full-ci' && github.event.label.name != 'merge-head') || (github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'full-ci') && !contains(github.event.pull_request.labels.*.name, 'merge-head'))) && format('Ignored image event {0}', github.run_id) || 'image smoke' }}
     if: >-
       github.event_name == 'push'
       || (github.event.action != 'unlabeled'
