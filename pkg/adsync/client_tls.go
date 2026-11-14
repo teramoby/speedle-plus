@@ -144,7 +144,7 @@ func (m *clientTLS) load(ctx context.Context) (*clientTLSGeneration, error) {
 		if err != nil {
 			return nil, fmt.Errorf("adsync: read CRLFiles: %w", err)
 		}
-		if err := generation.addCRL(data, now, m.configFiles.CRLMaxAge); err != nil {
+		if err := generation.addCRL(data, time.Now(), m.configFiles.CRLMaxAge); err != nil {
 			return nil, err
 		}
 	}
@@ -159,7 +159,7 @@ func (m *clientTLS) load(ctx context.Context) (*clientTLSGeneration, error) {
 			return nil, err
 		}
 
-		if err := generation.addCRL(data, now, m.configFiles.CRLMaxAge); err != nil {
+		if err := generation.addCRL(data, time.Now(), m.configFiles.CRLMaxAge); err != nil {
 			return nil, err
 		}
 	}

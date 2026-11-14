@@ -149,6 +149,9 @@ func Open(ctx context.Context, options Options) (_ *Store, err error) {
 	// startup rather than only in request failures.
 	if options.APIKey == "" {
 		log.Info("policy-source: cascade mTLS mode; requests carry no bearer credential and the relay is verified against CAFile only")
+		if len(options.CRLFiles)+len(options.CRLURLs) == 0 {
+			log.Warn("policy-source: no relay CRL sources configured; relay revocation is not checked without a retained CRL floor")
+		}
 	} else {
 		log.Info("policy-source: direct mode; requests carry the API key")
 	}

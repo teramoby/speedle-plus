@@ -51,7 +51,11 @@ directory also discards the retained CRL floors.
 The store polls TLS files every 30 seconds; `TLSReloadInterval` accepts a Go
 duration to override that period. The `speedle-ads` command routes SIGHUP to
 the store's owned watcher. Embedded hosts can call `RequestTLSReload` from
-their own signal handler; the store does not register process signals.
+their own signal handler; the store does not register process signals. This owned watcher is cancelled
+and joined during store shutdown. A direct `Client.ReloadTLS` call blocks until
+its reload finishes; `Client.Close` prevents it from publishing another
+generation but does not cancel that explicit call. An embedded caller must
+join its own explicit reload calls during shutdown.
 `adsync.NewClientContext` supports cancellation during initial CRL downloads. A valid
 replacement is installed as one generation, then upstream connections,
 including WebSockets, held polls and idle HTTP connections, are closed to
@@ -62,7 +66,8 @@ when they remain active.
 Optional `CRLFiles` and `CRLURLs` contain local full X.509 CRLs and HTTPS CRL
 addresses for relay certificate revocation checks. When either property is
 present, at least one source is required; omit both properties to disable
-optional revocation checking. For CRL verification,
+optional revocation checking. Startup warns when no source is configured;
+retained floors still require fresh coverage for their issuers. For CRL verification,
 `CAFile` must contain each CRL issuer's CA certificate and the trust roots
 for HTTPS CRL hosts. A CRL is trusted only from a CA in `CAFile`, so a relay
 chain that presents an intermediate needs the leaf's issuer in `CAFile`, not

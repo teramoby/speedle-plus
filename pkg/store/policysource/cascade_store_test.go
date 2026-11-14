@@ -4,8 +4,10 @@ package policysource
 
 import (
 	"context"
+	"crypto"
 	"crypto/ed25519"
 	"crypto/rand"
+	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
 	"math/big"
@@ -15,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/pkg/adsync"
 )
 
@@ -105,5 +108,49 @@ func TestCascadeStoreFailsOnCorruptRetainedCache(t *testing.T) {
 	name := "service-" + testServiceID1 + ".json"
 	if _, err := Open(context.Background(), valid); err == nil || !strings.Contains(err.Error(), "cache") || !strings.Contains(err.Error(), name) {
 		t.Fatalf("corrupt retained cache: %v", err)
+	}
+}
+
+func TestCascadeStoreWarnsWithoutCRLSources(t *testing.T) {
+	var logs lockedBuffer
+	previous := log.StandardLogger().Out
+	previousLevel := log.GetLevel()
+	log.SetOutput(&logs)
+	log.SetLevel(log.WarnLevel)
+	defer func() { log.SetOutput(previous); log.SetLevel(previousLevel) }()
+	options := cascadeStoreOptions(t)
+	store, err := Open(context.Background(), options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	store.Close()
+	if !strings.Contains(logs.String(), "no relay CRL sources configured") {
+		t.Fatalf("missing startup warning about optional revocation: %s", logs.String())
+	}
+	// A configured CRL opts into revocation checking and must suppress the warning.
+	pair, err := tls.LoadX509KeyPair(options.ClientCertFile, options.ClientKeyFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	crl, err := x509.CreateRevocationList(rand.Reader, &x509.RevocationList{
+		Number: big.NewInt(1), ThisUpdate: time.Now().Add(-time.Minute), NextUpdate: time.Now().Add(time.Hour),
+	}, pair.Leaf, pair.PrivateKey.(crypto.Signer))
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "relay.crl")
+	if err := os.WriteFile(path, crl, 0600); err != nil {
+		t.Fatal(err)
+	}
+	options.CRLFiles = []string{path}
+	var enabledLogs lockedBuffer
+	log.SetOutput(&enabledLogs)
+	store, err = Open(context.Background(), options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	store.Close()
+	if strings.Contains(enabledLogs.String(), "no relay CRL sources configured") {
+		t.Fatalf("revocation-enabled startup warned that it was disabled: %s", enabledLogs.String())
 	}
 }

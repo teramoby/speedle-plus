@@ -817,3 +817,28 @@ func TestCascadeCRLFetchResetsStallAfterHeaders(t *testing.T) {
 	config.RequestTimeout = time.Second
 	mustCascadeClient(t, config)
 }
+
+// Source validity is measured when its bytes arrive, not at the beginning of
+// the entire sequential load. Cross the five-minute clock-skew boundary while
+// waiting for an HTTPS source, without changing the system clock.
+func TestCascadeCRLUsesTimeAtSourceCompletion(t *testing.T) {
+	pki := newCascadePKI(t)
+	start := time.Now().Truncate(time.Second).Add(5*time.Minute + 2*time.Second)
+	data := pki.crl(t, 0, 1, start, start.Add(time.Hour), false)
+	publisher := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(time.Until(start.Add(-5 * time.Minute).Add(200 * time.Millisecond)))
+		w.Write(data)
+	}))
+	cert, _, _ := pki.issue(t, 5, x509.ExtKeyUsageServerAuth, "127.0.0.1", time.Now().Add(time.Hour))
+	publisher.TLS = &tls.Config{Certificates: []tls.Certificate{cert}, MinVersion: tls.VersionTLS12}
+	publisher.StartTLS()
+	defer publisher.Close()
+	config := cascadeConfig(t, pki, "https://relay.example")
+	config.RequestTimeout = 5 * time.Second
+	config.CRLURLs = []string{publisher.URL}
+	if client, err := NewClient(config); err != nil {
+		t.Fatalf("fresh CRL rejected using time from before the download: %v", err)
+	} else {
+		client.Close()
+	}
+}
