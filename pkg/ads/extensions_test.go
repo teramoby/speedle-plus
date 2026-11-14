@@ -22,6 +22,7 @@ import (
 	"github.com/teramoby/speedle-plus/pkg/cmd/flags"
 	"github.com/teramoby/speedle-plus/pkg/eval"
 	"github.com/teramoby/speedle-plus/pkg/store"
+	"github.com/teramoby/speedle-plus/pkg/suid"
 	"github.com/teramoby/speedle-plus/pkg/svcs/adsgrpc"
 	"github.com/teramoby/speedle-plus/pkg/svcs/adsgrpc/pb"
 	"github.com/teramoby/speedle-plus/pkg/svcs/adsrest"
@@ -117,7 +118,7 @@ func (g *exampleGate) Audit(_ context.Context, event gate.Event) {
 func TestExternalStoreGateAndServer(t *testing.T) {
 	g := &exampleGate{}
 	s := &exampleStore{gate: g, events: make(pms.StorageChangeChannel, 1)}
-	name := "extension-server-" + t.Name()
+	name := "extension-server-" + suid.New().String()
 	store.Register(name, builder{s})
 	if store.GetAllStoreParams()["extension-test-option"] != "Option" {
 		t.Fatal("store flags not registered")
