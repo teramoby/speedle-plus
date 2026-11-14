@@ -26,13 +26,13 @@
 //
 // # Availability
 //
-// Server stops distributing while its caller reports the instance paused, or
-// no longer live and therefore unable to vouch for the copies it holds. Data
-// requests (including the three authorization operations) then answer 503
-// with distribution_paused, the policy-source routes refuse new channels and
-// held polls, established channels close, and a held poll is released instead
-// of waiting out its hold. Distribution resumes without a restart once the
-// instance is live and unpaused again.
+// When Config.Paused reports true, data requests (including the three
+// authorization operations) answer 503 with distribution_paused, new channels
+// and polls are refused, established channels close, and held polls are
+// released. Distribution resumes when the caller clears that condition. The
+// policy-source runtime reports pause and terminal stops through this callback.
+// Transient upstream outages instead use Config.Upstream: channels remain open
+// to propagate freshness and allow recovery, while data requests fail closed.
 //
 // Relay acks advertise the runtime ancestor chain and an end-to-end upstream
 // freshness budget. Data responses refuse syncing and stale ancestors with
