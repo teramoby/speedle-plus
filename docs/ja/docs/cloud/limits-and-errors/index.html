@@ -338,6 +338,11 @@
 </tr>
 
 <tr>
+<td><code>409 revision_exhausted</code></td>
+<td>サービスのリビジョンが上限に達しました。読み取りとエクスポートは引き続き可能です。<a href="#revision-exhausted">復旧手順</a>に従ってください。</td>
+</tr>
+
+<tr>
 <td><code>413 request_too_large</code></td>
 <td>本文を縮小。</td>
 </tr>
@@ -357,6 +362,24 @@
 <p>検証済み API キーの <code>X-RateLimit-Limit</code> は 600 です。正確な <code>X-RateLimit-Remaining</code> はありません。<code>X-Quota-Daily-Remaining</code> はアカウントの残量の推定値で、並行呼び出しや未使用の予約で実際と異なります。次のリクエストの成功を保証せず、早期拒否では省略されます。</p>
 
 <p>ADS は <code>Cache-Control: no-store</code> を返します。結果や認証情報を共有キャッシュに保存しないでください。POST を使用し、他のメソッドでは <code>405 method_not_allowed</code> またはそれより前の非 JSON のブロック応答に対応してください。<a href="/ja/docs/cloud/authorization-api/">認可 API</a>を参照してください。</p>
+
+<p><a id="revision-exhausted"></a></p>
+
+<h2 id="409-revision-exhausted"><code>409 revision_exhausted</code></h2>
+
+<p>このサービスのリビジョンは上限に達しました。このサービスは引き続き読み取りとエクスポートができます。</p>
+
+<p>復旧手順：</p>
+
+<ol>
+<li>ポリシーをエクスポートしてください。</li>
+<li>新しいサービスを作成してください。</li>
+<li>エクスポートを新しいサービスにインポートしてください。</li>
+<li>呼び出し元を新しいサービス名に切り替えてください。</li>
+<li>その後、必要に応じて元のサービスを削除してください。</li>
+</ol>
+
+<p>アカウントのサービスとポリシーの上限はこの手順にも適用されます。手順 2 と 3 の前に、空きサービス枠が 1 つあり、インポートに十分な空きポリシー枠があることを確認してください。必要に応じて、未使用のサービスやポリシーを削除します。他に空けられる枠がない場合は、エクスポートを確認してから元のサービスを削除し、手順 2–4 を実行してください。新しいサービスが使えるようになる前に元のサービスを削除すると、その呼び出し元からのアクセスが中断されます。</p>
 </div>
 </div>
 </main>

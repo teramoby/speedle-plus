@@ -338,6 +338,11 @@
 </tr>
 
 <tr>
+<td><code>409 revision_exhausted</code></td>
+<td>서비스의 리비전이 상한에 도달했지만 계속 읽고 내보낼 수 있습니다. <a href="#revision-exhausted">복구 절차</a>를 따르세요.</td>
+</tr>
+
+<tr>
 <td><code>413 request_too_large</code></td>
 <td>본문 축소.</td>
 </tr>
@@ -357,6 +362,24 @@
 <p>검증된 API 키 요청의 <code>X-RateLimit-Limit</code>은 600입니다. 정확한 <code>X-RateLimit-Remaining</code>은 없습니다. <code>X-Quota-Daily-Remaining</code>은 계정 잔량의 추정치이며 동시 호출과 미사용 예약으로 실제와 다를 수 있습니다. 다음 요청의 성공을 보장하지 않고 조기 거부에서는 생략됩니다.</p>
 
 <p>ADS는 <code>Cache-Control: no-store</code>를 사용합니다. 판정과 자격 증명을 공유 캐시에 넣지 마세요. POST를 사용하세요. 다른 메서드는 <code>405 method_not_allowed</code> 또는 그보다 앞선 비 JSON 차단 응답을 받을 수 있습니다. <a href="/ko/docs/cloud/authorization-api/">인가 API</a>를 참조하세요.</p>
+
+<p><a id="revision-exhausted"></a></p>
+
+<h2 id="409-revision-exhausted"><code>409 revision_exhausted</code></h2>
+
+<p>이 서비스의 리비전이 상한에 도달했습니다. 이 서비스는 계속 읽고 내보낼 수 있습니다.</p>
+
+<p>복구 절차:</p>
+
+<ol>
+<li>정책을 내보내세요.</li>
+<li>새 서비스를 만드세요.</li>
+<li>내보낸 파일을 새 서비스로 가져오세요.</li>
+<li>호출자를 새 서비스 이름으로 전환하세요.</li>
+<li>이후 필요하면 기존 서비스를 삭제하세요.</li>
+</ol>
+
+<p>계정의 서비스 및 정책 한도는 이 절차에도 적용됩니다. 2단계와 3단계 전에 여유 서비스 자리 하나와 가져오기에 충분한 여유 정책 자리가 있는지 확인하세요. 필요하면 사용하지 않는 서비스나 정책을 삭제하세요. 다른 자리를 확보할 수 없으면 내보낸 파일을 확인한 후 기존 서비스를 삭제하고 2–4단계를 수행하세요. 새 서비스가 준비되기 전에 기존 서비스를 삭제하면 해당 호출자의 접근이 중단됩니다.</p>
 </div>
 </div>
 </main>

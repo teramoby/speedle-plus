@@ -53,6 +53,7 @@ Cloud 자체 장애는 계정당 UTC 일일 최대 1,000회까지 할당량을 �
 | `403 csrf_failed` | 세션, Origin, CSRF 헤더 확인. |
 | `404 service_not_found` (ADS) / `404 not_found` (관리) | 자신의 계정에 있는 서비스 선택. 알 수 없거나 다른 계정 또는 폐기된 키 ID도 `404 not_found`. |
 | `409 quota_exceeded` | 쓰지 않는 서비스나 정책을 삭제해 자리를 확보합니다. 시간으로 이 두 한도는 초기화되지 않습니다. API 키 자리는 키를 폐기하거나 만료를 기다려 확보합니다. |
+| `409 revision_exhausted` | 서비스의 리비전이 상한에 도달했지만 계속 읽고 내보낼 수 있습니다. [복구 절차](#revision-exhausted)를 따르세요. |
 | `413 request_too_large` | 본문 축소. |
 | `429 rate_limited` / `429 daily_quota_exceeded` | `Retry-After`와 제한된 백오프 준수. 일일 한도는 UTC 자정 초기화. |
 | `503 quota_unavailable` / `503 snapshot_unavailable` / `500 internal_error` | 거부하고 제한된 백오프로 재시도. `Retry-After`가 있으면 준수. |
@@ -60,3 +61,18 @@ Cloud 자체 장애는 계정당 UTC 일일 최대 1,000회까지 할당량을 �
 검증된 API 키 요청의 `X-RateLimit-Limit`은 600입니다. 정확한 `X-RateLimit-Remaining`은 없습니다. `X-Quota-Daily-Remaining`은 계정 잔량의 추정치이며 동시 호출과 미사용 예약으로 실제와 다를 수 있습니다. 다음 요청의 성공을 보장하지 않고 조기 거부에서는 생략됩니다.
 
 ADS는 `Cache-Control: no-store`를 사용합니다. 판정과 자격 증명을 공유 캐시에 넣지 마세요. POST를 사용하세요. 다른 메서드는 `405 method_not_allowed` 또는 그보다 앞선 비 JSON 차단 응답을 받을 수 있습니다. [인가 API](/ko/docs/cloud/authorization-api/)를 참조하세요.
+
+<a id="revision-exhausted"></a>
+## `409 revision_exhausted`
+
+이 서비스의 리비전이 상한에 도달했습니다. 이 서비스는 계속 읽고 내보낼 수 있습니다.
+
+복구 절차:
+
+1. 정책을 내보내세요.
+2. 새 서비스를 만드세요.
+3. 내보낸 파일을 새 서비스로 가져오세요.
+4. 호출자를 새 서비스 이름으로 전환하세요.
+5. 이후 필요하면 기존 서비스를 삭제하세요.
+
+계정의 서비스 및 정책 한도는 이 절차에도 적용됩니다. 2단계와 3단계 전에 여유 서비스 자리 하나와 가져오기에 충분한 여유 정책 자리가 있는지 확인하세요. 필요하면 사용하지 않는 서비스나 정책을 삭제하세요. 다른 자리를 확보할 수 없으면 내보낸 파일을 확인한 후 기존 서비스를 삭제하고 2–4단계를 수행하세요. 새 서비스가 준비되기 전에 기존 서비스를 삭제하면 해당 호출자의 접근이 중단됩니다.
