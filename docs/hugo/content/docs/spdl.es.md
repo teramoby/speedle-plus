@@ -10,7 +10,7 @@ tocsidebar = false
 tags = ["v0.1.0", "core", "policy", "spdl"]
 categories = ["docs"]
 bref = "Conceptos básicos de SPDL"
-lastmod = 2026-11-16T04:10:55+08:00
+lastmod = 2026-11-16T06:18:30+08:00
 +++
 
 SPDL es el lenguaje para escribir políticas y políticas de roles de Speedle. Esta página cubre la sintaxis, las reglas de nombres y los ejemplos.
@@ -31,7 +31,7 @@ SPDL es el lenguaje para escribir políticas y políticas de roles de Speedle. E
 
 `grant`, `deny`, `user`, `group`, `entity`, `role`, `from`, `on`, `if` e `in` son palabras clave reservadas. Ninguna puede usarse como nombre de principal, dominio de identidad, nombre de servicio, rol, acción, recurso, ni como nombre de atributo o función en una condición, sin importar mayúsculas o minúsculas ni si va entre comillas; el analizador rechaza la sentencia e indica la palabra clave y su posición. En las condiciones, `in` e `IN` son el operador de pertenencia; los nombres de función distinguen mayúsculas. Los nombres de principal, acción y recurso también distinguen mayúsculas.
 
-Por ejemplo, al leer el nombre de servicio del fragmento de entrada `in Role`, el analizador produce este error:
+Por ejemplo, en el fragmento de entrada `in Role`, la palabra clave `in` introduce un nombre de servicio, por lo que el analizador lee el token siguiente, `Role`, como ese nombre. Como `Role` también es una palabra clave reservada, el análisis falla con este error:
 
 ```console
 "Role" is a reserved SPDL keyword and cannot be used as a service name

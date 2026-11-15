@@ -10,7 +10,7 @@ tocsidebar = false
 tags = ["v0.1.0", "core", "policy", "spdl"]
 categories = ["docs"]
 bref = "Basics of SPDL"
-lastmod = 2026-11-16T04:10:55+08:00
+lastmod = 2026-11-16T06:18:30+08:00
 +++
 
 SPDL is the language for writing Speedle policies and role policies. This page covers the syntax, naming rules and examples.
@@ -31,7 +31,7 @@ SPDL is the language for writing Speedle policies and role policies. This page c
 
 `grant`, `deny`, `user`, `group`, `entity`, `role`, `from`, `on`, `if` and `in` are reserved keywords. None of them can be used as a principal name, identity domain, service name, role, action, resource, or attribute or function name in a condition, in any letter case and whether quoted or not; the parser rejects such a statement and names the keyword and its position. In conditions, `in` and `IN` are the membership operator; function names are case-sensitive. Principal, action and resource names are also case-sensitive.
 
-For example, reading the service name from the input fragment `in Role` produces this parser error:
+For example, in the input fragment `in Role`, the keyword `in` introduces a service name, so the parser reads the following token, `Role`, as that name. Since `Role` is itself a reserved keyword, parsing fails with:
 
 ```console
 "Role" is a reserved SPDL keyword and cannot be used as a service name
