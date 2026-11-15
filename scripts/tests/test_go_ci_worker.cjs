@@ -121,7 +121,7 @@ test('identity check accepts the Speedle runners for the tasks each may run', ()
       });
       const host = `${RUNNER_NAME}/${RUNNER_OS}/${RUNNER_ARCH}`;
       const allowed = (['charming-speedle/Linux/X64', 'charming-speedle-2/Linux/X64', 'donkey-speedle/Linux/X64'].includes(host) && CI_TASK !== 'weekly') ||
-        (['fiona-speedle/macOS/ARM64', 'fiona/macOS/ARM64'].includes(host) && CI_TASK !== 'build');
+        (host === 'fiona/macOS/ARM64' && CI_TASK !== 'build');
       assert.equal(result.status === 0, allowed, `${host}/${CI_TASK}: ${result.stderr}`);
     }
   }
@@ -473,7 +473,7 @@ test('quick steps support macOS Bash without Docker or Linux-only tooling', () =
     assert.doesNotMatch(script(name), /docker|flock|mapfile|readarray|xargs|grep -P|sed -i/);
   }
   const identity = spawnSync('/bin/bash', ['-c', script('Verify self-hosted runner identity')], {
-    encoding: 'utf8', env: {...process.env, RUNNER_NAME: 'fiona-speedle', RUNNER_OS: 'macOS', RUNNER_ARCH: 'ARM64', CI_TASK: 'quick'},
+    encoding: 'utf8', env: {...process.env, RUNNER_NAME: 'fiona', RUNNER_OS: 'macOS', RUNNER_ARCH: 'ARM64', CI_TASK: 'quick'},
   });
   assert.equal(identity.status, 0, identity.stderr);
   assert.match(step('Checkout code'), /inputs\.mode == 'quick'/);
