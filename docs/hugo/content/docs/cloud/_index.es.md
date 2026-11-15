@@ -14,9 +14,9 @@ Speedle Cloud es un servicio de autorización alojado basado en el motor Speedle
 
 La sincronización de políticas desde Speedle Cloud usa Speedle Cloud ADS: el binario y la imagen `speedle-cloud`. El binario `speedle-ads` de Speedle Engine autoalojado ya no proporciona un almacén `policy-source`.
 
-**Speedle Cloud estará disponible próximamente.** Esta guía describe el flujo para cuando se habiliten el inicio de sesión en producción y las comprobaciones de autorización autenticadas; los ejemplos no se han ejecutado en un entorno Cloud real.
+**Speedle Cloud está en beta pública.** Esta guía describe el flujo de trabajo del servicio en línea.
 
-Para usar la consola o crear claves API debe estar disponible el inicio de sesión. La beta pública gratuita es para pruebas, aprendizaje y evaluación, no ofrece SLA y no se recomienda para producción. Las funciones y límites pueden cambiar.
+Inicie sesión para usar la consola y crear claves API. La beta pública gratuita es para pruebas, aprendizaje y evaluación, no ofrece SLA y no se recomienda para producción. Las funciones y límites pueden cambiar.
 
 ## Documentación
 

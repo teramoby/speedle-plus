@@ -12,7 +12,7 @@ lastmod = 2026-11-12T00:00:00+08:00
 
 API keys belong to your account and can access its services according to their scope. They authenticate your application, not its end users. Managing API keys, sessions and linked identities always requires a signed-in console session.
 
-**Speedle Cloud is coming soon.** This guide describes the workflow available when production sign-in and authenticated authorization checks open; the examples have not been run against a live Cloud environment.
+**Speedle Cloud is in public beta.** This guide describes the workflow for the live service.
 
 ## Create an API key
 
@@ -27,7 +27,7 @@ Each key has one scope, fixed at creation:
 | `pms:write` | Read, create and delete account services, policies and role policies through `/policy-mgmt/v1`. |
 | `pms:read+ads` (ADS sync) | Authorization checks, read-only policy management and policy synchronization for Speedle Cloud ADS; no writes. |
 
-`pms:read` and `pms:write` cannot call ADS; `ads` cannot call policy management. Use `pms:read+ads` (ADS sync) for policy synchronization with Speedle Cloud ADS (`speedle-cloud`); it also permits ADS checks and PMS reads, but no writes. Using the wrong scope returns `403 insufficient_scope`. Requesting a management scope while sign-in is closed returns `403 management_scope_disabled`.
+`pms:read` and `pms:write` cannot call ADS; `ads` cannot call policy management. Use `pms:read+ads` (ADS sync) for policy synchronization with Speedle Cloud ADS (`speedle-cloud`); it also permits ADS checks and PMS reads, but no writes. Using the wrong scope returns `403 insufficient_scope`.
 
 The console sends a session-authenticated request:
 

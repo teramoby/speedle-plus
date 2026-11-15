@@ -203,8 +203,8 @@ ready. The Products menu does not change the header height.
   - **Speedle Engine** — "Open-source authorization engine" / "开源授权引擎" —
     <https://engine.speedle.io/>
   - **Speedle Cloud** — "Hosted authorization for developers" / "面向开发者的托管授权服务" —
-    <https://cloud.speedle.io/> — badge **"Coming soon" / "即将上线"**
-    (small pill, 11 px, weight 600)
+    <https://cloud.speedle.io/> — badge **Beta** (localized 测试版 / ベータ / 베타 / Beta
+    to match the Cloud console; small pill, 11 px, weight 600)
   - **Speedle AI** — "AI for access control, access control for AI" /
     "用 AI 做权限，为 AI 管权限" — <https://ai.speedle.io/>
 - Sphere colours in the menu: Engine `#ff9a45` (original orange), Cloud
@@ -338,7 +338,7 @@ Values follow the Engine CSS. Colours come from the site's token row.
 | Element | Value |
 | --- | --- |
 | Eyebrow | `inline-flex`, centred, gap 9 px; uppercase; .78rem; weight 800; letter-spacing .14em; colour = the site's AA-safe accent: Engine `#5c2fc0` on light surfaces and `#01e7cb` on dark grounds, AI `#5229ad`; 28 px × 2 px rule before it in `currentColor` |
-| "Coming soon" badge | 11 px, weight 600, padding 2 px × 7 px, radius 999 px; colours = primary-strong on the site's tint (AI measured: `#5229ad` text on `#f4f0fb`, `#d8cbf0` border); Cloud: `--primary-hover` `#1550a8` on `--surface-tint` `#e6eefa`, `--border` `#e5e8f1` border |
+| Beta badge | 11 px, weight 600, padding 2 px × 7 px, radius 999 px; colours = primary-strong on the site's tint (AI measured: `#5229ad` text on `#f4f0fb`, `#d8cbf0` border); Cloud: `--primary-hover` `#1550a8` on `--surface-tint` `#e6eefa`, `--border` `#e5e8f1` border |
 | Status dot | 10 px, accent colour, 6 px ring at .14 opacity |
 
 ### 6.4 Code blocks and SPDL
@@ -416,9 +416,9 @@ the left and three product cards on the right, then a hairline legal bar.
   - The current site's card: accent tint background, accent border, the accent
     check mark (15 px) in its top-right corner and `aria-current="page"`; its
     name uses the accent colour.
-  - Cloud carries the "Coming soon" / "即将上线" badge (11 px / 600), placed in
-    the card's top-right corner so the name and description stay on the shared
-    baseline.
+  - Cloud carries the Beta badge (11 px / 600; localized 测试版 / ベータ / 베타 /
+    Beta as on the Cloud console), placed in the card's top-right corner so the
+    name and description stay on the shared baseline.
   - The other cards take the accent border on hover.
 - **No heading** above the products.
 - **Bottom bar** `.footer-bar`: 1 px hairline, `padding: 20px 0`, Inter 400
@@ -592,7 +592,7 @@ public page. It is cookieless.
 - [ ] No stand-alone product links in the desktop or collapsed header; Engine
       home has no contextual cross-links (v10/v12).
 - [ ] Products menu, footer cards and permitted contextual links use the exact
-      names, URLs, descriptions and Cloud "Coming soon" badge.
+      names, URLs, descriptions and Cloud Beta badge.
 - [ ] Only Engine has a GitHub pill in the header or collapsed menu; Cloud and
       AI have none.
 - [ ] Widths 1440, 390 and 320 px: no horizontal scroll; everything usable at

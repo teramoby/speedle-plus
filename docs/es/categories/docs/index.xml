@@ -137,7 +137,7 @@ brew tap teramoby/tap brew trust teramoby/tap brew install teramoby/tap/spctl La
       <pubDate>Thu, 12 Nov 2026 10:00:00 +0800</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/cloud/api-reference/</guid>
-      <description>La vista previa de la API de autorización explica la llamada IsAllowed. Límites y errores enumera las cuotas y las respuestas de error.
+      <description>La API de autorización explica la llamada IsAllowed. Límites y errores enumera las cuotas y las respuestas de error.
    document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/openapi/cloud-public.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34;, supportedSubmitMethods: [] }); window.ui = ui; });  </description>
     </item>
     
@@ -180,9 +180,9 @@ cargo new speedle-example cd speedle-example cargo add speedle@0.2.0 --features 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/cloud/limits-and-errors/</guid>
-      <description>Speedle Cloud estará disponible próximamente. Esta guía describe el flujo para cuando se habiliten el inicio de sesión en producción y las comprobaciones de autorización autenticadas; los ejemplos no se han ejecutado en un entorno Cloud real.
+      <description>Speedle Cloud está en beta pública. Esta guía describe el flujo de trabajo del servicio en línea.
 Salvo que se indique lo contrario, los límites se comparten en toda la cuenta. Cambiar de clave API no aumenta la cuota diaria.
-Límites    Qué se limita Límite Qué hacer al alcanzarlo     Servicios de la cuenta 100 409 quota_exceeded; eliminar un servicio sin uso.</description>
+Límites    Qué se limita Límite Qué hacer al alcanzarlo     Servicios de la cuenta 100 409 quota_exceeded; eliminar un servicio sin uso. Sin restablecimiento temporal.</description>
     </item>
     
     <item>
@@ -273,8 +273,9 @@ Añadir la dependencia Maven, un pom.xml completo:
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/cloud/getting-started/</guid>
-      <description>Speedle Cloud estará disponible próximamente. Esta guía describe el flujo para cuando se habiliten el inicio de sesión en producción y las comprobaciones de autorización autenticadas; los ejemplos no se han ejecutado en un entorno Cloud real.
-Iniciar sesión con GitHub o Google (próximamente) Abra la consola Cloud en el navegador e inicie sesión con un proveedor disponible. Para una identidad nueva con un correo verificado sin usar, confirme Crear cuenta.</description>
+      <description>Speedle Cloud está en beta pública. Esta guía describe el flujo de trabajo del servicio en línea.
+Iniciar sesión con GitHub o Google Abra la consola Cloud en el navegador e inicie sesión con un proveedor disponible. Para una identidad nueva con un correo verificado sin usar, confirme Crear cuenta. Si el correo ya está en uso, inicie sesión con el proveedor vinculado que indica la consola.
+Crear un servicio y una política Abra el espacio de trabajo del servicio, introduzca books y seleccione Crear servicio.</description>
     </item>
     
     <item>
@@ -305,7 +306,8 @@ python3 -m venv .venv . .venv/bin/activate pip install speedle==0.2.0 O con uv, 
       
       <guid>https://engine.speedle.io/es/docs/cloud/tokens/</guid>
       <description>Las claves API pertenecen a la cuenta y acceden a sus servicios según su ámbito. Autentican la aplicación, no al usuario final. Administrar claves API, sesiones e identidades vinculadas requiere una sesión de consola iniciada.
-Speedle Cloud estará disponible próximamente. Esta guía describe el flujo para cuando se habiliten el inicio de sesión en producción y las comprobaciones de autorización autenticadas; los ejemplos no se han ejecutado en un entorno Cloud real.</description>
+Speedle Cloud está en beta pública. Esta guía describe el flujo de trabajo del servicio en línea.
+Crear una clave API Abra Claves API, escriba un nombre de 1–128 caracteres después de quitar espacios al principio y al final, elija un ámbito y una caducidad (7d, 30d, 90d, 180d o 365d; la consola usa 3 meses de forma predeterminada) y seleccione Crear.</description>
     </item>
     
     <item>
@@ -314,8 +316,8 @@ Speedle Cloud estará disponible próximamente. Esta guía describe el flujo par
       <pubDate>Sun, 08 Nov 2026 00:00:00 +0800</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/cloud/authorization-api/</guid>
-      <description>Speedle Cloud estará disponible próximamente. Esta guía describe el flujo para cuando se habiliten el inicio de sesión en producción y las comprobaciones de autorización autenticadas; los ejemplos no se han ejecutado en un entorno Cloud real.
-Use una clave API de cuenta para llamadas de autorización desde el servidor. Para crear claves debe estar disponible el inicio de sesión. Use ads o pms:read+ads para las comprobaciones ADS; pms:read y pms:write devuelven 403 insufficient_scope.</description>
+      <description>Speedle Cloud está en beta pública. Esta guía describe el flujo de trabajo del servicio en línea.
+Use una clave API de cuenta para llamadas de autorización desde el servidor. Inicie sesión en la cuenta para crear claves. Use ads o pms:read+ads para las comprobaciones ADS; pms:read y pms:write devuelven 403 insufficient_scope. pms:read+ads también permite lecturas PMS y es necesario para sincronizar políticas con Speedle Cloud ADS (speedle-cloud); no permite escrituras.</description>
     </item>
     
     <item>
@@ -409,7 +411,7 @@ TLS cifra la conexión y autentica al servidor. Para requerir clientes autentica
       <guid>https://engine.speedle.io/es/docs/cloud/</guid>
       <description>Speedle Cloud es un servicio de autorización alojado basado en el motor Speedle de código abierto. Gestione servicios y políticas SPDL de autorización y roles, pruebe decisiones en Playground y llame a la API desde su servidor.
 La sincronización de políticas desde Speedle Cloud usa Speedle Cloud ADS: el binario y la imagen speedle-cloud. El binario speedle-ads de Speedle Engine autoalojado ya no proporciona un almacén policy-source.
-Speedle Cloud estará disponible próximamente.</description>
+Speedle Cloud está en beta pública.</description>
     </item>
     
     <item>

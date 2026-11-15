@@ -12,7 +12,7 @@ lastmod = 2026-11-12T00:00:00+08:00
 
 Las claves API pertenecen a la cuenta y acceden a sus servicios según su ámbito. Autentican la aplicación, no al usuario final. Administrar claves API, sesiones e identidades vinculadas requiere una sesión de consola iniciada.
 
-**Speedle Cloud estará disponible próximamente.** Esta guía describe el flujo para cuando se habiliten el inicio de sesión en producción y las comprobaciones de autorización autenticadas; los ejemplos no se han ejecutado en un entorno Cloud real.
+**Speedle Cloud está en beta pública.** Esta guía describe el flujo de trabajo del servicio en línea.
 
 ## Crear una clave API
 
@@ -27,7 +27,7 @@ Cada clave tiene un ámbito fijo desde su creación:
 | `pms:write` | Leer, crear y eliminar servicios, políticas de autorización y de roles de la cuenta mediante `/policy-mgmt/v1`. |
 | `pms:read+ads` (ADS sync) | Comprobaciones de autorización, gestión de políticas de solo lectura y sincronización de políticas para Speedle Cloud ADS; sin escrituras. |
 
-`pms:read` y `pms:write` no pueden llamar a ADS; `ads` no puede gestionar políticas. La sincronización de políticas con Speedle Cloud ADS (`speedle-cloud`) requiere `pms:read+ads` (ADS sync). También permite comprobaciones ADS y lecturas PMS, pero no escrituras. Un ámbito incorrecto devuelve `403 insufficient_scope`. Solicitar un ámbito de gestión con el inicio de sesión cerrado devuelve `403 management_scope_disabled`.
+`pms:read` y `pms:write` no pueden llamar a ADS; `ads` no puede gestionar políticas. La sincronización de políticas con Speedle Cloud ADS (`speedle-cloud`) requiere `pms:read+ads` (ADS sync). También permite comprobaciones ADS y lecturas PMS, pero no escrituras. Un ámbito incorrecto devuelve `403 insufficient_scope`.
 
 La consola envía una solicitud autenticada por sesión:
 

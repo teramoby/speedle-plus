@@ -12,7 +12,7 @@ lastmod = 2026-11-12T00:00:00+08:00
 
 API 키는 계정에 속하며 범위에 따라 해당 계정의 서비스에 접근합니다. 최종 사용자가 아닌 애플리케이션을 인증합니다. API 키, 세션, 연결된 신원 관리에는 로그인한 콘솔 세션이 필요합니다.
 
-**Speedle Cloud는 출시 예정입니다.** 이 가이드는 프로덕션 로그인과 인증된 인가 API가 제공될 때의 사용 절차를 설명합니다. 예제는 실제 Cloud 환경에서 실행하지 않았습니다.
+**Speedle Cloud는 공개 베타로 제공 중입니다.** 이 가이드는 실제 서비스에서의 사용 절차를 설명합니다.
 
 ## API 키 생성
 
@@ -27,7 +27,7 @@ API 키는 계정에 속하며 범위에 따라 해당 계정의 서비스에 �
 | `pms:write` | `/policy-mgmt/v1`으로 계정의 서비스, 인가 정책, 역할 정책 읽기, 생성, 삭제. |
 | `pms:read+ads`(ADS 동기화) | 인가 확인, 읽기 전용 정책 관리 및 Speedle Cloud ADS 정책 동기화. 쓰기는 불가합니다. |
 
-`pms:read`와 `pms:write`는 ADS를 호출할 수 없으며 `ads`는 정책을 관리할 수 없습니다. Speedle Cloud ADS(`speedle-cloud`)의 정책 동기화에는 `pms:read+ads`(ADS 동기화)가 필요합니다. ADS 확인과 PMS 읽기도 허용하지만 쓰기는 허용하지 않습니다. 범위가 맞지 않으면 `403 insufficient_scope`입니다. 로그인이 닫혀 있을 때 관리 범위를 요청하면 `403 management_scope_disabled`입니다.
+`pms:read`와 `pms:write`는 ADS를 호출할 수 없으며 `ads`는 정책을 관리할 수 없습니다. Speedle Cloud ADS(`speedle-cloud`)의 정책 동기화에는 `pms:read+ads`(ADS 동기화)가 필요합니다. ADS 확인과 PMS 읽기도 허용하지만 쓰기는 허용하지 않습니다. 범위가 맞지 않으면 `403 insufficient_scope`입니다.
 
 콘솔은 세션 인증 요청을 전송합니다.
 

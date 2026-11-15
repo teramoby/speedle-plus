@@ -10,7 +10,7 @@ categories = ["docs"]
 lastmod = 2026-11-12T00:00:00+08:00
 +++
 
-**Speedle Cloud estará disponible próximamente.** Esta guía describe el flujo para cuando se habiliten el inicio de sesión en producción y las comprobaciones de autorización autenticadas; los ejemplos no se han ejecutado en un entorno Cloud real.
+**Speedle Cloud está en beta pública.** Esta guía describe el flujo de trabajo del servicio en línea.
 
 Salvo que se indique lo contrario, los límites se comparten en toda la cuenta. Cambiar de clave API no aumenta la cuota diaria.
 
@@ -50,7 +50,6 @@ Los errores son JSON plano, por ejemplo `{"error":"rate_limited"}`. Si no obtien
 | `401 api_key_expired` | La clave API ha alcanzado o superado su caducidad. Cree un reemplazo; reintentar esta clave no tendrá éxito. Las claves creadas antes de que la caducidad fuera obligatoria también tienen una. La página de claves API indica cuándo; lea `expiresAt` y cree un reemplazo antes. |
 | `403 reauth_required` | Autenticarse de nuevo con un proveedor vinculado antes de crear la clave. |
 | `403 insufficient_scope` | Usar una clave con el ámbito requerido. |
-| `403 management_scope_disabled` | No se emiten ámbitos de gestión con el inicio de sesión cerrado. |
 | `403 csrf_failed` | Comprobar sesión, origen y cabecera CSRF. |
 | `404 service_not_found` (ADS) / `404 not_found` (gestión) | Elegir un servicio de la cuenta. Los ID de clave desconocidos, ajenos o revocados también devuelven `404 not_found`. |
 | `409 quota_exceeded` | Libere una plaza de servicio o de política eliminando un elemento sin uso; el tiempo no restablece esos límites. Revoque una clave API sin uso, o deje que caduque, para liberar esa plaza. |

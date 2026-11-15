@@ -14,9 +14,9 @@ Speedle Cloud is a hosted authorization service built on the open-source Speedle
 
 Policy synchronization from Speedle Cloud uses Speedle Cloud ADS: the `speedle-cloud` binary and image. The self-hosted Speedle Engine `speedle-ads` binary no longer provides a `policy-source` store.
 
-**Speedle Cloud is coming soon.** This guide describes the workflow available when production sign-in and authenticated authorization checks open; the examples have not been run against a live Cloud environment.
+**Speedle Cloud is in public beta.** This guide describes the workflow for the live service.
 
-Account sign-in must be available before using the console or creating API keys. The free public beta is for trials, learning and evaluation, has no SLA and is not recommended for production use. Features and limits may change.
+Sign in to use the console and create API keys. The free public beta is for trials, learning and evaluation, has no SLA and is not recommended for production use. Features and limits may change.
 
 ## Documentation
 
