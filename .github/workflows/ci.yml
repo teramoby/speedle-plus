@@ -58,7 +58,24 @@ jobs:
           PR_BASE: ${{ github.event.pull_request.base.sha }}
           PUSH_BEFORE: ${{ github.event.before }}
         run: |
-          bash scripts/ci/classify-changes.sh
+          set -euo pipefail
+          if [[ "${EVENT_NAME}" == pull_request ]]; then
+            # A pull request must not choose which jobs verify it: run the
+            # classifier from the base revision, never the checked-out copy.
+            base="${PR_BASE:-}"
+            if [[ -n "${base}" && "${base}" != 0000000000000000000000000000000000000000 ]] \
+              && git cat-file -e "${base}:scripts/ci/classify-changes.sh" 2>/dev/null; then
+              classifier="${RUNNER_TEMP}/classify-changes.sh"
+              git show "${base}:scripts/ci/classify-changes.sh" > "${classifier}"
+              bash "${classifier}"
+            else
+              # No trusted classifier revision: run every route.
+              printf 'go=true\nwebsite=true\ndocs=true\nci=true\n' >> "${GITHUB_OUTPUT}"
+            fi
+          else
+            # Pushes to the default branch run the merged classifier.
+            bash scripts/ci/classify-changes.sh
+          fi
 
       - name: Setup Node for CI script tests
         if: steps.scope.outputs.ci == 'true'

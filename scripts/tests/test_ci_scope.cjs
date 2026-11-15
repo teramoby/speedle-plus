@@ -85,7 +85,7 @@ function script(source, name) {
   return source.split(`      - name: ${name}\n`)[1].split(/^      - /m)[0]
     .split('        run: |\n')[1].split('\n').filter((line, i, lines) => lines.slice(0, i + 1).every(item => !item || item.startsWith('          '))).map(line => line.slice(10)).join('\n').trimEnd();
 }
-test('change classification preserves raw Git paths and fails on diff errors', () => {
+test('change classification preserves raw Git paths, uses the base classifier and fails on diff errors', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-ci-paths-'));
   try {
     const git = (...args) => {
@@ -98,16 +98,17 @@ test('change classification preserves raw Git paths and fails on diff errors', (
     git('config', 'user.email', 'ci@example.invalid');
     git('config', 'commit.gpgsign', 'false');
     git('config', 'core.quotePath', 'true');
-    git('commit', '-qm', 'base', '--allow-empty');
-    const base = git('rev-parse', 'HEAD');
     fs.mkdirSync(path.join(dir, 'scripts/ci'), {recursive: true});
-    fs.symlinkSync(path.join(root, 'scripts/ci/classify-changes.sh'), path.join(dir, 'scripts/ci/classify-changes.sh'));
+    fs.copyFileSync(path.join(root, 'scripts/ci/classify-changes.sh'), path.join(dir, 'scripts/ci/classify-changes.sh'));
+    git('add', '--', 'scripts/ci/classify-changes.sh');
+    git('commit', '-qm', 'base');
+    const base = git('rev-parse', 'HEAD');
     const classify = (head, overrides = {}) => {
       const output = path.join(dir, 'output');
       fs.writeFileSync(output, '');
       const result = spawnSync('bash', ['-c', script(ci, 'Classify changed files')], {
         cwd: dir, encoding: 'utf8', env: {...process.env, EVENT_NAME: 'pull_request',
-          PR_BASE: base, PUSH_BEFORE: base, GITHUB_SHA: head, GITHUB_OUTPUT: output, ...overrides},
+          PR_BASE: base, PUSH_BEFORE: base, GITHUB_SHA: head, GITHUB_OUTPUT: output, RUNNER_TEMP: dir, ...overrides},
       });
       return {...result, output: fs.readFileSync(output, 'utf8')};
     };
@@ -149,6 +150,18 @@ test('change classification preserves raw Git paths and fails on diff errors', (
     const failed = classify('missing-head');
     assert.notEqual(failed.status, 0);
     assert.equal(failed.output, '', 'diff errors must not publish successful outputs');
+    // Even when the head tree rewrites the classifier to report "nothing
+    // changed", the base revision's copy must decide the routing.
+    fs.writeFileSync(path.join(dir, 'scripts/ci/classify-changes.sh'),
+      '#!/usr/bin/env bash\nprintf "go=false\\nwebsite=false\\ndocs=false\\nci=false\\n" >> "${GITHUB_OUTPUT}"\n');
+    fs.mkdirSync(path.join(dir, 'docs'), {recursive: true});
+    fs.writeFileSync(path.join(dir, 'docs/guide.md'), 'fixture\n');
+    git('add', '--', 'docs/guide.md', 'scripts/ci/classify-changes.sh');
+    git('commit', '-qm', 'rewrite the classifier');
+    const rewritten = git('rev-parse', 'HEAD');
+    const guarded = classify(rewritten, {PR_BASE: previous});
+    assert.equal(guarded.status, 0, guarded.stderr);
+    assert.equal(guarded.output, flags(true, false, true, true), 'the base classifier must decide routing');
   } finally { fs.rmSync(dir, {recursive: true, force: true}); }
 });
 test('CI discovers every script suite, isolates Docker config and propagates failures', () => {
