@@ -85,6 +85,72 @@ function script(source, name) {
   return source.split(`      - name: ${name}\n`)[1].split(/^      - /m)[0]
     .split('        run: |\n')[1].split('\n').filter((line, i, lines) => lines.slice(0, i + 1).every(item => !item || item.startsWith('          '))).map(line => line.slice(10)).join('\n').trimEnd();
 }
+test('change classification preserves raw Git paths and fails on diff errors', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-ci-paths-'));
+  try {
+    const git = (...args) => {
+      const result = spawnSync('git', args, {cwd: dir, encoding: 'utf8'});
+      assert.equal(result.status, 0, result.stderr);
+      return result.stdout.trim();
+    };
+    git('init', '-q');
+    git('config', 'user.name', 'CI fixture');
+    git('config', 'user.email', 'ci@example.invalid');
+    git('config', 'commit.gpgsign', 'false');
+    git('config', 'core.quotePath', 'true');
+    git('commit', '-qm', 'base', '--allow-empty');
+    const base = git('rev-parse', 'HEAD');
+    fs.mkdirSync(path.join(dir, 'scripts/ci'), {recursive: true});
+    fs.symlinkSync(path.join(root, 'scripts/ci/classify-changes.sh'), path.join(dir, 'scripts/ci/classify-changes.sh'));
+    const classify = (head, overrides = {}) => {
+      const output = path.join(dir, 'output');
+      fs.writeFileSync(output, '');
+      const result = spawnSync('bash', ['-c', script(ci, 'Classify changed files')], {
+        cwd: dir, encoding: 'utf8', env: {...process.env, EVENT_NAME: 'pull_request',
+          PR_BASE: base, PUSH_BEFORE: base, GITHUB_SHA: head, GITHUB_OUTPUT: output, ...overrides},
+      });
+      return {...result, output: fs.readFileSync(output, 'utf8')};
+    };
+    const flags = (go, website, docs, ci) => `go=${go}\nwebsite=${website}\ndocs=${docs}\nci=${ci}\n`;
+    const cases = [
+      ['docs/使用指南.md', flags(false, false, true, false)],
+      ['docs/guide with spaces.md', flags(false, false, true, false)],
+      ['website/页面.md', flags(false, true, false, false)],
+      // A newline followed by another prefix must remain part of one path.
+      ['docs/guide\nwebsite/spoof.md', flags(false, false, true, false)],
+      ['pkg/a/文件.go', flags(true, false, false, false)],
+      ['scripts/test with spaces.sh', flags(true, false, false, true)],
+      ['.github/workflows/ci.yml', flags(true, false, false, true)],
+      ['README.md', flags(false, false, false, false)],
+    ];
+    let previous = base;
+    for (const [file, expected] of cases) {
+      fs.mkdirSync(path.dirname(path.join(dir, file)), {recursive: true});
+      fs.writeFileSync(path.join(dir, file), 'fixture\n');
+      git('add', '--', file);
+      git('commit', '-qm', 'add fixture');
+      const head = git('rev-parse', 'HEAD');
+      const result = classify(head, {PR_BASE: previous});
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal(result.output, expected, JSON.stringify(file));
+      previous = head;
+    }
+    assert.equal(classify(previous).output, flags(true, true, true, true), 'mixed paths');
+    assert.equal(classify(previous, {PR_BASE: previous}).output, flags(false, false, false, false), 'empty diff');
+    const push = classify(previous, {EVENT_NAME: 'push', PR_BASE: 'missing', PUSH_BEFORE: previous});
+    assert.equal(push.status, 0, push.stderr);
+    assert.equal(push.output, flags(false, false, false, false), 'push uses PUSH_BEFORE, not PR_BASE or the fallback');
+    for (const overrides of [{EVENT_NAME: 'workflow_dispatch'}, {PR_BASE: ''},
+      {PR_BASE: '0'.repeat(40)}, {PR_BASE: 'missing'}]) {
+      const result = classify(previous, overrides);
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal(result.output, flags(true, true, true, true));
+    }
+    const failed = classify('missing-head');
+    assert.notEqual(failed.status, 0);
+    assert.equal(failed.output, '', 'diff errors must not publish successful outputs');
+  } finally { fs.rmSync(dir, {recursive: true, force: true}); }
+});
 test('CI discovers every script suite, isolates Docker config and propagates failures', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-script-suites-'));
   try {
