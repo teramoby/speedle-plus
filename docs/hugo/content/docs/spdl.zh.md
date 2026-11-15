@@ -10,7 +10,7 @@ tocsidebar = false
 tags = ["v0.1.0", "core", "policy", "spdl"]
 categories = ["docs"]
 bref = ""
-lastmod = 2026-11-08T20:01:50+08:00
+lastmod = 2026-11-16T03:25:14+08:00
 +++
 
 SPDL 是编写 Speedle 策略和角色策略的语言。本文介绍语法、命名规则和示例。
@@ -29,7 +29,15 @@ SPDL 是编写 Speedle 策略和角色策略的语言。本文介绍语法、命
 
 ### 保留关键字
 
-`grant`、`deny`、`user`、`group`、`entity`、`role`、`from`、`on`、`if`、`in` 是保留关键字。无论大小写、是否加引号，都不能用作主体名、身份域、角色、操作、资源，也不能用作条件中的属性名或函数名；解析器会拒绝这样的语句，并指出是哪个关键字、在什么位置。条件中的 `in` 和 `IN` 是成员运算符，函数名区分大小写。主体、操作和资源名称也区分大小写。
+`grant`、`deny`、`user`、`group`、`entity`、`role`、`from`、`on`、`if`、`in` 是保留关键字。无论大小写、是否加引号，都不能用作主体名、身份域、服务名、角色、操作、资源，也不能用作条件中的属性名或函数名；解析器会拒绝这样的语句，并指出是哪个关键字、在什么位置。条件中的 `in` 和 `IN` 是成员运算符，函数名区分大小写。主体、操作和资源名称也区分大小写。
+
+例如，解析服务子句 `in Role` 时会产生以下错误：
+
+```console
+"Role" is a reserved SPDL keyword and cannot be used as a service name
+in Role
+   ^
+```
 
 ### 命名规范
 
