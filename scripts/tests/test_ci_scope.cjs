@@ -158,6 +158,19 @@ test('CI discovers every script suite, isolates Docker config and propagates fai
     const temporary = path.join(dir, 'temp dir');
     fs.mkdirSync(temporary);
     fs.mkdirSync(path.join(dir, 'scripts/tests'), {recursive: true});
+    const requiredSuites = [
+      'test_ci_scope.cjs',
+      'test_go_ci_worker.cjs',
+      'test_pages_workflow.cjs',
+      'test_release_workflow.cjs',
+      'test_reviewbot_automerge.cjs',
+      'test_reviewbot_commands.cjs',
+      'test_reviewbot_handoff.cjs',
+      'test_runner_routing.cjs',
+    ];
+    for (const name of requiredSuites) {
+      assert.ok(fs.existsSync(path.join(root, 'scripts/tests', name)), `missing CI suite: ${name}`);
+    }
     // Include new filenames to catch a return to an explicit subset of suites.
     const suites = [...fs.readdirSync(path.join(root, 'scripts/tests')).filter(name => name.endsWith('.cjs')), 'test_future.cjs'].sort();
     for (const suite of suites) fs.writeFileSync(path.join(dir, 'scripts/tests', suite), '');
@@ -174,7 +187,12 @@ process.exit(process.env.FAIL_TOOL === ${JSON.stringify(tool)} ? 7 : 0);
     }
     const block = job('changes');
     assert.match(block, /name: Test CI scripts\n        if: steps.scope.outputs.ci == 'true'/);
-    assert.ok(block.indexOf('Setup Node for CI script tests') < block.indexOf('Test CI scripts'));
+    const setup = block.indexOf('Setup Node for CI script tests');
+    const run = block.indexOf('Test CI scripts');
+    assert.notEqual(setup, -1, 'Node setup step missing');
+    assert.notEqual(run, -1, 'CI script test step missing');
+    assert.ok(setup < run, 'Node setup must precede CI script tests');
+    assert.match(block.slice(setup, run), /node-version: '22'/);
     for (const failure of ['', 'node', 'python3']) {
       fs.writeFileSync(record, '');
       const result = spawnSync('bash', ['-c', script(ci, 'Test CI scripts')], {cwd: dir, encoding: 'utf8', env: {...process.env,
