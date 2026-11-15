@@ -10,7 +10,7 @@ categories = ["docs"]
 lastmod = 2026-11-12T00:00:00+08:00
 +++
 
-**Speedle Cloud is coming soon.** This guide describes the workflow available when production sign-in and authenticated authorization checks open; the examples have not been run against a live Cloud environment.
+**Speedle Cloud is in public beta.** This guide describes the workflow for the live service.
 
 Limits apply to the whole account unless a row says otherwise. API keys are account credentials; changing keys does not increase the daily quota.
 
@@ -50,7 +50,6 @@ Errors are flat JSON, for example `{"error":"rate_limited"}`. An error is not an
 | `401 api_key_expired` | The API key is at or past its expiry. Create a replacement; retrying this key will not succeed. Keys created before an expiry was required have one too. The API keys page states when; read `expiresAt` and replace the key before then. |
 | `403 reauth_required` | Authenticate with a linked provider again before creating a key. |
 | `403 insufficient_scope` | Use a key with the required scope. |
-| `403 management_scope_disabled` | Management-scope issuance is unavailable while sign-in is closed. |
 | `403 csrf_failed` | Use the console session with the required origin and CSRF header. |
 | `404 service_not_found` (ADS) / `404 not_found` (management) | Select an existing service in your account. Unknown, other-account or already-revoked key IDs also return `404 not_found`. |
 | `409 quota_exceeded` | Free a service or policy slot by deleting an unused item; time does not reset those caps. Free an API-key slot by revoking the key or letting it expire. |

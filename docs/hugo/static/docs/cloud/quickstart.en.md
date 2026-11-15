@@ -4,9 +4,9 @@ Speedle Cloud is a hosted authorization service built on the open-source Speedle
 
 Policy synchronization from Speedle Cloud uses Speedle Cloud ADS: the `speedle-cloud` binary and image. The self-hosted Speedle Engine `speedle-ads` binary no longer provides a `policy-source` store.
 
-**Speedle Cloud is coming soon.** This guide describes the workflow available when production sign-in and authenticated authorization checks open; the examples have not been run against a live Cloud environment.
+**Speedle Cloud is in public beta.** This guide describes the workflow for the live service.
 
-Account sign-in must be available before using the console or creating API keys. The free public beta is for trials, learning and evaluation, has no SLA and is not recommended for production use. Features and limits may change.
+Sign in to use the console and create API keys. The free public beta is for trials, learning and evaluation, has no SLA and is not recommended for production use. Features and limits may change.
 
 ## Documentation
 
@@ -26,9 +26,9 @@ Read the Cloud [Terms](https://cloud.speedle.io/terms) / [Privacy Policy](https:
 
 ## Getting started with Speedle Cloud
 
-**Speedle Cloud is coming soon.** This guide describes the workflow available when production sign-in and authenticated authorization checks open; the examples have not been run against a live Cloud environment.
+**Speedle Cloud is in public beta.** This guide describes the workflow for the live service.
 
-### Sign in with GitHub or Google (opens soon)
+### Sign in with GitHub or Google
 
 Open the [Cloud console](https://cloud.speedle.io/) in your browser and sign in with an available provider. For a new identity with an unused verified email address, confirm **Create account**. If the email is already in use, sign in with the linked provider shown by the console.
 
@@ -92,7 +92,7 @@ Next steps: for programmatic management, create a separate key with the `pms:wri
 
 API keys belong to your account and can access its services according to their scope. They authenticate your application, not its end users. Managing API keys, sessions and linked identities always requires a signed-in console session.
 
-**Speedle Cloud is coming soon.** This guide describes the workflow available when production sign-in and authenticated authorization checks open; the examples have not been run against a live Cloud environment.
+**Speedle Cloud is in public beta.** This guide describes the workflow for the live service.
 
 ### Create an API key
 
@@ -107,7 +107,7 @@ Each key has one scope, fixed at creation:
 | `pms:write` | Read, create and delete account services, policies and role policies through `/policy-mgmt/v1`. |
 | `pms:read+ads` (ADS sync) | Authorization checks, read-only policy management and policy synchronization for Speedle Cloud ADS; no writes. |
 
-`pms:read` and `pms:write` cannot call ADS; `ads` cannot call policy management. Use `pms:read+ads` (ADS sync) for policy synchronization with Speedle Cloud ADS (`speedle-cloud`); it also permits ADS checks and PMS reads, but no writes. Using the wrong scope returns `403 insufficient_scope`. Requesting a management scope while sign-in is closed returns `403 management_scope_disabled`.
+`pms:read` and `pms:write` cannot call ADS; `ads` cannot call policy management. Use `pms:read+ads` (ADS sync) for policy synchronization with Speedle Cloud ADS (`speedle-cloud`); it also permits ADS checks and PMS reads, but no writes. Using the wrong scope returns `403 insufficient_scope`.
 
 The console sends a session-authenticated request:
 
@@ -161,9 +161,9 @@ If a creation or revocation response is lost, refresh the list before acting aga
 
 ## Speedle Cloud authorization API
 
-**Speedle Cloud is coming soon.** This guide describes the workflow available when production sign-in and authenticated authorization checks open; the examples have not been run against a live Cloud environment.
+**Speedle Cloud is in public beta.** This guide describes the workflow for the live service.
 
-Use an account API key for server-side authorization calls. Account sign-in must be available before you can create keys. Use `ads` or `pms:read+ads` for ADS checks; `pms:read` and `pms:write` return `403 insufficient_scope`. The combined `pms:read+ads` scope also permits PMS reads and is required for policy synchronization with Speedle Cloud ADS (`speedle-cloud`); it cannot write policies.
+Use an account API key for server-side authorization calls. Sign in to the account to create keys. Use `ads` or `pms:read+ads` for ADS checks; `pms:read` and `pms:write` return `403 insufficient_scope`. The combined `pms:read+ads` scope also permits PMS reads and is required for policy synchronization with Speedle Cloud ADS (`speedle-cloud`); it cannot write policies.
 
 ### Call IsAllowed from your server
 
@@ -258,7 +258,7 @@ For client libraries in Java, Python, Go, .NET, Rust and Node.js/TypeScript, see
 
 ## Speedle Cloud Limits and errors
 
-**Speedle Cloud is coming soon.** This guide describes the workflow available when production sign-in and authenticated authorization checks open; the examples have not been run against a live Cloud environment.
+**Speedle Cloud is in public beta.** This guide describes the workflow for the live service.
 
 Limits apply to the whole account unless a row says otherwise. API keys are account credentials; changing keys does not increase the daily quota.
 
@@ -298,7 +298,6 @@ Errors are flat JSON, for example `{"error":"rate_limited"}`. An error is not an
 | `401 api_key_expired` | The API key is at or past its expiry. Create a replacement; retrying this key will not succeed. Keys created before an expiry was required have one too. The API keys page states when; read `expiresAt` and replace the key before then. |
 | `403 reauth_required` | Authenticate with a linked provider again before creating a key. |
 | `403 insufficient_scope` | Use a key with the required scope. |
-| `403 management_scope_disabled` | Management-scope issuance is unavailable while sign-in is closed. |
 | `403 csrf_failed` | Use the console session with the required origin and CSRF header. |
 | `404 service_not_found` (ADS) / `404 not_found` (management) | Select an existing service in your account. Unknown, other-account or already-revoked key IDs also return `404 not_found`. |
 | `409 quota_exceeded` | Free a service or policy slot by deleting an unused item; time does not reset those caps. Free an API-key slot by revoking the key or letting it expire. |

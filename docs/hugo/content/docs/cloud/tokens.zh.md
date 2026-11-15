@@ -12,7 +12,7 @@ lastmod = 2026-11-12T00:00:00+08:00
 
 API 密钥属于账号，按权限范围访问该账号下的服务。它认证的是应用，不是最终用户。管理 API 密钥、会话和关联身份始终需要已登录的控制台会话。
 
-**Speedle Cloud 即将上线。** 本文介绍生产环境开放登录和授权 API 后的使用流程，示例尚未在线上 Cloud 环境执行。
+**Speedle Cloud 已开放公开测试版。** 本文介绍线上服务的使用流程。
 
 ## 创建 API 密钥
 
@@ -27,7 +27,7 @@ API 密钥属于账号，按权限范围访问该账号下的服务。它认证�
 | `pms:write` | 通过 `/policy-mgmt/v1` 读取、创建和删除账号下的服务、授权策略和角色策略。 |
 | `pms:read+ads`（ADS 同步） | 授权检查、只读策略管理，以及 Speedle Cloud ADS 的策略同步；不能写入。 |
 
-`pms:read` 和 `pms:write` 不能调用 ADS；`ads` 不能管理策略。Speedle Cloud ADS（`speedle-cloud`）同步策略需要 `pms:read+ads`（ADS 同步）权限范围；它也可调用 ADS 和读取 PMS，但不能写入。权限范围不符时返回 `403 insufficient_scope`。登录尚未开放时，申请管理权限返回 `403 management_scope_disabled`。
+`pms:read` 和 `pms:write` 不能调用 ADS；`ads` 不能管理策略。Speedle Cloud ADS（`speedle-cloud`）同步策略需要 `pms:read+ads`（ADS 同步）权限范围；它也可调用 ADS 和读取 PMS，但不能写入。权限范围不符时返回 `403 insufficient_scope`。
 
 控制台使用已登录会话发送请求：
 

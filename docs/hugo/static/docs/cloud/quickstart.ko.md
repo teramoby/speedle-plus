@@ -4,9 +4,9 @@ Speedle Cloud는 오픈 소스 Speedle 엔진 기반의 호스팅 인가 서비�
 
 Speedle Cloud에서 정책을 동기화하려면 Speedle Cloud ADS의 `speedle-cloud` 바이너리와 이미지를 사용합니다. 자체 호스팅 Speedle Engine의 `speedle-ads` 바이너리는 더 이상 `policy-source` 저장소를 제공하지 않습니다.
 
-**Speedle Cloud는 출시 예정입니다.** 이 가이드는 프로덕션 로그인과 인증된 인가 API가 제공될 때의 사용 절차를 설명합니다. 예제는 실제 Cloud 환경에서 실행하지 않았습니다.
+**Speedle Cloud는 공개 베타로 제공 중입니다.** 이 가이드는 실제 서비스에서의 사용 절차를 설명합니다.
 
-콘솔 사용과 API 키 생성에는 로그인이 가능해야 합니다. 무료 공개 베타는 시험, 학습, 평가용이며 SLA가 없고 프로덕션 사용은 권장하지 않습니다. 기능과 한도는 변경될 수 있습니다.
+콘솔 사용과 API 키 생성에는 로그인이 필요합니다. 무료 공개 베타는 시험, 학습, 평가용이며 SLA가 없고 프로덕션 사용은 권장하지 않습니다. 기능과 한도는 변경될 수 있습니다.
 
 ## 문서
 
@@ -26,9 +26,9 @@ Cloud 문서를 확인하세요: [이용 약관](https://cloud.speedle.io/ko/ter
 
 ## Speedle Cloud 빠른 시작
 
-**Speedle Cloud는 출시 예정입니다.** 이 가이드는 프로덕션 로그인과 인증된 인가 API가 제공될 때의 사용 절차를 설명합니다. 예제는 실제 Cloud 환경에서 실행하지 않았습니다.
+**Speedle Cloud는 공개 베타로 제공 중입니다.** 이 가이드는 실제 서비스에서의 사용 절차를 설명합니다.
 
-### GitHub 또는 Google을 통한 로그인(출시 예정)
+### GitHub 또는 Google을 통한 로그인
 
 브라우저에서 [Cloud 콘솔](https://cloud.speedle.io/ko/)을 열고 사용 가능한 공급자로 로그인합니다. 아직 사용되지 않은 인증된 이메일로 처음 로그인하는 경우 **계정 생성**을 확인합니다. 이메일이 이미 사용 중이라면 콘솔에 표시된 연결된 공급자로 로그인하십시오.
 
@@ -92,7 +92,7 @@ curl --fail-with-body --silent --show-error --max-time 10 \
 
 API 키는 계정에 속하며 범위에 따라 해당 계정의 서비스에 접근합니다. 최종 사용자가 아닌 애플리케이션을 인증합니다. API 키, 세션, 연결된 신원 관리에는 로그인한 콘솔 세션이 필요합니다.
 
-**Speedle Cloud는 출시 예정입니다.** 이 가이드는 프로덕션 로그인과 인증된 인가 API가 제공될 때의 사용 절차를 설명합니다. 예제는 실제 Cloud 환경에서 실행하지 않았습니다.
+**Speedle Cloud는 공개 베타로 제공 중입니다.** 이 가이드는 실제 서비스에서의 사용 절차를 설명합니다.
 
 ### API 키 생성
 
@@ -107,7 +107,7 @@ API 키는 계정에 속하며 범위에 따라 해당 계정의 서비스에 �
 | `pms:write` | `/policy-mgmt/v1`으로 계정의 서비스, 인가 정책, 역할 정책 읽기, 생성, 삭제. |
 | `pms:read+ads`(ADS 동기화) | 인가 확인, 읽기 전용 정책 관리 및 Speedle Cloud ADS 정책 동기화. 쓰기는 불가합니다. |
 
-`pms:read`와 `pms:write`는 ADS를 호출할 수 없으며 `ads`는 정책을 관리할 수 없습니다. Speedle Cloud ADS(`speedle-cloud`)의 정책 동기화에는 `pms:read+ads`(ADS 동기화)가 필요합니다. ADS 확인과 PMS 읽기도 허용하지만 쓰기는 허용하지 않습니다. 범위가 맞지 않으면 `403 insufficient_scope`입니다. 로그인이 닫혀 있을 때 관리 범위를 요청하면 `403 management_scope_disabled`입니다.
+`pms:read`와 `pms:write`는 ADS를 호출할 수 없으며 `ads`는 정책을 관리할 수 없습니다. Speedle Cloud ADS(`speedle-cloud`)의 정책 동기화에는 `pms:read+ads`(ADS 동기화)가 필요합니다. ADS 확인과 PMS 읽기도 허용하지만 쓰기는 허용하지 않습니다. 범위가 맞지 않으면 `403 insufficient_scope`입니다.
 
 콘솔은 세션 인증 요청을 전송합니다.
 
@@ -161,9 +161,9 @@ Content-Type: application/json
 
 ## Speedle Cloud 인가 API
 
-**Speedle Cloud는 출시 예정입니다.** 이 가이드는 프로덕션 로그인과 인증된 인가 API가 제공될 때의 사용 절차를 설명합니다. 예제는 실제 Cloud 환경에서 실행하지 않았습니다.
+**Speedle Cloud는 공개 베타로 제공 중입니다.** 이 가이드는 실제 서비스에서의 사용 절차를 설명합니다.
 
-계정 API 키로 서버에서 인가를 확인합니다. 키를 생성하려면 로그인이 가능해야 합니다. ADS 확인에는 `ads` 또는 `pms:read+ads`를 사용합니다. `pms:read`와 `pms:write`는 `403 insufficient_scope`입니다. `pms:read+ads`는 PMS 읽기도 허용하며 Speedle Cloud ADS(`speedle-cloud`)의 정책 동기화에 필요하지만 쓰기는 허용하지 않습니다.
+계정 API 키로 서버에서 인가를 확인합니다. 키를 생성하려면 로그인이 필요합니다. ADS 확인에는 `ads` 또는 `pms:read+ads`를 사용합니다. `pms:read`와 `pms:write`는 `403 insufficient_scope`입니다. `pms:read+ads`는 PMS 읽기도 허용하며 Speedle Cloud ADS(`speedle-cloud`)의 정책 동기화에 필요하지만 쓰기는 허용하지 않습니다.
 
 ### 서버에서 IsAllowed 호출
 
@@ -242,7 +242,7 @@ POST를 사용하세요. 다른 메서드는 `405 method_not_allowed` 또는 그
 
 ## Speedle Cloud 제한과 오류
 
-**Speedle Cloud는 출시 예정입니다.** 이 가이드는 프로덕션 로그인과 인증된 인가 API가 제공될 때의 사용 절차를 설명합니다. 예제는 실제 Cloud 환경에서 실행하지 않았습니다.
+**Speedle Cloud는 공개 베타로 제공 중입니다.** 이 가이드는 실제 서비스에서의 사용 절차를 설명합니다.
 
 별도 표시가 없으면 한도는 계정 전체에서 공유합니다. API 키를 바꿔도 일일 할당량은 늘지 않습니다.
 
@@ -282,7 +282,6 @@ Cloud 자체 장애는 계정당 UTC 일일 최대 1,000회까지 할당량을 �
 | `401 api_key_expired` | API 키가 만료 시각에 도달했거나 지났습니다. 새 키를 만드세요. 이 키를 다시 시도해도 성공하지 않습니다. 만료가 필수가 되기 전에 만든 키에도 만료 시각이 있습니다. 언제 만료되는지는 API 키 페이지에 있습니다. `expiresAt`을 확인하고 그 전에 새 키를 만드세요. |
 | `403 reauth_required` | 키 생성 전 연결된 제공자로 재인증. |
 | `403 insufficient_scope` | 필요한 범위의 키 사용. |
-| `403 management_scope_disabled` | 로그인이 닫힌 동안 관리 범위 발급 불가. |
 | `403 csrf_failed` | 세션, Origin, CSRF 헤더 확인. |
 | `404 service_not_found` (ADS) / `404 not_found` (관리) | 자신의 계정에 있는 서비스 선택. 알 수 없거나 다른 계정 또는 폐기된 키 ID도 `404 not_found`. |
 | `409 quota_exceeded` | 쓰지 않는 서비스나 정책을 삭제해 자리를 확보합니다. 시간으로 이 두 한도는 초기화되지 않습니다. API 키 자리는 키를 폐기하거나 만료를 기다려 확보합니다. |

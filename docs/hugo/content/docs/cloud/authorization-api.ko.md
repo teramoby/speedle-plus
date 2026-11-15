@@ -10,9 +10,9 @@ categories = ["docs"]
 lastmod = 2026-11-12T00:00:00+08:00
 +++
 
-**Speedle Cloud는 출시 예정입니다.** 이 가이드는 프로덕션 로그인과 인증된 인가 API가 제공될 때의 사용 절차를 설명합니다. 예제는 실제 Cloud 환경에서 실행하지 않았습니다.
+**Speedle Cloud는 공개 베타로 제공 중입니다.** 이 가이드는 실제 서비스에서의 사용 절차를 설명합니다.
 
-계정 API 키로 서버에서 인가를 확인합니다. 키를 생성하려면 로그인이 가능해야 합니다. ADS 확인에는 `ads` 또는 `pms:read+ads`를 사용합니다. `pms:read`와 `pms:write`는 `403 insufficient_scope`입니다. `pms:read+ads`는 PMS 읽기도 허용하며 Speedle Cloud ADS(`speedle-cloud`)의 정책 동기화에 필요하지만 쓰기는 허용하지 않습니다.
+계정 API 키로 서버에서 인가를 확인합니다. 키를 생성하려면 로그인이 필요합니다. ADS 확인에는 `ads` 또는 `pms:read+ads`를 사용합니다. `pms:read`와 `pms:write`는 `403 insufficient_scope`입니다. `pms:read+ads`는 PMS 읽기도 허용하며 Speedle Cloud ADS(`speedle-cloud`)의 정책 동기화에 필요하지만 쓰기는 허용하지 않습니다.
 
 ## 서버에서 IsAllowed 호출
 

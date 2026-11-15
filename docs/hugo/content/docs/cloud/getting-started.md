@@ -11,9 +11,9 @@ bref = "Sign in, save a policy, create an API key, and check authorization from 
 lastmod = 2026-11-12T00:00:00+08:00
 +++
 
-**Speedle Cloud is coming soon.** This guide describes the workflow available when production sign-in and authenticated authorization checks open; the examples have not been run against a live Cloud environment.
+**Speedle Cloud is in public beta.** This guide describes the workflow for the live service.
 
-## Sign in with GitHub or Google (opens soon)
+## Sign in with GitHub or Google
 
 Open the [Cloud console](https://cloud.speedle.io/) in your browser and sign in with an available provider. For a new identity with an unused verified email address, confirm **Create account**. If the email is already in use, sign in with the linked provider shown by the console.
 

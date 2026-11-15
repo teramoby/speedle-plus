@@ -10,9 +10,9 @@ categories = ["docs"]
 lastmod = 2026-11-12T00:00:00+08:00
 +++
 
-**Speedle Cloud はまもなく公開されます。** このガイドは、本番環境のサインインと認証付き認可 API が利用可能になった際の手順を説明しています。例は実際の Cloud 環境では実行していません。
+**Speedle Cloud はパブリックベータを提供中です。** このガイドでは、稼働中のサービスでの手順を説明します。
 
-アカウント API キーを使い、サーバーから認可を確認します。キー作成にはサインインが利用可能である必要があります。ADS チェックには `ads` または `pms:read+ads` を使用します。`pms:read` と `pms:write` は `403 insufficient_scope` です。`pms:read+ads` は PMS の読み取りも許可し、Speedle Cloud ADS（`speedle-cloud`）のポリシー同期に必要ですが、書き込みは許可しません。
+アカウント API キーを使い、サーバーから認可を確認します。キーの作成にはサインインが必要です。ADS チェックには `ads` または `pms:read+ads` を使用します。`pms:read` と `pms:write` は `403 insufficient_scope` です。`pms:read+ads` は PMS の読み取りも許可し、Speedle Cloud ADS（`speedle-cloud`）のポリシー同期に必要ですが、書き込みは許可しません。
 
 ## サーバーから IsAllowed を呼び出す
 

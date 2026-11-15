@@ -12,9 +12,9 @@ categories = ["docs"]
 bref = "Autorización del servidor con una clave API de cuenta."
 +++
 
-**Speedle Cloud estará disponible próximamente.** Esta guía describe el flujo para cuando se habiliten el inicio de sesión en producción y las comprobaciones de autorización autenticadas; los ejemplos no se han ejecutado en un entorno Cloud real.
+**Speedle Cloud está en beta pública.** Esta guía describe el flujo de trabajo del servicio en línea.
 
-Use una clave API de cuenta para llamadas de autorización desde el servidor. Para crear claves debe estar disponible el inicio de sesión. Use `ads` o `pms:read+ads` para las comprobaciones ADS; `pms:read` y `pms:write` devuelven `403 insufficient_scope`. `pms:read+ads` también permite lecturas PMS y es necesario para sincronizar políticas con Speedle Cloud ADS (`speedle-cloud`); no permite escrituras.
+Use una clave API de cuenta para llamadas de autorización desde el servidor. Inicie sesión en la cuenta para crear claves. Use `ads` o `pms:read+ads` para las comprobaciones ADS; `pms:read` y `pms:write` devuelven `403 insufficient_scope`. `pms:read+ads` también permite lecturas PMS y es necesario para sincronizar políticas con Speedle Cloud ADS (`speedle-cloud`); no permite escrituras.
 
 ## Invocar IsAllowed desde su servidor
 

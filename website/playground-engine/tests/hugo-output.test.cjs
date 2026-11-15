@@ -217,8 +217,9 @@ const cloudCopy = {
   '': {
     intro: 'Speedle Cloud is a hosted authorization service built on the open-source Speedle engine',
     beta: 'The free public beta is for trials, learning and evaluation',
-    soon: 'Speedle Cloud is coming soon', preview: 'production sign-in and authenticated authorization checks open',
-    signin: 'Sign in with GitHub or Google (opens soon)',
+    publicBeta: 'Speedle Cloud is in public beta', live: 'This guide describes the workflow for the live service',
+    signin: 'Sign in with GitHub or Google',
+    prelaunch: ['Speedle Cloud is coming soon', 'opens soon'],
     download: 'quickstart.en.md', legal: '', samples: true,
     swaggerLabel: 'API reference (Swagger)',
     swaggerLead: 'Browse every endpoint, parameter and response example online.',
@@ -226,8 +227,9 @@ const cloudCopy = {
   },
   'zh/': {
     intro: '基于开源 Speedle 引擎的托管授权服务', beta: '免费公开测试版用于试用、学习和评估',
-    soon: 'Speedle Cloud 即将上线', preview: '生产环境开放登录和授权 API 后的使用流程',
-    signin: '使用 GitHub 或 Google 登录（即将开放）',
+    publicBeta: 'Speedle Cloud 已开放公开测试版', live: '本文介绍线上服务的使用流程',
+    signin: '使用 GitHub 或 Google 登录',
+    prelaunch: ['Speedle Cloud 即将上线', '即将开放'],
     download: 'quickstart.zh-CN.md', legal: 'zh-CN/', samples: true,
     swaggerLabel: 'API 参考（Swagger）',
     swaggerLead: '在线浏览所有接口、参数和返回示例。',
@@ -236,8 +238,9 @@ const cloudCopy = {
   'ja/': {
     intro: 'オープンソースの Speedle エンジンによるホスト型認可サービス',
     beta: '無料パブリックベータは試用、学習、評価用',
-    soon: 'Speedle Cloud はまもなく公開されます', preview: '本番環境のサインインと認証付き認可 API が利用可能になった際',
-    signin: 'GitHub または Google',
+    publicBeta: 'Speedle Cloud はパブリックベータを提供中です', live: 'このガイドでは、稼働中のサービスでの手順を説明します',
+    signin: 'GitHub または Google によるサインイン',
+    prelaunch: ['まもなく公開されます', 'まもなく開始'],
     download: 'quickstart.ja.md', legal: 'ja/', samples: false,
     swaggerLabel: 'API リファレンス（Swagger）',
     swaggerLead: 'すべてのエンドポイント、パラメーター、レスポンス例をオンラインで確認できます。',
@@ -246,8 +249,9 @@ const cloudCopy = {
   'ko/': {
     intro: '오픈 소스 Speedle 엔진 기반의 호스팅 인가 서비스',
     beta: '무료 공개 베타는 시험, 학습, 평가용',
-    soon: 'Speedle Cloud는 출시 예정입니다', preview: '프로덕션 로그인과 인증된 인가 API가 제공될 때',
-    signin: 'GitHub 또는 Google',
+    publicBeta: 'Speedle Cloud는 공개 베타로 제공 중입니다', live: '이 가이드는 실제 서비스에서의 사용 절차를 설명합니다',
+    signin: 'GitHub 또는 Google을 통한 로그인',
+    prelaunch: ['출시 예정입니다', '출시 예정)'],
     download: 'quickstart.ko.md', legal: 'ko/', samples: false,
     swaggerLabel: 'API 레퍼런스(Swagger)',
     swaggerLead: '모든 엔드포인트, 매개변수, 응답 예시를 온라인에서 확인할 수 있습니다.',
@@ -256,8 +260,9 @@ const cloudCopy = {
   'es/': {
     intro: 'servicio de autorización alojado basado en el motor Speedle de código abierto',
     beta: 'La beta pública gratuita es para pruebas, aprendizaje y evaluación',
-    soon: 'Speedle Cloud estará disponible próximamente', preview: 'inicio de sesión en producción y las comprobaciones de autorización autenticadas',
-    signin: 'Iniciar sesión con GitHub o Google (próximamente)',
+    publicBeta: 'Speedle Cloud está en beta pública', live: 'Esta guía describe el flujo de trabajo del servicio en línea',
+    signin: 'Iniciar sesión con GitHub o Google',
+    prelaunch: ['estará disponible próximamente', '(próximamente)'],
     download: 'quickstart.es.md', legal: 'es/', samples: true,
     swaggerLabel: 'Referencia de la API (Swagger)',
     swaggerLead: 'Consulte en línea todos los endpoints, parámetros y ejemplos de respuesta.',
@@ -279,8 +284,11 @@ for (const [locale, copy] of Object.entries(cloudCopy)) {
   }
   assert.ok(overview.includes('<code>speedle-cloud</code>') && overview.includes('<code>speedle-ads</code>') && overview.includes('<code>policy-source</code>'), `Cloud ADS ownership in ${locale || 'en'}`);
   assert.ok(overview.includes(copy.intro) && overview.includes(copy.beta), `Current overview in ${locale || 'en'}`);
-  assert.ok(overview.includes(copy.soon) && overview.includes(copy.preview), `Coming-soon overview in ${locale || 'en'}`);
-  assert.ok(guide.includes(copy.preview) && guide.includes(copy.signin), `Preview sign-in notice in ${locale || 'en'}`);
+  assert.ok(overview.includes(copy.publicBeta) && overview.includes(copy.live), `Public-beta overview in ${locale || 'en'}`);
+  assert.ok(guide.includes(copy.live) && guide.includes(copy.signin), `Public-beta sign-in notice in ${locale || 'en'}`);
+  for (const [page, html] of [['overview', overview], ['getting started', guide], ['API keys', tokens], ['authorization API', api], ['limits and errors', limits]]) {
+    for (const phrase of copy.prelaunch) assert.ok(!html.includes(phrase), `No pre-launch wording ${JSON.stringify(phrase)} in the ${page} page in ${locale || 'en'}`);
+  }
   assert.ok(guide.includes('grant user alice from corp get /books'), `Domain-scoped getting-started policy in ${locale || 'en'}`);
   const quickStart = ['SPEEDLE_API_KEY', 'books-app', 'read-books', 'cloud.speedle.io/authz-check/v1/is-allowed', 'HTTP 200'];
   assert.ok(quickStart.every(marker => guide.includes(marker)), `API-key quick start in ${locale || 'en'}`);
@@ -350,6 +358,15 @@ for (const [locale, copy] of Object.entries(cloudCopy)) {
     assert.deepEqual(fs.readFileSync(path.join(output, file)), fs.readFileSync(path.join(root, "docs", file)), `Published Cloud page matches source: ${file}`);
     assert.ok(fs.readFileSync(path.join(output, `${locale || 'en/'}sitemap.xml`), 'utf8').includes(`<loc>${prefix}${route}</loc>`), `Cloud sitemap entry ${prefix}${route}`);
   }
+}
+// #432: Speedle Cloud is live in public beta; the badge matches the Cloud console's own localized label.
+const cloudBadges = {'': 'Beta', 'zh/': '测试版', 'ja/': 'ベータ', 'ko/': '베타', 'es/': 'Beta'};
+for (const [locale, badge] of Object.entries(cloudBadges)) {
+  const html = fs.readFileSync(path.join(output, `${locale}docs/cloud/index.html`), 'utf8');
+  const menu = html.match(/<div class="products-panel"[\s\S]*?<\/div>/)?.[0] || '';
+  const family = html.match(/<nav class="footer-family"[\s\S]*?<\/nav>/)?.[0] || '';
+  assert.ok(menu.includes(`<span class="product-badge">${badge}</span>`), `Cloud ${badge} badge in the Products menu in ${locale || 'en'}`);
+  assert.ok(family.includes(`<span class="product-badge">${badge}</span>`), `Cloud ${badge} badge in the footer card in ${locale || 'en'}`);
 }
 for (const locale of LOCALES) {
   assert.ok(fs.existsSync(path.join(output, `${locale}docs/extending-decision-service/index.html`)), `Extension guide in ${locale || 'en'}`);

@@ -4,9 +4,9 @@ Speedle Cloud es un servicio de autorización alojado basado en el motor Speedle
 
 La sincronización de políticas desde Speedle Cloud usa Speedle Cloud ADS: el binario y la imagen `speedle-cloud`. El binario `speedle-ads` de Speedle Engine autoalojado ya no proporciona un almacén `policy-source`.
 
-**Speedle Cloud estará disponible próximamente.** Esta guía describe el flujo para cuando se habiliten el inicio de sesión en producción y las comprobaciones de autorización autenticadas; los ejemplos no se han ejecutado en un entorno Cloud real.
+**Speedle Cloud está en beta pública.** Esta guía describe el flujo de trabajo del servicio en línea.
 
-Para usar la consola o crear claves API debe estar disponible el inicio de sesión. La beta pública gratuita es para pruebas, aprendizaje y evaluación, no ofrece SLA y no se recomienda para producción. Las funciones y límites pueden cambiar.
+Inicie sesión para usar la consola y crear claves API. La beta pública gratuita es para pruebas, aprendizaje y evaluación, no ofrece SLA y no se recomienda para producción. Las funciones y límites pueden cambiar.
 
 ## Documentación
 
@@ -26,9 +26,9 @@ Consulte los documentos de Cloud: [Términos](https://cloud.speedle.io/es/terms)
 
 ## Primeros pasos con Speedle Cloud
 
-**Speedle Cloud estará disponible próximamente.** Esta guía describe el flujo para cuando se habiliten el inicio de sesión en producción y las comprobaciones de autorización autenticadas; los ejemplos no se han ejecutado en un entorno Cloud real.
+**Speedle Cloud está en beta pública.** Esta guía describe el flujo de trabajo del servicio en línea.
 
-### Iniciar sesión con GitHub o Google (próximamente)
+### Iniciar sesión con GitHub o Google
 
 Abra la [consola Cloud](https://cloud.speedle.io/es/) en el navegador e inicie sesión con un proveedor disponible. Para una identidad nueva con un correo verificado sin usar, confirme **Crear cuenta**. Si el correo ya está en uso, inicie sesión con el proveedor vinculado que indica la consola.
 
@@ -92,7 +92,7 @@ Siguientes pasos: para la gestión mediante código, cree una clave aparte con e
 
 Las claves API pertenecen a la cuenta y acceden a sus servicios según su ámbito. Autentican la aplicación, no al usuario final. Administrar claves API, sesiones e identidades vinculadas requiere una sesión de consola iniciada.
 
-**Speedle Cloud estará disponible próximamente.** Esta guía describe el flujo para cuando se habiliten el inicio de sesión en producción y las comprobaciones de autorización autenticadas; los ejemplos no se han ejecutado en un entorno Cloud real.
+**Speedle Cloud está en beta pública.** Esta guía describe el flujo de trabajo del servicio en línea.
 
 ### Crear una clave API
 
@@ -107,7 +107,7 @@ Cada clave tiene un ámbito fijo desde su creación:
 | `pms:write` | Leer, crear y eliminar servicios, políticas de autorización y de roles de la cuenta mediante `/policy-mgmt/v1`. |
 | `pms:read+ads` (ADS sync) | Comprobaciones de autorización, gestión de políticas de solo lectura y sincronización de políticas para Speedle Cloud ADS; sin escrituras. |
 
-`pms:read` y `pms:write` no pueden llamar a ADS; `ads` no puede gestionar políticas. La sincronización de políticas con Speedle Cloud ADS (`speedle-cloud`) requiere `pms:read+ads` (ADS sync). También permite comprobaciones ADS y lecturas PMS, pero no escrituras. Un ámbito incorrecto devuelve `403 insufficient_scope`. Solicitar un ámbito de gestión con el inicio de sesión cerrado devuelve `403 management_scope_disabled`.
+`pms:read` y `pms:write` no pueden llamar a ADS; `ads` no puede gestionar políticas. La sincronización de políticas con Speedle Cloud ADS (`speedle-cloud`) requiere `pms:read+ads` (ADS sync). También permite comprobaciones ADS y lecturas PMS, pero no escrituras. Un ámbito incorrecto devuelve `403 insufficient_scope`.
 
 La consola envía una solicitud autenticada por sesión:
 
@@ -161,9 +161,9 @@ Si se pierde una respuesta, actualice la lista antes de actuar. Un nombre coinci
 
 ## API de autorización de Speedle Cloud
 
-**Speedle Cloud estará disponible próximamente.** Esta guía describe el flujo para cuando se habiliten el inicio de sesión en producción y las comprobaciones de autorización autenticadas; los ejemplos no se han ejecutado en un entorno Cloud real.
+**Speedle Cloud está en beta pública.** Esta guía describe el flujo de trabajo del servicio en línea.
 
-Use una clave API de cuenta para llamadas de autorización desde el servidor. Para crear claves debe estar disponible el inicio de sesión. Use `ads` o `pms:read+ads` para las comprobaciones ADS; `pms:read` y `pms:write` devuelven `403 insufficient_scope`. `pms:read+ads` también permite lecturas PMS y es necesario para sincronizar políticas con Speedle Cloud ADS (`speedle-cloud`); no permite escrituras.
+Use una clave API de cuenta para llamadas de autorización desde el servidor. Inicie sesión en la cuenta para crear claves. Use `ads` o `pms:read+ads` para las comprobaciones ADS; `pms:read` y `pms:write` devuelven `403 insufficient_scope`. `pms:read+ads` también permite lecturas PMS y es necesario para sincronizar políticas con Speedle Cloud ADS (`speedle-cloud`); no permite escrituras.
 
 ### Invocar IsAllowed desde su servidor
 
@@ -258,7 +258,7 @@ Para consultar las bibliotecas cliente en Java, Python, Go, .NET, Rust y Node.js
 
 ## Speedle Cloud Límites y errores
 
-**Speedle Cloud estará disponible próximamente.** Esta guía describe el flujo para cuando se habiliten el inicio de sesión en producción y las comprobaciones de autorización autenticadas; los ejemplos no se han ejecutado en un entorno Cloud real.
+**Speedle Cloud está en beta pública.** Esta guía describe el flujo de trabajo del servicio en línea.
 
 Salvo que se indique lo contrario, los límites se comparten en toda la cuenta. Cambiar de clave API no aumenta la cuota diaria.
 
@@ -298,7 +298,6 @@ Los errores son JSON plano, por ejemplo `{"error":"rate_limited"}`. Si no obtien
 | `401 api_key_expired` | La clave API ha alcanzado o superado su caducidad. Cree un reemplazo; reintentar esta clave no tendrá éxito. Las claves creadas antes de que la caducidad fuera obligatoria también tienen una. La página de claves API indica cuándo; lea `expiresAt` y cree un reemplazo antes. |
 | `403 reauth_required` | Autenticarse de nuevo con un proveedor vinculado antes de crear la clave. |
 | `403 insufficient_scope` | Usar una clave con el ámbito requerido. |
-| `403 management_scope_disabled` | No se emiten ámbitos de gestión con el inicio de sesión cerrado. |
 | `403 csrf_failed` | Comprobar sesión, origen y cabecera CSRF. |
 | `404 service_not_found` (ADS) / `404 not_found` (gestión) | Elegir un servicio de la cuenta. Los ID de clave desconocidos, ajenos o revocados también devuelven `404 not_found`. |
 | `409 quota_exceeded` | Libere una plaza de servicio o de política eliminando un elemento sin uso; el tiempo no restablece esos límites. Revoque una clave API sin uso, o deje que caduque, para liberar esa plaza. |

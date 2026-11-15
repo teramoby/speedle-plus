@@ -11,9 +11,9 @@ bref = "Inicie sesión, guarde una política, cree una clave API y compruebe la 
 lastmod = 2026-11-12T00:00:00+08:00
 +++
 
-**Speedle Cloud estará disponible próximamente.** Esta guía describe el flujo para cuando se habiliten el inicio de sesión en producción y las comprobaciones de autorización autenticadas; los ejemplos no se han ejecutado en un entorno Cloud real.
+**Speedle Cloud está en beta pública.** Esta guía describe el flujo de trabajo del servicio en línea.
 
-## Iniciar sesión con GitHub o Google (próximamente)
+## Iniciar sesión con GitHub o Google
 
 Abra la [consola Cloud](https://cloud.speedle.io/es/) en el navegador e inicie sesión con un proveedor disponible. Para una identidad nueva con un correo verificado sin usar, confirme **Crear cuenta**. Si el correo ya está en uso, inicie sesión con el proveedor vinculado que indica la consola.
 

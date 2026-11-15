@@ -14,9 +14,9 @@ Speedle Cloud 是基于开源 Speedle 引擎的托管授权服务。你可以管
 
 从 Speedle Cloud 同步策略使用 Speedle Cloud ADS，即 `speedle-cloud` 二进制和镜像。自托管 Speedle Engine 的 `speedle-ads` 二进制不再提供 `policy-source` 存储。
 
-**Speedle Cloud 即将上线。** 本文介绍生产环境开放登录和授权 API 后的使用流程，示例尚未在线上 Cloud 环境执行。
+**Speedle Cloud 已开放公开测试版。** 本文介绍线上服务的使用流程。
 
-使用控制台和创建 API 密钥需要账号登录功能可用。免费公开测试版用于试用、学习和评估，不提供 SLA，不建议用于生产环境。功能和限额可能调整。
+使用控制台和创建 API 密钥需要登录账号。免费公开测试版用于试用、学习和评估，不提供 SLA，不建议用于生产环境。功能和限额可能调整。
 
 ## 文档导航
 

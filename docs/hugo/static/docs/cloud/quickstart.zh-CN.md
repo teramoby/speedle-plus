@@ -4,9 +4,9 @@ Speedle Cloud 是基于开源 Speedle 引擎的托管授权服务。你可以管
 
 从 Speedle Cloud 同步策略使用 Speedle Cloud ADS，即 `speedle-cloud` 二进制和镜像。自托管 Speedle Engine 的 `speedle-ads` 二进制不再提供 `policy-source` 存储。
 
-**Speedle Cloud 即将上线。** 本文介绍生产环境开放登录和授权 API 后的使用流程，示例尚未在线上 Cloud 环境执行。
+**Speedle Cloud 已开放公开测试版。** 本文介绍线上服务的使用流程。
 
-使用控制台和创建 API 密钥需要账号登录功能可用。免费公开测试版用于试用、学习和评估，不提供 SLA，不建议用于生产环境。功能和限额可能调整。
+使用控制台和创建 API 密钥需要登录账号。免费公开测试版用于试用、学习和评估，不提供 SLA，不建议用于生产环境。功能和限额可能调整。
 
 ## 文档导航
 
@@ -26,9 +26,9 @@ Speedle Cloud 是基于开源 Speedle 引擎的托管授权服务。你可以管
 
 ## Speedle Cloud 快速入门
 
-**Speedle Cloud 即将上线。** 本文介绍生产环境开放登录和授权 API 后的使用流程，示例尚未在线上 Cloud 环境执行。
+**Speedle Cloud 已开放公开测试版。** 本文介绍线上服务的使用流程。
 
-### 使用 GitHub 或 Google 登录（即将开放）
+### 使用 GitHub 或 Google 登录
 
 在浏览器中打开 [Cloud 控制台](https://cloud.speedle.io/zh-CN/)，选择可用的登录方式。新身份的已验证邮箱尚未被使用时，确认 **创建账号**。如果邮箱已被使用，请使用控制台提示的已关联登录方式登录。
 
@@ -92,7 +92,7 @@ curl --fail-with-body --silent --show-error --max-time 10 \
 
 API 密钥属于账号，按权限范围访问该账号下的服务。它认证的是应用，不是最终用户。管理 API 密钥、会话和关联身份始终需要已登录的控制台会话。
 
-**Speedle Cloud 即将上线。** 本文介绍生产环境开放登录和授权 API 后的使用流程，示例尚未在线上 Cloud 环境执行。
+**Speedle Cloud 已开放公开测试版。** 本文介绍线上服务的使用流程。
 
 ### 创建 API 密钥
 
@@ -107,7 +107,7 @@ API 密钥属于账号，按权限范围访问该账号下的服务。它认证�
 | `pms:write` | 通过 `/policy-mgmt/v1` 读取、创建和删除账号下的服务、授权策略和角色策略。 |
 | `pms:read+ads`（ADS 同步） | 授权检查、只读策略管理，以及 Speedle Cloud ADS 的策略同步；不能写入。 |
 
-`pms:read` 和 `pms:write` 不能调用 ADS；`ads` 不能管理策略。Speedle Cloud ADS（`speedle-cloud`）同步策略需要 `pms:read+ads`（ADS 同步）权限范围；它也可调用 ADS 和读取 PMS，但不能写入。权限范围不符时返回 `403 insufficient_scope`。登录尚未开放时，申请管理权限返回 `403 management_scope_disabled`。
+`pms:read` 和 `pms:write` 不能调用 ADS；`ads` 不能管理策略。Speedle Cloud ADS（`speedle-cloud`）同步策略需要 `pms:read+ads`（ADS 同步）权限范围；它也可调用 ADS 和读取 PMS，但不能写入。权限范围不符时返回 `403 insufficient_scope`。
 
 控制台使用已登录会话发送请求：
 
@@ -161,9 +161,9 @@ Content-Type: application/json
 
 ## Speedle Cloud 授权 API
 
-**Speedle Cloud 即将上线。** 本文介绍生产环境开放登录和授权 API 后的使用流程，示例尚未在线上 Cloud 环境执行。
+**Speedle Cloud 已开放公开测试版。** 本文介绍线上服务的使用流程。
 
-从应用服务端使用账号 API 密钥调用授权接口。创建密钥需要账号登录功能可用。ADS 检查可使用 `ads` 或 `pms:read+ads`；`pms:read` 和 `pms:write` 返回 `403 insufficient_scope`。组合权限范围 `pms:read+ads` 还允许读取 PMS，是 Speedle Cloud ADS（`speedle-cloud`）同步策略所需的权限范围，不能写入策略。
+从应用服务端使用账号 API 密钥调用授权接口。创建密钥需要先登录账号。ADS 检查可使用 `ads` 或 `pms:read+ads`；`pms:read` 和 `pms:write` 返回 `403 insufficient_scope`。组合权限范围 `pms:read+ads` 还允许读取 PMS，是 Speedle Cloud ADS（`speedle-cloud`）同步策略所需的权限范围，不能写入策略。
 
 ### 从应用服务端调用 IsAllowed
 
@@ -258,7 +258,7 @@ ADS 请使用 POST。非 POST 请求可能被公开边缘规则拦截并返回 C
 
 ## Speedle Cloud 限额与错误
 
-**Speedle Cloud 即将上线。** 本文介绍生产环境开放登录和授权 API 后的使用流程，示例尚未在线上 Cloud 环境执行。
+**Speedle Cloud 已开放公开测试版。** 本文介绍线上服务的使用流程。
 
 除表中另有说明外，限额由整个账号共用。API 密钥属于账号；更换密钥不会增加每日额度。
 
@@ -298,7 +298,6 @@ Cloud 自身故障可能退还额度，每账号每 UTC 日最多退还 1,000 �
 | `401 api_key_expired` | API 密钥已到或已过到期时间。请创建新密钥；重试该密钥不会成功。在必须设置有效期之前创建的密钥同样有到期时间。到期规则见 API 密钥页；请查看 `expiresAt`，并在到期前创建新密钥。 |
 | `403 reauth_required` | 创建密钥前，通过已关联的身份提供方重新认证。 |
 | `403 insufficient_scope` | 使用具有所需权限范围的密钥。 |
-| `403 management_scope_disabled` | 登录关闭时不能签发管理权限的密钥。 |
 | `403 csrf_failed` | 使用控制台会话及所需的来源和 CSRF 请求头。 |
 | `404 service_not_found`（ADS）/ `404 not_found`（管理） | 选择当前账号中存在的服务。密钥 ID 未知、属于其他账号或已撤销时也返回 `404 not_found`。 |
 | `409 quota_exceeded` | 删除不用的服务或策略以释放名额；等待不会重置这两类上限。撤销不用的 API 密钥，或等它到期，可释放密钥名额。 |

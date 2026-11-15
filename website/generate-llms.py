@@ -132,7 +132,7 @@ FIXED_LINKS = {
     "modeler": ("https://ai.speedle.io/#policy-modeler", "The open-source policy-modeler Agent Skill turns employee handbooks and regulations into RBAC + ABAC SPDL models with tests."),
     "mcp_repository": ("https://github.com/teramoby/speedle-mcp/", "Speedle MCP server source. `@speedle/mcp` 0.2.1 is published on npm with check and manage modes. Run the `speedle-mcp` binary with `npx @speedle/mcp@0.2.1 check`."),
     "modeler_skill": ("https://raw.githubusercontent.com/teramoby/ai.speedle.io/main/skills/speedle-policy-modeler/SKILL.md", "The entry point for the policy-modeler Agent Skill; its repository folder holds references, scripts, templates and English/Chinese example runs."),
-    "cloud": ("https://cloud.speedle.io/", "Speedle Cloud, a hosted authorization service. Free public beta; sign-in opens soon."),
+    "cloud": ("https://cloud.speedle.io/", "Speedle Cloud, a hosted authorization service. Free public beta; sign-in is open."),
     "ai_llms": ("https://ai.speedle.io/llms.txt", "Speedle AI's own llms.txt index."),
     "cloud_llms": ("https://cloud.speedle.io/llms.txt", "Speedle Cloud's own llms.txt index."),
 }

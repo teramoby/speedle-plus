@@ -63,6 +63,8 @@ const footerLockup = /<a class="footer-lockup" href="\/(?:(?:ja|ko|es|zh)\/)?" a
 const iconLinks = /<link rel="icon" href="(?:https:\/\/speedle\.io)?\/favicon\.svg" type="image\/svg\+xml">\n\s*<link rel="icon" href="(?:https:\/\/speedle\.io)?\/favicon\.ico" sizes="any">\n\s*<link rel="apple-touch-icon" href="(?:https:\/\/speedle\.io)?\/apple-touch-icon\.png">/;
 // #217: links between the three sites keep the reader's language.
 const routeLanguage = route => route.match(/^(?:\/[0-9a-f]{32})?\/(zh|ja|ko|es)\//)?.[1] || 'en';
+// #432: Speedle Cloud is live in public beta; the badge matches the Cloud console.
+const cloudBadge = {en: 'Beta', zh: '测试版', ja: 'ベータ', ko: '베타', es: 'Beta'};
 const crossSiteRoots = lang => {
   if (lang === 'zh') return ['https://engine.speedle.io/zh/','https://cloud.speedle.io/zh-CN/','https://ai.speedle.io/zh/'];
   if (lang === 'ja' || lang === 'ko' || lang === 'es') return [`https://engine.speedle.io/${lang}/`,`https://cloud.speedle.io/${lang}/`,`https://ai.speedle.io/${lang}/`];
@@ -70,12 +72,16 @@ const crossSiteRoots = lang => {
 };
 for (const name of ['', 'ja/', 'ko/', 'es/', 'zh/'].flatMap(locale => [`docs/${locale}index.html`, `docs/${locale}playground/index.html`])) {
   const html = read(name);
-  const roots = crossSiteRoots(routeLanguage('/' + name.slice('docs/'.length)));
+  const lang = routeLanguage('/' + name.slice('docs/'.length));
+  const roots = crossSiteRoots(lang);
+  const badge = cloudBadge[lang];
   assert.ok(iconLinks.test(html) && !html.includes('speedle_purple.png'), `Sphere favicons in ${name}`);
   const menu = html.match(productsMenu)?.[0] || '';
   assert.ok(menu.includes('aria-haspopup="true"') && menu.includes('aria-current="page"') && roots.every(url => menu.includes(`href="${url}"`)), `Products menu in ${name}`);
+  assert.ok(menu.includes(`<span class="product-badge">${badge}</span>`), `Cloud ${badge} badge in the Products menu in ${name}`);
   const family = html.match(familyFooter)?.[0] || '';
   assert.ok(roots.every(url => family.includes(`href="${url}"`)), `Footer family language in ${name}`);
+  assert.ok(family.includes(`<span class="product-badge">${badge}</span>`), `Cloud ${badge} badge in the footer card in ${name}`);
   assert.ok(familyFooter.test(html) && footerLockup.test(html) && html.includes('<footer class="site-footer">'), `Shared footer in ${name}`);
 }
 let chinesePages = 0;
@@ -99,6 +105,7 @@ let chinesePages = 0;
     if (lang === 'zh') chinesePages++;
     const familyPrefix = {zh: /^\/(?:zh|zh-CN)\//, ja: /^\/ja\//, ko: /^\/ko\//, es: /^\/es\//}[lang];
     for (const block of blocks) {
+      assert.ok(block.includes(`<span class="product-badge">${cloudBadge[lang]}</span>`), `Cloud ${cloudBadge[lang]} badge in ${route}`);
       for (const [, href] of block.matchAll(/<a\b[^>]*\bhref="(https:\/\/(?:engine|cloud|ai)\.speedle\.io\/[^"]*)"/g)) {
         const pathname = new URL(href).pathname;
         if (familyPrefix) assert.ok(familyPrefix.test(pathname), `${lang} page ${route} keeps its language on ${href}`);
