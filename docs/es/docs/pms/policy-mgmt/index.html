@@ -276,7 +276,7 @@ grant role manager update res1</code></pre></div>
 
 <p>Use una clave API de cuenta para gestionar servicios y políticas de Cloud con <code>spctl</code>. El endpoint de gestión es:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">https://cloud.speedle.io/policy-mgmt/v1</code></pre></div>
-<p>Elija un único ámbito fijo para una clave API de cuenta. <code>pms:read</code> permite leer servicios y políticas; <code>pms:write</code> permite además crearlos y eliminarlos. Ambos se aplican a los servicios de la cuenta. Una clave <code>ads</code> no puede gestionar políticas y recibe <code>403 insufficient_scope</code>. Consulte <a href="/es/docs/cloud/tokens/">Claves API</a> para creación y revocación.</p>
+<p>Elija un único ámbito fijo para una clave API de cuenta. <code>pms:read</code> permite leer servicios y políticas; <code>pms:write</code> permite además crearlos y eliminarlos. Ambos se aplican a los servicios de la cuenta. Una clave <code>ads</code> no puede gestionar políticas y recibe <code>403 insufficient_scope</code>. Consulte <a href="/es/docs/cloud/tokens/">Claves API</a> para creación y revocación. El ámbito <code>pms:read+ads</code> también permite estas lecturas y comprobaciones ADS, sin escrituras.</p>
 
 <p>Pase el endpoint como un indicador global y lea la clave API desde <code>SPCTL_TOKEN</code>. En una sesión interactiva, esto evita que el secreto quede expuesto en los argumentos de comando o en el historial de la terminal:</p>
 

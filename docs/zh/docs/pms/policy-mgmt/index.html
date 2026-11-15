@@ -276,7 +276,7 @@ grant role manager update res1</code></pre></div>
 
 <p>使用账号 API 密钥，通过 <code>spctl</code> 管理 Cloud 服务和策略。管理端点为：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">https://cloud.speedle.io/policy-mgmt/v1</code></pre></div>
-<p>账号 API 密钥只能选择一个固定权限范围。<code>pms:read</code> 可读取服务和策略；<code>pms:write</code> 还可创建和删除服务与策略。两者都适用于账号下的服务。<code>ads</code> 密钥不能管理策略，会收到 <code>403 insufficient_scope</code>。创建和撤销规则见 <a href="/zh/docs/cloud/tokens/">API 密钥</a>。</p>
+<p>账号 API 密钥只能选择一个固定权限范围。<code>pms:read</code> 可读取服务和策略；<code>pms:write</code> 还可创建和删除服务与策略。两者都适用于账号下的服务。<code>ads</code> 密钥不能管理策略，会收到 <code>403 insufficient_scope</code>。创建和撤销规则见 <a href="/zh/docs/cloud/tokens/">API 密钥</a>。 <code>pms:read+ads</code> 权限范围也允许这些读取操作和 ADS 检查，但不能写入。</p>
 
 <p>通过全局命令行参数指定端点，并从 <code>SPCTL_TOKEN</code> 环境变量读取API 密钥。在交互式 shell 中，以下方式可避免将 secret 写入命令参数和 shell 历史：</p>
 

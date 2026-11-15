@@ -120,7 +120,7 @@ role_policy_id=$(./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1
 https://cloud.speedle.io/policy-mgmt/v1
 ```
 
-账号 API 密钥只能选择一个固定权限范围。`pms:read` 可读取服务和策略；`pms:write` 还可创建和删除服务与策略。两者都适用于账号下的服务。`ads` 密钥不能管理策略，会收到 `403 insufficient_scope`。创建和撤销规则见 [API 密钥](/zh/docs/cloud/tokens/)。
+账号 API 密钥只能选择一个固定权限范围。`pms:read` 可读取服务和策略；`pms:write` 还可创建和删除服务与策略。两者都适用于账号下的服务。`ads` 密钥不能管理策略，会收到 `403 insufficient_scope`。创建和撤销规则见 [API 密钥](/zh/docs/cloud/tokens/)。 `pms:read+ads` 权限范围也允许这些读取操作和 ADS 检查，但不能写入。
 
 通过全局命令行参数指定端点，并从 `SPCTL_TOKEN` 环境变量读取API 密钥。在交互式 shell 中，以下方式可避免将 secret 写入命令参数和 shell 历史：
 

@@ -25,8 +25,9 @@ Each key has one scope, fixed at creation:
 | `ads` (default) | Authorization checks through `/authz-check/v1/*` only. |
 | `pms:read` | Read account services, policies and role policies through `/policy-mgmt/v1`. |
 | `pms:write` | Read, create and delete account services, policies and role policies through `/policy-mgmt/v1`. |
+| `pms:read+ads` (ADS sync) | Authorization checks, read-only policy management and policy synchronization for Speedle Cloud ADS; no writes. |
 
-Management scopes cannot call ADS; `ads` cannot call policy management. Using the wrong scope returns `403 insufficient_scope`. Requesting a management scope while sign-in is closed returns `403 management_scope_disabled`.
+`pms:read` and `pms:write` cannot call ADS; `ads` cannot call policy management. Use `pms:read+ads` (ADS sync) for policy synchronization with Speedle Cloud ADS (`speedle-cloud`); it also permits ADS checks and PMS reads, but no writes. Using the wrong scope returns `403 insufficient_scope`. Requesting a management scope while sign-in is closed returns `403 management_scope_disabled`.
 
 The console sends a session-authenticated request:
 

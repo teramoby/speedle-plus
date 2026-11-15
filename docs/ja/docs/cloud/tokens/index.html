@@ -229,10 +229,15 @@
 <td><code>pms:write</code></td>
 <td><code>/policy-mgmt/v1</code> によるアカウント内のサービス、認可ポリシー、ロールポリシーの読み取り、作成、削除。</td>
 </tr>
+
+<tr>
+<td><code>pms:read+ads</code>（ADS 同期）</td>
+<td>認可チェック、読み取り専用のポリシー管理、Speedle Cloud ADS のポリシー同期。書き込みは不可。</td>
+</tr>
 </tbody>
 </table>
 
-<p>管理スコープは ADS を呼び出せず、<code>ads</code> はポリシーを管理できません。不適切なスコープは <code>403 insufficient_scope</code> です。サインインが閉じている場合の管理スコープの発行は <code>403 management_scope_disabled</code> です。</p>
+<p><code>pms:read</code> と <code>pms:write</code> は ADS を呼び出せず、<code>ads</code> はポリシーを管理できません。Speedle Cloud ADS（<code>speedle-cloud</code>）のポリシー同期には <code>pms:read+ads</code>（ADS 同期）が必要です。ADS チェックと PMS の読み取りも許可しますが、書き込みは許可しません。不適切なスコープは <code>403 insufficient_scope</code> です。サインインが閉じている場合の管理スコープの発行は <code>403 management_scope_disabled</code> です。</p>
 
 <p>コンソールはセッション認証付きのリクエストを送信します。</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-http" data-lang="http">POST /api/tokens

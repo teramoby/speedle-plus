@@ -25,8 +25,9 @@ Cada clave tiene un ámbito fijo desde su creación:
 | `ads` (predeterminado) | Solo comprobaciones de autorización mediante `/authz-check/v1/*`. |
 | `pms:read` | Leer servicios, políticas de autorización y de roles de la cuenta mediante `/policy-mgmt/v1`. |
 | `pms:write` | Leer, crear y eliminar servicios, políticas de autorización y de roles de la cuenta mediante `/policy-mgmt/v1`. |
+| `pms:read+ads` (ADS sync) | Comprobaciones de autorización, gestión de políticas de solo lectura y sincronización de políticas para Speedle Cloud ADS; sin escrituras. |
 
-Los ámbitos de gestión no pueden llamar a ADS; `ads` no puede gestionar políticas. Un ámbito incorrecto devuelve `403 insufficient_scope`. Solicitar un ámbito de gestión con el inicio de sesión cerrado devuelve `403 management_scope_disabled`.
+`pms:read` y `pms:write` no pueden llamar a ADS; `ads` no puede gestionar políticas. La sincronización de políticas con Speedle Cloud ADS (`speedle-cloud`) requiere `pms:read+ads` (ADS sync). También permite comprobaciones ADS y lecturas PMS, pero no escrituras. Un ámbito incorrecto devuelve `403 insufficient_scope`. Solicitar un ámbito de gestión con el inicio de sesión cerrado devuelve `403 management_scope_disabled`.
 
 La consola envía una solicitud autenticada por sesión:
 

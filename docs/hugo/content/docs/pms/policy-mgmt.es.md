@@ -118,7 +118,7 @@ Use una clave API de cuenta para gestionar servicios y políticas de Cloud con `
 https://cloud.speedle.io/policy-mgmt/v1
 ```
 
-Elija un único ámbito fijo para una clave API de cuenta. `pms:read` permite leer servicios y políticas; `pms:write` permite además crearlos y eliminarlos. Ambos se aplican a los servicios de la cuenta. Una clave `ads` no puede gestionar políticas y recibe `403 insufficient_scope`. Consulte [Claves API](/es/docs/cloud/tokens/) para creación y revocación.
+Elija un único ámbito fijo para una clave API de cuenta. `pms:read` permite leer servicios y políticas; `pms:write` permite además crearlos y eliminarlos. Ambos se aplican a los servicios de la cuenta. Una clave `ads` no puede gestionar políticas y recibe `403 insufficient_scope`. Consulte [Claves API](/es/docs/cloud/tokens/) para creación y revocación. El ámbito `pms:read+ads` también permite estas lecturas y comprobaciones ADS, sin escrituras.
 
 Pase el endpoint como un indicador global y lea la clave API desde `SPCTL_TOKEN`. En una sesión interactiva, esto evita que el secreto quede expuesto en los argumentos de comando o en el historial de la terminal:
 

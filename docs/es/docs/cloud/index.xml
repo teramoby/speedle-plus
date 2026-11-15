@@ -38,7 +38,7 @@ Speedle Cloud estará disponible próximamente. Esta guía describe el flujo par
       
       <guid>https://engine.speedle.io/es/docs/cloud/authorization-api/</guid>
       <description>Speedle Cloud estará disponible próximamente. Esta guía describe el flujo para cuando se habiliten el inicio de sesión en producción y las comprobaciones de autorización autenticadas; los ejemplos no se han ejecutado en un entorno Cloud real.
-Use una clave API de cuenta para llamadas de autorización desde el servidor. Para crear claves debe estar disponible el inicio de sesión. Los ámbitos de gestión no pueden llamar a ADS; use ads o recibirá 403 insufficient_scope.</description>
+Use una clave API de cuenta para llamadas de autorización desde el servidor. Para crear claves debe estar disponible el inicio de sesión. Use ads o pms:read+ads para las comprobaciones ADS; pms:read y pms:write devuelven 403 insufficient_scope.</description>
     </item>
     
     <item>

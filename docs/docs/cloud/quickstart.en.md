@@ -105,8 +105,9 @@ Each key has one scope, fixed at creation:
 | `ads` (default) | Authorization checks through `/authz-check/v1/*` only. |
 | `pms:read` | Read account services, policies and role policies through `/policy-mgmt/v1`. |
 | `pms:write` | Read, create and delete account services, policies and role policies through `/policy-mgmt/v1`. |
+| `pms:read+ads` (ADS sync) | Authorization checks, read-only policy management and policy synchronization for Speedle Cloud ADS; no writes. |
 
-Management scopes cannot call ADS; `ads` cannot call policy management. Using the wrong scope returns `403 insufficient_scope`. Requesting a management scope while sign-in is closed returns `403 management_scope_disabled`.
+`pms:read` and `pms:write` cannot call ADS; `ads` cannot call policy management. Use `pms:read+ads` (ADS sync) for policy synchronization with Speedle Cloud ADS (`speedle-cloud`); it also permits ADS checks and PMS reads, but no writes. Using the wrong scope returns `403 insufficient_scope`. Requesting a management scope while sign-in is closed returns `403 management_scope_disabled`.
 
 The console sends a session-authenticated request:
 
@@ -162,11 +163,11 @@ If a creation or revocation response is lost, refresh the list before acting aga
 
 **Speedle Cloud is coming soon.** This guide describes the workflow available when production sign-in and authenticated authorization checks open; the examples have not been run against a live Cloud environment.
 
-Use an account API key for server-side authorization calls. Account sign-in must be available before you can create keys. A key with a management scope cannot call ADS; use `ads` or the response is `403 insufficient_scope`.
+Use an account API key for server-side authorization calls. Account sign-in must be available before you can create keys. Use `ads` or `pms:read+ads` for ADS checks; `pms:read` and `pms:write` return `403 insufficient_scope`. The combined `pms:read+ads` scope also permits PMS reads and is required for policy synchronization with Speedle Cloud ADS (`speedle-cloud`); it cannot write policies.
 
 ### Call IsAllowed from your server
 
-Send an account API key with the `ads` scope in one `Authorization: Bearer` header and make a POST request:
+Send an account API key with the `ads` or `pms:read+ads` scope in one `Authorization: Bearer` header and make a POST request:
 
 ```http
 POST /authz-check/v1/is-allowed

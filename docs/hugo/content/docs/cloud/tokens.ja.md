@@ -25,8 +25,9 @@ API キーはアカウントに属し、スコープに応じてそのアカウ�
 | `ads`（既定） | `/authz-check/v1/*` による認可チェックのみ。 |
 | `pms:read` | `/policy-mgmt/v1` によるアカウント内のサービス、認可ポリシー、ロールポリシーの読み取り。 |
 | `pms:write` | `/policy-mgmt/v1` によるアカウント内のサービス、認可ポリシー、ロールポリシーの読み取り、作成、削除。 |
+| `pms:read+ads`（ADS 同期） | 認可チェック、読み取り専用のポリシー管理、Speedle Cloud ADS のポリシー同期。書き込みは不可。 |
 
-管理スコープは ADS を呼び出せず、`ads` はポリシーを管理できません。不適切なスコープは `403 insufficient_scope` です。サインインが閉じている場合の管理スコープの発行は `403 management_scope_disabled` です。
+`pms:read` と `pms:write` は ADS を呼び出せず、`ads` はポリシーを管理できません。Speedle Cloud ADS（`speedle-cloud`）のポリシー同期には `pms:read+ads`（ADS 同期）が必要です。ADS チェックと PMS の読み取りも許可しますが、書き込みは許可しません。不適切なスコープは `403 insufficient_scope` です。サインインが閉じている場合の管理スコープの発行は `403 management_scope_disabled` です。
 
 コンソールはセッション認証付きのリクエストを送信します。
 

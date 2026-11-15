@@ -284,6 +284,7 @@ for (const [locale, copy] of Object.entries(cloudCopy)) {
   assert.ok(guide.includes('grant user alice from corp get /books'), `Domain-scoped getting-started policy in ${locale || 'en'}`);
   const quickStart = ['SPEEDLE_API_KEY', 'books-app', 'read-books', 'cloud.speedle.io/authz-check/v1/is-allowed', 'HTTP 200'];
   assert.ok(quickStart.every(marker => guide.includes(marker)), `API-key quick start in ${locale || 'en'}`);
+  assert.ok(tokens.includes('<code>pms:read+ads</code>') && api.includes('<code>pms:read+ads</code>'), `Cloud ADS sync scope in ${locale || 'en'}`);
   assert.ok(!tokens.includes('UUIDv7'), `Obsolete token format removed in ${locale || 'en'}`);
   assert.ok(api.includes('POST /authz-check/v1/is-allowed'), `ADS preview route in ${locale || 'en'}`);
   if (copy.samples) {
@@ -338,6 +339,7 @@ for (const [locale, copy] of Object.entries(cloudCopy)) {
     assert.ok(overview.includes('プライバシーポリシー</a>。'), 'Japanese legal line ends with a full-width stop');
   }
   const markdown = fs.readFileSync(path.join(output, 'docs/cloud', copy.download), 'utf8');
+  assert.ok(markdown.includes('`pms:read+ads`'), `Cloud ADS sync scope in ${copy.download}`);
   assert.ok(markdown.includes('`speedle-cloud`') && markdown.includes('`policy-source`'), `Cloud ADS ownership in ${copy.download}`);
   assert.deepEqual(markdown, fs.readFileSync(path.join(root, 'docs/hugo/static/docs/cloud', copy.download), 'utf8'), `Generated ${copy.download}`);
   for (const phrase of ['getting-started', 'tokens', 'authorization-api', 'limits-and-errors']) {
@@ -353,6 +355,10 @@ for (const locale of LOCALES) {
   assert.ok(fs.existsSync(path.join(output, `${locale}docs/extending-decision-service/index.html`)), `Extension guide in ${locale || 'en'}`);
 }
 console.log('PASS Cloud documentation: 30 pages in five languages, published copies, menus, sitemaps, API reference and five Markdown downloads');
+const cloudSpec = fs.readFileSync(path.join(output, 'openapi/cloud-public.yaml'), 'utf8');
+assert.ok(cloudSpec.includes('ads or pms:read+ads scope') && cloudSpec.includes('pms:read+ads permits both authorization checks and read-only policy management'), 'Public schema describes the Cloud ADS sync scope');
+assert.deepEqual(cloudSpec, fs.readFileSync(path.join(root, 'docs/hugo/static/openapi/cloud-public.yaml'), 'utf8'), 'Generated Cloud schema matches source');
+assert.deepEqual(cloudSpec, fs.readFileSync(path.join(root, 'docs/openapi/cloud-public.yaml'), 'utf8'), 'Published Cloud schema matches source');
 const llms = fs.readFileSync(path.join(output, 'llms.txt'), 'utf8');
 const llmsFull = fs.readFileSync(path.join(output, 'llms-full.txt'), 'utf8');
 const docsJs = fs.readFileSync(path.join(root, 'docs/hugo/static/js/docs.js'), 'utf8');

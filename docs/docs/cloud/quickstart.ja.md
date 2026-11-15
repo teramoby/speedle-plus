@@ -105,8 +105,9 @@ API キーはアカウントに属し、スコープに応じてそのアカウ�
 | `ads`（既定） | `/authz-check/v1/*` による認可チェックのみ。 |
 | `pms:read` | `/policy-mgmt/v1` によるアカウント内のサービス、認可ポリシー、ロールポリシーの読み取り。 |
 | `pms:write` | `/policy-mgmt/v1` によるアカウント内のサービス、認可ポリシー、ロールポリシーの読み取り、作成、削除。 |
+| `pms:read+ads`（ADS 同期） | 認可チェック、読み取り専用のポリシー管理、Speedle Cloud ADS のポリシー同期。書き込みは不可。 |
 
-管理スコープは ADS を呼び出せず、`ads` はポリシーを管理できません。不適切なスコープは `403 insufficient_scope` です。サインインが閉じている場合の管理スコープの発行は `403 management_scope_disabled` です。
+`pms:read` と `pms:write` は ADS を呼び出せず、`ads` はポリシーを管理できません。Speedle Cloud ADS（`speedle-cloud`）のポリシー同期には `pms:read+ads`（ADS 同期）が必要です。ADS チェックと PMS の読み取りも許可しますが、書き込みは許可しません。不適切なスコープは `403 insufficient_scope` です。サインインが閉じている場合の管理スコープの発行は `403 management_scope_disabled` です。
 
 コンソールはセッション認証付きのリクエストを送信します。
 
@@ -162,11 +163,11 @@ Content-Type: application/json
 
 **Speedle Cloud はまもなく公開されます。** このガイドは、本番環境のサインインと認証付き認可 API が利用可能になった際の手順を説明しています。例は実際の Cloud 環境では実行していません。
 
-アカウント API キーを使い、サーバーから認可を確認します。キー作成にはサインインが利用可能である必要があります。管理スコープでは ADS を呼び出せません。`ads` 以外は `403 insufficient_scope` です。
+アカウント API キーを使い、サーバーから認可を確認します。キー作成にはサインインが利用可能である必要があります。ADS チェックには `ads` または `pms:read+ads` を使用します。`pms:read` と `pms:write` は `403 insufficient_scope` です。`pms:read+ads` は PMS の読み取りも許可し、Speedle Cloud ADS（`speedle-cloud`）のポリシー同期に必要ですが、書き込みは許可しません。
 
 ### サーバーから IsAllowed を呼び出す
 
-`ads` スコープの API キーを 1 つの `Authorization: Bearer` ヘッダーに入れ、POST で送信します。
+`ads` または `pms:read+ads` スコープの API キーを 1 つの `Authorization: Bearer` ヘッダーに入れ、POST で送信します。
 
 ```http
 POST /authz-check/v1/is-allowed

@@ -229,10 +229,15 @@
 <td><code>pms:write</code></td>
 <td>Read, create and delete account services, policies and role policies through <code>/policy-mgmt/v1</code>.</td>
 </tr>
+
+<tr>
+<td><code>pms:read+ads</code> (ADS sync)</td>
+<td>Authorization checks, read-only policy management and policy synchronization for Speedle Cloud ADS; no writes.</td>
+</tr>
 </tbody>
 </table>
 
-<p>Management scopes cannot call ADS; <code>ads</code> cannot call policy management. Using the wrong scope returns <code>403 insufficient_scope</code>. Requesting a management scope while sign-in is closed returns <code>403 management_scope_disabled</code>.</p>
+<p><code>pms:read</code> and <code>pms:write</code> cannot call ADS; <code>ads</code> cannot call policy management. Use <code>pms:read+ads</code> (ADS sync) for policy synchronization with Speedle Cloud ADS (<code>speedle-cloud</code>); it also permits ADS checks and PMS reads, but no writes. Using the wrong scope returns <code>403 insufficient_scope</code>. Requesting a management scope while sign-in is closed returns <code>403 management_scope_disabled</code>.</p>
 
 <p>The console sends a session-authenticated request:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-http" data-lang="http">POST /api/tokens

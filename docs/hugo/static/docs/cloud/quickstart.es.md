@@ -105,8 +105,9 @@ Cada clave tiene un ámbito fijo desde su creación:
 | `ads` (predeterminado) | Solo comprobaciones de autorización mediante `/authz-check/v1/*`. |
 | `pms:read` | Leer servicios, políticas de autorización y de roles de la cuenta mediante `/policy-mgmt/v1`. |
 | `pms:write` | Leer, crear y eliminar servicios, políticas de autorización y de roles de la cuenta mediante `/policy-mgmt/v1`. |
+| `pms:read+ads` (ADS sync) | Comprobaciones de autorización, gestión de políticas de solo lectura y sincronización de políticas para Speedle Cloud ADS; sin escrituras. |
 
-Los ámbitos de gestión no pueden llamar a ADS; `ads` no puede gestionar políticas. Un ámbito incorrecto devuelve `403 insufficient_scope`. Solicitar un ámbito de gestión con el inicio de sesión cerrado devuelve `403 management_scope_disabled`.
+`pms:read` y `pms:write` no pueden llamar a ADS; `ads` no puede gestionar políticas. La sincronización de políticas con Speedle Cloud ADS (`speedle-cloud`) requiere `pms:read+ads` (ADS sync). También permite comprobaciones ADS y lecturas PMS, pero no escrituras. Un ámbito incorrecto devuelve `403 insufficient_scope`. Solicitar un ámbito de gestión con el inicio de sesión cerrado devuelve `403 management_scope_disabled`.
 
 La consola envía una solicitud autenticada por sesión:
 
@@ -162,11 +163,11 @@ Si se pierde una respuesta, actualice la lista antes de actuar. Un nombre coinci
 
 **Speedle Cloud estará disponible próximamente.** Esta guía describe el flujo para cuando se habiliten el inicio de sesión en producción y las comprobaciones de autorización autenticadas; los ejemplos no se han ejecutado en un entorno Cloud real.
 
-Use una clave API de cuenta para llamadas de autorización desde el servidor. Para crear claves debe estar disponible el inicio de sesión. Los ámbitos de gestión no pueden llamar a ADS; use `ads` o recibirá `403 insufficient_scope`.
+Use una clave API de cuenta para llamadas de autorización desde el servidor. Para crear claves debe estar disponible el inicio de sesión. Use `ads` o `pms:read+ads` para las comprobaciones ADS; `pms:read` y `pms:write` devuelven `403 insufficient_scope`. `pms:read+ads` también permite lecturas PMS y es necesario para sincronizar políticas con Speedle Cloud ADS (`speedle-cloud`); no permite escrituras.
 
 ### Invocar IsAllowed desde su servidor
 
-Envíe una clave API de cuenta con ámbito `ads` en un encabezado `Authorization: Bearer` y realice una solicitud POST:
+Envíe una clave API de cuenta con ámbito `ads` o `pms:read+ads` en un encabezado `Authorization: Bearer` y realice una solicitud POST:
 
 ```http
 POST /authz-check/v1/is-allowed

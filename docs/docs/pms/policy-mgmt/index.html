@@ -276,7 +276,7 @@ grant role manager update res1</code></pre></div>
 
 <p>Use an account API key to manage Cloud services and policies with <code>spctl</code>. The management endpoint is:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">https://cloud.speedle.io/policy-mgmt/v1</code></pre></div>
-<p>Choose one fixed scope for an account API key. <code>pms:read</code> permits reads of services and policies; <code>pms:write</code> also permits creating and deleting them. Both scopes apply to the account’s services. An <code>ads</code> key cannot manage policies and receives <code>403 insufficient_scope</code>. See <a href="/docs/cloud/tokens/">API keys</a> for creation and revocation.</p>
+<p>Choose one fixed scope for an account API key. <code>pms:read</code> permits reads of services and policies; <code>pms:write</code> also permits creating and deleting them. Both scopes apply to the account’s services. An <code>ads</code> key cannot manage policies and receives <code>403 insufficient_scope</code>. See <a href="/docs/cloud/tokens/">API keys</a> for creation and revocation. The <code>pms:read+ads</code> scope also permits these reads and ADS checks, without writes.</p>
 
 <p>Pass the endpoint as a global flag and read the API key from <code>SPCTL_TOKEN</code>. In an interactive shell, this keeps the secret out of command arguments and shell history:</p>
 

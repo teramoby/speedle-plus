@@ -120,7 +120,7 @@ Use an account API key to manage Cloud services and policies with `spctl`. The m
 https://cloud.speedle.io/policy-mgmt/v1
 ```
 
-Choose one fixed scope for an account API key. `pms:read` permits reads of services and policies; `pms:write` also permits creating and deleting them. Both scopes apply to the account’s services. An `ads` key cannot manage policies and receives `403 insufficient_scope`. See [API keys](/docs/cloud/tokens/) for creation and revocation.
+Choose one fixed scope for an account API key. `pms:read` permits reads of services and policies; `pms:write` also permits creating and deleting them. Both scopes apply to the account’s services. An `ads` key cannot manage policies and receives `403 insufficient_scope`. See [API keys](/docs/cloud/tokens/) for creation and revocation. The `pms:read+ads` scope also permits these reads and ADS checks, without writes.
 
 Pass the endpoint as a global flag and read the API key from `SPCTL_TOKEN`. In an interactive shell, this keeps the secret out of command arguments and shell history:
 

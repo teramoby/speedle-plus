@@ -118,7 +118,7 @@ role_policy_id=$(./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1
 https://cloud.speedle.io/policy-mgmt/v1
 ```
 
-アカウント API キーには固定スコープを 1 つ指定します。`pms:read` はサービスとポリシーの読み取り、`pms:write` はさらに作成と削除を許可します。アカウント内のサービスが対象です。`ads` キーは管理できず `403 insufficient_scope` になります。作成と失効は [API キー](/ja/docs/cloud/tokens/)を参照してください。
+アカウント API キーには固定スコープを 1 つ指定します。`pms:read` はサービスとポリシーの読み取り、`pms:write` はさらに作成と削除を許可します。アカウント内のサービスが対象です。`ads` キーは管理できず `403 insufficient_scope` になります。作成と失効は [API キー](/ja/docs/cloud/tokens/)を参照してください。 `pms:read+ads` スコープもこれらの読み取りと ADS チェックを許可しますが、書き込みは許可しません。
 
 エンドポイントをグローバルフラグとして渡し、`SPCTL_TOKEN` からAPI キーを読み取ります。対話型シェルでは、これによりシークレットがコマンド引数やシェル履歴に残らなくなります:
 

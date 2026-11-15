@@ -229,10 +229,15 @@
 <td><code>pms:write</code></td>
 <td><code>/policy-mgmt/v1</code>으로 계정의 서비스, 인가 정책, 역할 정책 읽기, 생성, 삭제.</td>
 </tr>
+
+<tr>
+<td><code>pms:read+ads</code>(ADS 동기화)</td>
+<td>인가 확인, 읽기 전용 정책 관리 및 Speedle Cloud ADS 정책 동기화. 쓰기는 불가합니다.</td>
+</tr>
 </tbody>
 </table>
 
-<p>관리 범위는 ADS를 호출할 수 없으며 <code>ads</code>는 정책을 관리할 수 없습니다. 범위가 맞지 않으면 <code>403 insufficient_scope</code>입니다. 로그인이 닫혀 있을 때 관리 범위를 요청하면 <code>403 management_scope_disabled</code>입니다.</p>
+<p><code>pms:read</code>와 <code>pms:write</code>는 ADS를 호출할 수 없으며 <code>ads</code>는 정책을 관리할 수 없습니다. Speedle Cloud ADS(<code>speedle-cloud</code>)의 정책 동기화에는 <code>pms:read+ads</code>(ADS 동기화)가 필요합니다. ADS 확인과 PMS 읽기도 허용하지만 쓰기는 허용하지 않습니다. 범위가 맞지 않으면 <code>403 insufficient_scope</code>입니다. 로그인이 닫혀 있을 때 관리 범위를 요청하면 <code>403 management_scope_disabled</code>입니다.</p>
 
 <p>콘솔은 세션 인증 요청을 전송합니다.</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-http" data-lang="http">POST /api/tokens

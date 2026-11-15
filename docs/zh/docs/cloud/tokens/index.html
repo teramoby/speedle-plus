@@ -229,10 +229,15 @@
 <td><code>pms:write</code></td>
 <td>通过 <code>/policy-mgmt/v1</code> 读取、创建和删除账号下的服务、授权策略和角色策略。</td>
 </tr>
+
+<tr>
+<td><code>pms:read+ads</code>（ADS 同步）</td>
+<td>授权检查、只读策略管理，以及 Speedle Cloud ADS 的策略同步；不能写入。</td>
+</tr>
 </tbody>
 </table>
 
-<p>管理权限的密钥不能调用 ADS；<code>ads</code> 不能管理策略。权限范围不符时返回 <code>403 insufficient_scope</code>。登录尚未开放时，申请管理权限返回 <code>403 management_scope_disabled</code>。</p>
+<p><code>pms:read</code> 和 <code>pms:write</code> 不能调用 ADS；<code>ads</code> 不能管理策略。Speedle Cloud ADS（<code>speedle-cloud</code>）同步策略需要 <code>pms:read+ads</code>（ADS 同步）权限范围；它也可调用 ADS 和读取 PMS，但不能写入。权限范围不符时返回 <code>403 insufficient_scope</code>。登录尚未开放时，申请管理权限返回 <code>403 management_scope_disabled</code>。</p>
 
 <p>控制台使用已登录会话发送请求：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-http" data-lang="http">POST /api/tokens

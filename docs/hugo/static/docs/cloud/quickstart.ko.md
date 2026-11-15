@@ -105,8 +105,9 @@ API 키는 계정에 속하며 범위에 따라 해당 계정의 서비스에 �
 | `ads` (기본값) | `/authz-check/v1/*` 인가 검사만 가능. |
 | `pms:read` | `/policy-mgmt/v1`으로 계정의 서비스, 인가 정책, 역할 정책 읽기. |
 | `pms:write` | `/policy-mgmt/v1`으로 계정의 서비스, 인가 정책, 역할 정책 읽기, 생성, 삭제. |
+| `pms:read+ads`(ADS 동기화) | 인가 확인, 읽기 전용 정책 관리 및 Speedle Cloud ADS 정책 동기화. 쓰기는 불가합니다. |
 
-관리 범위는 ADS를 호출할 수 없으며 `ads`는 정책을 관리할 수 없습니다. 범위가 맞지 않으면 `403 insufficient_scope`입니다. 로그인이 닫혀 있을 때 관리 범위를 요청하면 `403 management_scope_disabled`입니다.
+`pms:read`와 `pms:write`는 ADS를 호출할 수 없으며 `ads`는 정책을 관리할 수 없습니다. Speedle Cloud ADS(`speedle-cloud`)의 정책 동기화에는 `pms:read+ads`(ADS 동기화)가 필요합니다. ADS 확인과 PMS 읽기도 허용하지만 쓰기는 허용하지 않습니다. 범위가 맞지 않으면 `403 insufficient_scope`입니다. 로그인이 닫혀 있을 때 관리 범위를 요청하면 `403 management_scope_disabled`입니다.
 
 콘솔은 세션 인증 요청을 전송합니다.
 
@@ -162,11 +163,11 @@ Content-Type: application/json
 
 **Speedle Cloud는 출시 예정입니다.** 이 가이드는 프로덕션 로그인과 인증된 인가 API가 제공될 때의 사용 절차를 설명합니다. 예제는 실제 Cloud 환경에서 실행하지 않았습니다.
 
-계정 API 키로 서버에서 인가를 확인합니다. 키를 생성하려면 로그인이 가능해야 합니다. 관리 범위는 ADS를 호출할 수 없습니다. `ads`가 아니면 `403 insufficient_scope`입니다.
+계정 API 키로 서버에서 인가를 확인합니다. 키를 생성하려면 로그인이 가능해야 합니다. ADS 확인에는 `ads` 또는 `pms:read+ads`를 사용합니다. `pms:read`와 `pms:write`는 `403 insufficient_scope`입니다. `pms:read+ads`는 PMS 읽기도 허용하며 Speedle Cloud ADS(`speedle-cloud`)의 정책 동기화에 필요하지만 쓰기는 허용하지 않습니다.
 
 ### 서버에서 IsAllowed 호출
 
-`ads` 범위 API 키를 하나의 `Authorization: Bearer` 헤더에 넣고 POST로 보냅니다.
+`ads` 또는 `pms:read+ads` 범위 API 키를 하나의 `Authorization: Bearer` 헤더에 넣고 POST로 보냅니다.
 
 ```http
 POST /authz-check/v1/is-allowed

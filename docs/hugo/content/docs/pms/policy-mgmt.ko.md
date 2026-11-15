@@ -228,7 +228,7 @@ Alan에게 `manager` 역할을 할당합니다:
 
 계정 API 키로 `spctl`에서 Cloud 서비스와 정책을 관리합니다.
 
-계정 API 키에는 고정 범위 하나를 지정합니다. `pms:read`는 서비스와 정책 읽기를, `pms:write`는 추가로 생성과 삭제를 허용합니다. 계정 내 서비스에 적용됩니다. `ads` 키로는 관리할 수 없으며 `403 insufficient_scope`입니다. 생성과 폐기는 [API 키](/ko/docs/cloud/tokens/)를 참조하세요.
+계정 API 키에는 고정 범위 하나를 지정합니다. `pms:read`는 서비스와 정책 읽기를, `pms:write`는 추가로 생성과 삭제를 허용합니다. 계정 내 서비스에 적용됩니다. `ads` 키로는 관리할 수 없으며 `403 insufficient_scope`입니다. 생성과 폐기는 [API 키](/ko/docs/cloud/tokens/)를 참조하세요. `pms:read+ads` 범위도 이러한 읽기와 ADS 확인을 허용하지만 쓰기는 허용하지 않습니다.
 
 엔드포인트를 전역 플래그로 전달하고 `SPCTL_TOKEN`에서 API 키을 읽습니다. 대화형 셸에서 이를 사용하면 비밀 값이 명령 인수나 셸 기록에 남지 않습니다:
 

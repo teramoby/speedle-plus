@@ -14,11 +14,11 @@ bref = "使用账号 API 密钥从服务端检查授权。"
 
 **Speedle Cloud 即将上线。** 本文介绍生产环境开放登录和授权 API 后的使用流程，示例尚未在线上 Cloud 环境执行。
 
-从应用服务端使用账号 API 密钥调用授权接口。创建密钥需要账号登录功能可用。管理权限的密钥不能调用 ADS；请使用 `ads`，否则返回 `403 insufficient_scope`。
+从应用服务端使用账号 API 密钥调用授权接口。创建密钥需要账号登录功能可用。ADS 检查可使用 `ads` 或 `pms:read+ads`；`pms:read` 和 `pms:write` 返回 `403 insufficient_scope`。组合权限范围 `pms:read+ads` 还允许读取 PMS，是 Speedle Cloud ADS（`speedle-cloud`）同步策略所需的权限范围，不能写入策略。
 
 ## 从应用服务端调用 IsAllowed
 
-将具有 `ads` 权限范围的账号 API 密钥放入一个 `Authorization: Bearer` 请求头，并发送 POST 请求：
+将具有 `ads` 或 `pms:read+ads` 权限范围的账号 API 密钥放入一个 `Authorization: Bearer` 请求头，并发送 POST 请求：
 
 ```http
 POST /authz-check/v1/is-allowed

@@ -199,11 +199,11 @@
 
 <p><strong>Speedle Cloud is coming soon.</strong> This guide describes the workflow available when production sign-in and authenticated authorization checks open; the examples have not been run against a live Cloud environment.</p>
 
-<p>Use an account API key for server-side authorization calls. Account sign-in must be available before you can create keys. A key with a management scope cannot call ADS; use <code>ads</code> or the response is <code>403 insufficient_scope</code>.</p>
+<p>Use an account API key for server-side authorization calls. Account sign-in must be available before you can create keys. Use <code>ads</code> or <code>pms:read+ads</code> for ADS checks; <code>pms:read</code> and <code>pms:write</code> return <code>403 insufficient_scope</code>. The combined <code>pms:read+ads</code> scope also permits PMS reads and is required for policy synchronization with Speedle Cloud ADS (<code>speedle-cloud</code>); it cannot write policies.</p>
 
 <h2 id="call-isallowed-from-your-server">Call IsAllowed from your server</h2>
 
-<p>Send an account API key with the <code>ads</code> scope in one <code>Authorization: Bearer</code> header and make a POST request:</p>
+<p>Send an account API key with the <code>ads</code> or <code>pms:read+ads</code> scope in one <code>Authorization: Bearer</code> header and make a POST request:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-http" data-lang="http">POST /authz-check/v1/is-allowed
 Authorization: Bearer &lt;API key&gt;
 Content-Type: application/json

@@ -276,7 +276,7 @@ grant role manager update res1</code></pre></div>
 
 <p>アカウント API キーを使い、<code>spctl</code> で Cloud のサービスとポリシーを管理します。管理エンドポイントは次のとおりです。</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">https://cloud.speedle.io/policy-mgmt/v1</code></pre></div>
-<p>アカウント API キーには固定スコープを 1 つ指定します。<code>pms:read</code> はサービスとポリシーの読み取り、<code>pms:write</code> はさらに作成と削除を許可します。アカウント内のサービスが対象です。<code>ads</code> キーは管理できず <code>403 insufficient_scope</code> になります。作成と失効は <a href="/ja/docs/cloud/tokens/">API キー</a>を参照してください。</p>
+<p>アカウント API キーには固定スコープを 1 つ指定します。<code>pms:read</code> はサービスとポリシーの読み取り、<code>pms:write</code> はさらに作成と削除を許可します。アカウント内のサービスが対象です。<code>ads</code> キーは管理できず <code>403 insufficient_scope</code> になります。作成と失効は <a href="/ja/docs/cloud/tokens/">API キー</a>を参照してください。 <code>pms:read+ads</code> スコープもこれらの読み取りと ADS チェックを許可しますが、書き込みは許可しません。</p>
 
 <p>エンドポイントをグローバルフラグとして渡し、<code>SPCTL_TOKEN</code> からAPI キーを読み取ります。対話型シェルでは、これによりシークレットがコマンド引数やシェル履歴に残らなくなります:</p>
 

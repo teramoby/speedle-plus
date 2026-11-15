@@ -199,11 +199,11 @@
 
 <p><strong>Speedle Cloud estará disponible próximamente.</strong> Esta guía describe el flujo para cuando se habiliten el inicio de sesión en producción y las comprobaciones de autorización autenticadas; los ejemplos no se han ejecutado en un entorno Cloud real.</p>
 
-<p>Use una clave API de cuenta para llamadas de autorización desde el servidor. Para crear claves debe estar disponible el inicio de sesión. Los ámbitos de gestión no pueden llamar a ADS; use <code>ads</code> o recibirá <code>403 insufficient_scope</code>.</p>
+<p>Use una clave API de cuenta para llamadas de autorización desde el servidor. Para crear claves debe estar disponible el inicio de sesión. Use <code>ads</code> o <code>pms:read+ads</code> para las comprobaciones ADS; <code>pms:read</code> y <code>pms:write</code> devuelven <code>403 insufficient_scope</code>. <code>pms:read+ads</code> también permite lecturas PMS y es necesario para sincronizar políticas con Speedle Cloud ADS (<code>speedle-cloud</code>); no permite escrituras.</p>
 
 <h2 id="invocar-isallowed-desde-su-servidor">Invocar IsAllowed desde su servidor</h2>
 
-<p>Envíe una clave API de cuenta con ámbito <code>ads</code> en un encabezado <code>Authorization: Bearer</code> y realice una solicitud POST:</p>
+<p>Envíe una clave API de cuenta con ámbito <code>ads</code> o <code>pms:read+ads</code> en un encabezado <code>Authorization: Bearer</code> y realice una solicitud POST:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-http" data-lang="http">POST /authz-check/v1/is-allowed
 Authorization: Bearer &lt;API key&gt;
 Content-Type: application/json

@@ -229,10 +229,15 @@
 <td><code>pms:write</code></td>
 <td>Leer, crear y eliminar servicios, políticas de autorización y de roles de la cuenta mediante <code>/policy-mgmt/v1</code>.</td>
 </tr>
+
+<tr>
+<td><code>pms:read+ads</code> (ADS sync)</td>
+<td>Comprobaciones de autorización, gestión de políticas de solo lectura y sincronización de políticas para Speedle Cloud ADS; sin escrituras.</td>
+</tr>
 </tbody>
 </table>
 
-<p>Los ámbitos de gestión no pueden llamar a ADS; <code>ads</code> no puede gestionar políticas. Un ámbito incorrecto devuelve <code>403 insufficient_scope</code>. Solicitar un ámbito de gestión con el inicio de sesión cerrado devuelve <code>403 management_scope_disabled</code>.</p>
+<p><code>pms:read</code> y <code>pms:write</code> no pueden llamar a ADS; <code>ads</code> no puede gestionar políticas. La sincronización de políticas con Speedle Cloud ADS (<code>speedle-cloud</code>) requiere <code>pms:read+ads</code> (ADS sync). También permite comprobaciones ADS y lecturas PMS, pero no escrituras. Un ámbito incorrecto devuelve <code>403 insufficient_scope</code>. Solicitar un ámbito de gestión con el inicio de sesión cerrado devuelve <code>403 management_scope_disabled</code>.</p>
 
 <p>La consola envía una solicitud autenticada por sesión:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-http" data-lang="http">POST /api/tokens

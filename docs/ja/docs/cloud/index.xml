@@ -38,9 +38,7 @@ API キーを作成する API キーを開き、books-app などの名前を入�
 Speedle Cloud はまもなく公開されます。 このガイドは、本番環境のサインインと認証付き認可 API が利用可能になった際の手順を説明しています。例は実際の Cloud 環境では実行していません。
 API キーを作成する API キー を開き、前後の空白を除いて 1–128 文字の名前、スコープ、有効期限（7d、30d、90d、180d、365d。コンソールの既定は 3 か月）を指定し、作成を選択します。作成には過去 10 分以内の連携プロバイダーによる認証が必要です。403 reauth_required の場合は再認証後、再び作成を選択してください。プロバイダーから戻るだけでは作成されません。
 各キーには作成後に変更できないスコープが 1 つあります。
-   スコープ アクセス     ads（既定） /authz-check/v1/* による認可チェックのみ。   pms:read /policy-mgmt/v1 によるアカウント内のサービス、認可ポリシー、ロールポリシーの読み取り。   pms:write /policy-mgmt/v1 によるアカウント内のサービス、認可ポリシー、ロールポリシーの読み取り、作成、削除。    管理スコープは ADS を呼び出せず、ads はポリシーを管理できません。不適切なスコープは 403 insufficient_scope です。サインインが閉じている場合の管理スコープの発行は 403 management_scope_disabled です。
-コンソールはセッション認証付きのリクエストを送信します。
-POST /api/tokens Origin: https://cloud.speedle.io X-SC-CSRF: 1 Content-Type: application/json {&amp;#34;name&amp;#34;:&amp;#34;books-app&amp;#34;,&amp;#34;scope&amp;#34;:&amp;#34;ads&amp;#34;,&amp;#34;expiresIn&amp;#34;:&amp;#34;90d&amp;#34;} 入力は name、必須の expiresIn、任意の scope（既定は ads）です。expiresIn は 7d、30d、90d、180d、365d のいずれかです（1 週間、1 か月、3 か月、6 か月、1 年）。1 日は 24 時間です。コンソールの 有効期間 は既定で 3 か月で、送信前に 有効期限のプレビュー (UTC) を表示します。無期限のキーはありません。サービス指定、expiresAt、認証証明は送信しません。expiresIn がない、認識できない、またはクライアントが expiresAt を送った場合は 400 invalid_request です。name と scope だけを送ったリクエストも同じエラーです。サーバーは expiresIn を補いません。セッション Cookie と CSRF ヘッダーが必要で、API キーではセッションを代替できません。</description>
+   スコープ アクセス     ads（既定） /authz-check/v1/* による認可チェックのみ。   pms:read /policy-mgmt/v1 によるアカウント内のサービス、認可ポリシー、ロールポリシーの読み取り。   pms:write /policy-mgmt/v1 によるアカウント内のサービス、認可ポリシー、ロールポリシーの読み取り、作成、削除。   pms:read+ads（ADS 同期） 認可チェック、読み取り専用のポリシー管理、Speedle Cloud ADS のポリシー同期。書き込みは不可。    pms:read と pms:write は ADS を呼び出せず、ads はポリシーを管理できません。Speedle Cloud ADS（speedle-cloud）のポリシー同期には pms:read+ads（ADS 同期）が必要です。ADS チェックと PMS の読み取りも許可しますが、書き込みは許可しません。不適切なスコープは 403 insufficient_scope です。サインインが閉じている場合の管理スコープの発行は 403 management_scope_disabled です。</description>
     </item>
     
     <item>
@@ -50,8 +48,8 @@ POST /api/tokens Origin: https://cloud.speedle.io X-SC-CSRF: 1 Content-Type: app
       
       <guid>https://engine.speedle.io/ja/docs/cloud/authorization-api/</guid>
       <description>Speedle Cloud はまもなく公開されます。 このガイドは、本番環境のサインインと認証付き認可 API が利用可能になった際の手順を説明しています。例は実際の Cloud 環境では実行していません。
-アカウント API キーを使い、サーバーから認可を確認します。キー作成にはサインインが利用可能である必要があります。管理スコープでは ADS を呼び出せません。ads 以外は 403 insufficient_scope です。
-サーバーから IsAllowed を呼び出す ads スコープの API キーを 1 つの Authorization: Bearer ヘッダーに入れ、POST で送信します。
+アカウント API キーを使い、サーバーから認可を確認します。キー作成にはサインインが利用可能である必要があります。ADS チェックには ads または pms:read+ads を使用します。pms:read と pms:write は 403 insufficient_scope です。pms:read+ads は PMS の読み取りも許可し、Speedle Cloud ADS（speedle-cloud）のポリシー同期に必要ですが、書き込みは許可しません。
+サーバーから IsAllowed を呼び出す ads または pms:read+ads スコープの API キーを 1 つの Authorization: Bearer ヘッダーに入れ、POST で送信します。
 POST /authz-check/v1/is-allowed Authorization: Bearer &amp;lt;API key&amp;gt; Content-Type: application/json {&amp;#34;subject&amp;#34;:{&amp;#34;principals&amp;#34;:[{&amp;#34;type&amp;#34;:&amp;#34;user&amp;#34;,&amp;#34;name&amp;#34;:&amp;#34;alice&amp;#34;,&amp;#34;idd&amp;#34;:&amp;#34;corp&amp;#34;}]},&amp;#34;serviceName&amp;#34;:&amp;#34;books&amp;#34;,&amp;#34;resource&amp;#34;:&amp;#34;/books&amp;#34;,&amp;#34;action&amp;#34;:&amp;#34;get&amp;#34;,&amp;#34;attributes&amp;#34;:[{&amp;#34;name&amp;#34;:&amp;#34;level&amp;#34;,&amp;#34;type&amp;#34;:&amp;#34;numeric&amp;#34;,&amp;#34;value&amp;#34;:3},{&amp;#34;name&amp;#34;:&amp;#34;when&amp;#34;,&amp;#34;type&amp;#34;:&amp;#34;datetime&amp;#34;,&amp;#34;value&amp;#34;:&amp;#34;2026-11-05T03:00:00Z&amp;#34;}]} 本文は自ホストの Speedle ADS と同じ REST 形式です。attributes は {name, type, value} の配列で、型は string、numeric、bool、RFC 3339 の datetime です。
 idd はアプリケーションが認証した ID ドメインです。信頼できるサーバー側の認証情報から設定してください。grant user alice from corp get /books は corp のみで一致します。from のないポリシーは全ドメインの同名ユーザーに一致します。idd を省略した principal も全ドメインに一致するため、複数の ID ソースでは必ず送信してください。</description>
     </item>
