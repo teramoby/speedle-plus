@@ -10,7 +10,7 @@ customcssfile = "command-copy.css"
 tocheading = "h2"
 bref = "go install 또는 소스 빌드로 Speedle을 설치하고, SPDL과 spctl로 정책을 생성하며, REST API로 인가 결정을 테스트합니다. 이 가이드는 로컬 파일 저장소를 사용합니다."
 icon = "9. Getting Started.svg"
-lastmod = 2026-11-10T17:04:32+08:00
+lastmod = 2026-11-14T21:41:19+00:00
 +++
 
 ## 먼저 플레이그라운드에서 체험

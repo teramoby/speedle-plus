@@ -10,7 +10,7 @@ customcssfile = "command-copy.css"
 tocheading = "h2"
 bref = "go install またはソースビルドで Speedle をインストールし、SPDL と spctl でポリシーを作成し、REST API で認可決定をテストします。このガイドではローカルファイルストアを使用します。"
 icon = "9. Getting Started.svg"
-lastmod = 2026-11-10T17:04:32+08:00
+lastmod = 2026-11-14T21:41:19+00:00
 +++
 
 ## まずは Playground で体験

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Point the Quick Start install pin at one release.
 
-The English and Chinese guides install
+All Quick Start locales install
 ``github.com/teramoby/speedle-plus/cmd/...@vX.Y.Z``. When the pin changes,
 ``--stamp`` writes one release time into front matter. The site build reads
 that value and does not read Git.
@@ -9,8 +9,10 @@ that value and does not read Git.
 Usage:
     python3 bump-quick-start-pin.py vX.Y.Z [repo]
     python3 bump-quick-start-pin.py --stamp 2026-11-10T16:35:23+08:00 [repo]
+    python3 bump-quick-start-pin.py --paths [repo]
 """
 
+import html
 import re
 import sys
 from datetime import datetime
@@ -24,70 +26,186 @@ VERSION = re.compile(r"^v[0-9]+\.[0-9]+\.[0-9]+$")
 # because the page template's numeric offset prints UTC that way.
 AUTHORED = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$")
 
-GUIDES = (
-    "docs/hugo/content/quick-start.md",
-    "docs/hugo/content/quick-start.zh.md",
-)
-GENERATED = (
-    "docs/quick-start/index.html",
-    "docs/zh/quick-start/index.html",
-    "docs/zh/index.xml",
-)
-SITEMAPS = (
-    ("docs/en/sitemap.xml", "https://engine.speedle.io/quick-start/"),
-    ("docs/zh/sitemap.xml", "https://engine.speedle.io/zh/quick-start/"),
-)
-SITEMAP_INDEX = "docs/sitemap.xml"
+def guide_paths(root):
+    """Discover the default guide and every locale, including future additions."""
+    directory = Path(root) / "docs/hugo/content"
+    guides = sorted(directory.glob("quick-start*.md"))
+    config = Path(root) / "docs/hugo/config.toml"
+    if (guides or config.is_file()) and not (directory / "quick-start.md").is_file():
+        raise SystemExit("default Quick Start guide is required: quick-start.md")
+    if config.is_file():
+        settings = config.read_text()
+        default = re.search(r'^defaultContentLanguage\s*=\s*"([^"\n]+)"', settings, re.M)
+        default = default[1] if default else "en"
+        for locale in re.findall(r"^\[languages\.([A-Za-z0-9_-]+)\]", settings, re.M):
+            name = "quick-start.md" if locale == default else f"quick-start.{locale}.md"
+            if not (directory / name).is_file():
+                raise SystemExit(f"configured Quick Start locale is missing: {name}")
+    return guides
 
 
-def bump_text(text, version):
-    """Replace this file's install pin and the sentence that names it.
+def outputs(root, guide):
+    """Return the page, optional feed and sitemap for a discovered source."""
+    locale = guide.name[len("quick-start"):-len(".md")].lstrip(".")
+    directory = Path(root) / "docs" / locale
+    return (
+        directory / "quick-start/index.html",
+        directory / "index.xml",
+        Path(root) / "docs" / (locale or "en") / "sitemap.xml",
+        f"https://engine.speedle.io/{locale + '/' if locale else ''}quick-start/",
+    )
 
-    Returns the new text and whether it changed. A file without the install
-    command is left untouched.
+
+def tracked_paths(root):
+    """Files the publisher must stage after pinning or stamping."""
+    root = Path(root)
+    paths = set(guide_paths(root))
+    for guide in guide_paths(root):
+        paths.update(outputs(root, guide)[:3])
+    paths.update(root / "docs" / name for name in ("sitemap.xml", "llms.txt", "llms-full.txt"))
+    return sorted(path.relative_to(root) for path in paths if path.is_file())
+
+
+TAG = re.compile(r"v[0-9]+\.[0-9]+\.[0-9]+")
+CODE_TAG = re.compile(r"`(v[0-9]+\.[0-9]+\.[0-9]+)`|<code>(v[0-9]+\.[0-9]+\.[0-9]+)</code>")
+
+
+def release_note(text):
+    """Locate only the paragraph immediately after the first install block."""
+    command = INSTALL.search(text)
+    if command is None:
+        return None
+    tail = text[command.end():]
+    offset = command.end()
+    if text.rfind("<pre", 0, command.start()) > text.rfind("</pre>", 0, command.start()):
+        block = re.search(r"</pre>\s*(?:</div>\s*)?", tail)
+        if block is None:
+            return None
+        offset += block.end()
+        note = re.match(r"<p>(.*?)</p>", tail[block.end():], re.S)
+    else:
+        note = re.search(r"\n```[ \t]*\n\s*\n([^\n]+(?:\n(?!\s*\n)[^\n]+)*)", tail)
+    if note is None:
+        return None
+    return offset + note.start(1), offset + note.end(1)
+
+
+def feed_text(value):
+    """Decode RSS entities/smart punctuation and retain original character spans."""
+    spans = [(index, index + 1) for index in range(len(value))]
+    entity = re.compile(r"&(?:\#(?:[xX][0-9A-Fa-f]+|[0-9]+)|[A-Za-z][A-Za-z0-9]+);")
+    while True:
+        pieces, offsets, start, changed = [], [], 0, False
+        for match in entity.finditer(value):
+            pieces.append(value[start:match.start()])
+            offsets.extend(spans[start:match.start()])
+            decoded = html.unescape(match.group())
+            pieces.append(decoded)
+            if decoded != match.group():
+                changed = True
+                offsets.extend([(spans[match.start()][0], spans[match.end() - 1][1])] * len(decoded))
+            else:
+                offsets.extend(spans[match.start():match.end()])
+            start = match.end()
+        if not changed:
+            break
+        pieces.append(value[start:])
+        offsets.extend(spans[start:])
+        value, spans = "".join(pieces), offsets
+    # Hugo's Smartypants renderer changes plain source punctuation. Normalize
+    # both sides for comparison; offsets still refer to the untouched feed.
+    punctuation = {"‘": "'", "’": "'", "“": '"', "”": '"', "…": "...", "–": "--", "—": "---"}
+    pieces, offsets = [], []
+    for character, span in zip(value, spans):
+        replacement = punctuation.get(character, character)
+        pieces.append(replacement)
+        offsets.extend([span] * len(replacement))
+    return "".join(pieces), offsets
+
+
+def bump_text(text, version, plain=False, note=None):
+    """Repair the first install command and its own release-note paragraph.
+
+    For RSS, match the decoded source paragraph with a variable release tag.
+    A removed/reordered note cannot redirect a replacement into another example.
     """
-    match = INSTALL.search(text)
-    if match is None:
+    command = INSTALL.search(text)
+    if command is None:
         return text, False
-    old = match.group(2)
-    if old == version:
-        return text, False
-    text = text.replace(match.group(0), match.group(1) + version, 1)
-    markdown = f"`{old}`"
-    html = f"<code>{old}</code>"
-    if markdown in text:
-        text = text.replace(markdown, f"`{version}`", 1)
-    elif html in text:
-        text = text.replace(html, f"<code>{version}</code>", 1)
-    return text, True
+    updated = INSTALL.sub(lambda pin: pin.group(1) + version, text, count=1)
+    if plain:
+        if note is not None:
+            # RSS and HTML may escape punctuation more than once. Match decoded
+            # text, then use the retained offsets to preserve the original XML.
+            reference, _ = feed_text(note.replace("`", ""))
+            tag = TAG.search(reference)
+            if tag:
+                def context(value):
+                    return "".join(r"\s+" if part.isspace() else re.escape(part)
+                                   for part in re.split(r"(\s+)", value))
+
+                prefix, suffix = reference[:tag.start()], reference[tag.end():]
+                if not (prefix.strip() or suffix.strip()):
+                    raise SystemExit("RSS release note needs surrounding text; regenerate the site")
+                pattern = re.compile(context(prefix) + r"(?P<tag>v[0-9]+\.[0-9]+\.[0-9]+)"
+                                     + context(suffix))
+                # Match the complete source note, not another version in an item.
+                pin = INSTALL.search(updated)
+                tail = updated[pin.end():]
+                decoded, spans = feed_text(tail)
+                match = pattern.search(decoded)
+                if match:
+                    first = spans[match.start("tag")][0]
+                    last = spans[match.end("tag") - 1][1]
+                    tail = tail[:first] + version + tail[last:]
+                elif TAG.search(decoded):
+                    raise SystemExit("RSS release note differs from source; check plain-text/code formatting and RSS summary truncation, then simplify or shorten the note and regenerate the site")
+                updated = updated[:pin.end()] + tail
+    else:
+        span = release_note(updated)
+        if span:
+            paragraph = updated[span[0]:span[1]]
+            paragraph = CODE_TAG.sub(lambda tag: f"`{version}`" if tag.group().startswith("`")
+                                     else f"<code>{version}</code>", paragraph, count=1)
+            updated = updated[:span[0]] + paragraph + updated[span[1]:]
+    return updated, updated != text
 
 
 def bump_tree(root, version):
-    """Update both guides and the generated pages that quote the install command."""
+    """Repair every source, generated page and feed, including partial retries."""
     root = Path(root)
-    guides = [root / rel for rel in GUIDES]
-    if not any(path.is_file() for path in guides):
-        return False
-    missing = [path for path in guides if not path.is_file()]
-    if missing:
-        raise SystemExit("both Quick Start guides are required: " + ", ".join(str(path) for path in missing))
     changed = False
-    for path in guides:
-        text, did = bump_text(path.read_text(), version)
-        if did:
-            path.write_text(text)
-            changed = True
-    if not changed:
-        return False
-    for rel in GENERATED:
-        path = root / rel
-        if not path.is_file():
-            raise SystemExit(f"missing generated Quick Start page {path}")
-        text, did = bump_text(path.read_text(), version)
-        if not did:
-            raise SystemExit(f"{path} does not contain the previous install pin")
-        path.write_text(text)
-    return True
+    for guide in guide_paths(root):
+        page, feed, _, _ = outputs(root, guide)
+        if not page.is_file():
+            raise SystemExit(f"missing generated Quick Start page {page}")
+        for path in (guide, page):
+            original = path.read_text()
+            if INSTALL.search(original) is None:
+                raise SystemExit(f"{path} does not contain the install pin")
+            text, did = bump_text(original, version)
+            span = release_note(text)
+            tag = CODE_TAG.search(text[span[0]:span[1]]) if span else None
+            if tag is None or (tag[1] or tag[2]) != version:
+                raise SystemExit(f"{path}: current-release note must be the paragraph immediately after the install block and contain its version code span")
+            if did:
+                path.write_text(text)
+                changed = True
+        if feed.is_file():
+            # Restrict replacements to the item containing the install command.
+            original = feed.read_text()
+            source = guide.read_text()
+            span = release_note(source)
+            note = source[span[0]:span[1]] if span else None
+            try:
+                text = re.sub(r"<item>[\s\S]*?</item>",
+                              lambda item: bump_text(item.group(), version, plain=True, note=note)[0], original)
+            except SystemExit as error:
+                raise SystemExit(f"{feed}: {error}") from error
+            if text != original:
+                feed.write_text(text)
+                changed = True
+    return changed
 
 
 def hugo_stamp(authored):
@@ -158,24 +276,19 @@ def stamp_tree(root, authored):
     """Write one release time into the Quick Start sources and generated pages."""
     root = Path(root)
     authored = hugo_stamp(authored)
-    if not (root / GUIDES[0]).is_file():
+    guides = guide_paths(root)
+    if not guides:
         return False
-    for rel in GUIDES:
-        path = root / rel
-        if not path.is_file():
-            raise SystemExit(f"missing Quick Start guide {path}")
-        path.write_text(stamp_front_matter(path.read_text(), authored))
-    for rel in GENERATED[:2]:
-        path = root / rel
-        if not path.is_file():
-            raise SystemExit(f"missing generated Quick Start page {path}")
-        path.write_text(stamp_html(path.read_text(), authored))
-    for rel, loc in SITEMAPS:
-        path = root / rel
-        if not path.is_file():
-            raise SystemExit(f"missing sitemap {path}")
-        path.write_text(stamp_sitemap(path.read_text(), loc, authored))
-    index = root / SITEMAP_INDEX
+    for guide in guides:
+        page, _, sitemap, loc = outputs(root, guide)
+        if not page.is_file():
+            raise SystemExit(f"missing generated Quick Start page {page}")
+        if not sitemap.is_file():
+            raise SystemExit(f"missing sitemap {sitemap}")
+        guide.write_text(stamp_front_matter(guide.read_text(), authored))
+        page.write_text(stamp_html(page.read_text(), authored))
+        sitemap.write_text(stamp_sitemap(sitemap.read_text(), loc, authored))
+    index = root / "docs/sitemap.xml"
     if index.is_file():
         index.write_text(stamp_index(index.read_text(), authored))
     return True
@@ -186,6 +299,14 @@ def main(argv):
     if not args:
         print("usage: bump-quick-start-pin.py vX.Y.Z [repo]", file=sys.stderr)
         return 2
+    if args[0] == "--paths":
+        if len(args) > 2:
+            print("usage: bump-quick-start-pin.py --paths [repo]", file=sys.stderr)
+            return 2
+        root = Path(args[1]) if len(args) == 2 else Path.cwd()
+        for path in tracked_paths(root):
+            print(path)
+        return 0
     if args[0] == "--stamp":
         if len(args) not in (2, 3) or not AUTHORED.fullmatch(args[1]):
             print(
