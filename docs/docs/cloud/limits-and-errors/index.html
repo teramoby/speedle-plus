@@ -338,6 +338,11 @@
 </tr>
 
 <tr>
+<td><code>409 revision_exhausted</code></td>
+<td>The service&rsquo;s revision reached its maximum; it stays readable and exportable. <a href="#revision-exhausted">Follow the recovery steps</a>.</td>
+</tr>
+
+<tr>
 <td><code>413 request_too_large</code></td>
 <td>Reduce the body size.</td>
 </tr>
@@ -373,6 +378,8 @@
 <li>Switch callers to the new service name.</li>
 <li>Optionally, delete the old service afterwards.</li>
 </ol>
+
+<p>Account service and policy limits still apply. Before steps 2 and 3, make sure the account has a free service slot and enough policy slots for the import; delete unused services or policies if necessary. If no other capacity can be freed, confirm the export, delete the old service, and then perform steps 2–4. Deleting the old service before the replacement is ready interrupts access for its callers.</p>
 </div>
 </div>
 </main>
