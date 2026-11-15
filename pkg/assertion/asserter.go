@@ -63,8 +63,7 @@ type WebHookAsserter struct {
 func NewAsserter(conf *AsserterConfig, tenant *string) (TokenAsserter, error) {
 	logging.Default().Debug(fmt.Sprintf("conf: %v, tenant: %v", conf, tenant))
 	if conf == nil || len(conf.Endpoint) == 0 {
-		logging.Default().Error("asserter configuration is nil or endpoint is emtpy")
-		return nil, fmt.Errorf("asserter configuration is nil or endpoint is emtpy")
+		return nil, fmt.Errorf("asserter configuration is nil or endpoint is empty")
 	}
 	if conf.HTTPTimeout <= 0 {
 		conf.HTTPTimeout = 10
