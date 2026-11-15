@@ -60,8 +60,8 @@ jobs:
         run: |
           set -euo pipefail
           if [[ "${EVENT_NAME}" == pull_request ]]; then
-            # A pull request must not choose which jobs verify it: run the
-            # classifier from the base revision, never the checked-out copy.
+            # Classify with the base revision's script: the checked-out copy
+            # must not decide this route.
             base="${PR_BASE:-}"
             if [[ -n "${base}" && "${base}" != 0000000000000000000000000000000000000000 ]] \
               && git cat-file -e "${base}:scripts/ci/classify-changes.sh" 2>/dev/null; then

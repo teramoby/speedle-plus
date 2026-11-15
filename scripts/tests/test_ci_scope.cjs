@@ -87,6 +87,9 @@ function script(source, name) {
 }
 test('change classification preserves raw Git paths, uses the base classifier and fails on diff errors', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-ci-paths-'));
+  // The workflow stages the trusted classifier in RUNNER_TEMP, outside the
+  // checkout, and runs it with the worktree as the working directory.
+  const runnerTemp = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-ci-runner-temp-'));
   try {
     const git = (...args) => {
       const result = spawnSync('git', args, {cwd: dir, encoding: 'utf8'});
@@ -98,17 +101,19 @@ test('change classification preserves raw Git paths, uses the base classifier an
     git('config', 'user.email', 'ci@example.invalid');
     git('config', 'commit.gpgsign', 'false');
     git('config', 'core.quotePath', 'true');
+    git('commit', '-qm', 'base', '--allow-empty');
+    const empty = git('rev-parse', 'HEAD');
     fs.mkdirSync(path.join(dir, 'scripts/ci'), {recursive: true});
     fs.copyFileSync(path.join(root, 'scripts/ci/classify-changes.sh'), path.join(dir, 'scripts/ci/classify-changes.sh'));
     git('add', '--', 'scripts/ci/classify-changes.sh');
-    git('commit', '-qm', 'base');
+    git('commit', '-qm', 'add the classifier');
     const base = git('rev-parse', 'HEAD');
     const classify = (head, overrides = {}) => {
       const output = path.join(dir, 'output');
       fs.writeFileSync(output, '');
       const result = spawnSync('bash', ['-c', script(ci, 'Classify changed files')], {
         cwd: dir, encoding: 'utf8', env: {...process.env, EVENT_NAME: 'pull_request',
-          PR_BASE: base, PUSH_BEFORE: base, GITHUB_SHA: head, GITHUB_OUTPUT: output, RUNNER_TEMP: dir, ...overrides},
+          PR_BASE: base, PUSH_BEFORE: base, GITHUB_SHA: head, GITHUB_OUTPUT: output, RUNNER_TEMP: runnerTemp, ...overrides},
       });
       return {...result, output: fs.readFileSync(output, 'utf8')};
     };
@@ -147,6 +152,10 @@ test('change classification preserves raw Git paths, uses the base classifier an
       assert.equal(result.status, 0, result.stderr);
       assert.equal(result.output, flags(true, true, true, true));
     }
+    // A real base revision that predates the classifier enables every route.
+    const noClassifier = classify(previous, {PR_BASE: empty});
+    assert.equal(noClassifier.status, 0, noClassifier.stderr);
+    assert.equal(noClassifier.output, flags(true, true, true, true));
     const failed = classify('missing-head');
     assert.notEqual(failed.status, 0);
     assert.equal(failed.output, '', 'diff errors must not publish successful outputs');
@@ -162,7 +171,10 @@ test('change classification preserves raw Git paths, uses the base classifier an
     const guarded = classify(rewritten, {PR_BASE: previous});
     assert.equal(guarded.status, 0, guarded.stderr);
     assert.equal(guarded.output, flags(true, false, true, true), 'the base classifier must decide routing');
-  } finally { fs.rmSync(dir, {recursive: true, force: true}); }
+  } finally {
+    fs.rmSync(dir, {recursive: true, force: true});
+    fs.rmSync(runnerTemp, {recursive: true, force: true});
+  }
 });
 test('CI discovers every script suite, isolates Docker config and propagates failures', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-script-suites-'));
