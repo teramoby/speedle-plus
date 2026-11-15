@@ -60,3 +60,16 @@ Los errores son JSON plano, por ejemplo `{"error":"rate_limited"}`. Si no obtien
 En solicitudes con clave verificada, `X-RateLimit-Limit` es 600. No hay un `X-RateLimit-Remaining` exacto. `X-Quota-Daily-Remaining` es una estimación de saldo de la cuenta; la concurrencia y las reservas sin uso pueden hacer que difiera del saldo utilizable. No garantiza la siguiente solicitud y se omite en rechazos tempranos.
 
 ADS usa `Cache-Control: no-store`. No guarde decisiones ni credenciales en cachés compartidas. Use POST; otros métodos pueden recibir `405 method_not_allowed` o un bloqueo previo que no sea JSON. Consulte la [API de autorización](/es/docs/cloud/authorization-api/).
+
+<a id="revision-exhausted"></a>
+## `409 revision_exhausted`
+
+La revisión de este servicio ha alcanzado su máximo. Sigue siendo legible y exportable.
+
+Para recuperarse:
+
+1. Exporte sus políticas.
+2. Cree un servicio nuevo.
+3. Importe el archivo en ese servicio.
+4. Cambie las llamadas al nombre nuevo.
+5. Después, si lo desea, elimine el servicio antiguo.

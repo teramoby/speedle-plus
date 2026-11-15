@@ -3490,6 +3490,19 @@ For verified API-key requests, `X-RateLimit-Limit` is 600. There is no exact `X-
 
 ADS responses use `Cache-Control: no-store`. Keep decisions and credentials out of shared caches. Use POST; other methods can receive `405 method_not_allowed` or an earlier non-JSON block response. See the [Authorization API](https://engine.speedle.io/docs/cloud/authorization-api/).
 
+<a id="revision-exhausted"></a>
+### `409 revision_exhausted`
+
+The service's revision has reached its maximum. The service stays readable and exportable.
+
+To recover:
+
+1. Export its policies.
+2. Create a new service.
+3. Import the export into the new service.
+4. Switch callers to the new service name.
+5. Optionally, delete the old service afterwards.
+
 ## Pluggable Storage
 
 Source: https://engine.speedle.io/docs/store/

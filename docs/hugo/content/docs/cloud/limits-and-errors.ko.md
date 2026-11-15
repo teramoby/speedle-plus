@@ -60,3 +60,16 @@ Cloud 자체 장애는 계정당 UTC 일일 최대 1,000회까지 할당량을 �
 검증된 API 키 요청의 `X-RateLimit-Limit`은 600입니다. 정확한 `X-RateLimit-Remaining`은 없습니다. `X-Quota-Daily-Remaining`은 계정 잔량의 추정치이며 동시 호출과 미사용 예약으로 실제와 다를 수 있습니다. 다음 요청의 성공을 보장하지 않고 조기 거부에서는 생략됩니다.
 
 ADS는 `Cache-Control: no-store`를 사용합니다. 판정과 자격 증명을 공유 캐시에 넣지 마세요. POST를 사용하세요. 다른 메서드는 `405 method_not_allowed` 또는 그보다 앞선 비 JSON 차단 응답을 받을 수 있습니다. [인가 API](/ko/docs/cloud/authorization-api/)를 참조하세요.
+
+<a id="revision-exhausted"></a>
+## `409 revision_exhausted`
+
+이 서비스의 리비전이 상한에 도달했습니다. 이 서비스는 계속 읽고 내보낼 수 있습니다.
+
+복구 절차:
+
+1. 정책을 내보내세요.
+2. 새 서비스를 만드세요.
+3. 내보낸 파일을 새 서비스로 가져오세요.
+4. 호출자를 새 서비스 이름으로 전환하세요.
+5. 이후 필요하면 기존 서비스를 삭제하세요.

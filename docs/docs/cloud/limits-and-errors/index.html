@@ -357,6 +357,22 @@
 <p>For verified API-key requests, <code>X-RateLimit-Limit</code> is 600. There is no exact <code>X-RateLimit-Remaining</code>. <code>X-Quota-Daily-Remaining</code>, when present, is an approximate account-wide balance; concurrent calls and unused reservations can make it differ from what you can actually use. It does not guarantee that the next request will succeed, and early rejections omit it.</p>
 
 <p>ADS responses use <code>Cache-Control: no-store</code>. Keep decisions and credentials out of shared caches. Use POST; other methods can receive <code>405 method_not_allowed</code> or an earlier non-JSON block response. See the <a href="/docs/cloud/authorization-api/">Authorization API</a>.</p>
+
+<p><a id="revision-exhausted"></a></p>
+
+<h2 id="409-revision-exhausted"><code>409 revision_exhausted</code></h2>
+
+<p>The service&rsquo;s revision has reached its maximum. The service stays readable and exportable.</p>
+
+<p>To recover:</p>
+
+<ol>
+<li>Export its policies.</li>
+<li>Create a new service.</li>
+<li>Import the export into the new service.</li>
+<li>Switch callers to the new service name.</li>
+<li>Optionally, delete the old service afterwards.</li>
+</ol>
 </div>
 </div>
 </main>

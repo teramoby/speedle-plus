@@ -357,6 +357,22 @@
 <p>검증된 API 키 요청의 <code>X-RateLimit-Limit</code>은 600입니다. 정확한 <code>X-RateLimit-Remaining</code>은 없습니다. <code>X-Quota-Daily-Remaining</code>은 계정 잔량의 추정치이며 동시 호출과 미사용 예약으로 실제와 다를 수 있습니다. 다음 요청의 성공을 보장하지 않고 조기 거부에서는 생략됩니다.</p>
 
 <p>ADS는 <code>Cache-Control: no-store</code>를 사용합니다. 판정과 자격 증명을 공유 캐시에 넣지 마세요. POST를 사용하세요. 다른 메서드는 <code>405 method_not_allowed</code> 또는 그보다 앞선 비 JSON 차단 응답을 받을 수 있습니다. <a href="/ko/docs/cloud/authorization-api/">인가 API</a>를 참조하세요.</p>
+
+<p><a id="revision-exhausted"></a></p>
+
+<h2 id="409-revision-exhausted"><code>409 revision_exhausted</code></h2>
+
+<p>이 서비스의 리비전이 상한에 도달했습니다. 이 서비스는 계속 읽고 내보낼 수 있습니다.</p>
+
+<p>복구 절차:</p>
+
+<ol>
+<li>정책을 내보내세요.</li>
+<li>새 서비스를 만드세요.</li>
+<li>내보낸 파일을 새 서비스로 가져오세요.</li>
+<li>호출자를 새 서비스 이름으로 전환하세요.</li>
+<li>이후 필요하면 기존 서비스를 삭제하세요.</li>
+</ol>
 </div>
 </div>
 </main>
