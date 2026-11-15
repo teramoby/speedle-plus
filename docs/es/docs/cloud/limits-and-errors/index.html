@@ -357,6 +357,22 @@
 <p>En solicitudes con clave verificada, <code>X-RateLimit-Limit</code> es 600. No hay un <code>X-RateLimit-Remaining</code> exacto. <code>X-Quota-Daily-Remaining</code> es una estimación de saldo de la cuenta; la concurrencia y las reservas sin uso pueden hacer que difiera del saldo utilizable. No garantiza la siguiente solicitud y se omite en rechazos tempranos.</p>
 
 <p>ADS usa <code>Cache-Control: no-store</code>. No guarde decisiones ni credenciales en cachés compartidas. Use POST; otros métodos pueden recibir <code>405 method_not_allowed</code> o un bloqueo previo que no sea JSON. Consulte la <a href="/es/docs/cloud/authorization-api/">API de autorización</a>.</p>
+
+<p><a id="revision-exhausted"></a></p>
+
+<h2 id="409-revision-exhausted"><code>409 revision_exhausted</code></h2>
+
+<p>La revisión de este servicio ha alcanzado su máximo. Sigue siendo legible y exportable.</p>
+
+<p>Para recuperarse:</p>
+
+<ol>
+<li>Exporte sus políticas.</li>
+<li>Cree un servicio nuevo.</li>
+<li>Importe el archivo en ese servicio.</li>
+<li>Cambie las llamadas al nombre nuevo.</li>
+<li>Después, si lo desea, elimine el servicio antiguo.</li>
+</ol>
 </div>
 </div>
 </main>

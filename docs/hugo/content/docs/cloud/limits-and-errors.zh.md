@@ -60,3 +60,16 @@ Cloud 自身故障可能退还额度，每账号每 UTC 日最多退还 1,000 �
 API 密钥验证通过后，`X-RateLimit-Limit` 为 600，不提供精确的 `X-RateLimit-Remaining`。如果有 `X-Quota-Daily-Remaining`，它只是账号级剩余额度的估计值；并发调用和未使用的预留可能使它偏离实际可用次数。它不保证下一次请求成功，提前拒绝的响应不带此头。
 
 ADS 响应使用 `Cache-Control: no-store`，不要共享缓存判定或凭据。请使用 POST；其他方法可能收到 `405 method_not_allowed`，或更早被拦截并返回非 JSON 响应。参见[授权 API](/zh/docs/cloud/authorization-api/)。
+
+<a id="revision-exhausted"></a>
+## `409 revision_exhausted`
+
+此服务的修订号已达到上限。此服务仍可读取和导出。
+
+恢复步骤：
+
+1. 导出其策略。
+2. 创建一个新服务。
+3. 把导出文件导入该新服务。
+4. 把调用方切换到新服务名。
+5. 之后可以删除旧服务。

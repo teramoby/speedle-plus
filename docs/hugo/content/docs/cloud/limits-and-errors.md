@@ -60,3 +60,16 @@ Errors are flat JSON, for example `{"error":"rate_limited"}`. An error is not an
 For verified API-key requests, `X-RateLimit-Limit` is 600. There is no exact `X-RateLimit-Remaining`. `X-Quota-Daily-Remaining`, when present, is an approximate account-wide balance; concurrent calls and unused reservations can make it differ from what you can actually use. It does not guarantee that the next request will succeed, and early rejections omit it.
 
 ADS responses use `Cache-Control: no-store`. Keep decisions and credentials out of shared caches. Use POST; other methods can receive `405 method_not_allowed` or an earlier non-JSON block response. See the [Authorization API](/docs/cloud/authorization-api/).
+
+<a id="revision-exhausted"></a>
+## `409 revision_exhausted`
+
+The service's revision has reached its maximum. The service stays readable and exportable.
+
+To recover:
+
+1. Export its policies.
+2. Create a new service.
+3. Import the export into the new service.
+4. Switch callers to the new service name.
+5. Optionally, delete the old service afterwards.
