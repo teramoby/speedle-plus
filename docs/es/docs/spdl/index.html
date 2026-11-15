@@ -210,8 +210,12 @@
 
 <h3 id="palabras-clave">Palabras clave</h3>
 
-<p><code>grant</code>, <code>deny</code>, <code>user</code>, <code>group</code>, <code>entity</code>, <code>role</code>, <code>from</code>, <code>on</code>, <code>if</code> e <code>in</code> son palabras clave reservadas. Ninguna puede usarse como nombre de principal, dominio de identidad, rol, acción, recurso, ni como nombre de atributo o función en una condición, sin importar mayúsculas o minúsculas ni si va entre comillas; el analizador rechaza la sentencia e indica la palabra clave y su posición. En las condiciones, <code>in</code> e <code>IN</code> son el operador de pertenencia; los nombres de función distinguen mayúsculas. Los nombres de principal, acción y recurso también distinguen mayúsculas.</p>
+<p><code>grant</code>, <code>deny</code>, <code>user</code>, <code>group</code>, <code>entity</code>, <code>role</code>, <code>from</code>, <code>on</code>, <code>if</code> e <code>in</code> son palabras clave reservadas. Ninguna puede usarse como nombre de principal, dominio de identidad, nombre de servicio, rol, acción, recurso, ni como nombre de atributo o función en una condición, sin importar mayúsculas o minúsculas ni si va entre comillas; el analizador rechaza la sentencia e indica la palabra clave y su posición. En las condiciones, <code>in</code> e <code>IN</code> son el operador de pertenencia; los nombres de función distinguen mayúsculas. Los nombres de principal, acción y recurso también distinguen mayúsculas.</p>
 
+<p>Por ejemplo, si se usa <code>Role</code> como nombre de servicio, se produce este error:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-console" data-lang="console">&#34;Role&#34; is a reserved SPDL keyword and cannot be used as a service name
+in Role
+   ^</code></pre></div>
 <h3 id="convención-de-nombres">Convención de nombres</h3>
 
 <p>Prefiera identificadores simples y estables. Escriba entre comillas los nombres con espacios en blanco o separadores, usando la forma de comillas simples o dobles del analizador, y pruebe la entrada real. Las clases de caracteres históricas de las expresiones regulares de Java no son un contrato de validación del analizador de Go. El prefijo de recurso <code>expr:</code> usa expresiones regulares de Go, no globs del shell. Los nombres de atributos y de funciones en las condiciones se describen más abajo.</p>

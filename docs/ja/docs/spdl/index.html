@@ -210,8 +210,12 @@
 
 <h3 id="キーワード">キーワード</h3>
 
-<p><code>grant</code>、<code>deny</code>、<code>user</code>、<code>group</code>、<code>entity</code>、<code>role</code>、<code>from</code>、<code>on</code>、<code>if</code>、<code>in</code> は予約キーワードです。大文字・小文字の違いや引用符の有無にかかわらず、プリンシパル名、ID ドメイン、ロール、アクション、リソース、および条件内の属性名・関数名として使用できません。パーサーはこのようなステートメントを拒否し、キーワードとその位置を示します。条件内では <code>in</code> と <code>IN</code> がメンバーシップ演算子で、関数名は大文字と小文字を区別します。プリンシパル、アクション、およびリソース名も大文字と小文字を区別します。</p>
+<p><code>grant</code>、<code>deny</code>、<code>user</code>、<code>group</code>、<code>entity</code>、<code>role</code>、<code>from</code>、<code>on</code>、<code>if</code>、<code>in</code> は予約キーワードです。大文字・小文字の違いや引用符の有無にかかわらず、プリンシパル名、ID ドメイン、サービス名、ロール、アクション、リソース、および条件内の属性名・関数名として使用できません。パーサーはこのようなステートメントを拒否し、キーワードとその位置を示します。条件内では <code>in</code> と <code>IN</code> がメンバーシップ演算子で、関数名は大文字と小文字を区別します。プリンシパル、アクション、およびリソース名も大文字と小文字を区別します。</p>
 
+<p>たとえば、サービス名に <code>Role</code> を使用すると、次のエラーが発生します。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-console" data-lang="console">&#34;Role&#34; is a reserved SPDL keyword and cannot be used as a service name
+in Role
+   ^</code></pre></div>
 <h3 id="命名規則">命名規則</h3>
 
 <p>シンプルで安定した識別子を推奨します。空白や区切り文字を含む名前は、パーサーがサポートする単一引用符または二重引用符で囲み、実際の入力でテストしてください。過去の Java 正規表現の文字クラスは、現在の Go パーサーの検証コントラクトではありません。リソースプレフィックス <code>expr:</code> はシェルの glob ではなく Go の正規表現を使用します。条件内の属性および関数名については後述します。</p>

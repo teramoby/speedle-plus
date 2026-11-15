@@ -210,8 +210,12 @@
 
 <h3 id="키워드">키워드</h3>
 
-<p><code>grant</code>, <code>deny</code>, <code>user</code>, <code>group</code>, <code>entity</code>, <code>role</code>, <code>from</code>, <code>on</code>, <code>if</code>, <code>in</code>은 예약 키워드입니다. 대소문자나 따옴표 사용 여부와 관계없이 주체 이름, ID 도메인, 역할, 작업, 리소스, 조건의 속성 이름이나 함수 이름으로 사용할 수 없습니다. 파서는 이러한 문을 거부하고 해당 키워드와 위치를 알려 줍니다. 조건에서 <code>in</code>과 <code>IN</code>은 포함 연산자이며 함수 이름은 대소문자를 구분합니다. 주체, 작업 및 리소스 이름도 대소문자를 구분합니다.</p>
+<p><code>grant</code>, <code>deny</code>, <code>user</code>, <code>group</code>, <code>entity</code>, <code>role</code>, <code>from</code>, <code>on</code>, <code>if</code>, <code>in</code>은 예약 키워드입니다. 대소문자나 따옴표 사용 여부와 관계없이 주체 이름, ID 도메인, 서비스 이름, 역할, 작업, 리소스, 조건의 속성 이름이나 함수 이름으로 사용할 수 없습니다. 파서는 이러한 문을 거부하고 해당 키워드와 위치를 알려 줍니다. 조건에서 <code>in</code>과 <code>IN</code>은 포함 연산자이며 함수 이름은 대소문자를 구분합니다. 주체, 작업 및 리소스 이름도 대소문자를 구분합니다.</p>
 
+<p>예를 들어 서비스 이름으로 <code>Role</code>을 사용하면 다음 오류가 발생합니다.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-console" data-lang="console">&#34;Role&#34; is a reserved SPDL keyword and cannot be used as a service name
+in Role
+   ^</code></pre></div>
 <h3 id="명명-규칙">명명 규칙</h3>
 
 <p>단순하고 안정적인 식별자를 권장합니다. 공백이나 구분 기호가 포함된 이름은 파서가 지원하는 작은따옴표나 큰따옴표로 감싸고 실제 입력으로 테스트하십시오. 과거의 Java 정규식 문자 클래스는 현재 Go 파서의 엄격한 검증 규칙이 아닙니다. 리소스 접두사 <code>expr:</code>은 셸 와일드카드가 아닌 Go 정규식을 사용합니다. 조건 내의 속성 및 함수 이름에 대해서는 아래에서 설명합니다.</p>
