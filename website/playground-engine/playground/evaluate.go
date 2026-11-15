@@ -13,16 +13,18 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	"context"
 	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
 	"github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/eval"
 	"github.com/teramoby/speedle-plus/pkg/eval/function"
+	"github.com/teramoby/speedle-plus/pkg/logging"
 	"github.com/teramoby/speedle-plus/pkg/pdl"
+	"log/slog"
 )
 
-const Revision = "dd628a6df3f2ce46126896c1322cb6ef21f75449"
+const Revision = "c14ee1b2d625778cf78812db69f26784968bf79c"
 const MaxInputBytes = 256 * 1024
 const MaxStatements = 500
 
@@ -78,12 +80,29 @@ type typedAttribute struct {
 	Value interface{} `json:"value"`
 }
 
-type logCapture struct{ messages []string }
-
-func (h *logCapture) Levels() []log.Level {
-	return []log.Level{log.ErrorLevel, log.WarnLevel, log.FatalLevel, log.PanicLevel}
+// Capture the same warning/error messages without changing the host logger.
+// Evaluation is serialized; a lock also protects records from Engine goroutines.
+type logCapture struct {
+	mu       sync.Mutex
+	messages []string
 }
-func (h *logCapture) Fire(e *log.Entry) error { h.messages = append(h.messages, e.Message); return nil }
+
+func (h *logCapture) Enabled(_ context.Context, level slog.Level) bool {
+	return level >= slog.LevelWarn
+}
+func (h *logCapture) Handle(_ context.Context, record slog.Record) error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.messages = append(h.messages, record.Message)
+	return nil
+}
+func (h *logCapture) WithAttrs([]slog.Attr) slog.Handler { return h }
+func (h *logCapture) WithGroup(string) slog.Handler      { return h }
+func (h *logCapture) Messages() []string {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return append([]string(nil), h.messages...)
+}
 
 func decodeStrict(data []byte, target interface{}) error {
 	dec := json.NewDecoder(bytes.NewReader(data))
@@ -191,14 +210,9 @@ func EvaluateJSON(data []byte) (out Result) {
 		return fail("policy", "Enter at least one SPDL statement.", 0)
 	}
 	capture := &logCapture{}
-	logger := log.StandardLogger()
-	oldHooks := logger.ReplaceHooks(log.LevelHooks{})
-	oldOut := logger.Out
-	oldLevel := logger.Level
-	logger.SetOutput(io.Discard)
-	logger.SetLevel(log.WarnLevel)
-	logger.AddHook(capture)
-	defer func() { logger.ReplaceHooks(oldHooks); logger.SetOutput(oldOut); logger.SetLevel(oldLevel) }()
+	previous := logging.Default()
+	logging.SetDefault(slog.New(capture))
+	defer logging.SetDefault(previous)
 	store := eval.NewRuntimePolicyStore()
 	store.Functions = builtinFunctions
 	evaluator := &eval.PolicyEvalImpl{RuntimePolicyStore: store}
@@ -215,8 +229,8 @@ func EvaluateJSON(data []byte) (out Result) {
 	}
 	// Upstream intentionally fail-closes some condition errors. In an editor those
 	// are input errors, not an ordinary false; expose its exact diagnostic instead.
-	if len(capture.messages) > 0 {
-		return fail("evaluation", strings.Join(capture.messages, "\n"), 0)
+	if messages := capture.Messages(); len(messages) > 0 {
+		return fail("evaluation", strings.Join(messages, "\n"), 0)
 	}
 	// Enforce the documented boolean-condition contract for conditions actually
 	// evaluated; upstream treats a non-bool result as a nonmatching condition.

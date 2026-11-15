@@ -7,14 +7,12 @@ import (
 	"io"
 	"time"
 
-	"github.com/teramoby/speedle-plus/pkg/cfg"
-	"github.com/teramoby/speedle-plus/pkg/errors"
-	"github.com/teramoby/speedle-plus/pkg/store"
-
 	adsapi "github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/api/pms"
-
-	log "github.com/sirupsen/logrus"
+	"github.com/teramoby/speedle-plus/pkg/cfg"
+	"github.com/teramoby/speedle-plus/pkg/errors"
+	"github.com/teramoby/speedle-plus/pkg/logging"
+	"github.com/teramoby/speedle-plus/pkg/store"
 )
 
 // New creates a policy evaluator based on the given configuration file
@@ -93,7 +91,7 @@ func NewWithStore(conf *cfg.Config, s pms.PolicyStoreManagerADS) (evaluator Inte
 	var updateChan pms.StorageChangeChannel
 	var acknowledgeReload func()
 	if watchEnabled {
-		log.Info("Watch policy store.")
+		logging.Default().Info("Watch policy store.")
 		updateChan, err = s.Watch()
 		if err != nil {
 			return nil, err

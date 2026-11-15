@@ -4,6 +4,7 @@
 package eval
 
 import (
+	"fmt"
 	"io"
 	"sort"
 	"strconv"
@@ -14,13 +15,11 @@ import (
 
 	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
 	adsapi "github.com/teramoby/speedle-plus/api/ads"
+	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/errors"
 	"github.com/teramoby/speedle-plus/pkg/eval/function"
+	"github.com/teramoby/speedle-plus/pkg/logging"
 	"github.com/teramoby/speedle-plus/pkg/subjectutils"
-
-	"github.com/teramoby/speedle-plus/api/pms"
-
-	log "github.com/sirupsen/logrus"
 )
 
 var builtinFunctions = map[string]govaluate.ExpressionFunction{
@@ -108,7 +107,7 @@ func (p *PolicyEvalImpl) fullReloadRuntimeCache() error {
 	ps, acknowledge, err := readPolicyStoreForReload(p.Store)
 	if err != nil {
 		p.storeUnavailableLocked()
-		log.Errorf("Fail to full reload runtime cache, err:%v", err)
+		logging.Default().Error(fmt.Sprintf("Fail to full reload runtime cache, err:%v", err))
 		return err
 	}
 	if err := p.RuntimePolicyStore.reloadPolicyStore(ps); err != nil {
@@ -139,7 +138,7 @@ func (p *PolicyEvalImpl) Refresh() (err error) {
 func (p *PolicyEvalImpl) handleCacheMutation(err error) error {
 	if err != nil {
 		p.cacheFailed.Store(true)
-		log.Errorf("Rejected runtime cache mutation: %v", err)
+		logging.Default().Error(fmt.Sprintf("Rejected runtime cache mutation: %v", err))
 	}
 	return err
 }
@@ -1017,7 +1016,7 @@ func couldRoleSafelyBeDenied(role string, relatedRoleMap map[string]*Role, denie
 			}
 		}
 	} else {
-		log.Warnf("Role %q is not in the related role map", role)
+		logging.Default().Warn(fmt.Sprintf("Role %q is not in the related role map", role))
 	}
 	return false, nil
 }
@@ -1064,7 +1063,7 @@ func selfOrAncestorsBeDenied(role string, roles map[string]*Role, denied map[str
 		}
 	}
 	if cyclic {
-		log.Error("role dependency cycle has no independent subject source")
+		logging.Default().Error("role dependency cycle has no independent subject source")
 		return false, errors.New(errors.EvalEngineError, "role dependency cycle has no independent subject source")
 	}
 	return true, nil
@@ -1126,12 +1125,12 @@ func (p *PolicyEvalImpl) getPolicyList(ctx *internalRequestContext, matchResourc
 //	  [] string, //custom function slice
 //	}
 func (p *PolicyEvalImpl) syncRuntimeCache(dataSet []interface{}) error {
-	log.Info("start to sync runtime cache data.")
+	logging.Default().Info("start to sync runtime cache data.")
 	if len(dataSet) != 4 {
 		return errors.New(errors.EvalCacheError, "invalid data set for cache reloading")
 	}
 	policyStore := p.Store
-	log.Info("start to sync service data.")
+	logging.Default().Info("start to sync service data.")
 	if serviceArr, ok := dataSet[0].([]string); ok {
 		for _, serviceInDB := range serviceArr { //add new services
 			if p.RuntimePolicyStore.RuntimeServices[serviceInDB] == nil {
@@ -1160,8 +1159,7 @@ func (p *PolicyEvalImpl) syncRuntimeCache(dataSet []interface{}) error {
 	} else {
 		return errors.New(errors.EvalCacheError, "invalid service data set for cache reloading")
 	}
-
-	log.Info("start to sync policy data.")
+	logging.Default().Info("start to sync policy data.")
 	if policySetInDB, ok := dataSet[1].(map[int]string); ok {
 		idInDB := getSortedIndexOfMap(policySetInDB)
 		policySetInCache, idInCache, err := p.getPolicySetInCache()
@@ -1187,8 +1185,7 @@ func (p *PolicyEvalImpl) syncRuntimeCache(dataSet []interface{}) error {
 	} else {
 		return errors.New(errors.EvalCacheError, "invalid policy data set for cache reloading")
 	}
-
-	log.Info("start to sync rolePolicy data.")
+	logging.Default().Info("start to sync rolePolicy data.")
 	if rolePolicySetInDB, ok := dataSet[2].(map[int]string); ok {
 		idInDB := getSortedIndexOfMap(rolePolicySetInDB)
 		rolePolicySetInCache, idInCache, err := p.getRolePolicySetInCache()
@@ -1214,8 +1211,7 @@ func (p *PolicyEvalImpl) syncRuntimeCache(dataSet []interface{}) error {
 	} else {
 		return errors.New(errors.EvalCacheError, "invalid rolePolicy data set for cache reloading")
 	}
-
-	log.Info("start to sync custom functions.")
+	logging.Default().Info("start to sync custom functions.")
 	if CustFuncSetInDB, ok := dataSet[3].([]string); ok {
 		custFuncSetInCache, err := p.getCustFunctionSetInCache()
 		if err != nil {
@@ -1238,8 +1234,7 @@ func (p *PolicyEvalImpl) syncRuntimeCache(dataSet []interface{}) error {
 	} else {
 		return errors.New(errors.EvalCacheError, "invalid custom function data set for cache reloading")
 	}
-
-	log.Info("finished sync of runtime cache.")
+	logging.Default().Info("finished sync of runtime cache.")
 	return nil
 }
 
@@ -1358,7 +1353,7 @@ func (p *PolicyEvalImpl) applyStoreChange(e pms.StoreChangeEvent) (err error) {
 		data := e.Content.([]interface{})
 		err := p.syncRuntimeCache(data)
 		if err != nil {
-			log.Error("failed to reload cache data. ", err)
+			logging.Default().Error(fmt.Sprint("failed to reload cache data. ", err))
 			return err
 		}
 	case pms.FUNCTION_ADD:

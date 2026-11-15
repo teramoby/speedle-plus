@@ -12,29 +12,15 @@ bref = ""
 lastmod = 2026-11-08T11:21:16+08:00
 +++
 
-<a id="概述"></a>
 ## 日志组件
 
-Speedle 使用以下两个开源项目处理日志：
-
-```
-1. https://github.com/sirupsen/logrus
-2. https://github.com/natefinch/lumberjack
-```
-
-Logrus 是 Go 结构化日志库，API 与 Go 标准库的 logger 兼容。Logrus 本身不负责日志滚动，Speedle 用 lumberjack 补足这部分能力。两者通过 `io.Writer` 接口连接：
-
-<img src="/img/speedle/logger.jpg" alt="Speedle 日志组件" width="370" height="230" loading="lazy">
+v1.8.0 之后的下一个版本使用 Go `log/slog` 输出应用日志和审计日志，使用 `gopkg.in/natefinch/lumberjack.v2` 滚动日志文件。v1.8.0 及更早版本仍使用旧的日志 API。
 
 ## 日志配置
 
-可以通过命令行参数或配置文件设置 Speedle 日志。
+现有 `--log-*`、`--auditlog-*` 参数、`SPDL_*` 环境变量及 JSON 配置键保持兼容。显式命令行参数优先于环境变量，环境变量优先于配置文件。应用日志默认为 info、text、stderr，不包含调用位置；审计日志默认为 info、JSON。使用对应的 `--auditlog-*` 参数单独配置审计日志。
 
-### 通过命令行参数配置日志
-
-可用参数如下。`level`、`formatter`、`reportcaller` 由 logrus 使用，文件和滚动设置由 lumberjack 使用。
-
-```
+```text
 --log-level string
 --log-formatter string
 --log-reportcaller bool
@@ -46,115 +32,85 @@ Logrus 是 Go 结构化日志库，API 与 Go 标准库的 logger 兼容。Logru
 --log-compress bool
 ```
 
-所有参数都可省略。未配置文件日志时，日志默认输出到标准错误（stderr），默认级别为 info。
-
-| 配置项 | 说明 | 默认值 |
+| Flag | Default | Meaning |
 | --- | --- | --- |
-| --log-level | 日志级别：panic、fatal、error、warn、info、debug | info |
-| --log-formatter | 日志格式：text、json | text |
-| --log-reportcaller | 是否在日志中包含调用信息（文件名、行号和函数名） | false |
-| --log-filename | 日志文件路径。未设置时输出到标准错误（stderr） | 空 |
-| --log-maxsize | 单个日志文件的最大尺寸，仅在设置 `--log-filename` 后生效 | 100M |
-| --log-maxbackups | 最多保留多少个历史日志文件，仅在设置 `--log-filename` 后生效 | 0，保留全部文件；达到 maxAge 上限的文件仍会删除 |
-| --log-maxage | 历史日志文件最多保留多少天，仅在设置 `--log-filename` 后生效 | 0，不按天数删除；达到 maxBackups 上限的文件仍会删除 |
-| --log-localtime | 滚动日志文件名是否使用本地时间，仅在设置 `--log-filename` 后生效 | false，使用 UTC |
-| --log-compress | 是否压缩滚动后的历史日志，仅在设置 `--log-filename` 后生效 | false，不压缩 |
-
-以下分别是 text 和 json 格式的日志示例：
-
-```
-# text
-time="2015-03-26T01:27:38-04:00" level=debug msg="Started observing beach" animal=walrus number=8
-```
-
-```
-# json
-{"animal":"walrus","level":"info","msg":"A group of walrus emerges from the
-ocean","size":10,"time":"2014-03-10 19:57:38.562264131 -0400 EDT"}
-```
-
-### 通过配置文件配置日志
-
-配置示例如下。各项含义与同名命令行参数一致，全部可以省略。
+| `--log-level` | `info` | Minimum severity |
+| `--log-formatter` | `text` | `text` or `json` |
+| `--log-reportcaller` | `false` | Include caller file, line and function |
+| `--log-filename` | unset | Stderr unless a file is configured |
+| `--log-maxsize` | `100` | Maximum file size in MB |
+| `--log-maxbackups` | `0` | Backup count; 0 retains all, subject to max age |
+| `--log-maxage` | `0` | Backup age in days; 0 disables age deletion |
+| `--log-localtime` | `false` | Local time for backup filenames, otherwise UTC |
+| `--log-compress` | `false` | Compress backups |
 
 ```json
 {
-    "logConfig": {
-        "level": "info",
-        "formatter": "text",
-        "setReportCaller": false,
-        "rotationConfig": {
-            "filename": "/mnt/logs/speedle.log",
-            "maxSize": 20,
-            "maxBackups": 5,
-            "maxAge": 0,
-            "LocalTime": false,
-            "compress": false
-        }
+  "logConfig": {
+    "level": "info",
+    "formatter": "text",
+    "setReportCaller": false,
+    "rotationConfig": {
+      "filename": "/mnt/logs/speedle.log",
+      "maxSize": 20,
+      "maxBackups": 5,
+      "maxAge": 0,
+      "LocalTime": false,
+      "compress": false
     }
-}
-```
-
-<a id="配置日志的最佳实践"></a>
-## 容器日志建议
-
-Speedle 在 Docker 容器中运行时，建议用 Docker 的 `json-file` 日志驱动管理文件大小和滚动，不再使用 lumberjack。此时 logrus 只负责日志级别和格式。
-
-Docker 的日志配置位于 `/etc/docker/daemon.json`。具体用法见 [Docker json-file 文档](https://docs.docker.com/config/containers/logging/json-file/)，配置示例如下：
-
-```
-{
-  "log-driver": "json-file",
-  "log-opts": {
-    "max-size": "20m",
-    "max-file": "10"
+  },
+  "auditLogConfig": {
+    "level": "info",
+    "formatter": "json"
   }
 }
 ```
 
-多数场景使用默认的 info 级别和 text 格式即可。需要 JSON 等格式时，再调整 logrus 配置。
 
-<a id="如何增加新的日志消息"></a>
-## 在代码中添加日志
+## 级别与输出格式
 
-先在 `*.go` 源文件中导入 logrus：
+级别和格式名称不区分大小写。支持 `trace`、`debug`、`info`、`warn`、`warning`、`error`、`fatal`、`panic`。trace 映射到 debug，因此选择 debug 也会输出原来的 trace 消息；其他级别保持原来的过滤顺序。未知的非空值会返回包含该值的错误。
+
+`text` 输出 key=value 记录，`json` 每行输出一个 JSON 对象。元数据键仍为 `time`、`level`、`msg`；开启调用位置后还包括带行号的 `file` 和函数名 `func`。级别值为小写，warn 输出为 `warning`。错误以字符串输出，其他结构化字段保持结构。与元数据重名的用户字段添加 `fields.` 前缀。
+
+```text
+time=2026-11-15T09:00:00.000+08:00 level=info msg="Started observing beach" animal=walrus number=8
+```
+
+```json
+{"time":"2026-11-15T09:00:00+08:00","level":"info","msg":"Started observing beach","animal":"walrus","number":8}
+```
+
+
+## 日志收集器迁移
+
+text 的引号、字段顺序、颜色和时间精度可能与 logrus 不同；不再输出 ANSI 颜色，时间仍兼容 RFC3339。升级前检查现有解析规则，或改用 JSON 按键解析。审计消息保留紧接 API 名称的 `[AUDIT]` 前缀，以及 `tenantid`、`target_index`、请求和响应字段、成功和失败的日志级别。
+
+新建日志文件使用仅属主可读写的 `0600` 默认权限（受 umask 影响），不再是原来的 `0644`；已有文件滚动时保留原权限。升级前让收集器以日志属主身份运行，或明确配置访问权限，不要假定其他账号可以读取新建文件。
+
+## Go API 迁移
+
+将 `InitLogInstance(logrusLogger, config)` 改为 `logger, err := logging.NewLogger(config)`。`AuditLog()` 现在返回 `*slog.Logger`；使用原生 slog 方法和 `SetAuditLog(logger)` 替代 logrus 的 setter/hook。给 `LogConfig.RotationConfig` 赋值时改用 lumberjack v2 导入，v1 指针不再编译通过。`InitLog` 和 `InitAuditLog` 保留未指定的设置，nil 或空配置不作修改，非法配置不会替换现有 logger。
+
+通过 `logging.Default()` 获取 Engine logger，或通过 `logging.SetDefault(logger)` 安装宿主提供的 slog handler。这些函数不会修改 `slog.Default()`，也不会重定向宿主的标准 `log` 输出。`logging.Fatal(message)` 记录日志后以状态 1 退出；`logging.Panic(message)` 记录日志后 panic，即使日志被过滤也会执行终止动作。
 
 ```go
 import (
-  log "github.com/sirupsen/logrus"
+    "github.com/teramoby/speedle-plus/pkg/logging"
+    "gopkg.in/natefinch/lumberjack.v2"
 )
+
+logger, err := logging.NewLogger(&logging.LogConfig{
+    Level: "info", Formatter: "json",
+    RotationConfig: &lumberjack.Logger{Filename: "engine.log", MaxSize: 20},
+})
+if err != nil {
+    return err
+}
+logger.Info("Started observing beach", "animal", "walrus", "number", 8)
 ```
 
-然后添加需要的日志，例如：
 
-```go
-  log.Debug("This is a debug log entry")
-  log.Info("This is a info log entry")
-  log.Warn("This is a warning log entry")
-  log.Warning("This is a warning log entry again")
-  log.Error("This is a error log entry")
-```
+## 容器日志
 
-完整示例见 [speedle/logging/demo/demo.go](https://github.com/teramoby/speedle-plus/blob/master/pkg/logging/demo/demo.go)。
-
-<a id="与第三方日志系统集成"></a>
-## 接入第三方日志系统
-
-Speedle 日志可以交给 fluentd、filebeat 等系统收集，只需让采集器监控 Speedle 生成的日志文件。下面的示例用 fluentd 的 `in_tail` 插件收集 Docker 容器日志；Speedle 在容器中运行时，其日志也会由这套配置采集。
-
-```
-    <source>
-      @type tail
-      path /var/lib/docker/containers/*/*.log
-      pos_file /data/fluentd/fluentd.log.pos
-      tag speedle.log
-      <parse>
-        @type json
-        time_key time
-        keep_time_key true
-      </parse>
-      refresh_interval 5
-    </source>
-```
-
-更多配置见 [fluentd](https://www.fluentd.org/) 和 [filebeat](https://www.elastic.co/products/beats/filebeat) 文档。
+容器中可不设置文件名，由容器运行时滚动日志，无需配置 lumberjack 文件输出。嵌入式 etcd 仍可能间接依赖 logrus 和 zap，但 Engine 代码使用 slog。

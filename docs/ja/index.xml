@@ -411,11 +411,9 @@ github.com/teramoby/speedle-plus/pkg/ads の ads.Run(ctx, params, conf, options.
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ja/docs/logging/</guid>
-      <description>概要 ログメッセージの処理には、以下の2つのオープンソースプロジェクトが使用されています:
-1. https://github.com/sirupsen/logrus 2. https://github.com/natefinch/lumberjack Logrus は Go (golang) 向けの構造化ロガーであり、golang 標準ライブラリロガーと完全な API 互換性があります。Logrus はログローテーションをサポートしていないため、ローリングロガーを提供する第2のプロジェクトである lumberjack を導入しています。Logrus は io.Writer インターフェースを使用して lumberjack と連携します。以下の図を参照してください。
-ロギング構成 Speedle のロギングを構成する方法には、コマンドライン引数による方法と構成ファイルによる方法の2つがあります。
-コマンドライン引数によるロギング構成 使用可能なすべてのコマンドライン引数を以下に示します。レベル、フォーマッター、reportcaller 設定は logrus を構成し、ファイル/ローテーション設定は lumberjack を構成します。
---log-level string ログレベル（panic, fatal, error, warn, info, debug） (default &amp;#34;info&amp;#34;) --log-formatter string ログフォーマッター（text, json） (default &amp;#34;text&amp;#34;) --log-reportcaller 呼び出し元のメソッド名とファイル名を含めるかどうか --log-file string ログファイルパス --log-file-maxsize int ログローテーション前の最大サイズ（メガバイト） (default 100) --log-file-maxage int 古いログファイルを保持する最大日数 (default 0) --log-file-maxbackups int 保持する古いログファイルの最大数 (default 0) --log-file-localtime バックアップファイルのタイムスタンプにローカル時間を使用するかどうか --log-file-compress ローテーションされたログファイルを gzip で圧縮するかどうか 構成ファイルによるロギング構成 構成ファイルを使用してロギングを設定することもできます。以下は構成例です:</description>
+      <description>概要 v1.8.0 の次のリリースでは、アプリケーションと監査ログに Go log/slog、ファイルローテーションに gopkg.in/natefinch/lumberjack.v2 を使用します。v1.8.0 以前は従来の API を使用します。
+ログ設定 既存の --log-*、--auditlog-*、SPDL_* 環境変数と JSON キーは維持されます。優先順位は明示的なオプション &amp;gt; 環境変数 &amp;gt; ファイルです。アプリケーションの既定値は info、text、stderr、呼び出し元情報なしです。監査の既定値は info と JSON で、--auditlog-* により独立して設定できます。
+--log-level string --log-formatter string --log-reportcaller bool --log-filename string --log-maxsize int --log-maxbackups int --log-maxage int --log-localtime bool --log-compress bool    Flag Default Meaning     --log-level info Minimum severity   --log-formatter text text or json   --log-reportcaller false Include caller file, line and function   --log-filename unset Stderr unless a file is configured   --log-maxsize 100 Maximum file size in MB   --log-maxbackups 0 Backup count; 0 retains all, subject to max age   --log-maxage 0 Backup age in days; 0 disables age deletion   --log-localtime false Local time for backup filenames, otherwise UTC   --log-compress false Compress backups    { &amp;#34;logConfig&amp;#34;: { &amp;#34;level&amp;#34;: &amp;#34;info&amp;#34;, &amp;#34;formatter&amp;#34;: &amp;#34;text&amp;#34;, &amp;#34;setReportCaller&amp;#34;: false, &amp;#34;rotationConfig&amp;#34;: { &amp;#34;filename&amp;#34;: &amp;#34;/mnt/logs/speedle.</description>
     </item>
     
     <item>

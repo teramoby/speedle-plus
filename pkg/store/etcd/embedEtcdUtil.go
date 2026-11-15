@@ -4,13 +4,14 @@
 package etcd
 
 import (
+	"fmt"
 	"net"
 	"os"
 	"strconv"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/pkg/errors"
+	"github.com/teramoby/speedle-plus/pkg/logging"
 	"go.etcd.io/etcd/server/v3/embed"
 )
 
@@ -32,9 +33,9 @@ func StartEmbeddedEtcd(dataDir string) (etcd *embed.Etcd, etcdDir string, err er
 	etcdDir = dataDir
 	if etcdDir == "" {
 		etcdDir, err = os.MkdirTemp(os.TempDir(), "etcd.tmp")
-		log.Infof("The embedded etcd store dir is %q", etcdDir)
+		logging.Default().Info(fmt.Sprintf("The embedded etcd store dir is %q", etcdDir))
 		if err != nil {
-			log.Error(err)
+			logging.Default().Error(fmt.Sprint(err))
 			return etcd, etcdDir, errors.Wrapf(err, errors.StoreError, "failed to create etcd dir")
 		}
 	}
@@ -43,14 +44,14 @@ func StartEmbeddedEtcd(dataDir string) (etcd *embed.Etcd, etcdDir string, err er
 	cfg.Dir = etcdDir
 	etcd, err = embed.StartEtcd(cfg)
 	if err != nil {
-		log.Error(err)
+		logging.Default().Error(fmt.Sprint(err))
 		return etcd, etcdDir, errors.Wrapf(err, errors.StoreError, "failed to start embedded etcd server")
 	}
 
 	embededStarted = true
 	select {
 	case <-etcd.Server.ReadyNotify():
-		log.Info("Etcd Server is ready!")
+		logging.Default().Info("Etcd Server is ready!")
 	case <-time.After(60 * time.Second):
 		etcd.Server.Stop() // trigger a shutdown
 		err = errors.New(errors.StoreError, "etcd Server took too long to start")

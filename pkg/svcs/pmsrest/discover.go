@@ -4,12 +4,12 @@
 package pmsrest
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/gorilla/mux"
-	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/errors"
@@ -45,7 +45,7 @@ func (e *RESTService) GetAllDiscoverRequests(w http.ResponseWriter, r *http.Requ
 	if strings.EqualFold("true", last) { //get last discover request
 		request, revision, err := e.PolicyStore.(store.DiscoverRequestManager).GetLastDiscoverRequest("")
 		if err != nil {
-			log.Errorf("%v, Cause: %v", err, errors.Cause(err))
+			logging.Default().Error(fmt.Sprintf("%v, Cause: %v", err, errors.Cause(err)))
 			httputils.HandleError(w, err)
 
 			// Audit log
@@ -65,7 +65,7 @@ func (e *RESTService) GetAllDiscoverRequests(w http.ResponseWriter, r *http.Requ
 		revision, err := strconv.ParseInt(revisionStr, 10, 64)
 		if err != nil {
 			err = errors.Errorf(errors.InvalidRequest, "invlid revision number %q", revisionStr)
-			log.Error(err)
+			logging.Default().Error(fmt.Sprint(err))
 			httputils.HandleError(w, err)
 
 			// Audit log
@@ -74,7 +74,7 @@ func (e *RESTService) GetAllDiscoverRequests(w http.ResponseWriter, r *http.Requ
 		}
 		requests, revision, err := e.PolicyStore.(store.DiscoverRequestManager).GetDiscoverRequestsSinceRevision("", revision)
 		if err != nil {
-			log.Errorf("%v, Cause: %v", err, errors.Cause(err))
+			logging.Default().Error(fmt.Sprintf("%v, Cause: %v", err, errors.Cause(err)))
 			httputils.HandleError(w, err)
 			// Audit log
 			logging.WriteFailedAuditLog("GetAllDiscoverRequests", ctxFields, err.Error())
@@ -89,7 +89,7 @@ func (e *RESTService) GetAllDiscoverRequests(w http.ResponseWriter, r *http.Requ
 		//get all service requests
 		requests, revision, err := e.PolicyStore.(store.DiscoverRequestManager).GetDiscoverRequests("")
 		if err != nil {
-			log.Errorf("%v, Cause: %v", err, errors.Cause(err))
+			logging.Default().Error(fmt.Sprintf("%v, Cause: %v", err, errors.Cause(err)))
 			httputils.HandleError(w, err)
 			// Audit log
 			logging.WriteFailedAuditLog("GetAllDiscoverRequests", ctxFields, err.Error())
@@ -125,7 +125,7 @@ func (e *RESTService) GetDiscoverRequests(w http.ResponseWriter, r *http.Request
 	if strings.EqualFold("true", last) { //get last discover request
 		request, revision, err := e.PolicyStore.(store.DiscoverRequestManager).GetLastDiscoverRequest(serviceName)
 		if err != nil {
-			log.Errorf("%v, Cause: %v", err, errors.Cause(err))
+			logging.Default().Error(fmt.Sprintf("%v, Cause: %v", err, errors.Cause(err)))
 			httputils.HandleError(w, err)
 
 			// Audit log
@@ -144,7 +144,7 @@ func (e *RESTService) GetDiscoverRequests(w http.ResponseWriter, r *http.Request
 		revision, err := strconv.ParseInt(revisionStr, 10, 64)
 		if err != nil {
 			err = errors.Errorf(errors.InvalidRequest, "invlid revision number %q", revisionStr)
-			log.Error(err)
+			logging.Default().Error(fmt.Sprint(err))
 			httputils.HandleError(w, err)
 
 			// Audit log
@@ -153,7 +153,7 @@ func (e *RESTService) GetDiscoverRequests(w http.ResponseWriter, r *http.Request
 		}
 		requests, revision, err := e.PolicyStore.(store.DiscoverRequestManager).GetDiscoverRequestsSinceRevision(serviceName, revision)
 		if err != nil {
-			log.Errorf("%v, Cause: %v", err, errors.Cause(err))
+			logging.Default().Error(fmt.Sprintf("%v, Cause: %v", err, errors.Cause(err)))
 			httputils.HandleError(w, err)
 
 			// Audit log
@@ -169,7 +169,7 @@ func (e *RESTService) GetDiscoverRequests(w http.ResponseWriter, r *http.Request
 		//get all service requests
 		requests, revision, err := e.PolicyStore.(store.DiscoverRequestManager).GetDiscoverRequests(serviceName)
 		if err != nil {
-			log.Errorf("%v, Cause: %v", err, errors.Cause(err))
+			logging.Default().Error(fmt.Sprintf("%v, Cause: %v", err, errors.Cause(err)))
 			httputils.HandleError(w, err)
 			// Audit log
 			logging.WriteFailedAuditLog("GetDiscoverRequests", ctxFields, err.Error())
@@ -193,7 +193,7 @@ func (e *RESTService) ResetDiscoverRequests(w http.ResponseWriter, r *http.Reque
 	}
 
 	if err := e.PolicyStore.(store.DiscoverRequestManager).ResetDiscoverRequests(serviceName); err != nil {
-		log.Errorf("%v, Cause: %v", err, errors.Cause(err))
+		logging.Default().Error(fmt.Sprintf("%v, Cause: %v", err, errors.Cause(err)))
 		httputils.HandleError(w, err)
 
 		// Audit log
@@ -214,7 +214,7 @@ func (e *RESTService) ResetAllDiscoverRequests(w http.ResponseWriter, r *http.Re
 
 	err := e.PolicyStore.(store.DiscoverRequestManager).ResetDiscoverRequests("")
 	if err != nil {
-		log.Errorf("%v, Cause: %v", err, errors.Cause(err))
+		logging.Default().Error(fmt.Sprintf("%v, Cause: %v", err, errors.Cause(err)))
 		httputils.HandleError(w, err)
 		// Audit log
 		logging.WriteSimpleFailedAuditLog("ResetAllDiscoverRequests", nil, err.Error())
@@ -245,7 +245,7 @@ func (e *RESTService) GetDiscoverPolicies(w http.ResponseWriter, r *http.Request
 
 	serviceMap, revision, err := e.PolicyStore.(store.DiscoverRequestManager).GeneratePolicies(serviceName, principalType, principalName, principalIDD)
 	if err != nil {
-		log.Error(err)
+		logging.Default().Error(fmt.Sprint(err))
 		httputils.HandleError(w, err)
 
 		// Audit log
@@ -274,7 +274,7 @@ func (e *RESTService) GetDiscoverPolicies(w http.ResponseWriter, r *http.Request
 func (e *RESTService) checkPolicyForDiscover(w http.ResponseWriter) bool {
 	if _, ok := e.PolicyStore.(store.DiscoverRequestManager); !ok {
 		err := errors.Errorf(errors.InvalidRequest, "%q policy store doesn't support discover request management", e.PolicyStore.Type())
-		log.Error(err)
+		logging.Default().Error(fmt.Sprint(err))
 		httputils.HandleError(w, err)
 		return false
 	}
@@ -286,7 +286,7 @@ func getServiceNameFromRequest(w http.ResponseWriter, r *http.Request) (string, 
 	serviceName := vads["serviceName"]
 	if len(serviceName) == 0 {
 		err := errors.New(errors.InvalidRequest, "no service name found in request")
-		log.Error(err)
+		logging.Default().Error(fmt.Sprint(err))
 		httputils.HandleError(w, err)
 
 		// Audit log

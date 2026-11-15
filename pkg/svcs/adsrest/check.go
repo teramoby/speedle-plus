@@ -16,10 +16,8 @@ import (
 	"github.com/teramoby/speedle-plus/pkg/eval"
 	"github.com/teramoby/speedle-plus/pkg/httputils"
 	"github.com/teramoby/speedle-plus/pkg/logging"
-	"github.com/teramoby/speedle-plus/pkg/svcs/gate"
-
-	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/pkg/svcs"
+	"github.com/teramoby/speedle-plus/pkg/svcs/gate"
 )
 
 type JsonAttribute struct {
@@ -362,9 +360,9 @@ func (e *RESTService) IsAllowed(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		response.ErrorMessage = err.Error()
-		logging.WriteFailedAuditLog("IsAllowed", log.Fields{"requestContext": context, "evaluationResult": responseForAudit}, response.ErrorMessage)
+		logging.WriteFailedAuditLog("IsAllowed", map[string]interface{}{"requestContext": context, "evaluationResult": responseForAudit}, response.ErrorMessage)
 	} else {
-		logging.WriteSucceededAuditLog("IsAllowed", log.Fields{"requestContext": context}, log.Fields{"evaluationResult": responseForAudit})
+		logging.WriteSucceededAuditLog("IsAllowed", map[string]interface{}{"requestContext": context}, map[string]interface{}{"evaluationResult": responseForAudit})
 	}
 
 	httputils.SendOKResponse(w, &response)
@@ -391,12 +389,12 @@ func (e *RESTService) GetAllGrantedRoles(w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		httputils.HandleError(w, err)
 		// Audit log
-		logging.WriteFailedAuditLog("GetAllGrantedRoles", log.Fields{"requestContext": context}, err.Error())
+		logging.WriteFailedAuditLog("GetAllGrantedRoles", map[string]interface{}{"requestContext": context}, err.Error())
 		return
 	}
 
 	// Audit log
-	logging.WriteSucceededAuditLog("GetAllGrantedRoles", log.Fields{"requestContext": context}, log.Fields{"roles": roles})
+	logging.WriteSucceededAuditLog("GetAllGrantedRoles", map[string]interface{}{"requestContext": context}, map[string]interface{}{"roles": roles})
 
 	if len(roles) == 0 {
 		httputils.SendEmptyListResponse(w)
@@ -426,7 +424,7 @@ func (e *RESTService) GetAllGrantedPermissions(w http.ResponseWriter, r *http.Re
 	if err != nil {
 		httputils.HandleError(w, err)
 		// Audit log
-		logging.WriteFailedAuditLog("GetAllGrantedPermissions", log.Fields{"requestContext": context}, err.Error())
+		logging.WriteFailedAuditLog("GetAllGrantedPermissions", map[string]interface{}{"requestContext": context}, err.Error())
 		return
 	}
 
@@ -439,7 +437,7 @@ func (e *RESTService) GetAllGrantedPermissions(w http.ResponseWriter, r *http.Re
 	}
 
 	// Audit log
-	logging.WriteSucceededAuditLog("GetAllGrantedPermissions", log.Fields{"requestContext": context}, log.Fields{"permissions": retPermissions})
+	logging.WriteSucceededAuditLog("GetAllGrantedPermissions", map[string]interface{}{"requestContext": context}, map[string]interface{}{"permissions": retPermissions})
 
 	if len(retPermissions) == 0 {
 		httputils.SendEmptyListResponse(w)

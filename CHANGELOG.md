@@ -2,6 +2,29 @@
 
 ## Unreleased
 
+- Migrated Engine application and audit logging to Go `log/slog`, with the
+  existing flags, environment variables, JSON configuration keys and rotation
+  settings. Trace maps to debug (selecting debug now includes former trace
+  messages). Unknown nonempty level/formatter values return clear errors.
+  The `[AUDIT]` prefix, structured fields, success/error levels and caller
+  `file`/`func` metadata remain available. Text output may differ in quoting,
+  field order, color and timestamp precision; validate collector parsers before
+  upgrading, or select JSON for one object per line with `time`, `level`, `msg`.
+
+  **Go API breaks (release after v1.8.0):** replace
+  `InitLogInstance(logrusLogger, config)` with
+  `logger, err := logging.NewLogger(config)` and use native slog methods.
+  `logging.AuditLog()` now returns `*slog.Logger`; replace mutable logrus
+  setters/hooks with a configured logger and `logging.SetAuditLog(logger)`.
+  Application call sites use `logging.Default()`; `logging.SetDefault(logger)`
+  installs a host-owned handler without redirecting the host's standard logger.
+  `LogConfig.RotationConfig` now takes `*lumberjack.Logger` from
+  `gopkg.in/natefinch/lumberjack.v2`; update the old lumberjack import to v2.
+  New files default to owner-only `0600` permissions (subject to umask);
+  rotation retains existing file permissions. Run collectors as the log owner
+  or provision access explicitly. Engine source no longer imports logrus or
+  zap directly, though embedded etcd still brings both transitively.
+
 ## v1.8.0
 
 - Removed the experimental policy-distribution feature introduced in v1.7.x.

@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/teramoby/speedle-plus/pkg/errors"
-	log "github.com/sirupsen/logrus"
+	"github.com/teramoby/speedle-plus/pkg/logging"
 )
 
 type ErrorResponse struct {
@@ -38,7 +38,7 @@ func errorCodeToHTTPStatus(err error) int {
 }
 
 func HandleError(w http.ResponseWriter, err error) {
-	log.Warningf("Handle error, err: %+v", err)
+	logging.Default().Warn(fmt.Sprintf("Handle error, err: %+v", err))
 	SendResponse(w, errorCodeToHTTPStatus(err), &ErrorResponse{
 		Error: err.Error(),
 	})

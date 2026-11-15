@@ -6,6 +6,7 @@ package ads
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -21,9 +22,6 @@ import (
 	"github.com/teramoby/speedle-plus/pkg/svcs/adsgrpc"
 	"github.com/teramoby/speedle-plus/pkg/svcs/adsgrpc/pb"
 	"github.com/teramoby/speedle-plus/pkg/svcs/adsrest"
-
-	log "github.com/sirupsen/logrus"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
@@ -51,20 +49,20 @@ func Run(ctx context.Context, params *flags.Parameters, conf *cfg.Config, option
 	if conf.LogConfig != nil {
 		err := logging.InitLog(conf.LogConfig)
 		if err != nil {
-			log.Errorf("Authz_check failed to initialize the log module, err: %v.", err)
+			logging.Default().Error(fmt.Sprintf("Authz_check failed to initialize the log module, err: %v.", err))
 		}
 	} else {
-		log.Error("No any log configurations for authorization service.")
+		logging.Default().Error("No any log configurations for authorization service.")
 	}
 
 	// Initialize the Audit logging
 	if conf.AuditLogConfig != nil {
 		err := logging.InitAuditLog(conf.AuditLogConfig)
 		if err != nil {
-			log.Errorf("Authz_check failed to initialize the audit log module, err: %v.", err)
+			logging.Default().Error(fmt.Sprintf("Authz_check failed to initialize the audit log module, err: %v.", err))
 		}
 	} else {
-		log.Error("No any audit log configurations for authorization service.\n")
+		logging.Default().Error("No any audit log configurations for authorization service.\n")
 	}
 
 	evaluator, err := newEvaluator(conf)
@@ -88,13 +86,13 @@ func Run(ctx context.Context, params *flags.Parameters, conf *cfg.Config, option
 			return err
 		}
 	} else {
-		log.Info("The gRPC server is off; set --grpc-endpoint to start it.")
+		logging.Default().Info("The gRPC server is off; set --grpc-endpoint to start it.")
 	}
 
 	errChan := make(chan error, 2)
 	if grpcServer != nil {
 		go func() {
-			log.Infof("Starting the gRPC server for authorization service on %s...", grpcEndpoint)
+			logging.Default().Info(fmt.Sprintf("Starting the gRPC server for authorization service on %s...", grpcEndpoint))
 			if settings.grpcListener != nil {
 				errChan <- grpcServer.Serve(settings.grpcListener)
 			} else {
@@ -104,7 +102,7 @@ func Run(ctx context.Context, params *flags.Parameters, conf *cfg.Config, option
 	}
 
 	go func() {
-		log.Info("Starting the REST server for authorization service...")
+		logging.Default().Info("Starting the REST server for authorization service...")
 		if settings.httpListener != nil {
 			if params.IsInsecure() {
 				errChan <- httpServer.Serve(settings.httpListener)
@@ -120,17 +118,16 @@ func Run(ctx context.Context, params *flags.Parameters, conf *cfg.Config, option
 	select {
 	case err = <-errChan:
 	case <-ctx.Done():
-		log.Info("Interrupt signal")
+		logging.Default().Info("Interrupt signal")
 	}
-
-	log.Info("Stopping servers...")
+	logging.Default().Info("Stopping servers...")
 	// Stop gRPC independently of active HTTP requests.
 	if grpcServer != nil {
-		log.Info("Stopping GRPC Server.")
+		logging.Default().Info("Stopping GRPC Server.")
 		grpcServer.Stop()
 	}
 	if httpServer != nil {
-		log.Info("Stopping HTTP Server.")
+		logging.Default().Info("Stopping HTTP Server.")
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), settings.shutdownTimeout)
 		defer cancel()
 		if shutdownErr := httpServer.Shutdown(shutdownCtx); shutdownErr != nil {
@@ -146,11 +143,10 @@ func newEvaluator(conf *cfg.Config) (eval.InternalEvaluator, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	log.Info("Loading asserters.")
+	logging.Default().Info("Loading asserters.")
 	as, errLoadAsserter := assertion.NewAsserter(conf.AsserterWebhookConfig, nil)
 	if errLoadAsserter != nil {
-		log.Warningf("load asserter error: %v", errLoadAsserter)
+		logging.Default().Warn(fmt.Sprintf("load asserter error: %v", errLoadAsserter))
 	} else {
 		f := func(ctx *adsapi.RequestContext) error {
 			if ctx.Subject != nil &&
@@ -158,12 +154,12 @@ func newEvaluator(conf *cfg.Config) (eval.InternalEvaluator, error) {
 				len(ctx.Subject.Token) != 0 {
 				tokenType := ctx.Subject.TokenType
 				token := ctx.Subject.Token
-				log.Debugf("Asserting token with token type %s.", tokenType)
+				logging.Default().Debug(fmt.Sprintf("Asserting token with token type %s.", tokenType))
 				s, err := as.AssertToken(token, tokenType, "", nil)
 				if err == nil {
 					ctx.Subject.Principals = append(ctx.Subject.Principals, s.Principals...)
 				} else {
-					log.Errorf("Failed to assert due to error %v.", err)
+					logging.Default().Error(fmt.Sprintf("Failed to assert due to error %v.", err))
 					return err
 				}
 			}
@@ -191,7 +187,7 @@ func newGRPCServer(params *flags.Parameters, evaluator eval.InternalEvaluator, s
 		return nil, err
 	}
 	if params.IsInsecure() {
-		log.Warningf("The gRPC server on %s is plaintext because insecure is true.", params.GRPCEndpoint.Value)
+		logging.Default().Warn(fmt.Sprintf("The gRPC server on %s is plaintext because insecure is true.", params.GRPCEndpoint.Value))
 	}
 	options = append(options, settings.grpcOptions...)
 	server := grpc.NewServer(options...)

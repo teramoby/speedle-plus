@@ -6,12 +6,13 @@ package main
 import (
 	"context"
 	"fmt"
-	log "github.com/sirupsen/logrus"
-	"github.com/teramoby/speedle-plus/pkg/ads"
-	"github.com/teramoby/speedle-plus/pkg/cmd/flags"
-	"github.com/teramoby/speedle-plus/pkg/store"
 	"os"
 	"os/signal"
+
+	"github.com/teramoby/speedle-plus/pkg/ads"
+	"github.com/teramoby/speedle-plus/pkg/cmd/flags"
+	"github.com/teramoby/speedle-plus/pkg/logging"
+	"github.com/teramoby/speedle-plus/pkg/store"
 )
 
 var gitCommit string
@@ -38,7 +39,7 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 	if err := ads.Run(ctx, &params, conf); err != nil {
-		log.Error(err)
+		logging.Default().Error(fmt.Sprint(err))
 		os.Exit(1)
 	}
 }

@@ -12,25 +12,21 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/debug"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/gorilla/handlers"
+	"github.com/spf13/pflag"
 	"github.com/teramoby/speedle-plus/pkg/assertion"
 	"github.com/teramoby/speedle-plus/pkg/cfg"
 	"github.com/teramoby/speedle-plus/pkg/errors"
 	"github.com/teramoby/speedle-plus/pkg/logging"
-
-	"strconv"
-
-	"github.com/natefinch/lumberjack"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/pflag"
-
-	"github.com/gorilla/handlers"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 // Parameters is the parameters for Speedle
@@ -191,7 +187,7 @@ func (k *Parameters) GRPCServerOptions() ([]grpc.ServerOption, error) {
 func recoverUnary(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Errorf("panic in gRPC method %s: %v\n%s", info.FullMethod, r, debug.Stack())
+			logging.Default().Error(fmt.Sprintf("panic in gRPC method %s: %v\n%s", info.FullMethod, r, debug.Stack()))
 			err = status.Error(codes.Internal, "internal error")
 		}
 	}()
@@ -524,12 +520,12 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 							case []interface{}:
 								values, stringsOnly := stringSlice(x)
 								if !stringsOnly {
-									log.Warnf("Unsupported type %T for parameter %q", x, f.Name)
+									logging.Default().Warn(fmt.Sprintf("Unsupported type %T for parameter %q", x, f.Name))
 									break
 								}
 								joinStringValues(f, values)
 							default:
-								log.Warnf("Unsupported type %T for parameter %q", x, f.Name)
+								logging.Default().Warn(fmt.Sprintf("Unsupported type %T for parameter %q", x, f.Name))
 							}
 						}
 					}
@@ -538,8 +534,7 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 
 		}
 	})
-
-	log.Debugf("parameters: %v", k)
+	logging.Default().Debug(fmt.Sprintf("parameters: %v", k))
 }
 
 // FlagToEnv converts flag string to upper-case environment variable key string.
@@ -552,7 +547,7 @@ func FlagToEnv(name string) string {
 // value and report the unsupported list.
 func joinStringValues(f *pflag.Flag, values []string) {
 	if f.Value.Type() != "string" {
-		log.Warnf("Unsupported list value for parameter %q", f.Name)
+		logging.Default().Warn(fmt.Sprintf("Unsupported list value for parameter %q", f.Name))
 		return
 	}
 	f.Value.Set(strings.Join(values, ","))
@@ -757,8 +752,7 @@ func (k *Parameters) Param2Config(storeParamsMap map[string]string) (*cfg.Config
 		}
 		conf.AsserterWebhookConfig = &asserterConf
 	}
-
-	log.Debugf("asserter webhook config: %v", conf.AsserterWebhookConfig)
+	logging.Default().Debug(fmt.Sprintf("asserter webhook config: %v", conf.AsserterWebhookConfig))
 
 	return &conf, nil
 }

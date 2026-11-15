@@ -14,26 +14,13 @@ lastmod = 2026-11-08T08:33:54+08:00
 
 ## Overview
 
-The following two open source projects are used to process log messages,
+For the release after v1.8.0, Speedle uses Go `log/slog` for structured application and audit logs and `gopkg.in/natefinch/lumberjack.v2` for file rotation. v1.8.0 and older releases use the previous logging API.
 
-```
-1. https://github.com/sirupsen/logrus
-2. https://github.com/natefinch/lumberjack
-```
+## Logging configuration
 
-Logrus is a structured logger for Go (golang), and completely API compatible with the golang standard library logger. Note that logrus doesn't support log rotation, and it is exactly the reason why we introduce the second project lumberjack, which provides a rolling logger. Logrus communicates with lumberjack using the io.Writer interface, please refer to the following diagram,
+All existing `--log-*` and `--auditlog-*` flags, `SPDL_*` environment variables and JSON configuration keys remain supported. Explicit flags override environment variables, which override the configuration file. Application defaults are info, text, stderr and no caller metadata; audit defaults are info and JSON. Set the corresponding `--auditlog-*` option to configure audit output independently.
 
-<img src="/img/speedle/logger.jpg" alt="Speedle Logging" width="370" height="230" loading="lazy">
-
-## Logging Configuration
-
-There are two ways to configure logging for Speedle, either via command line arguments or via configuration file.
-
-### Configure logging via command line arguments
-
-All the available command line arguments are listed below. The level, formatter and reportcaller settings configure logrus; file/rotation settings configure lumberjack.
-
-```
+```text
 --log-level string
 --log-formatter string
 --log-reportcaller bool
@@ -45,112 +32,85 @@ All the available command line arguments are listed below. The level, formatter 
 --log-compress bool
 ```
 
-The detailed info of each item is in the following table. Note that any of the following configuration item is optional. If none of them is configured, then the log messages with info level or above will be written to the stderr in text format by default.
-
-| Configuration Item | Description                                                                                                                           | Default Value                                                                                  |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| --log-level        | log level, available levels are panic, fatal, error, warn, info and debug                                                             | info                                                                                           |
-| --log-formatter    | log formatter, available values are text and json                                                                                     | text                                                                                           |
-| --log-reportcaller | control whether get the caller info (file, line and function) included in the log entries                                             | false                                                                                          |
-| --log-filename     | log file name                                                                                                                         | no default value. If it isn't configured, then log messages are written to stderr              |
-| --log-maxsize      | maximum size in megabytes of the log file before it gets rotated. It's only valid when "--log-filename" is configured                 | 100                                                                                            |
-| --log-maxbackups   | maximum number of old log files to retain. It's only valid when "--log-filename" is configured                                        | 0, which means to retain all old log files (though MaxAge may still cause them to get deleted) |
-| --log-maxage       | maximum number of days to retain old log files. It's only valid when "--log-filename" is configured                                   | 0, which means not to remove old log files based on age                                        |
-| --log-localtime    | control whether local time is used for formatting the timestamps in backup files. It's only valid when "--log-filename" is configured | false, which means to use UTC time                                                             |
-| --log-compress     | control whether the rotated log files should be compressed. It's only valid when "--log-filename" is configured                       | false, which means not to perform compression                                                  |
-
-The following two examples are in text and json format respectively,
-
-```
-# text
-time="2015-03-26T01:27:38-04:00" level=debug msg="Started observing beach" animal=walrus number=8
-```
-
-```
-# json
-{"animal":"walrus","level":"info","msg":"A group of walrus emerges from the
-ocean","size":10,"time":"2014-03-10 19:57:38.562264131 -0400 EDT"}
-```
-
-### Configure logging via configuration file
-
-An example is as below. Again, any configuration item is optional as well.
+| Flag | Default | Meaning |
+| --- | --- | --- |
+| `--log-level` | `info` | Minimum severity |
+| `--log-formatter` | `text` | `text` or `json` |
+| `--log-reportcaller` | `false` | Include caller file, line and function |
+| `--log-filename` | unset | Stderr unless a file is configured |
+| `--log-maxsize` | `100` | Maximum file size in MB |
+| `--log-maxbackups` | `0` | Backup count; 0 retains all, subject to max age |
+| `--log-maxage` | `0` | Backup age in days; 0 disables age deletion |
+| `--log-localtime` | `false` | Local time for backup filenames, otherwise UTC |
+| `--log-compress` | `false` | Compress backups |
 
 ```json
 {
-    "logConfig": {
-        "level": "info",
-        "formatter": "text",
-        "setReportCaller": false,
-        "rotationConfig": {
-            "filename": "/mnt/logs/speedle.log",
-            "maxSize": 20,
-            "maxBackups": 5,
-            "maxAge": 0,
-            "LocalTime": false,
-            "compress": false
-        }
+  "logConfig": {
+    "level": "info",
+    "formatter": "text",
+    "setReportCaller": false,
+    "rotationConfig": {
+      "filename": "/mnt/logs/speedle.log",
+      "maxSize": 20,
+      "maxBackups": 5,
+      "maxAge": 0,
+      "LocalTime": false,
+      "compress": false
     }
-}
-```
-
-## Best practices for configuring logging
-
-If Speedle runs as docker containers, then it's more natural to to use the docker's json-file logging driver instead of the open source project natefinch/lumberjack to rotate log files, accordingly json-file logging driver is recommended for this case. Only sirupsen/logrus is needed, in other words, users don't need to configure anything for natefinch/lumberjack at all in this case.
-
-All docker related configuration items, including logging, are configured in /etc/docker/daemon.json. Please refer to [docker json-file](https://docs.docker.com/config/containers/logging/json-file/) to get more detailed info on how to configure json-file logging driver. The following snippet is an example,
-
-```
-{
-  "log-driver": "json-file",
-  "log-opts": {
-    "max-size": "20m",
-    "max-file": "10"
+  },
+  "auditLogConfig": {
+    "level": "info",
+    "formatter": "json"
   }
 }
 ```
 
-In most cases, users don't need to configure sirupsen/logrus either. The default log level is info, and the default log format is text. So generally users only need to configure the logging if they want to change the log level or log format, otherwise they need to configure nothing since the default configuration is good enough.
 
-## How to add new log messages
+## Levels and output formats
 
-Firstly import the log package as below,
+Level and formatter names are case-insensitive. Accepted levels are `trace`, `debug`, `info`, `warn`, `warning`, `error`, `fatal` and `panic`. Trace maps to debug; selecting debug therefore also emits former trace messages. The remaining thresholds retain their order. Unknown nonempty values fail with an error naming the supplied value.
+
+Use `text` for key=value records or `json` for one JSON object per line. Metadata keys remain `time`, `level`, `msg` and, when caller reporting is enabled, `file` (with line number) and `func`. Level values are lowercase, with `warning` for warn. Errors remain strings and other structured fields remain structured. User fields colliding with metadata receive a `fields.` prefix.
+
+```text
+time=2026-11-15T09:00:00.000+08:00 level=info msg="Started observing beach" animal=walrus number=8
+```
+
+```json
+{"time":"2026-11-15T09:00:00+08:00","level":"info","msg":"Started observing beach","animal":"walrus","number":8}
+```
+
+
+## Migration for log collectors
+
+Text quoting, field order, color and timestamp precision can differ from logrus. Text has no ANSI colors; timestamps are RFC3339-compatible. Check existing parsers before upgrading, or use JSON and parse keys rather than field order. Audit messages retain `[AUDIT]` followed directly by the API name, plus `tenantid`, `target_index`, request/response values and success/error severity.
+
+New rotated log files default to owner-only `0600` permissions, subject to umask, instead of the former `0644`. Rotation preserves the mode of an existing file. Run the collector as the log owner or explicitly provision access before upgrading; do not assume a separate collector account can read newly created files.
+
+## Go API migration
+
+Replace `InitLogInstance(logrusLogger, config)` with `logger, err := logging.NewLogger(config)`. `AuditLog()` now returns `*slog.Logger`; use native slog methods and `SetAuditLog(logger)` instead of logrus setters/hooks. Change the lumberjack import to v2 when assigning `LogConfig.RotationConfig`; v1 pointers no longer compile. `InitLog` and `InitAuditLog` retain unspecified settings and treat nil or an empty config as a no-op. Invalid configuration leaves the installed logger unchanged.
+
+Use `logging.Default()` for the Engine logger or `logging.SetDefault(logger)` to install a host-owned slog handler. These functions do not change `slog.Default()` or redirect the host application’s standard `log` output. `logging.Fatal(message)` logs then exits with status 1; `logging.Panic(message)` logs then panics, even when their records are filtered.
 
 ```go
 import (
-  log "github.com/sirupsen/logrus"
+    "github.com/teramoby/speedle-plus/pkg/logging"
+    "gopkg.in/natefinch/lumberjack.v2"
 )
+
+logger, err := logging.NewLogger(&logging.LogConfig{
+    Level: "info", Formatter: "json",
+    RotationConfig: &lumberjack.Logger{Filename: "engine.log", MaxSize: 20},
+})
+if err != nil {
+    return err
+}
+logger.Info("Started observing beach", "animal", "walrus", "number", 8)
 ```
 
-Secondly output any log messages anywhere you want. For example,
 
-```go
-  log.Debug("This is a debug log entry")
-  log.Info("This is a info log entry")
-  log.Warn("This is a warning log entry")
-  log.Warning("This is a warning log entry again")
-  log.Error("This is a error log entry")
-```
+## Container logging
 
-Please refer to [speedle/logging/demo/demo.go](https://github.com/teramoby/speedle-plus/blob/master/pkg/logging/demo/demo.go) to get more detailed info.
-
-## Integration with 3rd-party log collectors
-
-Speedle logs can be easily integrated with 3rd-party log collectors, such as fluentd or filebeat. What the users need to do is to configure fluentd or filebeat to monitor the log files generated by Speedle. The following configuration snippet is an example of using fluentd's in_tail input plugin to collect docker containers' log, including Speedle's log of course if Speedle runs as containers.
-
-```
-    <source>
-      @type tail
-      path /var/lib/docker/containers/*/*.log
-      pos_file /data/fluentd/fluentd.log.pos
-      tag speedle.log
-      <parse>
-        @type json
-        time_key time
-        keep_time_key true
-      </parse>
-      refresh_interval 5
-    </source>
-```
-
-Please refer to [fluentd](https://www.fluentd.org/) and [filebeat](https://www.elastic.co/products/beats/filebeat) official websites to get more detailed info.
+For containers, leave the filename unset and use the container runtime’s log rotation. No lumberjack file configuration is needed. Embedded etcd may still pull logrus and zap transitively, but Engine code uses slog.

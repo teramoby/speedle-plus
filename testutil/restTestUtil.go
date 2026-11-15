@@ -11,7 +11,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -20,6 +19,7 @@ import (
 
 	pmsapi "github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/cmd/flags"
+	"github.com/teramoby/speedle-plus/pkg/logging"
 	"github.com/teramoby/speedle-plus/pkg/svcs"
 )
 
@@ -329,7 +329,7 @@ func NewRestClient(endpoint string, curToken string, basicAuthName string, basic
 	fmt.Printf("caLoc: %s, certLoc: %s, keyLoc: %s\n", caLoc, certLoc, keyLoc)
 	caCert, err := ioutil.ReadFile(caLoc)
 	if err != nil {
-		log.Fatal(err)
+		logging.Fatal(fmt.Sprint(err))
 		return nil, err
 	}
 	caCertPool := x509.NewCertPool()
@@ -337,7 +337,7 @@ func NewRestClient(endpoint string, curToken string, basicAuthName string, basic
 
 	cert, err := tls.LoadX509KeyPair(certLoc, keyLoc)
 	if err != nil {
-		log.Fatal(err)
+		logging.Fatal(fmt.Sprint(err))
 		return nil, err
 	}
 	tlsConfig := &tls.Config{

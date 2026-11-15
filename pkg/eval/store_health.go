@@ -5,9 +5,9 @@ import (
 	"context"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/errors"
+	"github.com/teramoby/speedle-plus/pkg/logging"
 )
 
 const storeHealthInterval = time.Second
@@ -20,7 +20,7 @@ func (p *PolicyEvalImpl) storeUnavailableLocked() {
 	}
 	if p.storeFailureSince.IsZero() {
 		p.storeFailureSince = time.Now()
-		log.Error("Policy store unavailable; a complete reload is required")
+		logging.Default().Error("Policy store unavailable; a complete reload is required")
 	}
 }
 

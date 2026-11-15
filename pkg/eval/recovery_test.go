@@ -3,6 +3,7 @@ package eval
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -11,13 +12,13 @@ import (
 	"testing"
 	"time"
 
-	log "github.com/sirupsen/logrus"
-	logtest "github.com/sirupsen/logrus/hooks/test"
 	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
 	ads "github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/cfg"
 	"github.com/teramoby/speedle-plus/pkg/errors"
+	"github.com/teramoby/speedle-plus/pkg/logging"
+	"github.com/teramoby/speedle-plus/testutil/logcapture"
 )
 
 func recoveryGrant(id string) *pms.Policy {
@@ -72,9 +73,10 @@ func requireHealthyAfterRecovery(t *testing.T, e *PolicyEvalImpl) {
 }
 
 func TestFeatureEvaluationPanicFailClosed(t *testing.T) {
-	oldHooks := log.StandardLogger().ReplaceHooks(make(log.LevelHooks))
-	hook := logtest.NewGlobal()
-	t.Cleanup(func() { log.StandardLogger().ReplaceHooks(oldHooks) })
+	previous := logging.Default()
+	hook := &logcapture.Handler{}
+	logging.SetDefault(slog.New(hook))
+	t.Cleanup(func() { logging.SetDefault(previous) })
 	for _, effect := range []string{pms.Grant, pms.Deny} {
 		t.Run(effect, func(t *testing.T) {
 			broken := recoveryGrant("broken")
@@ -94,14 +96,14 @@ func TestFeatureEvaluationPanicFailClosed(t *testing.T) {
 		})
 	}
 	found := false
-	for _, entry := range hook.AllEntries() {
+	for _, entry := range hook.Records() {
 		if entry.Message == "authorization engine recovered a panic" {
 			found = true
-			if entry.Level != log.ErrorLevel || entry.Data["stack"] == "" {
+			if entry.Level != slog.LevelError || recordAttrs(entry)["stack"] == "" {
 				t.Fatalf("missing error/stack: %+v", entry)
 			}
 		}
-		if strings.Contains(fmt.Sprint(entry.Data), "secret-panic-payload") {
+		if strings.Contains(fmt.Sprint(recordAttrs(entry)), "secret-panic-payload") {
 			t.Fatal("panic payload leaked into logs")
 		}
 	}
@@ -450,13 +452,16 @@ func TestFeatureRecoveryDoesNotInspectExternalErrors(t *testing.T) {
 
 type panicErrorLogHook struct{}
 
-func (panicErrorLogHook) Levels() []log.Level   { return []log.Level{log.ErrorLevel} }
-func (panicErrorLogHook) Fire(*log.Entry) error { panic("logging failed") }
+func (panicErrorLogHook) Enabled(context.Context, slog.Level) bool  { return true }
+func (panicErrorLogHook) Handle(context.Context, slog.Record) error { panic("logging failed") }
+func (h panicErrorLogHook) WithAttrs([]slog.Attr) slog.Handler      { return h }
+func (h panicErrorLogHook) WithGroup(string) slog.Handler           { return h }
 
 func TestFeatureRecoverySurvivesLoggingPanic(t *testing.T) {
 	e := featureEvaluator(t, &pms.PolicyStore{Services: []*pms.Service{{Name: "app", Policies: []*pms.Policy{recoveryGrant("grant")}}}})
-	previous := log.StandardLogger().ReplaceHooks(log.LevelHooks{log.ErrorLevel: []log.Hook{panicErrorLogHook{}}})
-	t.Cleanup(func() { log.StandardLogger().ReplaceHooks(previous) })
+	previous := logging.Default()
+	logging.SetDefault(slog.New(panicErrorLogHook{}))
+	t.Cleanup(func() { logging.SetDefault(previous) })
 	e.SetAsserterFunc(func(*ads.RequestContext) error { panic("assertion failed") })
 	ctx := featureContext()
 	ctx.Subject.TokenType = "test"
@@ -632,4 +637,10 @@ func TestFeatureReadFailureSuspendsCompleteCache(t *testing.T) {
 	if allowed, _, err := e.IsAllowed(featureContext()); allowed || err == nil {
 		t.Fatal("read failure cleared failed-cache state")
 	}
+}
+
+func recordAttrs(record slog.Record) map[string]any {
+	attrs := map[string]any{}
+	record.Attrs(func(a slog.Attr) bool { attrs[a.Key] = a.Value.Any(); return true })
+	return attrs
 }

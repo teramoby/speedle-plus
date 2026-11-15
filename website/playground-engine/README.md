@@ -15,7 +15,7 @@ upstream deny-overrides combiner. It uses a single ephemeral service for each ru
 
 ## Rebuild the checked-in artifacts
 
-Requirements: Git, Go **1.26.3**, Bash, and Node 22 or later for tests. From the
+Requirements: Git, Go **1.27.4**, Python 3, Bash, and Node 22 or later for tests. From the
 repository root:
 
 ```sh
@@ -26,13 +26,20 @@ GO_BIN=/path/to/go website/playground-engine/build.sh
 
 `go.mod` replaces the Speedle dependency with this repository's root. The
 underlying engine source (`api/`, `pkg/`, `3rdparty/`, `go.mod`, `go.sum`) is pinned
-to commit `dd628a6df3f2ce46126896c1322cb6ef21f75449`. The script extracts those
-paths from the pinned Git commit into a temporary build tree, then copies the
-current adapter there. Later server or dependency changes cannot silently change
-the published engine or prevent rebuilding it. Full Git history is required (`git fetch --unshallow` for a shallow
-clone). To deliberately upgrade the engine, review the source change, update the
-pin and adapter `Revision`, update `ENGINE-NOTICE.txt` and tests, rebuild, and
-review the new artifact together.
+to commit `c14ee1b2d625778cf78812db69f26784968bf79c`. The checked-in
+`engine-source.pack` contains that Git commit, its trees and the selected source
+blobs. The build checks `engine-source.sha256`, unpacks into an isolated temporary
+Git object database, and exports the exact commit's source tree. Git's object
+hashes bind every exported file to the pinned commit; a self-declared tar comment
+is not used as proof. No object is borrowed from the checkout or alternate stores.
+A shallow clone is sufficient even after squash merging and deleting the PR
+branch; no old PR commit object, hidden GitHub ref or network fetch is required.
+
+To deliberately upgrade the engine, commit and review the source change, run
+`python3 website/playground-engine/engine-source.py snapshot <commit>`, update the
+build pin, adapter `Revision`, `ENGINE-NOTICE.txt` and browser test, then rebuild.
+Review the generated source-pack checksum and WASM together. Later source edits do
+not silently change the published browser engine.
 
 The build runs native and actual Go-WASM adapter tests, uses locked modules (`-mod=readonly`),
 `-trimpath`, `-buildvcs=false` and `-ldflags='-s -w'`, and copies the matching Go

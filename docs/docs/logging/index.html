@@ -185,21 +185,12 @@
 
 <h2 id="overview">Overview</h2>
 
-<p>The following two open source projects are used to process log messages,</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">1. https://github.com/sirupsen/logrus
-2. https://github.com/natefinch/lumberjack</pre></div>
-<p>Logrus is a structured logger for Go (golang), and completely API compatible with the golang standard library logger. Note that logrus doesn&rsquo;t support log rotation, and it is exactly the reason why we introduce the second project lumberjack, which provides a rolling logger. Logrus communicates with lumberjack using the io.Writer interface, please refer to the following diagram,</p>
+<p>For the release after v1.8.0, Speedle uses Go <code>log/slog</code> for structured application and audit logs and <code>gopkg.in/natefinch/lumberjack.v2</code> for file rotation. v1.8.0 and older releases use the previous logging API.</p>
 
-<p><img src="/img/speedle/logger.jpg" alt="Speedle Logging" width="370" height="230" loading="lazy"></p>
+<h2 id="logging-configuration">Logging configuration</h2>
 
-<h2 id="logging-configuration">Logging Configuration</h2>
-
-<p>There are two ways to configure logging for Speedle, either via command line arguments or via configuration file.</p>
-
-<h3 id="configure-logging-via-command-line-arguments">Configure logging via command line arguments</h3>
-
-<p>All the available command line arguments are listed below. The level, formatter and reportcaller settings configure logrus; file/rotation settings configure lumberjack.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">--log-level string
+<p>All existing <code>--log-*</code> and <code>--auditlog-*</code> flags, <code>SPDL_*</code> environment variables and JSON configuration keys remain supported. Explicit flags override environment variables, which override the configuration file. Application defaults are info, text, stderr and no caller metadata; audit defaults are info and JSON. Set the corresponding <code>--auditlog-*</code> option to configure audit output independently.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">--log-level string
 --log-formatter string
 --log-reportcaller bool
 --log-filename string
@@ -207,142 +198,124 @@
 --log-maxbackups int
 --log-maxage int
 --log-localtime bool
---log-compress bool</pre></div>
-<p>The detailed info of each item is in the following table. Note that any of the following configuration item is optional. If none of them is configured, then the log messages with info level or above will be written to the stderr in text format by default.</p>
-
+--log-compress bool</code></pre></div>
 <table>
 <thead>
 <tr>
-<th>Configuration Item</th>
-<th>Description</th>
-<th>Default Value</th>
+<th>Flag</th>
+<th>Default</th>
+<th>Meaning</th>
 </tr>
 </thead>
 
 <tbody>
 <tr>
-<td>&ndash;log-level</td>
-<td>log level, available levels are panic, fatal, error, warn, info and debug</td>
-<td>info</td>
+<td><code>--log-level</code></td>
+<td><code>info</code></td>
+<td>Minimum severity</td>
 </tr>
 
 <tr>
-<td>&ndash;log-formatter</td>
-<td>log formatter, available values are text and json</td>
-<td>text</td>
+<td><code>--log-formatter</code></td>
+<td><code>text</code></td>
+<td><code>text</code> or <code>json</code></td>
 </tr>
 
 <tr>
-<td>&ndash;log-reportcaller</td>
-<td>control whether get the caller info (file, line and function) included in the log entries</td>
-<td>false</td>
+<td><code>--log-reportcaller</code></td>
+<td><code>false</code></td>
+<td>Include caller file, line and function</td>
 </tr>
 
 <tr>
-<td>&ndash;log-filename</td>
-<td>log file name</td>
-<td>no default value. If it isn&rsquo;t configured, then log messages are written to stderr</td>
+<td><code>--log-filename</code></td>
+<td>unset</td>
+<td>Stderr unless a file is configured</td>
 </tr>
 
 <tr>
-<td>&ndash;log-maxsize</td>
-<td>maximum size in megabytes of the log file before it gets rotated. It&rsquo;s only valid when &ldquo;&ndash;log-filename&rdquo; is configured</td>
-<td>100</td>
+<td><code>--log-maxsize</code></td>
+<td><code>100</code></td>
+<td>Maximum file size in MB</td>
 </tr>
 
 <tr>
-<td>&ndash;log-maxbackups</td>
-<td>maximum number of old log files to retain. It&rsquo;s only valid when &ldquo;&ndash;log-filename&rdquo; is configured</td>
-<td>0, which means to retain all old log files (though MaxAge may still cause them to get deleted)</td>
+<td><code>--log-maxbackups</code></td>
+<td><code>0</code></td>
+<td>Backup count; 0 retains all, subject to max age</td>
 </tr>
 
 <tr>
-<td>&ndash;log-maxage</td>
-<td>maximum number of days to retain old log files. It&rsquo;s only valid when &ldquo;&ndash;log-filename&rdquo; is configured</td>
-<td>0, which means not to remove old log files based on age</td>
+<td><code>--log-maxage</code></td>
+<td><code>0</code></td>
+<td>Backup age in days; 0 disables age deletion</td>
 </tr>
 
 <tr>
-<td>&ndash;log-localtime</td>
-<td>control whether local time is used for formatting the timestamps in backup files. It&rsquo;s only valid when &ldquo;&ndash;log-filename&rdquo; is configured</td>
-<td>false, which means to use UTC time</td>
+<td><code>--log-localtime</code></td>
+<td><code>false</code></td>
+<td>Local time for backup filenames, otherwise UTC</td>
 </tr>
 
 <tr>
-<td>&ndash;log-compress</td>
-<td>control whether the rotated log files should be compressed. It&rsquo;s only valid when &ldquo;&ndash;log-filename&rdquo; is configured</td>
-<td>false, which means not to perform compression</td>
+<td><code>--log-compress</code></td>
+<td><code>false</code></td>
+<td>Compress backups</td>
 </tr>
 </tbody>
 </table>
-
-<p>The following two examples are in text and json format respectively,</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"># text
-time=&#34;2015-03-26T01:27:38-04:00&#34; level=debug msg=&#34;Started observing beach&#34; animal=walrus number=8</pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"># json
-{&#34;animal&#34;:&#34;walrus&#34;,&#34;level&#34;:&#34;info&#34;,&#34;msg&#34;:&#34;A group of walrus emerges from the
-ocean&#34;,&#34;size&#34;:10,&#34;time&#34;:&#34;2014-03-10 19:57:38.562264131 -0400 EDT&#34;}</pre></div>
-<h3 id="configure-logging-via-configuration-file">Configure logging via configuration file</h3>
-
-<p>An example is as below. Again, any configuration item is optional as well.</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
-    <span style="color:#ff79c6">&#34;logConfig&#34;</span>: {
-        <span style="color:#ff79c6">&#34;level&#34;</span>: <span style="color:#f1fa8c">&#34;info&#34;</span>,
-        <span style="color:#ff79c6">&#34;formatter&#34;</span>: <span style="color:#f1fa8c">&#34;text&#34;</span>,
-        <span style="color:#ff79c6">&#34;setReportCaller&#34;</span>: <span style="color:#ff79c6">false</span>,
-        <span style="color:#ff79c6">&#34;rotationConfig&#34;</span>: {
-            <span style="color:#ff79c6">&#34;filename&#34;</span>: <span style="color:#f1fa8c">&#34;/mnt/logs/speedle.log&#34;</span>,
-            <span style="color:#ff79c6">&#34;maxSize&#34;</span>: <span style="color:#bd93f9">20</span>,
-            <span style="color:#ff79c6">&#34;maxBackups&#34;</span>: <span style="color:#bd93f9">5</span>,
-            <span style="color:#ff79c6">&#34;maxAge&#34;</span>: <span style="color:#bd93f9">0</span>,
-            <span style="color:#ff79c6">&#34;LocalTime&#34;</span>: <span style="color:#ff79c6">false</span>,
-            <span style="color:#ff79c6">&#34;compress&#34;</span>: <span style="color:#ff79c6">false</span>
-        }
+  <span style="color:#ff79c6">&#34;logConfig&#34;</span>: {
+    <span style="color:#ff79c6">&#34;level&#34;</span>: <span style="color:#f1fa8c">&#34;info&#34;</span>,
+    <span style="color:#ff79c6">&#34;formatter&#34;</span>: <span style="color:#f1fa8c">&#34;text&#34;</span>,
+    <span style="color:#ff79c6">&#34;setReportCaller&#34;</span>: <span style="color:#ff79c6">false</span>,
+    <span style="color:#ff79c6">&#34;rotationConfig&#34;</span>: {
+      <span style="color:#ff79c6">&#34;filename&#34;</span>: <span style="color:#f1fa8c">&#34;/mnt/logs/speedle.log&#34;</span>,
+      <span style="color:#ff79c6">&#34;maxSize&#34;</span>: <span style="color:#bd93f9">20</span>,
+      <span style="color:#ff79c6">&#34;maxBackups&#34;</span>: <span style="color:#bd93f9">5</span>,
+      <span style="color:#ff79c6">&#34;maxAge&#34;</span>: <span style="color:#bd93f9">0</span>,
+      <span style="color:#ff79c6">&#34;LocalTime&#34;</span>: <span style="color:#ff79c6">false</span>,
+      <span style="color:#ff79c6">&#34;compress&#34;</span>: <span style="color:#ff79c6">false</span>
     }
-}</code></pre></div>
-<h2 id="best-practices-for-configuring-logging">Best practices for configuring logging</h2>
-
-<p>If Speedle runs as docker containers, then it&rsquo;s more natural to to use the docker&rsquo;s json-file logging driver instead of the open source project natefinch/lumberjack to rotate log files, accordingly json-file logging driver is recommended for this case. Only sirupsen/logrus is needed, in other words, users don&rsquo;t need to configure anything for natefinch/lumberjack at all in this case.</p>
-
-<p>All docker related configuration items, including logging, are configured in /etc/docker/daemon.json. Please refer to <a href="https://docs.docker.com/config/containers/logging/json-file/">docker json-file</a> to get more detailed info on how to configure json-file logging driver. The following snippet is an example,</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">{
-  &#34;log-driver&#34;: &#34;json-file&#34;,
-  &#34;log-opts&#34;: {
-    &#34;max-size&#34;: &#34;20m&#34;,
-    &#34;max-file&#34;: &#34;10&#34;
+  },
+  <span style="color:#ff79c6">&#34;auditLogConfig&#34;</span>: {
+    <span style="color:#ff79c6">&#34;level&#34;</span>: <span style="color:#f1fa8c">&#34;info&#34;</span>,
+    <span style="color:#ff79c6">&#34;formatter&#34;</span>: <span style="color:#f1fa8c">&#34;json&#34;</span>
   }
-}</pre></div>
-<p>In most cases, users don&rsquo;t need to configure sirupsen/logrus either. The default log level is info, and the default log format is text. So generally users only need to configure the logging if they want to change the log level or log format, otherwise they need to configure nothing since the default configuration is good enough.</p>
+}</code></pre></div>
+<h2 id="levels-and-output-formats">Levels and output formats</h2>
 
-<h2 id="how-to-add-new-log-messages">How to add new log messages</h2>
+<p>Level and formatter names are case-insensitive. Accepted levels are <code>trace</code>, <code>debug</code>, <code>info</code>, <code>warn</code>, <code>warning</code>, <code>error</code>, <code>fatal</code> and <code>panic</code>. Trace maps to debug; selecting debug therefore also emits former trace messages. The remaining thresholds retain their order. Unknown nonempty values fail with an error naming the supplied value.</p>
 
-<p>Firstly import the log package as below,</p>
+<p>Use <code>text</code> for key=value records or <code>json</code> for one JSON object per line. Metadata keys remain <code>time</code>, <code>level</code>, <code>msg</code> and, when caller reporting is enabled, <code>file</code> (with line number) and <code>func</code>. Level values are lowercase, with <code>warning</code> for warn. Errors remain strings and other structured fields remain structured. User fields colliding with metadata receive a <code>fields.</code> prefix.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">time=2026-11-15T09:00:00.000+08:00 level=info msg=&#34;Started observing beach&#34; animal=walrus number=8</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{<span style="color:#ff79c6">&#34;time&#34;</span>:<span style="color:#f1fa8c">&#34;2026-11-15T09:00:00+08:00&#34;</span>,<span style="color:#ff79c6">&#34;level&#34;</span>:<span style="color:#f1fa8c">&#34;info&#34;</span>,<span style="color:#ff79c6">&#34;msg&#34;</span>:<span style="color:#f1fa8c">&#34;Started observing beach&#34;</span>,<span style="color:#ff79c6">&#34;animal&#34;</span>:<span style="color:#f1fa8c">&#34;walrus&#34;</span>,<span style="color:#ff79c6">&#34;number&#34;</span>:<span style="color:#bd93f9">8</span>}</code></pre></div>
+<h2 id="migration-for-log-collectors">Migration for log collectors</h2>
+
+<p>Text quoting, field order, color and timestamp precision can differ from logrus. Text has no ANSI colors; timestamps are RFC3339-compatible. Check existing parsers before upgrading, or use JSON and parse keys rather than field order. Audit messages retain <code>[AUDIT]</code> followed directly by the API name, plus <code>tenantid</code>, <code>target_index</code>, request/response values and success/error severity.</p>
+
+<p>New rotated log files default to owner-only <code>0600</code> permissions, subject to umask, instead of the former <code>0644</code>. Rotation preserves the mode of an existing file. Run the collector as the log owner or explicitly provision access before upgrading; do not assume a separate collector account can read newly created files.</p>
+
+<h2 id="go-api-migration">Go API migration</h2>
+
+<p>Replace <code>InitLogInstance(logrusLogger, config)</code> with <code>logger, err := logging.NewLogger(config)</code>. <code>AuditLog()</code> now returns <code>*slog.Logger</code>; use native slog methods and <code>SetAuditLog(logger)</code> instead of logrus setters/hooks. Change the lumberjack import to v2 when assigning <code>LogConfig.RotationConfig</code>; v1 pointers no longer compile. <code>InitLog</code> and <code>InitAuditLog</code> retain unspecified settings and treat nil or an empty config as a no-op. Invalid configuration leaves the installed logger unchanged.</p>
+
+<p>Use <code>logging.Default()</code> for the Engine logger or <code>logging.SetDefault(logger)</code> to install a host-owned slog handler. These functions do not change <code>slog.Default()</code> or redirect the host application’s standard <code>log</code> output. <code>logging.Fatal(message)</code> logs then exits with status 1; <code>logging.Panic(message)</code> logs then panics, even when their records are filtered.</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#ff79c6">import</span> (
-  log <span style="color:#f1fa8c">&#34;github.com/sirupsen/logrus&#34;</span>
-)</code></pre></div>
-<p>Secondly output any log messages anywhere you want. For example,</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">  log.Debug(<span style="color:#f1fa8c">&#34;This is a debug log entry&#34;</span>)
-  log.Info(<span style="color:#f1fa8c">&#34;This is a info log entry&#34;</span>)
-  log.Warn(<span style="color:#f1fa8c">&#34;This is a warning log entry&#34;</span>)
-  log.Warning(<span style="color:#f1fa8c">&#34;This is a warning log entry again&#34;</span>)
-  log.Error(<span style="color:#f1fa8c">&#34;This is a error log entry&#34;</span>)</code></pre></div>
-<p>Please refer to <a href="https://github.com/teramoby/speedle-plus/blob/master/pkg/logging/demo/demo.go">speedle/logging/demo/demo.go</a> to get more detailed info.</p>
+    <span style="color:#f1fa8c">&#34;github.com/teramoby/speedle-plus/pkg/logging&#34;</span>
+    <span style="color:#f1fa8c">&#34;gopkg.in/natefinch/lumberjack.v2&#34;</span>
+)
 
-<h2 id="integration-with-3rd-party-log-collectors">Integration with 3rd-party log collectors</h2>
+logger, err <span style="color:#ff79c6">:=</span> logging.NewLogger(<span style="color:#ff79c6">&amp;</span>logging.LogConfig{
+    Level: <span style="color:#f1fa8c">&#34;info&#34;</span>, Formatter: <span style="color:#f1fa8c">&#34;json&#34;</span>,
+    RotationConfig: <span style="color:#ff79c6">&amp;</span>lumberjack.Logger{Filename: <span style="color:#f1fa8c">&#34;engine.log&#34;</span>, MaxSize: <span style="color:#bd93f9">20</span>},
+})
+<span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+    <span style="color:#ff79c6">return</span> err
+}
+logger.Info(<span style="color:#f1fa8c">&#34;Started observing beach&#34;</span>, <span style="color:#f1fa8c">&#34;animal&#34;</span>, <span style="color:#f1fa8c">&#34;walrus&#34;</span>, <span style="color:#f1fa8c">&#34;number&#34;</span>, <span style="color:#bd93f9">8</span>)</code></pre></div>
+<h2 id="container-logging">Container logging</h2>
 
-<p>Speedle logs can be easily integrated with 3rd-party log collectors, such as fluentd or filebeat. What the users need to do is to configure fluentd or filebeat to monitor the log files generated by Speedle. The following configuration snippet is an example of using fluentd&rsquo;s in_tail input plugin to collect docker containers&rsquo; log, including Speedle&rsquo;s log of course if Speedle runs as containers.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">    &lt;source&gt;
-      @type tail
-      path /var/lib/docker/containers/*/*.log
-      pos_file /data/fluentd/fluentd.log.pos
-      tag speedle.log
-      &lt;parse&gt;
-        @type json
-        time_key time
-        keep_time_key true
-      &lt;/parse&gt;
-      refresh_interval 5
-    &lt;/source&gt;</pre></div>
-<p>Please refer to <a href="https://www.fluentd.org/">fluentd</a> and <a href="https://www.elastic.co/products/beats/filebeat">filebeat</a> official websites to get more detailed info.</p>
+<p>For containers, leave the filename unset and use the container runtime’s log rotation. No lumberjack file configuration is needed. Embedded etcd may still pull logrus and zap transitively, but Engine code uses slog.</p>
 </div>
 </div>
 </main>

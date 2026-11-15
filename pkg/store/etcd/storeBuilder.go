@@ -4,17 +4,17 @@
 package etcd
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
-	"github.com/teramoby/speedle-plus/pkg/errors"
-	"go.etcd.io/etcd/client/pkg/v3/transport"
-	clientv3 "go.etcd.io/etcd/client/v3"
-
 	"github.com/spf13/pflag"
 	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/pkg/errors"
+	"github.com/teramoby/speedle-plus/pkg/logging"
 	"github.com/teramoby/speedle-plus/pkg/store"
+	"go.etcd.io/etcd/client/pkg/v3/transport"
+	clientv3 "go.etcd.io/etcd/client/v3"
 )
 
 const (
@@ -74,7 +74,7 @@ func (esb Etcd3StoreBuilder) NewStore(config map[string]interface{}) (pms.Policy
 	if isEmbeddedEtcd {
 		etcdEndpoint := "localhost:2379"
 		embeddedEtcdDataDir, _ := config[EmbeddedEtcdDataDirKey].(string)
-		log.Debugf("new embedded Etcd store: embeddedEtcdDataDir = %q, etcdEndpoint = %q, keyPrefix = %q", embeddedEtcdDataDir, etcdEndpoint, keyPrefix)
+		logging.Default().Debug(fmt.Sprintf("new embedded Etcd store: embeddedEtcdDataDir = %q, etcdEndpoint = %q, keyPrefix = %q", embeddedEtcdDataDir, etcdEndpoint, keyPrefix))
 		embeddedInst, embeddedDir, err := StartEmbeddedEtcd(embeddedEtcdDataDir)
 		if err != nil {
 			return nil, err
@@ -87,7 +87,7 @@ func (esb Etcd3StoreBuilder) NewStore(config map[string]interface{}) (pms.Policy
 		if !ok {
 			return nil, errors.New(errors.ConfigError, "configure item EtcdEndpoint is not found")
 		}
-		log.Debugf("new Etcd store: etcdEndpoint = %q, keyPrefix = %q\n", etcdEndpoint, keyPrefix)
+		logging.Default().Debug(fmt.Sprintf("new Etcd store: etcdEndpoint = %q, keyPrefix = %q\n", etcdEndpoint, keyPrefix))
 		etcd3ClientConf.Endpoints = []string{etcdEndpoint}
 		if strings.HasPrefix(etcdEndpoint, "https") {
 			tlsInfo := transport.TLSInfo{}
@@ -128,8 +128,7 @@ func (esb Etcd3StoreBuilder) NewStore(config map[string]interface{}) (pms.Policy
 			if err != nil {
 				return nil, err
 			}
-
-			log.Debugf("tlsInfo: %v", tlsInfo)
+			logging.Default().Debug(fmt.Sprintf("tlsInfo: %v", tlsInfo))
 			etcd3ClientConf.TLS = tlsConfig
 		}
 	}
@@ -140,7 +139,7 @@ func (esb Etcd3StoreBuilder) NewStore(config map[string]interface{}) (pms.Policy
 	store.client = cli
 	store.Config = &etcd3ClientConf
 	store.KeyPrefix = keyPrefix
-	log.Debug("Etcd store created")
+	logging.Default().Debug("Etcd store created")
 	return &store, nil
 }
 

@@ -40,7 +40,7 @@ const server = http.createServer((req,res) => {
    const many=await Promise.all(Array.from({length:10},(_,i)=>engine.evaluate({policies:i%2?'grant user bob read book':'grant user alice read book',request})));
    return {meta,outputs,many,globalBridge:typeof globalThis.evaluateSpeedle};
   });
-  assert.equal(results.meta.revision,'dd628a6df3f2ce46126896c1322cb6ef21f75449');
+  assert.equal(results.meta.revision,'c14ee1b2d625778cf78812db69f26784968bf79c');
   assert.equal(results.globalBridge,'function');
   for(const {name,want,error,result} of results.outputs){
    if(error){assert.equal(result.ok,false,name);assert.equal(Object.hasOwn(result,'allowed'),false,name);assert.ok(result.error,name);}

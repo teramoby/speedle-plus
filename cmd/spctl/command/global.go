@@ -8,7 +8,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"path"
@@ -16,6 +15,7 @@ import (
 	"time"
 
 	"github.com/spf13/pflag"
+	"github.com/teramoby/speedle-plus/pkg/logging"
 )
 
 var globalFlags struct {
@@ -79,7 +79,7 @@ func httpClient() (*http.Client, error) {
 	if globalFlags.CAFile != "" {
 		caCert, err := os.ReadFile(globalFlags.CAFile)
 		if err != nil {
-			log.Fatal(err)
+			logging.Fatal(fmt.Sprint(err))
 			return nil, err
 		}
 		caCertPool := x509.NewCertPool()
@@ -90,12 +90,12 @@ func httpClient() (*http.Client, error) {
 	if globalFlags.CertFile != "" {
 		if globalFlags.KeyFile == "" {
 			err := fmt.Errorf("TLS KeyFile is not specified")
-			log.Fatal(err)
+			logging.Fatal(fmt.Sprint(err))
 			return nil, err
 		}
 		cert, err := tls.LoadX509KeyPair(globalFlags.CertFile, globalFlags.KeyFile)
 		if err != nil {
-			log.Fatal(err)
+			logging.Fatal(fmt.Sprint(err))
 			return nil, err
 		}
 		tlsConfig.Certificates = []tls.Certificate{cert}

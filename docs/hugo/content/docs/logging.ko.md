@@ -14,55 +14,103 @@ lastmod = 2026-11-08T08:33:54+08:00
 
 ## 개요
 
-로그 메시지 처리를 위해 다음 두 개의 오픈 소스 프로젝트가 사용됩니다:
+v1.8.0 다음 릴리스는 애플리케이션 및 감사 로그에 Go `log/slog`를, 파일 순환에 `gopkg.in/natefinch/lumberjack.v2`를 사용합니다. v1.8.0과 이전 버전은 기존 API를 사용합니다.
 
-```
-1. https://github.com/sirupsen/logrus
-2. https://github.com/natefinch/lumberjack
-```
+## 로그 설정
 
-Logrus는 Go(golang)용 구조화된 로거이며 golang 표준 라이브러리 로거와 완전한 API 호환성을 갖추고 있습니다. Logrus는 로그 롤링을 기본적으로 지원하지 않으므로 롤링 로거를 제공하는 두 번째 프로젝트인 lumberjack을 통합했습니다. Logrus는 `io.Writer` 인터페이스를 사용하여 lumberjack과 연동합니다. 아래 다이어그램을 참조하십시오.
-
-<img src="/img/speedle/logger.jpg" alt="Speedle Logging" width="370" height="230" loading="lazy">
-
-## 로깅 구성
-
-Speedle 로깅은 명령줄 플래그와 구성 파일의 두 가지 방식으로 구성할 수 있습니다.
-
-### 명령줄 인수를 통한 로깅 구성
-
-사용 가능한 모든 명령줄 인수는 다음과 같습니다. 레벨, 포맷터, reportcaller 설정은 logrus를 구성하고, 파일/롤링 설정은 lumberjack을 구성합니다.
+기존 `--log-*`, `--auditlog-*` 옵션, `SPDL_*` 환경 변수와 JSON 키는 유지됩니다. 우선순위는 명시적 옵션 > 환경 변수 > 파일입니다. 애플리케이션 기본값은 info, text, stderr이며 호출자 정보는 꺼져 있습니다. 감사 기본값은 info와 JSON이며 `--auditlog-*`로 별도 설정합니다.
 
 ```text
---log-level string                로그 레벨(panic, fatal, error, warn, info, debug) (default "info")
---log-formatter string            로그 포맷터(text, json) (default "text")
---log-reportcaller                호출자의 메서드 이름과 파일 이름을 포함할지 여부
---log-file string                 로그 파일 경로
---log-file-maxsize int            로그 롤링 전 최대 크기(MB 단위) (default 100)
---log-file-maxage int             오래된 로그 파일을 보관할 최대 일수 (default 0)
---log-file-maxbackups int         보관할 이전 로그 파일의 최대 수 (default 0)
---log-file-localtime              백업 파일의 타임스탬프에 로컬 시간을 사용할지 여부
---log-file-compress               롤링된 로그 파일을 gzip으로 압축할지 여부
+--log-level string
+--log-formatter string
+--log-reportcaller bool
+--log-filename string
+--log-maxsize int
+--log-maxbackups int
+--log-maxage int
+--log-localtime bool
+--log-compress bool
 ```
 
-### 구성 파일을 통한 로깅 구성
-
-구성 파일을 사용하여 로깅을 설정할 수도 있습니다. 구성 예제는 다음과 같습니다:
+| Flag | Default | Meaning |
+| --- | --- | --- |
+| `--log-level` | `info` | Minimum severity |
+| `--log-formatter` | `text` | `text` or `json` |
+| `--log-reportcaller` | `false` | Include caller file, line and function |
+| `--log-filename` | unset | Stderr unless a file is configured |
+| `--log-maxsize` | `100` | Maximum file size in MB |
+| `--log-maxbackups` | `0` | Backup count; 0 retains all, subject to max age |
+| `--log-maxage` | `0` | Backup age in days; 0 disables age deletion |
+| `--log-localtime` | `false` | Local time for backup filenames, otherwise UTC |
+| `--log-compress` | `false` | Compress backups |
 
 ```json
 {
   "logConfig": {
     "level": "info",
-    "formatter": "json",
-    "reportCaller": false,
-    "fileConfig": {
-      "filename": "/var/log/speedle.log",
-      "maxSize": 100,
-      "maxAge": 30,
-      "maxBackups": 10,
-      "localTime": true,
-      "compress": true
+    "formatter": "text",
+    "setReportCaller": false,
+    "rotationConfig": {
+      "filename": "/mnt/logs/speedle.log",
+      "maxSize": 20,
+      "maxBackups": 5,
+      "maxAge": 0,
+      "LocalTime": false,
+      "compress": false
     }
+  },
+  "auditLogConfig": {
+    "level": "info",
+    "formatter": "json"
   }
 }
 ```
+
+
+## 레벨과 출력 형식
+
+이름은 대소문자를 구분하지 않습니다. `trace`, `debug`, `info`, `warn`, `warning`, `error`, `fatal`, `panic`을 지원합니다. trace는 debug로 통합되므로 debug 설정은 기존 trace 메시지도 출력합니다. 나머지 임계값 순서는 유지됩니다. 알 수 없는 비어 있지 않은 값은 해당 값을 포함하는 오류를 반환합니다.
+
+`text`는 key=value를, `json`은 줄마다 JSON 객체 하나를 출력합니다. `time`, `level`, `msg`와 호출자 정보가 켜진 경우 줄 번호를 포함한 `file`, 함수 이름 `func`를 유지합니다. 레벨은 소문자이며 warn은 `warning`으로 출력합니다. 오류는 문자열로, 다른 구조화 값은 구조를 유지하여 출력합니다. 메타데이터와 이름이 겹치는 사용자 필드에는 `fields.` 접두사를 붙입니다.
+
+```text
+time=2026-11-15T09:00:00.000+08:00 level=info msg="Started observing beach" animal=walrus number=8
+```
+
+```json
+{"time":"2026-11-15T09:00:00+08:00","level":"info","msg":"Started observing beach","animal":"walrus","number":8}
+```
+
+
+## 로그 수집기 마이그레이션
+
+text의 따옴표, 순서, 색상과 시간 정밀도는 logrus와 다를 수 있습니다. ANSI 색상을 출력하지 않으며 시간은 RFC3339와 호환됩니다. 기존 파서를 확인하거나 키로 처리하는 JSON을 사용하세요. API 이름 바로 앞의 `[AUDIT]`, `tenantid`, `target_index`, 요청/응답 값과 성공/오류 레벨은 유지됩니다.
+
+새 파일의 기본 권한은 `0644`에서 소유자 전용 `0600`으로 바뀝니다(umask 적용). 기존 파일의 권한은 순환 시에도 유지됩니다. 수집기를 로그 소유자로 실행하거나 업데이트 전에 접근 권한을 명시적으로 설정하세요.
+
+## Go API 마이그레이션
+
+`InitLogInstance(logrusLogger, config)`를 `logger, err := logging.NewLogger(config)`로 바꾸세요. `AuditLog()`는 `*slog.Logger`를 반환합니다. logrus setter/hook 대신 네이티브 slog 메서드와 `SetAuditLog(logger)`를 사용하세요. `LogConfig.RotationConfig`에 lumberjack v2를 가져와야 하며 v1 포인터는 컴파일되지 않습니다. `InitLog`와 `InitAuditLog`는 생략된 설정을 유지하고 nil 또는 빈 설정은 변경하지 않습니다. 잘못된 설정은 기존 logger를 교체하지 않습니다.
+
+`logging.Default()`를 사용하거나 `logging.SetDefault(logger)`로 호스트 소유 handler를 설치하세요. `slog.Default()`와 호스트의 표준 `log` 출력은 변경하지 않습니다. `logging.Fatal(message)`는 기록 후 상태 1로 종료하고 `logging.Panic(message)`는 기록 후 panic합니다. 출력이 필터링되어도 종료 동작은 실행됩니다.
+
+```go
+import (
+    "github.com/teramoby/speedle-plus/pkg/logging"
+    "gopkg.in/natefinch/lumberjack.v2"
+)
+
+logger, err := logging.NewLogger(&logging.LogConfig{
+    Level: "info", Formatter: "json",
+    RotationConfig: &lumberjack.Logger{Filename: "engine.log", MaxSize: 20},
+})
+if err != nil {
+    return err
+}
+logger.Info("Started observing beach", "animal", "walrus", "number", 8)
+```
+
+
+## 컨테이너 로그
+
+파일 이름을 생략하면 stderr와 컨테이너 런타임의 로그 순환을 사용합니다. lumberjack 파일 설정은 필요 없습니다. 내장 etcd는 logrus와 zap에 간접적으로 의존할 수 있지만 Engine 코드는 slog를 사용합니다.

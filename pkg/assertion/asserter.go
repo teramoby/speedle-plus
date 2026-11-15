@@ -8,15 +8,15 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"fmt"
-	"github.com/teramoby/speedle-plus/pkg/assertion/config"
 	"io"
 	"net/http"
 	"os"
 	"strings"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	adsapi "github.com/teramoby/speedle-plus/api/ads"
+	"github.com/teramoby/speedle-plus/pkg/assertion/config"
+	"github.com/teramoby/speedle-plus/pkg/logging"
 )
 
 const (
@@ -61,9 +61,9 @@ type WebHookAsserter struct {
 
 // NewAsserter create asserter webhook client
 func NewAsserter(conf *AsserterConfig, tenant *string) (TokenAsserter, error) {
-	log.Debugf("conf: %v, tenant: %v", conf, tenant)
+	logging.Default().Debug(fmt.Sprintf("conf: %v, tenant: %v", conf, tenant))
 	if conf == nil || len(conf.Endpoint) == 0 {
-		log.Errorf("asserter configuration is nil or endpoint is emtpy")
+		logging.Default().Error("asserter configuration is nil or endpoint is emtpy")
 		return nil, fmt.Errorf("asserter configuration is nil or endpoint is emtpy")
 	}
 	if conf.HTTPTimeout <= 0 {
@@ -108,18 +108,17 @@ func NewAsserter(conf *AsserterConfig, tenant *string) (TokenAsserter, error) {
 		Transport: &tr,
 		Timeout:   time.Duration(conf.HTTPTimeout) * time.Second,
 	}
-
-	log.Debugf("asserter created: %v", a)
+	logging.Default().Debug(fmt.Sprintf("asserter created: %v", a))
 
 	return &a, nil
 }
 
 // AssertToken assert token via webhook
 func (a *WebHookAsserter) AssertToken(token string, idpType string, allowedIDD string, requestHeaders map[string]string) (*AssertResponse, error) {
-	log.Debugf("idpType: %s, allowedIDD: %s", idpType, allowedIDD)
+	logging.Default().Debug(fmt.Sprintf("idpType: %s, allowedIDD: %s", idpType, allowedIDD))
 
 	if len(token) == 0 {
-		log.Errorf("token is empty")
+		logging.Default().Error("token is empty")
 		return nil, fmt.Errorf("token is empty")
 	}
 
@@ -130,7 +129,7 @@ func (a *WebHookAsserter) AssertToken(token string, idpType string, allowedIDD s
 
 	req, errReq := http.NewRequest(http.MethodGet, requestURL, nil)
 	if errReq != nil {
-		log.Errorf("NewRequest error: %v", errReq)
+		logging.Default().Error(fmt.Sprintf("NewRequest error: %v", errReq))
 		return nil, errReq
 	}
 	req.Header.Add(TokenKey, token)
@@ -153,19 +152,19 @@ func (a *WebHookAsserter) AssertToken(token string, idpType string, allowedIDD s
 
 	resp, errResp := a.httpClient.Do(req)
 	if errResp != nil {
-		log.Errorf("Do error: %v", errResp)
+		logging.Default().Error(fmt.Sprintf("Do error: %v", errResp))
 		return nil, errResp
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		log.Errorf("assertion error, status code: %d", resp.StatusCode)
+		logging.Default().Error(fmt.Sprintf("assertion error, status code: %d", resp.StatusCode))
 		return nil, fmt.Errorf("asserter error, status code: %d", resp.StatusCode)
 	}
 
 	raw, errRaw := io.ReadAll(resp.Body)
 	if errRaw != nil {
-		log.Errorf("ReadAll error: %v", errRaw)
+		logging.Default().Error(fmt.Sprintf("ReadAll error: %v", errRaw))
 		return nil, errRaw
 	}
 
@@ -173,17 +172,16 @@ func (a *WebHookAsserter) AssertToken(token string, idpType string, allowedIDD s
 
 	errJSON := json.Unmarshal(raw, &ar)
 	if errJSON != nil {
-		log.Errorf("Unmarshal error: %v", errJSON)
+		logging.Default().Error(fmt.Sprintf("Unmarshal error: %v", errJSON))
 		return nil, errJSON
 	}
 
 	// flag error if asserter indicates failure
 	if ar.ErrCode != 0 {
-		log.Errorf("assertion failure: %v", ar)
+		logging.Default().Error(fmt.Sprintf("assertion failure: %v", ar))
 		return nil, fmt.Errorf("ErrCode: %d, ErrMsg: %s", ar.ErrCode, ar.ErrMessage)
 	}
-
-	log.Debugf("asserted: %v", ar)
+	logging.Default().Debug(fmt.Sprintf("asserted: %v", ar))
 
 	return &ar, nil
 }

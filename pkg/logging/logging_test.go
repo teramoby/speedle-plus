@@ -6,34 +6,23 @@ package logging
 import (
 	"bytes"
 	"encoding/json"
-	"path/filepath"
+	"log/slog"
 	"strings"
 	"testing"
-
-	"github.com/natefinch/lumberjack"
-	log "github.com/sirupsen/logrus"
-	"github.com/teramoby/speedle-plus/pkg/errors"
 )
 
-// captureAudit sends the audit log to a buffer as JSON at debug level.
+// captureAudit sends the production audit handler to a buffer as JSON.
 func captureAudit(t *testing.T) *bytes.Buffer {
 	t.Helper()
 	var out bytes.Buffer
-	restore := saveLogger(auditLogger)
-	auditLogger.Out = &out
-	auditLogger.Formatter = &log.JSONFormatter{}
-	auditLogger.Level = log.DebugLevel
-	auditLogger.ExitFunc = func(int) {}
-	t.Cleanup(restore)
-	return &out
-}
-
-// saveLogger returns a function restoring the logger's settings.
-func saveLogger(logger *log.Logger) func() {
-	out, formatter, level, exit, caller := logger.Out, logger.Formatter, logger.Level, logger.ExitFunc, logger.ReportCaller
-	return func() {
-		logger.Out, logger.Formatter, logger.Level, logger.ExitFunc, logger.ReportCaller = out, formatter, level, exit, caller
+	previous := AuditLog()
+	handler, err := newHandler(&out, LogConfig{Formatter: "json", Level: "debug"})
+	if err != nil {
+		t.Fatal(err)
 	}
+	SetAuditLog(slog.New(handler))
+	t.Cleanup(func() { SetAuditLog(previous) })
+	return &out
 }
 
 func lastEntry(t *testing.T, out *bytes.Buffer) map[string]interface{} {
@@ -77,76 +66,28 @@ func TestAuditEntries(t *testing.T) {
 
 func TestAuditLevels(t *testing.T) {
 	out := captureAudit(t)
-	for _, level := range []log.Level{log.WarnLevel, log.DebugLevel, log.FatalLevel} {
-		writeAuditLog("api", nil, nil, level)
-		if got := lastEntry(t, out)["level"]; got != level.String() {
-			t.Errorf("level %s logged as %v", level, got)
+	for _, test := range []struct {
+		level slog.Level
+		name  string
+	}{
+		{slog.LevelWarn, "warning"}, {slog.LevelDebug, "debug"},
+	} {
+		writeAuditLog("api", nil, nil, test.level)
+		if got := lastEntry(t, out)["level"]; got != test.name {
+			t.Errorf("level %s logged as %v", test.name, got)
 		}
 	}
-	func() {
-		defer func() {
-			if recover() == nil {
-				t.Error("a panic-level audit entry must panic")
-			}
-		}()
-		writeAuditLog("api", nil, nil, log.PanicLevel)
+}
+
+func TestAuditPanic(t *testing.T) {
+	out := captureAudit(t)
+	defer func() {
+		if got := recover(); got != "[AUDIT]api" {
+			t.Fatalf("panic = %v", got)
+		}
+		if entry := lastEntry(t, out); entry["level"] != "panic" {
+			t.Fatalf("panic record %v", entry)
+		}
 	}()
-}
-
-func TestInitLogInstance(t *testing.T) {
-	logger := log.New()
-	rotation := &lumberjack.Logger{Filename: filepath.Join(t.TempDir(), "a.log")}
-	if err := InitLogInstance(logger, &LogConfig{Level: "debug", Formatter: "TEXT", SetReportCaller: true, RotationConfig: rotation}); err != nil {
-		t.Fatal(err)
-	}
-	if logger.Level != log.DebugLevel || !logger.ReportCaller || logger.Out != rotation {
-		t.Fatalf("logger %+v", logger)
-	}
-	if _, ok := logger.Formatter.(*log.TextFormatter); !ok {
-		t.Fatalf("formatter %T", logger.Formatter)
-	}
-	if err := InitLogInstance(logger, &LogConfig{Formatter: "json"}); err != nil {
-		t.Fatal(err)
-	}
-	if _, ok := logger.Formatter.(*log.JSONFormatter); !ok {
-		t.Fatalf("formatter %T", logger.Formatter)
-	}
-	if err := InitLogInstance(logger, nil); err != nil {
-		t.Fatal(err)
-	}
-	for name, cfg := range map[string]*LogConfig{"level": {Level: "loud"}, "formatter": {Formatter: "xml"}} {
-		if err := InitLogInstance(logger, cfg); errors.Code(err) != errors.LoggingError {
-			t.Errorf("bad %s: %v", name, err)
-		}
-	}
-	if err := InitLogInstance(nil, nil); errors.Code(err) != errors.LoggingError {
-		t.Errorf("nil logger: %v", err)
-	}
-	if err := InitAuditLog(&LogConfig{Level: "nope"}); err == nil {
-		t.Error("InitAuditLog must reject a bad level")
-	}
-}
-
-func TestInitLog(t *testing.T) {
-	std := log.StandardLogger()
-	defer saveLogger(std)()
-
-	rotation := &lumberjack.Logger{Filename: filepath.Join(t.TempDir(), "b.log")}
-	if err := InitLog(&LogConfig{Level: "warn", Formatter: "json", SetReportCaller: true, RotationConfig: rotation}); err != nil {
-		t.Fatal(err)
-	}
-	if std.Level != log.WarnLevel || !std.ReportCaller || std.Out != rotation {
-		t.Fatalf("standard logger %+v", std)
-	}
-	if err := InitLog(&LogConfig{Formatter: "text"}); err != nil {
-		t.Fatal(err)
-	}
-	if err := InitLog(nil); err != nil {
-		t.Fatal(err)
-	}
-	for name, cfg := range map[string]*LogConfig{"level": {Level: "loud"}, "formatter": {Formatter: "xml"}} {
-		if err := InitLog(cfg); errors.Code(err) != errors.LoggingError {
-			t.Errorf("bad %s: %v", name, err)
-		}
-	}
+	writeAuditLog("api", nil, nil, LevelPanic)
 }

@@ -39,8 +39,8 @@ Security and endpoint configuration. This is a contract reference, not a backend
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/docs/logging/</guid>
-      <description>Overview The following two open source projects are used to process log messages,
-1. https://github.com/sirupsen/logrus 2. https://github.com/natefinch/lumberjack Logrus is a structured logger for Go (golang), and completely API compatible with the golang standard library logger. Note that logrus doesn&amp;rsquo;t support log rotation, and it is exactly the reason why we introduce the second project lumberjack, which provides a rolling logger. Logrus communicates with lumberjack using the io.Writer interface, please refer to the following diagram,</description>
+      <description>Overview For the release after v1.8.0, Speedle uses Go log/slog for structured application and audit logs and gopkg.in/natefinch/lumberjack.v2 for file rotation. v1.8.0 and older releases use the previous logging API.
+Logging configuration All existing --log-* and --auditlog-* flags, SPDL_* environment variables and JSON configuration keys remain supported. Explicit flags override environment variables, which override the configuration file. Application defaults are info, text, stderr and no caller metadata; audit defaults are info and JSON.</description>
     </item>
     
     <item>

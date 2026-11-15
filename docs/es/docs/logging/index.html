@@ -185,21 +185,12 @@
 
 <h2 id="descripción-general">Descripción general</h2>
 
-<p>Se utilizan los siguientes dos proyectos de código abierto para procesar mensajes de registro:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">1. https://github.com/sirupsen/logrus
-2. https://github.com/natefinch/lumberjack</pre></div>
-<p>Logrus es un registrador estructurado para Go (golang), totalmente compatible a nivel de API con el registrador de la biblioteca estándar de Go. Tenga en cuenta que logrus no admite la rotación de registros, y esa es exactamente la razón por la que incorporamos el segundo proyecto, lumberjack, que proporciona un registrador con rotación continua. Logrus se comunica con lumberjack mediante la interfaz <code>io.Writer</code>; consulte el siguiente diagrama:</p>
-
-<p><img src="/img/speedle/logger.jpg" alt="Speedle Logging" width="370" height="230" loading="lazy"></p>
+<p>La versión posterior a v1.8.0 usa Go <code>log/slog</code> para los registros de aplicación y auditoría y <code>gopkg.in/natefinch/lumberjack.v2</code> para la rotación. v1.8.0 y las versiones anteriores conservan la API anterior.</p>
 
 <h2 id="configuración-del-registro">Configuración del registro</h2>
 
-<p>Existen dos formas de configurar el registro en Speedle: mediante argumentos de línea de comandos o mediante un archivo de configuración.</p>
-
-<h3 id="configurar-el-registro-mediante-argumentos-de-línea-de-comandos">Configurar el registro mediante argumentos de línea de comandos</h3>
-
-<p>Todos los argumentos de línea de comandos disponibles se enumeran a continuación. Las opciones de nivel, formateador y reportcaller configuran logrus; las opciones de archivo/rotación configuran lumberjack.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">--log-level string
+<p>Se conservan las opciones <code>--log-*</code> y <code>--auditlog-*</code>, las variables <code>SPDL_*</code> y las claves JSON. La precedencia es opción explícita &gt; entorno &gt; archivo. La aplicación usa info, text y stderr sin datos del llamador; la auditoría usa info y JSON. Configure la auditoría por separado con las opciones <code>--auditlog-*</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">--log-level string
 --log-formatter string
 --log-reportcaller bool
 --log-filename string
@@ -207,142 +198,124 @@
 --log-maxbackups int
 --log-maxage int
 --log-localtime bool
---log-compress bool</pre></div>
-<p>La información detallada de cada elemento se describe en la siguiente tabla. Tenga en cuenta que cualquiera de los siguientes elementos de configuración es opcional. Si no se configura ninguno, los mensajes de registro con nivel info o superior se escribirán en stderr en formato de texto de forma predeterminada.</p>
-
+--log-compress bool</code></pre></div>
 <table>
 <thead>
 <tr>
-<th>Elemento de configuración</th>
-<th>Descripción</th>
-<th>Valor predeterminado</th>
+<th>Flag</th>
+<th>Default</th>
+<th>Meaning</th>
 </tr>
 </thead>
 
 <tbody>
 <tr>
 <td><code>--log-level</code></td>
-<td>Nivel de registro; los niveles disponibles son panic, fatal, error, warn, info y debug</td>
-<td>info</td>
+<td><code>info</code></td>
+<td>Minimum severity</td>
 </tr>
 
 <tr>
 <td><code>--log-formatter</code></td>
-<td>Formateador de registro; los valores disponibles son text y json</td>
-<td>text</td>
+<td><code>text</code></td>
+<td><code>text</code> or <code>json</code></td>
 </tr>
 
 <tr>
 <td><code>--log-reportcaller</code></td>
-<td>Controla si se incluye la información del emisor (archivo, línea y función) en las entradas de registro</td>
-<td>false</td>
+<td><code>false</code></td>
+<td>Include caller file, line and function</td>
 </tr>
 
 <tr>
 <td><code>--log-filename</code></td>
-<td>Nombre del archivo de registro</td>
-<td>Sin valor por defecto. Si no se configura, los mensajes se escriben en stderr</td>
+<td>unset</td>
+<td>Stderr unless a file is configured</td>
 </tr>
 
 <tr>
 <td><code>--log-maxsize</code></td>
-<td>Tamaño máximo en megabytes del archivo de registro antes de rotarse. Solo es válido cuando se configura <code>--log-filename</code></td>
-<td>100</td>
+<td><code>100</code></td>
+<td>Maximum file size in MB</td>
 </tr>
 
 <tr>
 <td><code>--log-maxbackups</code></td>
-<td>Número máximo de archivos de registro antiguos que se conservan. Solo es válido cuando se configura <code>--log-filename</code></td>
-<td>0, lo que significa conservar todos los archivos antiguos (aunque MaxAge aún puede hacer que se eliminen)</td>
+<td><code>0</code></td>
+<td>Backup count; 0 retains all, subject to max age</td>
 </tr>
 
 <tr>
 <td><code>--log-maxage</code></td>
-<td>Número máximo de días para conservar archivos de registro antiguos. Solo es válido cuando se configura <code>--log-filename</code></td>
-<td>0, lo que significa no eliminar archivos antiguos según su antigüedad</td>
+<td><code>0</code></td>
+<td>Backup age in days; 0 disables age deletion</td>
 </tr>
 
 <tr>
 <td><code>--log-localtime</code></td>
-<td>Controla si se utiliza la hora local para formatear las marcas de tiempo en los archivos de respaldo. Solo es válido cuando se configura <code>--log-filename</code></td>
-<td>false, lo que significa utilizar la hora UTC</td>
+<td><code>false</code></td>
+<td>Local time for backup filenames, otherwise UTC</td>
 </tr>
 
 <tr>
 <td><code>--log-compress</code></td>
-<td>Controla si los archivos de registro rotados deben comprimirse. Solo es válido cuando se configura <code>--log-filename</code></td>
-<td>false, lo que significa no realizar compresión</td>
+<td><code>false</code></td>
+<td>Compress backups</td>
 </tr>
 </tbody>
 </table>
-
-<p>Los siguientes dos ejemplos muestran los formatos text y json respectivamente:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"># text
-time=&#34;2015-03-26T01:27:38-04:00&#34; level=debug msg=&#34;Started observing beach&#34; animal=walrus number=8</pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"># json
-{&#34;animal&#34;:&#34;walrus&#34;,&#34;level&#34;:&#34;info&#34;,&#34;msg&#34;:&#34;A group of walrus emerges from the
-ocean&#34;,&#34;size&#34;:10,&#34;time&#34;:&#34;2014-03-10 19:57:38.562264131 -0400 EDT&#34;}</pre></div>
-<h3 id="configurar-el-registro-mediante-un-archivo-de-configuración">Configurar el registro mediante un archivo de configuración</h3>
-
-<p>A continuación se muestra un ejemplo. Del mismo modo, cualquier elemento de configuración es opcional.</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
-    <span style="color:#ff79c6">&#34;logConfig&#34;</span>: {
-        <span style="color:#ff79c6">&#34;level&#34;</span>: <span style="color:#f1fa8c">&#34;info&#34;</span>,
-        <span style="color:#ff79c6">&#34;formatter&#34;</span>: <span style="color:#f1fa8c">&#34;text&#34;</span>,
-        <span style="color:#ff79c6">&#34;setReportCaller&#34;</span>: <span style="color:#ff79c6">false</span>,
-        <span style="color:#ff79c6">&#34;rotationConfig&#34;</span>: {
-            <span style="color:#ff79c6">&#34;filename&#34;</span>: <span style="color:#f1fa8c">&#34;/mnt/logs/speedle.log&#34;</span>,
-            <span style="color:#ff79c6">&#34;maxSize&#34;</span>: <span style="color:#bd93f9">20</span>,
-            <span style="color:#ff79c6">&#34;maxBackups&#34;</span>: <span style="color:#bd93f9">5</span>,
-            <span style="color:#ff79c6">&#34;maxAge&#34;</span>: <span style="color:#bd93f9">0</span>,
-            <span style="color:#ff79c6">&#34;LocalTime&#34;</span>: <span style="color:#ff79c6">false</span>,
-            <span style="color:#ff79c6">&#34;compress&#34;</span>: <span style="color:#ff79c6">false</span>
-        }
+  <span style="color:#ff79c6">&#34;logConfig&#34;</span>: {
+    <span style="color:#ff79c6">&#34;level&#34;</span>: <span style="color:#f1fa8c">&#34;info&#34;</span>,
+    <span style="color:#ff79c6">&#34;formatter&#34;</span>: <span style="color:#f1fa8c">&#34;text&#34;</span>,
+    <span style="color:#ff79c6">&#34;setReportCaller&#34;</span>: <span style="color:#ff79c6">false</span>,
+    <span style="color:#ff79c6">&#34;rotationConfig&#34;</span>: {
+      <span style="color:#ff79c6">&#34;filename&#34;</span>: <span style="color:#f1fa8c">&#34;/mnt/logs/speedle.log&#34;</span>,
+      <span style="color:#ff79c6">&#34;maxSize&#34;</span>: <span style="color:#bd93f9">20</span>,
+      <span style="color:#ff79c6">&#34;maxBackups&#34;</span>: <span style="color:#bd93f9">5</span>,
+      <span style="color:#ff79c6">&#34;maxAge&#34;</span>: <span style="color:#bd93f9">0</span>,
+      <span style="color:#ff79c6">&#34;LocalTime&#34;</span>: <span style="color:#ff79c6">false</span>,
+      <span style="color:#ff79c6">&#34;compress&#34;</span>: <span style="color:#ff79c6">false</span>
     }
-}</code></pre></div>
-<h2 id="prácticas-recomendadas-para-configurar-el-registro">Prácticas recomendadas para configurar el registro</h2>
-
-<p>Si Speedle se ejecuta como contenedores Docker, resulta más natural utilizar el controlador de registro json-file de Docker en lugar del proyecto de código abierto natefinch/lumberjack para rotar archivos de registro; por consiguiente, se recomienda el controlador de registro json-file para este caso. Solo se necesita sirupsen/logrus; en otras palabras, los usuarios no necesitan configurar nada para natefinch/lumberjack en este caso.</p>
-
-<p>Todos los elementos de configuración relacionados con Docker, incluido el registro, se configuran en <code>/etc/docker/daemon.json</code>. Consulte <a href="https://docs.docker.com/config/containers/logging/json-file/">docker json-file</a> para obtener información más detallada sobre cómo configurar el controlador de registro json-file. El siguiente fragmento es un ejemplo:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">{
-  &#34;log-driver&#34;: &#34;json-file&#34;,
-  &#34;log-opts&#34;: {
-    &#34;max-size&#34;: &#34;20m&#34;,
-    &#34;max-file&#34;: &#34;10&#34;
+  },
+  <span style="color:#ff79c6">&#34;auditLogConfig&#34;</span>: {
+    <span style="color:#ff79c6">&#34;level&#34;</span>: <span style="color:#f1fa8c">&#34;info&#34;</span>,
+    <span style="color:#ff79c6">&#34;formatter&#34;</span>: <span style="color:#f1fa8c">&#34;json&#34;</span>
   }
-}</pre></div>
-<p>En la mayoría de los casos, los usuarios tampoco necesitan configurar sirupsen/logrus. El nivel de registro predeterminado es info y el formato de registro predeterminado es text. Por lo tanto, generalmente los usuarios solo necesitan configurar el registro si desean cambiar el nivel o el formato de registro; de lo contrario, no necesitan configurar nada, ya que la configuración predeterminada es adecuada.</p>
+}</code></pre></div>
+<h2 id="niveles-y-formatos">Niveles y formatos</h2>
 
-<h2 id="cómo-agregar-nuevos-mensajes-de-registro">Cómo agregar nuevos mensajes de registro</h2>
+<p>Los nombres no distinguen mayúsculas. Se aceptan <code>trace</code>, <code>debug</code>, <code>info</code>, <code>warn</code>, <code>warning</code>, <code>error</code>, <code>fatal</code> y <code>panic</code>. Trace se convierte en debug: el umbral debug incluye los antiguos mensajes trace. Los demás umbrales conservan su orden. Un valor no vacío desconocido devuelve un error que identifica el valor.</p>
 
-<p>Primero, importe el paquete de registro como se muestra a continuación:</p>
+<p><code>text</code> genera pares key=value y <code>json</code> un objeto JSON por línea. Se conservan <code>time</code>, <code>level</code>, <code>msg</code> y, si se habilita el llamador, <code>file</code> con línea y <code>func</code>. Los niveles son minúsculos; warn se escribe <code>warning</code>. Los errores son cadenas y los demás valores conservan su estructura. Los campos del usuario que coinciden con metadatos reciben el prefijo <code>fields.</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">time=2026-11-15T09:00:00.000+08:00 level=info msg=&#34;Started observing beach&#34; animal=walrus number=8</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{<span style="color:#ff79c6">&#34;time&#34;</span>:<span style="color:#f1fa8c">&#34;2026-11-15T09:00:00+08:00&#34;</span>,<span style="color:#ff79c6">&#34;level&#34;</span>:<span style="color:#f1fa8c">&#34;info&#34;</span>,<span style="color:#ff79c6">&#34;msg&#34;</span>:<span style="color:#f1fa8c">&#34;Started observing beach&#34;</span>,<span style="color:#ff79c6">&#34;animal&#34;</span>:<span style="color:#f1fa8c">&#34;walrus&#34;</span>,<span style="color:#ff79c6">&#34;number&#34;</span>:<span style="color:#bd93f9">8</span>}</code></pre></div>
+<h2 id="migración-de-los-recolectores">Migración de los recolectores</h2>
+
+<p>El formato de texto puede cambiar en comillas, orden, color y precisión temporal respecto a logrus. No se generan colores ANSI; las fechas son compatibles con RFC3339. Revise los analizadores o use JSON por claves. Se conservan <code>[AUDIT]</code> junto al nombre de la API, <code>tenantid</code>, <code>target_index</code>, los valores de petición/respuesta y los niveles de éxito/error.</p>
+
+<p>Los archivos nuevos usan <code>0600</code> (solo propietario), sujeto a umask, en lugar de <code>0644</code>. La rotación conserva los permisos de archivos existentes. Ejecute el recolector como propietario o configure el acceso explícitamente antes de actualizar.</p>
+
+<h2 id="migración-de-la-api-go">Migración de la API Go</h2>
+
+<p>Sustituya <code>InitLogInstance(logrusLogger, config)</code> por <code>logger, err := logging.NewLogger(config)</code>. <code>AuditLog()</code> devuelve <code>*slog.Logger</code>: use sus métodos nativos y <code>SetAuditLog(logger)</code> en lugar de setters/hooks de logrus. Importe lumberjack v2 para <code>LogConfig.RotationConfig</code>; los punteros v1 ya no compilan. <code>InitLog</code> y <code>InitAuditLog</code> conservan los ajustes omitidos; nil o una configuración vacía no modifican nada. Una configuración inválida no sustituye el logger instalado.</p>
+
+<p>Use <code>logging.Default()</code> o instale un handler propio con <code>logging.SetDefault(logger)</code>. No se modifica <code>slog.Default()</code> ni se redirige el <code>log</code> estándar del anfitrión. <code>logging.Fatal(message)</code> registra y sale con estado 1; <code>logging.Panic(message)</code> registra y provoca panic, incluso si se filtra el registro.</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#ff79c6">import</span> (
-  log <span style="color:#f1fa8c">&#34;github.com/sirupsen/logrus&#34;</span>
-)</code></pre></div>
-<p>En segundo lugar, emita cualquier mensaje de registro donde lo necesite. Por ejemplo:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go">  log.Debug(<span style="color:#f1fa8c">&#34;This is a debug log entry&#34;</span>)
-  log.Info(<span style="color:#f1fa8c">&#34;This is a info log entry&#34;</span>)
-  log.Warn(<span style="color:#f1fa8c">&#34;This is a warning log entry&#34;</span>)
-  log.Warning(<span style="color:#f1fa8c">&#34;This is a warning log entry again&#34;</span>)
-  log.Error(<span style="color:#f1fa8c">&#34;This is a error log entry&#34;</span>)</code></pre></div>
-<p>Consulte <a href="https://github.com/teramoby/speedle-plus/blob/master/pkg/logging/demo/demo.go">speedle/logging/demo/demo.go</a> para obtener información más detallada.</p>
+    <span style="color:#f1fa8c">&#34;github.com/teramoby/speedle-plus/pkg/logging&#34;</span>
+    <span style="color:#f1fa8c">&#34;gopkg.in/natefinch/lumberjack.v2&#34;</span>
+)
 
-<h2 id="integración-con-recopiladores-de-registros-de-terceros">Integración con recopiladores de registros de terceros</h2>
+logger, err <span style="color:#ff79c6">:=</span> logging.NewLogger(<span style="color:#ff79c6">&amp;</span>logging.LogConfig{
+    Level: <span style="color:#f1fa8c">&#34;info&#34;</span>, Formatter: <span style="color:#f1fa8c">&#34;json&#34;</span>,
+    RotationConfig: <span style="color:#ff79c6">&amp;</span>lumberjack.Logger{Filename: <span style="color:#f1fa8c">&#34;engine.log&#34;</span>, MaxSize: <span style="color:#bd93f9">20</span>},
+})
+<span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+    <span style="color:#ff79c6">return</span> err
+}
+logger.Info(<span style="color:#f1fa8c">&#34;Started observing beach&#34;</span>, <span style="color:#f1fa8c">&#34;animal&#34;</span>, <span style="color:#f1fa8c">&#34;walrus&#34;</span>, <span style="color:#f1fa8c">&#34;number&#34;</span>, <span style="color:#bd93f9">8</span>)</code></pre></div>
+<h2 id="registros-de-contenedores">Registros de contenedores</h2>
 
-<p>Los registros de Speedle se pueden integrar fácilmente con recopiladores de registros de terceros, como fluentd o filebeat. Lo que los usuarios deben hacer es configurar fluentd o filebeat para monitorear los archivos de registro generados por Speedle. El siguiente fragmento de configuración es un ejemplo de cómo utilizar el complemento de entrada <code>in_tail</code> de fluentd para recopilar los registros de contenedores Docker, incluidos los registros de Speedle si este se ejecuta en contenedores:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">    &lt;source&gt;
-      @type tail
-      path /var/lib/docker/containers/*/*.log
-      pos_file /data/fluentd/fluentd.log.pos
-      tag speedle.log
-      &lt;parse&gt;
-        @type json
-        time_key time
-        keep_time_key true
-      &lt;/parse&gt;
-      refresh_interval 5
-    &lt;/source&gt;</pre></div>
-<p>Consulte los sitios web oficiales de <a href="https://www.fluentd.org/">fluentd</a> y <a href="https://www.elastic.co/products/beats/filebeat">filebeat</a> para obtener más información.</p>
+<p>Omita el nombre de archivo para usar stderr y la rotación del runtime del contenedor; no necesita configurar archivos de lumberjack. Etcd integrado puede seguir dependiendo de logrus y zap de forma transitiva, pero el código del Engine usa slog.</p>
 </div>
 </div>
 </main>

@@ -185,47 +185,138 @@
 
 <h2 id="개요">개요</h2>
 
-<p>로그 메시지 처리를 위해 다음 두 개의 오픈 소스 프로젝트가 사용됩니다:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4">1. https://github.com/sirupsen/logrus
-2. https://github.com/natefinch/lumberjack</pre></div>
-<p>Logrus는 Go(golang)용 구조화된 로거이며 golang 표준 라이브러리 로거와 완전한 API 호환성을 갖추고 있습니다. Logrus는 로그 롤링을 기본적으로 지원하지 않으므로 롤링 로거를 제공하는 두 번째 프로젝트인 lumberjack을 통합했습니다. Logrus는 <code>io.Writer</code> 인터페이스를 사용하여 lumberjack과 연동합니다. 아래 다이어그램을 참조하십시오.</p>
+<p>v1.8.0 다음 릴리스는 애플리케이션 및 감사 로그에 Go <code>log/slog</code>를, 파일 순환에 <code>gopkg.in/natefinch/lumberjack.v2</code>를 사용합니다. v1.8.0과 이전 버전은 기존 API를 사용합니다.</p>
 
-<p><img src="/img/speedle/logger.jpg" alt="Speedle Logging" width="370" height="230" loading="lazy"></p>
+<h2 id="로그-설정">로그 설정</h2>
 
-<h2 id="로깅-구성">로깅 구성</h2>
+<p>기존 <code>--log-*</code>, <code>--auditlog-*</code> 옵션, <code>SPDL_*</code> 환경 변수와 JSON 키는 유지됩니다. 우선순위는 명시적 옵션 &gt; 환경 변수 &gt; 파일입니다. 애플리케이션 기본값은 info, text, stderr이며 호출자 정보는 꺼져 있습니다. 감사 기본값은 info와 JSON이며 <code>--auditlog-*</code>로 별도 설정합니다.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">--log-level string
+--log-formatter string
+--log-reportcaller bool
+--log-filename string
+--log-maxsize int
+--log-maxbackups int
+--log-maxage int
+--log-localtime bool
+--log-compress bool</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
 
-<p>Speedle 로깅은 명령줄 플래그와 구성 파일의 두 가지 방식으로 구성할 수 있습니다.</p>
+<tbody>
+<tr>
+<td><code>--log-level</code></td>
+<td><code>info</code></td>
+<td>Minimum severity</td>
+</tr>
 
-<h3 id="명령줄-인수를-통한-로깅-구성">명령줄 인수를 통한 로깅 구성</h3>
+<tr>
+<td><code>--log-formatter</code></td>
+<td><code>text</code></td>
+<td><code>text</code> or <code>json</code></td>
+</tr>
 
-<p>사용 가능한 모든 명령줄 인수는 다음과 같습니다. 레벨, 포맷터, reportcaller 설정은 logrus를 구성하고, 파일/롤링 설정은 lumberjack을 구성합니다.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">--log-level string                로그 레벨(panic, fatal, error, warn, info, debug) (default &#34;info&#34;)
---log-formatter string            로그 포맷터(text, json) (default &#34;text&#34;)
---log-reportcaller                호출자의 메서드 이름과 파일 이름을 포함할지 여부
---log-file string                 로그 파일 경로
---log-file-maxsize int            로그 롤링 전 최대 크기(MB 단위) (default 100)
---log-file-maxage int             오래된 로그 파일을 보관할 최대 일수 (default 0)
---log-file-maxbackups int         보관할 이전 로그 파일의 최대 수 (default 0)
---log-file-localtime              백업 파일의 타임스탬프에 로컬 시간을 사용할지 여부
---log-file-compress               롤링된 로그 파일을 gzip으로 압축할지 여부</code></pre></div>
-<h3 id="구성-파일을-통한-로깅-구성">구성 파일을 통한 로깅 구성</h3>
+<tr>
+<td><code>--log-reportcaller</code></td>
+<td><code>false</code></td>
+<td>Include caller file, line and function</td>
+</tr>
 
-<p>구성 파일을 사용하여 로깅을 설정할 수도 있습니다. 구성 예제는 다음과 같습니다:</p>
+<tr>
+<td><code>--log-filename</code></td>
+<td>unset</td>
+<td>Stderr unless a file is configured</td>
+</tr>
+
+<tr>
+<td><code>--log-maxsize</code></td>
+<td><code>100</code></td>
+<td>Maximum file size in MB</td>
+</tr>
+
+<tr>
+<td><code>--log-maxbackups</code></td>
+<td><code>0</code></td>
+<td>Backup count; 0 retains all, subject to max age</td>
+</tr>
+
+<tr>
+<td><code>--log-maxage</code></td>
+<td><code>0</code></td>
+<td>Backup age in days; 0 disables age deletion</td>
+</tr>
+
+<tr>
+<td><code>--log-localtime</code></td>
+<td><code>false</code></td>
+<td>Local time for backup filenames, otherwise UTC</td>
+</tr>
+
+<tr>
+<td><code>--log-compress</code></td>
+<td><code>false</code></td>
+<td>Compress backups</td>
+</tr>
+</tbody>
+</table>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{
   <span style="color:#ff79c6">&#34;logConfig&#34;</span>: {
     <span style="color:#ff79c6">&#34;level&#34;</span>: <span style="color:#f1fa8c">&#34;info&#34;</span>,
-    <span style="color:#ff79c6">&#34;formatter&#34;</span>: <span style="color:#f1fa8c">&#34;json&#34;</span>,
-    <span style="color:#ff79c6">&#34;reportCaller&#34;</span>: <span style="color:#ff79c6">false</span>,
-    <span style="color:#ff79c6">&#34;fileConfig&#34;</span>: {
-      <span style="color:#ff79c6">&#34;filename&#34;</span>: <span style="color:#f1fa8c">&#34;/var/log/speedle.log&#34;</span>,
-      <span style="color:#ff79c6">&#34;maxSize&#34;</span>: <span style="color:#bd93f9">100</span>,
-      <span style="color:#ff79c6">&#34;maxAge&#34;</span>: <span style="color:#bd93f9">30</span>,
-      <span style="color:#ff79c6">&#34;maxBackups&#34;</span>: <span style="color:#bd93f9">10</span>,
-      <span style="color:#ff79c6">&#34;localTime&#34;</span>: <span style="color:#ff79c6">true</span>,
-      <span style="color:#ff79c6">&#34;compress&#34;</span>: <span style="color:#ff79c6">true</span>
+    <span style="color:#ff79c6">&#34;formatter&#34;</span>: <span style="color:#f1fa8c">&#34;text&#34;</span>,
+    <span style="color:#ff79c6">&#34;setReportCaller&#34;</span>: <span style="color:#ff79c6">false</span>,
+    <span style="color:#ff79c6">&#34;rotationConfig&#34;</span>: {
+      <span style="color:#ff79c6">&#34;filename&#34;</span>: <span style="color:#f1fa8c">&#34;/mnt/logs/speedle.log&#34;</span>,
+      <span style="color:#ff79c6">&#34;maxSize&#34;</span>: <span style="color:#bd93f9">20</span>,
+      <span style="color:#ff79c6">&#34;maxBackups&#34;</span>: <span style="color:#bd93f9">5</span>,
+      <span style="color:#ff79c6">&#34;maxAge&#34;</span>: <span style="color:#bd93f9">0</span>,
+      <span style="color:#ff79c6">&#34;LocalTime&#34;</span>: <span style="color:#ff79c6">false</span>,
+      <span style="color:#ff79c6">&#34;compress&#34;</span>: <span style="color:#ff79c6">false</span>
     }
+  },
+  <span style="color:#ff79c6">&#34;auditLogConfig&#34;</span>: {
+    <span style="color:#ff79c6">&#34;level&#34;</span>: <span style="color:#f1fa8c">&#34;info&#34;</span>,
+    <span style="color:#ff79c6">&#34;formatter&#34;</span>: <span style="color:#f1fa8c">&#34;json&#34;</span>
   }
-}</code></pre></div></div>
+}</code></pre></div>
+<h2 id="레벨과-출력-형식">레벨과 출력 형식</h2>
+
+<p>이름은 대소문자를 구분하지 않습니다. <code>trace</code>, <code>debug</code>, <code>info</code>, <code>warn</code>, <code>warning</code>, <code>error</code>, <code>fatal</code>, <code>panic</code>을 지원합니다. trace는 debug로 통합되므로 debug 설정은 기존 trace 메시지도 출력합니다. 나머지 임계값 순서는 유지됩니다. 알 수 없는 비어 있지 않은 값은 해당 값을 포함하는 오류를 반환합니다.</p>
+
+<p><code>text</code>는 key=value를, <code>json</code>은 줄마다 JSON 객체 하나를 출력합니다. <code>time</code>, <code>level</code>, <code>msg</code>와 호출자 정보가 켜진 경우 줄 번호를 포함한 <code>file</code>, 함수 이름 <code>func</code>를 유지합니다. 레벨은 소문자이며 warn은 <code>warning</code>으로 출력합니다. 오류는 문자열로, 다른 구조화 값은 구조를 유지하여 출력합니다. 메타데이터와 이름이 겹치는 사용자 필드에는 <code>fields.</code> 접두사를 붙입니다.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">time=2026-11-15T09:00:00.000+08:00 level=info msg=&#34;Started observing beach&#34; animal=walrus number=8</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{<span style="color:#ff79c6">&#34;time&#34;</span>:<span style="color:#f1fa8c">&#34;2026-11-15T09:00:00+08:00&#34;</span>,<span style="color:#ff79c6">&#34;level&#34;</span>:<span style="color:#f1fa8c">&#34;info&#34;</span>,<span style="color:#ff79c6">&#34;msg&#34;</span>:<span style="color:#f1fa8c">&#34;Started observing beach&#34;</span>,<span style="color:#ff79c6">&#34;animal&#34;</span>:<span style="color:#f1fa8c">&#34;walrus&#34;</span>,<span style="color:#ff79c6">&#34;number&#34;</span>:<span style="color:#bd93f9">8</span>}</code></pre></div>
+<h2 id="로그-수집기-마이그레이션">로그 수집기 마이그레이션</h2>
+
+<p>text의 따옴표, 순서, 색상과 시간 정밀도는 logrus와 다를 수 있습니다. ANSI 색상을 출력하지 않으며 시간은 RFC3339와 호환됩니다. 기존 파서를 확인하거나 키로 처리하는 JSON을 사용하세요. API 이름 바로 앞의 <code>[AUDIT]</code>, <code>tenantid</code>, <code>target_index</code>, 요청/응답 값과 성공/오류 레벨은 유지됩니다.</p>
+
+<p>새 파일의 기본 권한은 <code>0644</code>에서 소유자 전용 <code>0600</code>으로 바뀝니다(umask 적용). 기존 파일의 권한은 순환 시에도 유지됩니다. 수집기를 로그 소유자로 실행하거나 업데이트 전에 접근 권한을 명시적으로 설정하세요.</p>
+
+<h2 id="go-api-마이그레이션">Go API 마이그레이션</h2>
+
+<p><code>InitLogInstance(logrusLogger, config)</code>를 <code>logger, err := logging.NewLogger(config)</code>로 바꾸세요. <code>AuditLog()</code>는 <code>*slog.Logger</code>를 반환합니다. logrus setter/hook 대신 네이티브 slog 메서드와 <code>SetAuditLog(logger)</code>를 사용하세요. <code>LogConfig.RotationConfig</code>에 lumberjack v2를 가져와야 하며 v1 포인터는 컴파일되지 않습니다. <code>InitLog</code>와 <code>InitAuditLog</code>는 생략된 설정을 유지하고 nil 또는 빈 설정은 변경하지 않습니다. 잘못된 설정은 기존 logger를 교체하지 않습니다.</p>
+
+<p><code>logging.Default()</code>를 사용하거나 <code>logging.SetDefault(logger)</code>로 호스트 소유 handler를 설치하세요. <code>slog.Default()</code>와 호스트의 표준 <code>log</code> 출력은 변경하지 않습니다. <code>logging.Fatal(message)</code>는 기록 후 상태 1로 종료하고 <code>logging.Panic(message)</code>는 기록 후 panic합니다. 출력이 필터링되어도 종료 동작은 실행됩니다.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#ff79c6">import</span> (
+    <span style="color:#f1fa8c">&#34;github.com/teramoby/speedle-plus/pkg/logging&#34;</span>
+    <span style="color:#f1fa8c">&#34;gopkg.in/natefinch/lumberjack.v2&#34;</span>
+)
+
+logger, err <span style="color:#ff79c6">:=</span> logging.NewLogger(<span style="color:#ff79c6">&amp;</span>logging.LogConfig{
+    Level: <span style="color:#f1fa8c">&#34;info&#34;</span>, Formatter: <span style="color:#f1fa8c">&#34;json&#34;</span>,
+    RotationConfig: <span style="color:#ff79c6">&amp;</span>lumberjack.Logger{Filename: <span style="color:#f1fa8c">&#34;engine.log&#34;</span>, MaxSize: <span style="color:#bd93f9">20</span>},
+})
+<span style="color:#ff79c6">if</span> err <span style="color:#ff79c6">!=</span> <span style="color:#ff79c6">nil</span> {
+    <span style="color:#ff79c6">return</span> err
+}
+logger.Info(<span style="color:#f1fa8c">&#34;Started observing beach&#34;</span>, <span style="color:#f1fa8c">&#34;animal&#34;</span>, <span style="color:#f1fa8c">&#34;walrus&#34;</span>, <span style="color:#f1fa8c">&#34;number&#34;</span>, <span style="color:#bd93f9">8</span>)</code></pre></div>
+<h2 id="컨테이너-로그">컨테이너 로그</h2>
+
+<p>파일 이름을 생략하면 stderr와 컨테이너 런타임의 로그 순환을 사용합니다. lumberjack 파일 설정은 필요 없습니다. 내장 etcd는 logrus와 zap에 간접적으로 의존할 수 있지만 Engine 코드는 slog를 사용합니다.</p>
+</div>
 </div>
 </main>
         </div>

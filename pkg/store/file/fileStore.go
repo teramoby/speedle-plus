@@ -11,11 +11,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/teramoby/speedle-plus/pkg/errors"
-	"github.com/teramoby/speedle-plus/pkg/suid"
-
-	log "github.com/sirupsen/logrus"
 	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/pkg/errors"
+	"github.com/teramoby/speedle-plus/pkg/logging"
+	"github.com/teramoby/speedle-plus/pkg/suid"
 )
 
 type Store struct {
@@ -48,13 +47,13 @@ func (s *Store) readPolicyStoreWithoutLock() (*pms.PolicyStore, error) {
 	}
 	defer func() {
 		if err := f.Close(); err != nil {
-			log.Warnf("Error when closing file %s", s.FileLocation)
+			logging.Default().Warn(fmt.Sprintf("Error when closing file %s", s.FileLocation))
 		}
 	}()
 
 	decoder := json.NewDecoder(bufio.NewReader(f))
 	if err := decoder.Decode(&ps); err != nil {
-		log.Warnf("Unable to parse %s in JSON format because of error %v", s.FileLocation, err)
+		logging.Default().Warn(fmt.Sprintf("Unable to parse %s in JSON format because of error %v", s.FileLocation, err))
 		return &pms.PolicyStore{}, err
 	}
 
@@ -710,7 +709,7 @@ func parseFilter(filterStr string) *filter {
 		return nil
 	}
 	if !strings.HasPrefix(filterStr, "name") {
-		log.Error("unsupported filter string:", filterStr)
+		logging.Default().Error(fmt.Sprint("unsupported filter string:", filterStr))
 		return nil
 	}
 	values := strings.Split(filterStr, " ")
@@ -724,7 +723,7 @@ func parseFilter(filterStr string) *filter {
 		}
 		return f
 	} else {
-		log.Error("invalid filter string:", filterStr)
+		logging.Default().Error(fmt.Sprint("invalid filter string:", filterStr))
 		return nil
 	}
 
@@ -732,7 +731,7 @@ func parseFilter(filterStr string) *filter {
 
 func nameFilter(name string, f *filter) bool { //this filter function return true when the input filter is invalid.
 	if f.field != "name" {
-		log.Error("invalid name filter. filter is:", f)
+		logging.Default().Error(fmt.Sprint("invalid name filter. filter is:", f))
 		return true
 	}
 	switch f.operator {
@@ -753,7 +752,7 @@ func nameFilter(name string, f *filter) bool { //this filter function return tru
 	case "le":
 		return name <= f.target
 	default:
-		log.Error("invalid name filter:", f)
+		logging.Default().Error(fmt.Sprint("invalid name filter:", f))
 		return true
 	}
 }
