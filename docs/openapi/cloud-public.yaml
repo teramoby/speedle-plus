@@ -214,7 +214,7 @@ paths:
         Manages the policies of a service with a policy-management API key. Send the key as
         `Authorization: Bearer <key>`. The key determines the account; operations that address a
         service use its `serviceName` path parameter. The key's scope must allow the operation:
-        pms:read or pms:read+ads for list and get, pms:write for create and delete.
+        pms:read, pms:read+ads or pms:write for list and get; pms:write for create and delete.
 
 
         Request bodies are limited to 64 KiB, and each key to 600 requests per 60 seconds. Every
@@ -274,7 +274,7 @@ paths:
         Manages the policies of a service with a policy-management API key. Send the key as
         `Authorization: Bearer <key>`. The key determines the account; operations that address a
         service use its `serviceName` path parameter. The key's scope must allow the operation:
-        pms:read or pms:read+ads for list and get, pms:write for create and delete.
+        pms:read, pms:read+ads or pms:write for list and get; pms:write for create and delete.
 
 
         Request bodies are limited to 64 KiB, and each key to 600 requests per 60 seconds. Every
@@ -332,7 +332,7 @@ paths:
         Manages the policies of a service with a policy-management API key. Send the key as
         `Authorization: Bearer <key>`. The key determines the account; operations that address a
         service use its `serviceName` path parameter. The key's scope must allow the operation:
-        pms:read or pms:read+ads for list and get, pms:write for create and delete.
+        pms:read, pms:read+ads or pms:write for list and get; pms:write for create and delete.
 
 
         Request bodies are limited to 64 KiB, and each key to 600 requests per 60 seconds. Every
@@ -382,7 +382,7 @@ paths:
         Manages the policies of a service with a policy-management API key. Send the key as
         `Authorization: Bearer <key>`. The key determines the account; operations that address a
         service use its `serviceName` path parameter. The key's scope must allow the operation:
-        pms:read or pms:read+ads for list and get, pms:write for create and delete.
+        pms:read, pms:read+ads or pms:write for list and get; pms:write for create and delete.
 
 
         Request bodies are limited to 64 KiB, and each key to 600 requests per 60 seconds. Every
@@ -433,7 +433,7 @@ paths:
         Manages the policies of a service with a policy-management API key. Send the key as
         `Authorization: Bearer <key>`. The key determines the account; operations that address a
         service use its `serviceName` path parameter. The key's scope must allow the operation:
-        pms:read or pms:read+ads for list and get, pms:write for create and delete.
+        pms:read, pms:read+ads or pms:write for list and get; pms:write for create and delete.
 
 
         Request bodies are limited to 64 KiB, and each key to 600 requests per 60 seconds. Every
@@ -494,7 +494,7 @@ paths:
         Manages the policies of a service with a policy-management API key. Send the key as
         `Authorization: Bearer <key>`. The key determines the account; operations that address a
         service use its `serviceName` path parameter. The key's scope must allow the operation:
-        pms:read or pms:read+ads for list and get, pms:write for create and delete.
+        pms:read, pms:read+ads or pms:write for list and get; pms:write for create and delete.
 
 
         Request bodies are limited to 64 KiB, and each key to 600 requests per 60 seconds. Every
@@ -555,7 +555,7 @@ paths:
         Manages the policies of a service with a policy-management API key. Send the key as
         `Authorization: Bearer <key>`. The key determines the account; operations that address a
         service use its `serviceName` path parameter. The key's scope must allow the operation:
-        pms:read or pms:read+ads for list and get, pms:write for create and delete.
+        pms:read, pms:read+ads or pms:write for list and get; pms:write for create and delete.
 
 
         Request bodies are limited to 64 KiB, and each key to 600 requests per 60 seconds. Every
@@ -606,7 +606,7 @@ paths:
         Manages the policies of a service with a policy-management API key. Send the key as
         `Authorization: Bearer <key>`. The key determines the account; operations that address a
         service use its `serviceName` path parameter. The key's scope must allow the operation:
-        pms:read or pms:read+ads for list and get, pms:write for create and delete.
+        pms:read, pms:read+ads or pms:write for list and get; pms:write for create and delete.
 
 
         Request bodies are limited to 64 KiB, and each key to 600 requests per 60 seconds. Every
@@ -658,7 +658,7 @@ paths:
         Manages the policies of a service with a policy-management API key. Send the key as
         `Authorization: Bearer <key>`. The key determines the account; operations that address a
         service use its `serviceName` path parameter. The key's scope must allow the operation:
-        pms:read or pms:read+ads for list and get, pms:write for create and delete.
+        pms:read, pms:read+ads or pms:write for list and get; pms:write for create and delete.
 
 
         Request bodies are limited to 64 KiB, and each key to 600 requests per 60 seconds. Every
@@ -719,7 +719,7 @@ paths:
         Manages the policies of a service with a policy-management API key. Send the key as
         `Authorization: Bearer <key>`. The key determines the account; operations that address a
         service use its `serviceName` path parameter. The key's scope must allow the operation:
-        pms:read or pms:read+ads for list and get, pms:write for create and delete.
+        pms:read, pms:read+ads or pms:write for list and get; pms:write for create and delete.
 
 
         Request bodies are limited to 64 KiB, and each key to 600 requests per 60 seconds. Every
@@ -780,7 +780,7 @@ paths:
         Manages the policies of a service with a policy-management API key. Send the key as
         `Authorization: Bearer <key>`. The key determines the account; operations that address a
         service use its `serviceName` path parameter. The key's scope must allow the operation:
-        pms:read or pms:read+ads for list and get, pms:write for create and delete.
+        pms:read, pms:read+ads or pms:write for list and get; pms:write for create and delete.
 
 
         Request bodies are limited to 64 KiB, and each key to 600 requests per 60 seconds. Every
@@ -831,7 +831,7 @@ paths:
         Manages the policies of a service with a policy-management API key. Send the key as
         `Authorization: Bearer <key>`. The key determines the account; operations that address a
         service use its `serviceName` path parameter. The key's scope must allow the operation:
-        pms:read or pms:read+ads for list and get, pms:write for create and delete.
+        pms:read, pms:read+ads or pms:write for list and get; pms:write for create and delete.
 
 
         Request bodies are limited to 64 KiB, and each key to 600 requests per 60 seconds. Every
@@ -2120,8 +2120,8 @@ components:
       bearerFormat: spdl_<canonical uppercase ULID>_<43 base62 digits>
       description:
         "Account-level policy-management API key created in the console. Its fixed scope is
-        pms:read or pms:read+ads (list and get) or pms:write (also create and delete policies and services), and it
-        reaches every service of its account. Keys with the ads or pms:read+ads scope are rejected with 403
+        pms:read or pms:read+ads (list and get), or pms:write (list, get, create and delete policies
+        and services). It reaches every service of its account. Keys with the ads scope are rejected with 403
         insufficient_scope. Send it as `Authorization: Bearer <key>`. The key is shown once when
         created, expires at the time selected at creation, and can be revoked. Do not give a
         pms:write key to an agent whose access is governed by these policies: it could change the
@@ -2432,7 +2432,8 @@ components:
     Response43:
       description:
         "insufficient_scope: the key is valid but its scope does not allow this operation. A
-        key with the ads or pms:read+ads scope cannot manage policies, and a pms:read or pms:read+ads key cannot create or delete."
+        key with the ads scope cannot manage policies. A pms:read or pms:read+ads key permits reads
+        but cannot create or delete. A pms:write key permits reads as well as writes."
       headers:
         Cache-Control:
           $ref: "#/components/headers/Cache-Control5"

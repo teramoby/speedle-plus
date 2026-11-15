@@ -357,6 +357,8 @@ for (const locale of LOCALES) {
 console.log('PASS Cloud documentation: 30 pages in five languages, published copies, menus, sitemaps, API reference and five Markdown downloads');
 const cloudSpec = fs.readFileSync(path.join(output, 'openapi/cloud-public.yaml'), 'utf8');
 assert.ok(cloudSpec.includes('ads or pms:read+ads scope') && cloudSpec.includes('pms:read+ads permits both authorization checks and read-only policy management'), 'Public schema describes the Cloud ADS sync scope');
+assert.doesNotMatch(cloudSpec, /ads or pms:read\+ads scope (?:are rejected|cannot manage)/, 'Combined scope must not be described as rejected for PMS reads');
+assert.match(cloudSpec, /pms:write for list and get/, 'Write scope also permits PMS reads');
 assert.deepEqual(cloudSpec, fs.readFileSync(path.join(root, 'docs/hugo/static/openapi/cloud-public.yaml'), 'utf8'), 'Generated Cloud schema matches source');
 assert.deepEqual(cloudSpec, fs.readFileSync(path.join(root, 'docs/openapi/cloud-public.yaml'), 'utf8'), 'Published Cloud schema matches source');
 const llms = fs.readFileSync(path.join(output, 'llms.txt'), 'utf8');
