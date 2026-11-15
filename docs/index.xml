@@ -6,7 +6,7 @@
     <description>Recent content in Simplifying Complexity on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Wed, 27 May 2020 07:48:20 +0800</lastBuildDate>
+    <lastBuildDate>Thu, 12 Nov 2026 10:00:00 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/index.xml" rel="self" type="application/rss+xml" />
     
@@ -108,6 +108,16 @@ Join us at speedle-users and/or speedle-developers groups.</description>
     </item>
     
     <item>
+      <title>Getting started with Speedle Cloud</title>
+      <link>https://engine.speedle.io/docs/cloud/getting-started/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/cloud/getting-started/</guid>
+      <description>Speedle Cloud is coming soon. This guide describes the workflow available when production sign-in and authenticated authorization checks open; the examples have not been run against a live Cloud environment.
+Sign in with GitHub or Google (opens soon) Open the Cloud console in your browser and sign in with an available provider. For a new identity with an unused verified email address, confirm Create account. If the email is already in use, sign in with the linked provider shown by the console.</description>
+    </item>
+    
+    <item>
       <title>Java SDK</title>
       <link>https://engine.speedle.io/docs/sdks/java/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -162,6 +172,17 @@ First ask me which open-source authorization projects I want to compare with Spe
     </item>
     
     <item>
+      <title>Speedle Cloud API keys</title>
+      <link>https://engine.speedle.io/docs/cloud/tokens/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/cloud/tokens/</guid>
+      <description>API keys belong to your account and can access its services according to their scope. They authenticate your application, not its end users. Managing API keys, sessions and linked identities always requires a signed-in console session.
+Speedle Cloud is coming soon. This guide describes the workflow available when production sign-in and authenticated authorization checks open; the examples have not been run against a live Cloud environment.
+Create an API key Open API keys, enter a name of 1–128 characters after trimming whitespace, select a scope and an expiry (7d, 30d, 90d, 180d or 365d; the console defaults to 3 months), and choose Create.</description>
+    </item>
+    
+    <item>
       <title>Docker image</title>
       <link>https://engine.speedle.io/docs/deployment/docker/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -194,6 +215,16 @@ python3 -m venv .venv . .venv/bin/activate pip install speedle==0.2.0 Or with uv
       <description>This walkthrough uses an external etcd v3.6.14 server with a persistent Docker volume. PMS writes policies and ADS watches the same key prefix. The single-node example listens on loopback and uses plain HTTP for local development. Production TLS and cluster configuration follow the walkthrough.
 1. Build Speedle Prepare Bash, Git, curl, Docker and Go 1.27.4. Start Docker, then build the native services:
 git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o .</description>
+    </item>
+    
+    <item>
+      <title>Speedle Cloud authorization API</title>
+      <link>https://engine.speedle.io/docs/cloud/authorization-api/</link>
+      <pubDate>Sun, 08 Nov 2026 00:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/cloud/authorization-api/</guid>
+      <description>Speedle Cloud is coming soon. This guide describes the workflow available when production sign-in and authenticated authorization checks open; the examples have not been run against a live Cloud environment.
+Use an account API key for server-side authorization calls. Account sign-in must be available before you can create keys. Use ads or pms:read+ads for ADS checks; pms:read and pms:write return 403 insufficient_scope. The combined pms:read+ads scope also permits PMS reads and is required for policy synchronization with Speedle Cloud ADS (speedle-cloud); it cannot write policies.</description>
     </item>
     
     <item>
@@ -240,6 +271,16 @@ MongoDB must run as a replica set or sharded cluster. ADS watches the database w
     </item>
     
     <item>
+      <title>API reference</title>
+      <link>https://engine.speedle.io/docs/cloud/api-reference/</link>
+      <pubDate>Thu, 12 Nov 2026 10:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/cloud/api-reference/</guid>
+      <description>Authorization API preview explains the IsAllowed call. Limits and errors lists quotas and error responses.
+   document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/openapi/cloud-public.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34;, supportedSubmitMethods: [] }); window.ui = ui; });  </description>
+    </item>
+    
+    <item>
       <title>Identity Domain</title>
       <link>https://engine.speedle.io/docs/idd/</link>
       <pubDate>Thu, 17 Jan 2019 13:20:07 +0800</pubDate>
@@ -259,6 +300,17 @@ Represent domains in policies and requests grant user user1 from github read boo
 The examples check the policy described in the SDKs overview.
 Add the dependency In a new console project:
 dotnet new console -o SpeedleExample cd SpeedleExample dotnet add package Speedle.Sdk --version 0.2.0 Call a local Speedle Start Speedle and create the example policy as described in the SDKs overview. Replace Program.</description>
+    </item>
+    
+    <item>
+      <title>Speedle Cloud Limits and errors</title>
+      <link>https://engine.speedle.io/docs/cloud/limits-and-errors/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/cloud/limits-and-errors/</guid>
+      <description>Speedle Cloud is coming soon. This guide describes the workflow available when production sign-in and authenticated authorization checks open; the examples have not been run against a live Cloud environment.
+Limits apply to the whole account unless a row says otherwise. API keys are account credentials; changing keys does not increase the daily quota.
+Limits    What is limited Limit When reached / how to recover     Services per account 100 409 quota_exceeded; delete an unused service.</description>
     </item>
     
     <item>
