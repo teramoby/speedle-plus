@@ -61,15 +61,22 @@ jobs:
           set -euo pipefail
           if [[ "${EVENT_NAME}" == pull_request ]]; then
             # Classify with the base revision's script: the checked-out copy
-            # must not decide this route.
+            # must not decide this route. Defence in depth; the merge gate
+            # remains the label procedure noted on the summary job.
             base="${PR_BASE:-}"
-            if [[ -n "${base}" && "${base}" != 0000000000000000000000000000000000000000 ]] \
-              && git cat-file -e "${base}:scripts/ci/classify-changes.sh" 2>/dev/null; then
+            entry=""
+            if [[ -n "${base}" && "${base}" != 0000000000000000000000000000000000000000 ]]; then
+              entry=$(git ls-tree "${base}" -- scripts/ci/classify-changes.sh 2>/dev/null || true)
+            fi
+            mode=${entry%% *}
+            if [[ "${mode}" == 100644 || "${mode}" == 100755 ]]; then
               classifier="${RUNNER_TEMP}/classify-changes.sh"
               git show "${base}:scripts/ci/classify-changes.sh" > "${classifier}"
               bash "${classifier}"
             else
-              # No trusted classifier revision: run every route.
+              echo "::warning::No trusted regular-file classifier in the base revision; enabling every changed-path route."
+              # Enable every changed-path route; full CI still follows the
+              # full-ci label.
               printf 'go=true\nwebsite=true\ndocs=true\nci=true\n' >> "${GITHUB_OUTPUT}"
             fi
           else

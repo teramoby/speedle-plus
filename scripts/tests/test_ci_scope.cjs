@@ -171,6 +171,21 @@ test('change classification preserves raw Git paths, uses the base classifier an
     const guarded = classify(rewritten, {PR_BASE: previous});
     assert.equal(guarded.status, 0, guarded.stderr);
     assert.equal(guarded.output, flags(true, false, true, true), 'the base classifier must decide routing');
+    // A base entry that is a symlink is not a regular file: it must take the
+    // fallback instead of being staged and executed as text.
+    fs.rmSync(path.join(dir, 'scripts/ci/classify-changes.sh'));
+    fs.symlinkSync('../classify-target.sh', path.join(dir, 'scripts/ci/classify-changes.sh'));
+    git('add', '--', 'scripts/ci/classify-changes.sh');
+    git('commit', '-qm', 'classifier becomes a symlink');
+    const linked = git('rev-parse', 'HEAD');
+    fs.mkdirSync(path.join(dir, 'website'), {recursive: true});
+    fs.writeFileSync(path.join(dir, 'website/page.md'), 'fixture\n');
+    git('add', '--', 'website/page.md');
+    git('commit', '-qm', 'website change');
+    const linkedHead = git('rev-parse', 'HEAD');
+    const linkedFallback = classify(linkedHead, {PR_BASE: linked});
+    assert.equal(linkedFallback.status, 0, linkedFallback.stderr);
+    assert.equal(linkedFallback.output, flags(true, true, true, true), 'a non-regular base classifier must enable every route');
   } finally {
     fs.rmSync(dir, {recursive: true, force: true});
     fs.rmSync(runnerTemp, {recursive: true, force: true});
