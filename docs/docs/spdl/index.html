@@ -23,7 +23,7 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/spdl/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/spdl/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-11-08T20:01:50&#43;08:00">
+<meta property="article:modified_time" content="2026-11-16T11:43:31&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="SPDL - Speedle Policy Definition Language · Speedle Engine">
 <meta property="og:description" content="SPDL stands for Speedle Policy Definition Language, the language for writing Speedle policies and role policies.">
@@ -39,7 +39,7 @@
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/spdl/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T20:01:50+08:00","description":"SPDL stands for Speedle Policy Definition Language, the language for writing Speedle policies and role policies.","headline":"SPDL - Speedle Policy Definition Language","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/spdl/","@type":"WebPage"},"name":"SPDL - Speedle Policy Definition Language","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/spdl/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/spdl/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-16T11:43:31+08:00","description":"SPDL stands for Speedle Policy Definition Language, the language for writing Speedle policies and role policies.","headline":"SPDL - Speedle Policy Definition Language","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/spdl/","@type":"WebPage"},"name":"SPDL - Speedle Policy Definition Language","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/spdl/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/spdl/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/","name":"Home","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/docs/","name":"Documentation","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/docs/spdl/","name":"SPDL - Speedle Policy Definition Language","position":3}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -212,6 +212,11 @@
 
 <p><code>grant</code>, <code>deny</code>, <code>user</code>, <code>group</code>, <code>entity</code>, <code>role</code>, <code>from</code>, <code>on</code>, <code>if</code> and <code>in</code> are reserved keywords. None of them can be used as a principal name, identity domain, role, action, resource, or attribute or function name in a condition, in any letter case and whether quoted or not; the parser rejects such a statement and names the keyword and its position. In conditions, <code>in</code> and <code>IN</code> are the membership operator; function names are case-sensitive. Principal, action and resource names are also case-sensitive.</p>
 
+<p>For example, in the policy statement <code>grant user alice read Role</code>, <code>Role</code> is the resource name. Since <code>Role</code> is a reserved keyword, checking it with <code>spctl check policy</code> fails with:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-console" data-lang="console">$ spctl check policy &#39;grant user alice read Role&#39;
+&#34;Role&#34; is a reserved SPDL keyword and cannot be used as a resource
+grant user alice read Role
+                      ^</code></pre></div>
 <h3 id="naming-convention">Naming Convention</h3>
 
 <p>Prefer simple, stable identifiers. Quote names containing whitespace or separators using the parser’s single- or double-quoted form, and test the actual input. Historical Java regular-expression character classes are not a validation contract for the Go parser. The <code>expr:</code> resource prefix uses Go regular expressions, not shell globs. Attribute and function names in conditions are described below.</p>

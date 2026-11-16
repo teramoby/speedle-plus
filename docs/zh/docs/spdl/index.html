@@ -23,7 +23,7 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/spdl/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/spdl/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-11-08T20:01:50&#43;08:00">
+<meta property="article:modified_time" content="2026-11-16T11:43:31&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="SPDL：Speedle 策略定义语言 · Speedle Engine">
 <meta property="og:description" content="SPDL 的全称是 Speedle Policy Definition Language（Speedle 策略定义语言），用于编写 Speedle 策略和角色策略。">
@@ -39,7 +39,7 @@
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-zh.png">
 <meta name="twitter:image:alt" content="Speedle Engine — 快速、简单的权限控制">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/spdl/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-08T20:01:50+08:00","description":"SPDL 的全称是 Speedle Policy Definition Language（Speedle 策略定义语言），用于编写 Speedle 策略和角色策略。","headline":"SPDL：Speedle 策略定义语言","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/spdl/","@type":"WebPage"},"name":"SPDL：Speedle 策略定义语言","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/spdl/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/spdl/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-16T11:43:31+08:00","description":"SPDL 的全称是 Speedle Policy Definition Language（Speedle 策略定义语言），用于编写 Speedle 策略和角色策略。","headline":"SPDL：Speedle 策略定义语言","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/spdl/","@type":"WebPage"},"name":"SPDL：Speedle 策略定义语言","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/spdl/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/spdl/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/zh/","name":"首页","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/","name":"文档","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/spdl/","name":"SPDL：Speedle 策略定义语言","position":3}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -212,6 +212,11 @@
 
 <p><code>grant</code>、<code>deny</code>、<code>user</code>、<code>group</code>、<code>entity</code>、<code>role</code>、<code>from</code>、<code>on</code>、<code>if</code>、<code>in</code> 是保留关键字。无论大小写、是否加引号，都不能用作主体名、身份域、角色、操作、资源，也不能用作条件中的属性名或函数名；解析器会拒绝这样的语句，并指出是哪个关键字、在什么位置。条件中的 <code>in</code> 和 <code>IN</code> 是成员运算符，函数名区分大小写。主体、操作和资源名称也区分大小写。</p>
 
+<p>例如，在策略语句 <code>grant user alice read Role</code> 中，<code>Role</code> 是资源名。由于 <code>Role</code> 是保留关键字，使用 <code>spctl check policy</code> 检查时失败并报告：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-console" data-lang="console">$ spctl check policy &#39;grant user alice read Role&#39;
+&#34;Role&#34; is a reserved SPDL keyword and cannot be used as a resource
+grant user alice read Role
+                      ^</code></pre></div>
 <h3 id="命名规范">命名规范</h3>
 
 <p>推荐使用简短、稳定的标识符。名称包含空格或分隔符时，使用解析器支持的单引号或双引号，并用实际输入测试。不要把历史 Java 正则字符类当作当前 Go 解析器的严格校验规则。资源前缀 <code>expr:</code> 表示 Go 正则表达式，不是 shell 通配符。条件中的属性和函数名称见下文。</p>
