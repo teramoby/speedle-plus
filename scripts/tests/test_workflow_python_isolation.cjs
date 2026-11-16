@@ -2,10 +2,13 @@
  *
  * This is deliberately a line-oriented inventory, not a shell or YAML parser.
  * The runtime guarantee is python3 -I plus two statements at the top of every
- * inline program: sys.flags.isolated must be true and optimization must be
- * off, and neither the checkout, the current directory nor an empty string may
- * be on sys.path. Those statements exit non-zero instead of using assert,
- * which python -O strips. Module invocations only require -I.
+ * -c and stdin program: sys.flags.isolated must be true and optimization must
+ * be off, and neither the checkout, the current directory nor an empty string
+ * may be on sys.path. Those statements exit non-zero instead of using assert,
+ * which python -O strips. Module (-m) invocations are verified to carry -I
+ * only: a stdlib module body cannot hold the guard, so the cwd staying off
+ * sys.path rests on CPython's documented -I behaviour rather than on a check
+ * this inventory can run.
  *
  * Every known -c, -m and heredoc invocation in .github/workflows/*.yml and
  * scripts/ci/*.sh is listed below. A new inline-shaped Python invocation fails
@@ -77,10 +80,13 @@ function inspectSource(file, source) {
     } else if (modulePattern.test(line)) kind = 'module';
     else if (stdinPattern.test(line)) kind = 'stdin';
     if (kind) {
+      const isolated = isolatedPattern.test(line);
       invocations.push({
-        file, line: start + 1, kind,
-        isolated: isolatedPattern.test(line),
-        guarded: kind === 'module' || (kind === 'command'
+        file, line: start + 1, kind, isolated,
+        // -m has no inline payload to instrument, so the only available check
+        // is that -I is present; -c and stdin programs must also carry the
+        // runtime guard.
+        guarded: kind === 'module' ? isolated : (kind === 'command'
           ? commandGuarded(payload)
           : lines[index + 1]?.trim() === isolationGuard && lines[index + 2]?.trim() === pathGuard),
       });
@@ -167,6 +173,7 @@ test('the inventory recognizes inline forms and ignores files, examples and data
 test('missing guards, unparseable -c payloads and unlisted invocations fail', () => {
   const unsafe = inspectSource('fixture.yml', [
     "python3 -c 'print(1)'",
+    'python3 -m unittest discover',
     `python3 -I -c '${isolationGuard}; print(1)'`,
     `python3 -I -c 'print(1)' # ${guard}`,
     "python3 -I -c 'import sys",
@@ -179,6 +186,7 @@ test('missing guards, unparseable -c payloads and unlisted invocations fail', ()
   ].join('\n'));
   assert.deepEqual(unsafe.map(({kind, isolated, guarded}) => ({kind, isolated, guarded})), [
     {kind: 'command', isolated: false, guarded: false},
+    {kind: 'module', isolated: false, guarded: false},
     {kind: 'command', isolated: true, guarded: false},
     {kind: 'command', isolated: true, guarded: false},
     {kind: 'command', isolated: true, guarded: false},
