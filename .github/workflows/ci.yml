@@ -58,7 +58,82 @@ jobs:
           PR_BASE: ${{ github.event.pull_request.base.sha }}
           PUSH_BEFORE: ${{ github.event.before }}
         run: |
-          bash scripts/ci/classify-changes.sh
+          set -euo pipefail
+          # Every changed-path route that jobs read from this step. The fallback and
+          # the output contract below both use this list, and test_ci_scope.cjs
+          # checks it against the routes the workflow reads, so a new route cannot
+          # be left out of either.
+          route_keys="go website docs ci"
+          # Enable every changed-path route; full CI still follows the full-ci label.
+          route_all() { local key; for key in ${route_keys}; do echo "${key}=true" >> "${GITHUB_OUTPUT}"; done; }
+          # Forward one true/false value per route from a classifier's output file,
+          # for every event. A missing, repeated, empty or non-boolean value enables
+          # every route instead, and other lines are never forwarded.
+          forward_routes() {
+            local file="$1" key count value invalid=""
+            for key in ${route_keys}; do
+              count=$(grep -c "^${key}=" "${file}" || true)
+              value=$(sed -n "s/^${key}=//p" "${file}")
+              if [[ "${count}" != 1 || ( "${value}" != true && "${value}" != false ) ]]; then
+                invalid="${invalid} ${key}"
+              fi
+            done
+            if [[ -n "${invalid}" ]]; then
+              echo "::warning::The classifier did not set exactly one true/false value for:${invalid}; enabling every changed-path route."
+              route_all
+            else
+              for key in ${route_keys}; do
+                echo "${key}=$(sed -n "s/^${key}=//p" "${file}")" >> "${GITHUB_OUTPUT}"
+              done
+            fi
+          }
+          routes=$(mktemp "${RUNNER_TEMP}/classify-routes.XXXXXX")
+          if [[ "${EVENT_NAME}" == pull_request ]]; then
+            # Classify with the base revision's script, so that an edit to
+            # scripts/ci cannot quietly change the route of its own pull
+            # request. This guards against accidental or unreviewed classifier
+            # edits only; it is not a security boundary, because a pull request
+            # can also edit this workflow. Workflow changes are reviewed before
+            # merge, and the merge-head run executes full CI.
+            base="${PR_BASE:-}"
+            entry=""
+            if [[ -n "${base}" && "${base}" != 0000000000000000000000000000000000000000 ]]; then
+              entry=$(git ls-tree "${base}" -- scripts/ci/classify-changes.sh 2>/dev/null || true)
+            fi
+            # Trust only a regular file (a blob with a file mode): not a tree,
+            # symlink or submodule.
+            mode="" type=""
+            read -r mode type _ <<< "${entry}" || true
+            if [[ "${type}" != blob || ( "${mode}" != 100644 && "${mode}" != 100755 ) ]]; then
+              echo "::warning::No trusted regular-file classifier in the base revision; enabling every changed-path route."
+              route_all
+            else
+              # A pull request that changes the classifier or any other CI script may
+              # change what the base copy decides, so it runs every route. Three dots
+              # compare from the merge base: only the pull request's own side counts.
+              set +e
+              git diff --quiet "${base}...${GITHUB_SHA}" -- scripts/ci/
+              status=$?
+              set -e
+              if [[ "${status}" == 1 ]]; then
+                echo "::notice::This pull request changes scripts/ci; enabling every changed-path route."
+                route_all
+              elif [[ "${status}" != 0 ]]; then
+                echo "::error::Cannot compare the classifier with the base revision." >&2
+                exit 1
+              else
+                classifier=$(mktemp "${RUNNER_TEMP}/classify-changes.XXXXXX")
+                git show "${base}:scripts/ci/classify-changes.sh" > "${classifier}"
+                GITHUB_OUTPUT="${routes}" bash "${classifier}"
+                forward_routes "${routes}"
+              fi
+            fi
+          else
+            # Pushes to the default branch run the merged classifier, under the same
+            # output contract.
+            GITHUB_OUTPUT="${routes}" bash scripts/ci/classify-changes.sh
+            forward_routes "${routes}"
+          fi
 
       - name: Setup Node for CI script tests
         if: steps.scope.outputs.ci == 'true'
@@ -74,7 +149,29 @@ jobs:
           DOCKER_CONFIG=$(mktemp -d "${TMPDIR:-/tmp}/speedle-docker-config.XXXXXX")
           export DOCKER_CONFIG
           trap 'rm -rf "${DOCKER_CONFIG}"' EXIT
-          node --test scripts/tests/*.cjs
+          shopt -s nullglob
+          discovered=()
+          for suite in scripts/tests/*.cjs; do
+            discovered+=("${suite}")
+          done
+          if ((${#discovered[@]} == 0)); then
+            echo 'no CI test suites discovered' >&2
+            exit 1
+          fi
+          if [[ ! -f scripts/tests/test_ci_scope.cjs ]]; then
+            echo 'CI scope guard suite scripts/tests/test_ci_scope.cjs is missing' >&2
+            exit 1
+          fi
+          node --test scripts/tests/test_ci_scope.cjs
+          suites=()
+          for suite in "${discovered[@]}"; do
+            if [[ "${suite}" != 'scripts/tests/test_ci_scope.cjs' ]]; then
+              suites+=("${suite}")
+            fi
+          done
+          if ((${#suites[@]} > 0)); then
+            node --test "${suites[@]}"
+          fi
           python3 -m unittest discover -s scripts/tests -p 'test_*.py'
 
   lint:

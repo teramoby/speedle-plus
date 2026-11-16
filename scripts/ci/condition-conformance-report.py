@@ -142,7 +142,12 @@ def report(profile, matrix, *, go_version):
     failures = []
     consumed = {}
     for file, expected_hash in AUDITED_SOURCE_SHA256.items():
-        actual_hash = hashlib.sha256((ROOT / FORK / file).read_bytes()).hexdigest()
+        try:
+            data = (ROOT / FORK / file).read_bytes()
+        except OSError as exc:
+            failures.append(f'audited source unavailable: {FORK}{file}: {exc}')
+            continue
+        actual_hash = hashlib.sha256(data).hexdigest()
         if actual_hash != expected_hash:
             failures.append(f'audited source changed; re-audit required: {FORK}{file}')
     for (file, span), (n, count) in sorted(blocks.items()):

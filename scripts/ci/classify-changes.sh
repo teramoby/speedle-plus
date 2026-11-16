@@ -12,7 +12,11 @@ if [[ -n "${base}" && "${base}" != 0000000000000000000000000000000000000000 ]] &
   trap 'rm -f "${changed}"' EXIT
   # Write the diff first so Git failures propagate instead of being hidden in
   # process substitution. NUL separators preserve quoted and multiline paths.
-  git diff --name-only -z "${base}" "${GITHUB_SHA}" > "${changed}"
+  # A pull request counts only its own side (three dots: from the merge base),
+  # so base-branch commits missing from a stale merge ref are not its changes.
+  range=("${base}" "${GITHUB_SHA}")
+  [[ "${EVENT_NAME}" == pull_request ]] && range=("${base}...${GITHUB_SHA}")
+  git diff --name-only -z "${range[@]}" > "${changed}"
   go=false website=false docs=false ci=false
   while IFS= read -r -d '' file; do
     case "${file}" in
