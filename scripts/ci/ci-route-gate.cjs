@@ -286,26 +286,25 @@ function latestCompletedRun(api, repository, headSha) {
   return response.workflow_runs[0] || null;
 }
 
-// Resolve the open pull request that owns this commit. The run's own
-// pull_requests array can be empty, for example for fork contributions, so the
-// commit lookup is the primary source. A pull request based on the default
-// branch is preferred when several share the commit.
+// Resolve the open pull request that owns this run. The run's own association
+// is authoritative when present; the commit lookup covers fork contributions,
+// whose pull_requests array can be empty. More than one open pull request for
+// one commit makes a SHA-scoped verdict ambiguous, so none is published.
 function resolvePullRequest(api, repository, run) {
   assertSha(run?.head_sha, 'workflow run head');
+  const associated = Array.isArray(run?.pull_requests) ? run.pull_requests : [];
+  const numbers = associated.map(pr => pr?.number).filter(number => Number.isInteger(number) && number > 0);
+  if (numbers.length > 0) {
+    for (const number of numbers) {
+      const pr = api(`repos/${repository}/pulls/${number}`);
+      if (pr?.state === 'open' && pr?.head?.sha === run.head_sha) return pr;
+    }
+    return null;
+  }
   const response = api(`repos/${repository}/commits/${run.head_sha}/pulls`);
   if (!Array.isArray(response)) throw new Error('pull request lookup response is not an array');
-  const open = response
-    .filter(pr => pr?.state === 'open' && pr?.head?.sha === run.head_sha)
-    .sort((left, right) => (left?.number || 0) - (right?.number || 0));
-  const preferred = open.find(pr => pr?.base?.ref && pr.base.ref === pr?.base?.repo?.default_branch);
-  if (preferred) return preferred;
-  if (open.length > 0) return open[0];
-  const number = run?.pull_requests?.[0]?.number;
-  if (Number.isInteger(number) && number > 0) {
-    const pr = api(`repos/${repository}/pulls/${number}`);
-    if (pr?.state === 'open' && pr?.head?.sha === run.head_sha) return pr;
-  }
-  return null;
+  const open = response.filter(pr => pr?.state === 'open' && pr?.head?.sha === run.head_sha);
+  return open.length === 1 ? open[0] : null;
 }
 
 // The run's pull_requests array can be empty for fork contributions, so fall
@@ -392,7 +391,7 @@ function execute(options, api, runner = spawnSync) {
         }
       }
       pr = resolvePullRequest(api, options.repository, run);
-      if (!pr) return outcome({run, state: null, ignored: true, message: 'No open pull request for this commit'});
+      if (!pr) return outcome({run, state: null, ignored: true, message: 'Cannot resolve one open pull request for this commit'});
       // Out-of-scope runs are decided without reading the diff: a non-default
       // base publishes nothing, and identity failures are not a route verdict.
       if (preflight(run, pr)) return assessRun({api, runner, repository: options.repository, run, pr});

@@ -195,8 +195,37 @@ test('a run that no open pull request owns publishes no status', () => {
   const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
   assert.equal(result.ignored, true);
   assert.equal(result.status.state, null);
-  assert.equal(result.status.description, 'No open pull request for this commit');
+  assert.equal(result.status.description, 'Cannot resolve one open pull request for this commit');
   assert.equal(fixture.calls.some(call => call.endpoint.includes('/compare/')), false);
+  assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 0);
+});
+
+test('a commit with two open pull requests publishes no status', () => {
+  const other = pullRequest([], {number: 591, base: {sha: base, ref: 'release', repo: {default_branch: 'master'}}});
+  const fixture = fixtureApi({
+    run: run({pull_requests: []}), pr: pullRequest(), files: ['docs/guide.md'],
+    jobs: jobs({build: true}), commitPulls: [pullRequest(), other],
+  });
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.ignored, true);
+  assert.equal(result.status.state, null);
+  assert.equal(result.status.description, 'Cannot resolve one open pull request for this commit');
+  assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 0);
+});
+
+test('a run association selects its pull request over a shared commit', () => {
+  const release = pullRequest([], {
+    number: 591, base: {sha: base, ref: 'release', repo: {default_branch: 'master'}},
+  });
+  const fixture = fixtureApi({
+    run: run({pull_requests: [{number: 591}]}), pr: release, files: ['docs/guide.md'],
+    jobs: jobs({build: true}),
+  });
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.ignored, true);
+  assert.equal(result.status.state, null);
+  assert.equal(result.status.description, 'Pull request base is not the default branch');
+  assert.equal(fixture.calls.some(call => call.endpoint.includes('/commits/')), false);
   assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 0);
 });
 
