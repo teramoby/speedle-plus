@@ -200,9 +200,10 @@ process.exit(process.env.FAIL_TOOL === ${JSON.stringify(tool)} ? 7 : 0);
         TMPDIR: temporary, DOCKER_CONFIG: '/unused-host-config'}});
       assert.equal(result.status, failure ? 7 : 0, result.stderr);
       const calls = fs.readFileSync(record, 'utf8').trim().split('\n').map(JSON.parse);
-      assert.deepEqual(calls[0].args, ['--test', ...suites.map(name => `scripts/tests/${name}`)]);
-      assert.equal(calls.length, failure === 'node' ? 1 : 2);
-      if (calls.length === 2) assert.deepEqual(calls[1].args, ['-m', 'unittest', 'discover', '-s', 'scripts/tests', '-p', 'test_*.py']);
+      assert.deepEqual(calls[0].args, ['--test', 'scripts/tests/test_ci_scope.cjs']);
+      assert.equal(calls.length, failure === 'node' ? 1 : 3);
+      if (calls.length > 1) assert.deepEqual(calls[1].args, ['--test', ...suites.map(name => `scripts/tests/${name}`)]);
+      if (calls.length === 3) assert.deepEqual(calls[2].args, ['-m', 'unittest', 'discover', '-s', 'scripts/tests', '-p', 'test_*.py']);
       for (const call of calls) {
         assert.notEqual(call.config, '/unused-host-config');
         assert.equal(path.dirname(call.config), temporary);

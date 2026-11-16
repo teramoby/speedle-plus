@@ -74,6 +74,7 @@ jobs:
           DOCKER_CONFIG=$(mktemp -d "${TMPDIR:-/tmp}/speedle-docker-config.XXXXXX")
           export DOCKER_CONFIG
           trap 'rm -rf "${DOCKER_CONFIG}"' EXIT
+          node --test scripts/tests/test_ci_scope.cjs
           node --test scripts/tests/*.cjs
           python3 -m unittest discover -s scripts/tests -p 'test_*.py'
 
