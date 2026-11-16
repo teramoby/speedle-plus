@@ -77,14 +77,17 @@ test('worker owns runner selection and exposes only the mode input, never a call
   assert.match(step('Setup Go'), /go-version-file: go\.mod/);
   assert.doesNotMatch(source, /secrets:|secrets\.inherit|\$\{\{\s*inputs\.(?:ref|sha|runner|store_type)/);
 });
-test('documented Go toolchain guard runs after setup and rejects version drift', () => {
+test('documented Go toolchain guard runs after checkout and setup and rejects version drift', () => {
+  const checkout = source.indexOf('      - name: Checkout code\n');
   const setup = source.indexOf('      - name: Setup Go\n');
   const verify = source.indexOf('      - name: Verify documented Go toolchain\n');
   const select = source.indexOf('      - name: Select changed packages\n');
+  assert.notEqual(checkout, -1, 'Checkout code step missing');
   assert.notEqual(setup, -1, 'Setup Go step missing');
   assert.notEqual(verify, -1, 'documented Go toolchain guard missing');
   assert.notEqual(select, -1, 'Select changed packages step missing');
-  assert.ok(setup < verify && verify < select, 'toolchain guard must follow Setup Go and precede package selection');
+  assert.ok(checkout < setup && setup < verify && verify < select,
+    'toolchain guard must follow checkout and Setup Go and precede package selection');
 
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-go-toolchain-'));
   try {
@@ -113,6 +116,14 @@ if (args.length === 4 && args[0] === 'list' && args[1] === '-m' && args[2] === '
       {name: 'missing README minimum', readme: '# Fixture without a toolchain requirement\n', module: '1.27.4', selected: 'go1.27.4', passes: false,
         message: 'README source-build Go minimum not found'},
     ];
+    const root = path.resolve(__dirname, '../..');
+    const moduleSource = fs.readFileSync(path.join(root, 'go.mod'), 'utf8');
+    const moduleVersion = moduleSource.match(/^go (\d+\.\d+\.\d+)$/m)?.[1];
+    assert.ok(moduleVersion, 'repository go.mod must declare an exact Go version');
+    const selected = moduleSource.match(/^toolchain (go\d+\.\d+\.\d+)$/m)?.[1] ?? `go${moduleVersion}`;
+    cases.push({name: 'repository README and go.mod', readme: fs.readFileSync(path.join(root, 'README.md'), 'utf8'),
+      module: moduleVersion, selected, passes: true,
+      message: `Verified documented minimum Go toolchain: ${selected}`});
     for (const fixture of cases) {
       fs.writeFileSync(path.join(directory, 'README.md'), fixture.readme);
       const result = spawnSync('bash', ['-c', script('Verify documented Go toolchain')], {

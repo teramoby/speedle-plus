@@ -88,7 +88,7 @@ jobs:
           module = go('list', '-m', '-f', '{{.GoVersion}}')
           actual = go('env', 'GOVERSION')
           match = re.search(r'^-\s+Go (\d+\.\d+\.\d+) or a newer patch',
-                            Path('README.md').read_text(), re.MULTILINE)
+                            Path('README.md').read_text(encoding='utf-8'), re.MULTILINE)
           if match is None:
               raise SystemExit('README source-build Go minimum not found')
           documented = match.group(1)
