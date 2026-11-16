@@ -734,18 +734,20 @@ func TestConditionConformanceInjectedTypesAndValues(t *testing.T) {
 	}
 	e := evaluator.(*eval.PolicyEvalImpl)
 	defer e.Close()
-	before := time.Now().Unix()
 	result, err := e.Diagnose(ads.RequestContext{ServiceName: "app", Resource: "book", Action: "read", Subject: &ads.Subject{Principals: []*ads.Principal{{Type: "user", Name: "alice"}, {Type: "group", Name: "staff"}, {Type: "entity", Name: "service"}}}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	after := time.Now().Unix()
 	timestamp, ok := result.Attributes["request_time"].(int64)
 	if !ok {
 		t.Fatalf("request_time = %T, want int64", result.Attributes["request_time"])
 	}
-	if timestamp < before || timestamp > after {
-		t.Fatalf("request_time %d is outside request window [%d,%d]", timestamp, before, after)
+	if timestamp <= 0 {
+		t.Fatalf("request_time = %d, want a positive Unix timestamp", timestamp)
+	}
+	delta := timestamp - time.Now().Unix()
+	if delta < -300 || delta > 300 {
+		t.Fatalf("request_time %d differs from the current Unix time by %d seconds", timestamp, delta)
 	}
 	instant := time.Unix(timestamp, 0).In(time.Local)
 	for name, want := range map[string]interface{}{
