@@ -187,7 +187,7 @@ test('change classification preserves raw Git paths, uses the base classifier an
     const partial = classify(partialHead, {PR_BASE: partialBase});
     assert.equal(partial.status, 0, partial.stderr);
     assert.equal(partial.output, flags(true, true, true, true), 'a missing route key must enable every route');
-    assert.match(partial.stdout, /did not set: ci/);
+    assert.match(partial.stdout, /did not set exactly one true\/false value for: ci/);
     // A change to any other CI script also runs every route, even when the
     // classifier itself is unchanged.
     fs.writeFileSync(path.join(dir, 'scripts/ci/helper.sh'), '#!/usr/bin/env bash\ntrue\n');
@@ -198,6 +198,34 @@ test('change classification preserves raw Git paths, uses the base classifier an
     assert.equal(helper.status, 0, helper.stderr);
     assert.equal(helper.output, flags(true, true, true, true), 'a pull request that changes scripts/ci must enable every route');
     assert.match(helper.stdout, /changes scripts\/ci/);
+    // The base classifier's output is forwarded only as one true/false value
+    // per route: a repeated, empty, non-boolean or multiline value enables every
+    // route, and other lines are not forwarded.
+    const baseOutput = (body, label) => {
+      fs.writeFileSync(path.join(dir, 'scripts/ci/classify-changes.sh'),
+        `#!/usr/bin/env bash\nprintf ${JSON.stringify(body)} >> "\${GITHUB_OUTPUT}"\n`);
+      git('add', '--', 'scripts/ci/classify-changes.sh');
+      git('commit', '-qm', `classifier: ${label}`);
+      const classifierBase = git('rev-parse', 'HEAD');
+      fs.writeFileSync(path.join(dir, 'docs/guide.md'), `fixture ${label}\n`);
+      git('add', '--', 'docs/guide.md');
+      git('commit', '-qm', `docs change: ${label}`);
+      return classify(git('rev-parse', 'HEAD'), {PR_BASE: classifierBase});
+    };
+    for (const [label, body] of [
+      ['non-boolean value', 'go=yes\\nwebsite=false\\ndocs=true\\nci=false\\n'],
+      ['repeated key', 'go=false\\nwebsite=false\\ndocs=true\\nci=false\\ngo=true\\n'],
+      ['empty value', 'go=false\\nwebsite=\\ndocs=true\\nci=false\\n'],
+      ['multiline value', 'go<<EOF\\nfalse\\nEOF\\nwebsite=false\\ndocs=true\\nci=false\\n'],
+    ]) {
+      const result = baseOutput(body, label);
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal(result.output, flags(true, true, true, true), `a base classifier with a ${label} must enable every route`);
+      assert.match(result.stdout, /did not set exactly one true\/false value for: /);
+    }
+    const extra = baseOutput('go=false\\nwebsite=false\\ndocs=true\\nci=false\\nfull=true\\n', 'extra key');
+    assert.equal(extra.status, 0, extra.stderr);
+    assert.equal(extra.output, flags(false, false, true, false), 'only the route values may be forwarded');
     // The trusted classifier and its output are staged in fresh mktemp files,
     // never in a fixed RUNNER_TEMP path.
     const step = script(ci, 'Classify changed files');
@@ -247,7 +275,8 @@ test('the classifier fallback and output contract cover every route the workflow
   assert.deepEqual(declared, read, 'route_keys must list exactly the routes that jobs read');
   // Both the fallback and the contract check iterate the list instead of keeping their own copies.
   assert.match(step, /^route_all\(\) \{ local key; for key in \$\{route_keys\}; do echo "\$\{key\}=true"/m);
-  assert.match(step, /for key in \$\{route_keys\}; do\n\s+grep -q "\^\$\{key\}=" "\$\{routes\}"/);
+  assert.match(step, /for key in \$\{route_keys\}; do\n\s+count=\$\(grep -c "\^\$\{key\}=" "\$\{routes\}"/);
+  assert.doesNotMatch(step, /cat "\$\{routes\}"/, 'the classifier output must not be forwarded wholesale');
   assert.doesNotMatch(step, /(?:go|website|docs|ci)=true/);
 });
 test('CI discovers every script suite, isolates Docker config and propagates failures', () => {

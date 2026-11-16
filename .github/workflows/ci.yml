@@ -103,15 +103,24 @@ jobs:
                 routes=$(mktemp "${RUNNER_TEMP}/classify-routes.XXXXXX")
                 git show "${base}:scripts/ci/classify-changes.sh" > "${classifier}"
                 GITHUB_OUTPUT="${routes}" bash "${classifier}"
-                missing=""
+                # Forward only one true/false value per route. A missing, repeated,
+                # empty or non-boolean value enables every route instead, and other
+                # lines in the classifier output are never forwarded.
+                invalid=""
                 for key in ${route_keys}; do
-                  grep -q "^${key}=" "${routes}" || missing="${missing} ${key}"
+                  count=$(grep -c "^${key}=" "${routes}" || true)
+                  value=$(sed -n "s/^${key}=//p" "${routes}")
+                  if [[ "${count}" != 1 || ( "${value}" != true && "${value}" != false ) ]]; then
+                    invalid="${invalid} ${key}"
+                  fi
                 done
-                if [[ -n "${missing}" ]]; then
-                  echo "::warning::The base classifier did not set:${missing}; enabling every changed-path route."
+                if [[ -n "${invalid}" ]]; then
+                  echo "::warning::The base classifier did not set exactly one true/false value for:${invalid}; enabling every changed-path route."
                   route_all
                 else
-                  cat "${routes}" >> "${GITHUB_OUTPUT}"
+                  for key in ${route_keys}; do
+                    echo "${key}=$(sed -n "s/^${key}=//p" "${routes}")" >> "${GITHUB_OUTPUT}"
+                  done
                 fi
               fi
             fi
