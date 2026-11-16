@@ -1,6 +1,11 @@
 /* Home-page accessibility: axe color-contrast on the English and Chinese home
    pages at desktop and phone widths. Requires Playwright and axe-core in the
    development environment, like site-smoke.cjs.
+   The check is hermetic: every request to an origin other than the local server
+   is aborted, and a page is ready at DOMContentLoaded once its main content and
+   local stylesheets are loaded, never at the full load event. A slow or
+   unreachable third party (for example the analytics beacon) therefore cannot
+   fail or delay the gate.
    Run from the repository root: node website/playground-engine/a11y-smoke.cjs
    Optional CHROMIUM_PATH selects a Chrome/Chromium binary. */
 const {chromium} = require('playwright');
@@ -22,6 +27,7 @@ const server = http.createServer((req,res)=>{
 (async()=>{
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
   const origin=`http://127.0.0.1:${server.address().port}`;
+  const blockedOrigins=new Set();
   let browser;
   try {
     browser=await chromium.launch({headless:true,...(process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH}:{})});
@@ -29,7 +35,20 @@ const server = http.createServer((req,res)=>{
     for (const [route,label] of [['/','English home'],['/zh/','Chinese home']]) {
       for (const width of [1440,390,320]) {
         const page=await browser.newPage({viewport:{width,height:1100}});
-        await page.goto(origin+route,{waitUntil:'load'});
+        await page.route('**/*',request=>{
+          let url;
+          try {url=new URL(request.request().url());} catch {return request.abort();}
+          if (url.origin===origin) return request.continue();
+          blockedOrigins.add(url.origin);
+          return request.abort();
+        });
+        await page.goto(origin+route,{waitUntil:'domcontentloaded'});
+        await page.waitForFunction(()=>{
+          if (!document.body||!document.body.querySelector('main')) return false;
+          return [...document.querySelectorAll('link[rel~="stylesheet"]')].every(link=>{
+            try {return Boolean(link.sheet&&link.sheet.cssRules);} catch {return false;}
+          });
+        });
         await page.addScriptTag({content:axeSource});
         const report=await page.evaluate(async()=>{
           const result=await axe.run(document,{runOnly:{type:'rule',values:['color-contrast']}});
@@ -44,6 +63,6 @@ const server = http.createServer((req,res)=>{
         await page.close();
       }
     }
-    console.log(`PASS ${checks} home-page axe color-contrast checks, 0 violations`);
+    console.log(`PASS ${checks} home-page axe color-contrast checks, 0 violations, 0 requests outside ${origin}${blockedOrigins.size?` (blocked ${[...blockedOrigins].join(', ')})`:''}`);
   } finally {if(browser)await browser.close();await new Promise(resolve=>server.close(resolve));}
 })().catch(error=>{console.error(error);process.exitCode=1;});
