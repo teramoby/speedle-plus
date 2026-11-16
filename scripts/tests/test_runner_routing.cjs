@@ -298,6 +298,9 @@ const runnerInventory = [
   {name: 'fiona', os: 'macOS', arch: 'ARM64',
     labels: ['self-hosted', 'macOS', 'ARM64', 'speedle-runner', 'fiona-speedle']},
 ];
+// The guard tests execute the worker's real shell check, which needs these.
+const guardTools = spawnSync('bash', ['-c', 'command -v bash git python3'], {encoding: 'utf8'});
+assert.equal(guardTools.status, 0, 'the routing guard needs bash, git and python3 in PATH');
 function assertRoutedToAcceptedRunners(mode, event, routed) {
   const guard = script(job.worker.execute, 'Verify self-hosted runner identity');
   assert.ok(Array.isArray(routed), `${mode} on ${event}: ${JSON.stringify(routed)}`);
@@ -309,6 +312,7 @@ function assertRoutedToAcceptedRunners(mode, event, routed) {
     const result = spawnSync('bash', ['-c', guard], {encoding: 'utf8',
       env: {...process.env, RUNNER_NAME: runner.name, RUNNER_OS: runner.os,
         RUNNER_ARCH: runner.arch, CI_TASK: mode}});
+    assert.ok(!result.error, `the routing guard could not run: ${result.error}`);
     assert.equal(result.status, 0,
       `${mode} on ${event} can land on ${runner.name}, which the identity guard rejects:\n${result.stderr}`);
   }
@@ -360,6 +364,17 @@ test('configured runner overrides can only land on runners the identity guard ac
   assert.deepEqual(route(job.worker.execute, scheduled, overrides, {mode: 'nightly'}), labels);
   assert.deepEqual(route(job.worker.execute, {...github('push'), ref: 'refs/heads/master'}, overrides,
     {mode: 'regression'}), labels);
+});
+test('the identity guard accepts exactly the scheduling runners plus the retired alias', () => {
+  const guard = script(job.worker.execute, 'Verify self-hosted runner identity');
+  const accepted = [...guard.matchAll(/^ {2}((?:[\w.-]+\/[\w.-]+\/[\w.-]+)(?:\|[\w.-]+\/[\w.-]+\/[\w.-]+)*)\)$/gm)]
+    .flatMap(match => match[1].split('|')).sort();
+  const expected = [
+    ...runnerInventory.filter(runner => runner.labels.includes('speedle-runner'))
+      .map(runner => `${runner.name}/${runner.os}/${runner.arch}`),
+    'charming-speedle/Linux/X64',
+  ].sort();
+  assert.deepEqual(accepted, expected);
 });
 test('the evaluator reads only own properties and opts into workflow inputs explicitly', () => {
   const context = github('workflow_dispatch');

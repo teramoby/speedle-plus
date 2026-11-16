@@ -163,10 +163,10 @@ container from `run-mysql-tests.py`, and MongoDB on a temporary native replica
 set from `validate-mongodb.sh`. Its results reach the nightly report.
 
 `mongodb-nightly-validation.yml` runs the MongoDB regression on demand through
-`workflow_dispatch`. It selects the `speedle-runner` label, which charming,
-charming-2 and fiona (macOS ARM64, also in the `Speedle` group) carry, accepts
-macOS ARM64 or Linux x64, and shares the nightly's concurrency group, so the two
-never run at once on the etcd ports.
+`workflow_dispatch`. It selects the `speedle-runner` label, which
+`charming-speedle-2`, `donkey-speedle` and `fiona` (macOS ARM64, the repository
+runner) carry, accepts macOS ARM64 or Linux x64, and shares the nightly's
+concurrency group, so the two never run at once on the etcd ports.
 
 Shared integration fixtures select `file`, `etcd`, `mongodb` or `mysql` through
 `STORE_TYPE`. `SPEEDLE_TEST_STORE_PROPS` supplies backend connection properties;
