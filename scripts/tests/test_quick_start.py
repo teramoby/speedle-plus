@@ -35,6 +35,18 @@ class LatestInstallVersionTest(unittest.TestCase):
             timeout=120,
         )
 
+    def test_retries_the_public_listing_after_a_transient_failure(self):
+        listing = "a\trefs/tags/v1.6.0\n"
+        failure = RuntimeError("Command failed (128): git ls-remote")
+        with mock.patch.object(
+                QUICK_START, "run", side_effect=[failure, failure, listing]) as run, \
+                mock.patch.object(QUICK_START.time, "sleep") as sleep:
+            QUICK_START.check_latest_install_version(
+                "github.com/teramoby/speedle-plus", "v1.6.0", {}
+            )
+        self.assertEqual(run.call_count, 3)
+        self.assertEqual(sleep.call_args_list, [mock.call(5.0), mock.call(10.0)])
+
     def test_rejects_a_stale_pin_and_names_the_replacement(self):
         listing = "a\trefs/tags/v1.6.0\nb\trefs/tags/v1.7.0\n"
         with mock.patch.object(QUICK_START, "run", return_value=listing):
