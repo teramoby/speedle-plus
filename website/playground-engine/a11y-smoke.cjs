@@ -12,9 +12,10 @@
    to settle after load: no request in flight and one second with no request
    starting or ending (a page that keeps loading resources fails). It then
    waits up to three seconds for the DOM to stop changing; a page that keeps
-   animating its DOM, and any page script error, is only reported in the PASS
-   line; while the DOM is still changing, axe samples three moments 200 ms
-   apart and a violation in any of them fails. From before axe is injected until the scan ends, the page must not
+   animating its DOM or its CSS, and any page script error, is only reported
+   in the PASS line; while the DOM or a CSS animation is still changing, axe
+   samples three moments 200 ms apart and a violation in any of them fails.
+   From before axe is injected until the scan ends, the page must not
    request anything, and its styles (every stylesheet's rule text, media and
    disabled state) must not change.
    WebSockets and web workers, which page.route cannot intercept, fail the
@@ -133,15 +134,24 @@ const server = http.createServer((req,res)=>{
         }
         // networkidle only means 500 ms without requests. Require no request in flight and one
         // second with no request starting or ending (bounded to 10 s: a page that keeps loading
-        // resources fails). Also wait up to 3 s for one second without DOM changes, so styles a
-        // timer adds are in place; a page that keeps animating its DOM is only reported.
+        // resources fails). Also wait up to 3 s for a quiet DOM: no DOM change and no running
+        // animation, since CSS animations and transitions change colours without a DOM mutation.
+        // The quiet gap must outlast the longest gap between changes seen so far, so a page that
+        // changes periodically is not mistaken for a still one. A page that keeps animating is
+        // only reported, and the scans below sample it three times.
         const settleStart=Date.now();
-        let mutations=await page.evaluate(()=>window.__smokeMutations), domQuietSince=Date.now(), domSettled=false;
+        const domState=()=>page.evaluate(()=>({mutations:window.__smokeMutations,runningAnimations:document.getAnimations().filter(animation=>animation.playState==='running').length}));
+        let state=await domState(), domQuietSince=Date.now(), longestChangeGap=0, domSettled=false;
         for (;;) {
           await page.waitForTimeout(250);
-          const now=await page.evaluate(()=>window.__smokeMutations);
-          if (now!==mutations) {mutations=now;domQuietSince=Date.now();}
-          domSettled=Date.now()-domQuietSince>=1000;
+          const now=await domState();
+          if (now.mutations!==state.mutations) {
+            const at=Date.now();
+            longestChangeGap=Math.max(longestChangeGap,at-domQuietSince);
+            domQuietSince=at;
+          }
+          state=now;
+          domSettled=Date.now()-domQuietSince>=Math.max(1000,longestChangeGap+250)&&state.runningAnimations===0;
           const networkQuiet=pending===0&&Date.now()-lastRequestAt>=1000;
           if (networkQuiet&&(domSettled||Date.now()-settleStart>=3000)) break;
           assert.ok(Date.now()-settleStart<10000,`the ${label} at ${width}px kept loading resources for 10s after load`);
@@ -174,28 +184,33 @@ const server = http.createServer((req,res)=>{
         });
         const sheetsBefore=await sheets();
         // axe runs mostly synchronously, so it measures one moment of an animation. When the DOM
-        // has not settled, or any scan sees it change, sample three moments 200 ms apart: a
-        // violation in any scan fails the gate, so animation alone cannot fail it but cannot hide
-        // a contrast problem either. Once a change is seen the budget stays at three scans, even
-        // if a later scan happens to see no change, so no animated state is sampled only twice.
-        const scan=()=>page.evaluate(async()=>{
-          const before=window.__smokeMutations;
+        // has not settled, or any scan sees a DOM change or a running animation, sample three
+        // moments 200 ms apart: a violation in any scan fails the gate, so animation alone cannot
+        // fail it but cannot hide a contrast problem either. Once a change is seen the budget
+        // stays at three scans, even if a later scan happens to be still. Mutation counts carry
+        // over from the end of one scan to the next, so changes during the 200 ms gaps count too.
+        let mutationsAt=await page.evaluate(()=>window.__smokeMutations);
+        const scan=()=>page.evaluate(async before=>{
+          const runningAnimations=()=>document.getAnimations().filter(animation=>animation.playState==='running').length;
+          const animated=runningAnimations();
           const result=await axe.run(document,{runOnly:{type:'rule',values:['color-contrast']}});
           return {
             violations:result.violations.flatMap(rule=>rule.nodes.map(node=>({target:node.target,summary:node.failureSummary}))),
             unchecked:result.incomplete.flatMap(rule=>rule.nodes.map(node=>node.target)),
             mutations:window.__smokeMutations-before,
+            reached:window.__smokeMutations,
+            animated:Boolean(animated||runningAnimations()),
           };
-        });
+        },mutationsAt).then(result=>{mutationsAt=result.reached;return result;});
         const scans=[await scan()];
-        while (scans.length<3&&(!domSettled||scans.some(result=>result.mutations>0))) {
+        while (scans.length<3&&(!domSettled||scans.some(result=>result.mutations>0||result.animated))) {
           await page.waitForTimeout(200);
           scans.push(await scan());
         }
-        const seen=new Set();
+        const uniqueTargets=(items,key,seen)=>items.filter(item=>{const id=JSON.stringify(key(item));if(seen.has(id))return false;seen.add(id);return true;});
         const report={
-          violations:scans.flatMap(result=>result.violations).filter(violation=>{const key=JSON.stringify(violation.target);if(seen.has(key))return false;seen.add(key);return true;}),
-          unchecked:scans[0].unchecked,
+          violations:uniqueTargets(scans.flatMap(result=>result.violations),violation=>violation.target,new Set()),
+          unchecked:uniqueTargets(scans.flatMap(result=>result.unchecked),target=>target,new Set()),
         };
         const scanMutations=scans.reduce((sum,result)=>sum+result.mutations,0);
         // The page must not have loaded anything while axe measured it; with no new request, no
@@ -206,7 +221,7 @@ const server = http.createServer((req,res)=>{
         assertNoProblems('during the contrast check');
         assert.deepEqual(report.violations,[],`axe color-contrast violations on the ${label} at ${width}px: ${JSON.stringify(report.violations,null,2)}`);
         checks++;
-        console.log(`PASS axe color-contrast: ${label} at ${width}px (${report.unchecked.length} gradient or pseudo-element nodes not machine-checkable${cancelled.length?`; ${cancelled.length} local request(s) cancelled by the page: ${cancelled.join(', ')}`:''}${domSettled?'':'; DOM still changing when measured'}${scans.length>1?`; measured ${scans.length} times (${scanMutations} DOM change(s) during the scans)`:''}${pageErrors.length?`; ${pageErrors.length} page script error(s): ${pageErrors.join(' | ')}`:''})`);
+        console.log(`PASS axe color-contrast: ${label} at ${width}px (${report.unchecked.length} gradient or pseudo-element nodes not machine-checkable${cancelled.length?`; ${cancelled.length} local request(s) cancelled by the page: ${cancelled.join(', ')}`:''}${domSettled?'':'; the DOM was still changing or animating when measured'}${scans.length>1?`; measured ${scans.length} times (${scanMutations} DOM change(s) during the sampling)`:''}${pageErrors.length?`; ${pageErrors.length} page script error(s): ${pageErrors.join(' | ')}`:''})`);
         await page.close();
       }
     }
