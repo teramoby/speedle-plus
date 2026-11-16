@@ -160,6 +160,14 @@ if (args.length === 4 && args[0] === 'list' && args[1] === '-m' && args[2] === '
         module: '1.27.4', selected: 'go1.27.4', passes: true, message: 'Verified documented minimum Go toolchain: go1.27.4'},
       {name: 'prose declaration without a bullet', readme: prerequisites('Go 1.27.4 or a newer patch is required.'),
         module: '1.27.4', selected: 'go1.27.4', passes: true, message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      {name: 'three-space declaration indentation', readme: prerequisites('   - Go 1.27.4 or a newer patch'),
+        module: '1.27.4', selected: 'go1.27.4', passes: true, message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      {name: 'indented code block is not a declaration', readme: '### Prerequisites\n\nRequires Go 1.26 or newer.\n\n    Go 1.27.4\n',
+        module: '1.27.4', selected: 'go1.27.4', passes: false,
+        message: 'README Prerequisites must declare the Go minimum in a line starting with Go or Golang'},
+      {name: 'tab-indented code block is not a declaration', readme: prerequisites('\tGo 1.27.4 or a newer patch'),
+        module: '1.27.4', selected: 'go1.27.4', passes: false,
+        message: 'README Prerequisites must declare the Go minimum in a line starting with Go or Golang'},
       // An ATX closing sequence renders as the same heading text.
       {name: 'ATX closing sequence', readme: '### Prerequisites ###\n\n-   Go 1.27.4 or a newer patch\n', module: '1.27.4', selected: 'go1.27.4', passes: true,
         message: 'Verified documented minimum Go toolchain: go1.27.4'},
@@ -180,6 +188,10 @@ if (args.length === 4 && args[0] === 'list' && args[1] === '-m' && args[2] === '
         message: 'selected toolchain go1.27.5 != required CI minimum go1.27.4'},
       {name: 'missing Prerequisites section', readme: '# Fixture without a prerequisite section\n', module: '1.27.4', selected: 'go1.27.4', passes: false,
         message: 'README Prerequisites section not found'},
+      {name: 'README must be a regular file', readme: '', symlink: true, module: '1.27.4', selected: 'go1.27.4', passes: false,
+        message: 'README.md must be a regular file'},
+      {name: 'README size is bounded', readme: prerequisites('-   Go 1.27.4 or a newer patch'), oversize: true,
+        module: '1.27.4', selected: 'go1.27.4', passes: false, message: 'README.md exceeds the 1 MiB size limit'},
       // A decoy section must not satisfy the guard while the real one is stale.
       {name: 'duplicate Prerequisites sections', readme: `### Prerequisites\n\n-   Go 9.9.9 or newer\n\n## Quick start\n\n${prerequisites('-   Go 1.27.4 or a newer patch')}`,
         module: '1.27.4', selected: 'go1.27.4', passes: false,
@@ -220,7 +232,16 @@ if (args.length === 4 && args[0] === 'list' && args[1] === '-m' && args[2] === '
       module: moduleVersion, selected, passes: true,
       message: `Verified documented minimum Go toolchain: ${selected}`});
     for (const fixture of cases) {
-      fs.writeFileSync(path.join(directory, 'README.md'), fixture.readme);
+      const readmePath = path.join(directory, 'README.md');
+      fs.rmSync(readmePath, {force: true});
+      if (fixture.symlink) {
+        const target = path.join(directory, 'README-target.md');
+        fs.writeFileSync(target, prerequisites('-   Go 1.27.4 or a newer patch'));
+        fs.symlinkSync(target, readmePath);
+      } else {
+        fs.writeFileSync(readmePath, fixture.readme);
+        if (fixture.oversize) fs.truncateSync(readmePath, 1024 * 1024 + 1);
+      }
       const result = spawnSync('bash', ['-c', script('Verify documented Go toolchain')], {
         cwd: directory, encoding: 'utf8', env: {...process.env,
           PATH: bin + path.delimiter + process.env.PATH,

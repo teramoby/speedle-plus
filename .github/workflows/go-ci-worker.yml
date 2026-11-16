@@ -96,6 +96,7 @@ jobs:
           fi
           python3 - <<'PYTHON'
           import re
+          import stat
           import subprocess
           from pathlib import Path
 
@@ -150,8 +151,10 @@ jobs:
                       fenced = not fenced
                   elif not fenced:
                       prose.append(line)
+              # Markdown permits up to three leading spaces; four spaces or
+              # a leading tab make an indented code block, not a declaration.
               declaration = re.compile(
-                  r'^[ \t]*(?:[-*+][ \t]+)?(?:Go|Golang)(?![0-9A-Za-z_])', re.IGNORECASE)
+                  r'^ {0,3}(?:[-*+][ \t]+)?(?:Go|Golang)(?![0-9A-Za-z_])', re.IGNORECASE)
               declared = [line for line in prose if declaration.match(line)]
               if not declared:
                   raise SystemExit('README Prerequisites must declare the Go minimum'
@@ -180,7 +183,13 @@ jobs:
           if toolchain_mode != 'local':
               raise SystemExit(
                   f'go env GOTOOLCHAIN {toolchain_mode} != local; CI must not switch toolchains')
-          documented = documented_minimum(Path('README.md').read_text(encoding='utf-8'))
+          readme = Path('README.md')
+          metadata = readme.lstat()
+          if not stat.S_ISREG(metadata.st_mode):
+              raise SystemExit('README.md must be a regular file')
+          if metadata.st_size > 1024 * 1024:
+              raise SystemExit('README.md exceeds the 1 MiB size limit')
+          documented = documented_minimum(readme.read_text(encoding='utf-8'))
           if module != documented:
               raise SystemExit(
                   f'go.mod GoVersion {module} != documented minimum {documented}')
