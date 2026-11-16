@@ -1,6 +1,8 @@
-"""Unit checks for the Quick Start install-version freshness guard."""
+"""Unit checks for the Quick Start checker."""
 import importlib.util
+import os
 import re
+import tempfile
 from pathlib import Path
 import unittest
 from unittest import mock
@@ -59,6 +61,36 @@ class LatestInstallVersionTest(unittest.TestCase):
                 QUICK_START.check_latest_install_version(
                     "github.com/teramoby/speedle-plus", "v1.6.0", {}
                 )
+
+
+class NetworkRetryTest(unittest.TestCase):
+    def fake_command(self, work, succeed_on):
+        """Record each attempt in a file and fail until the requested one."""
+        attempts = work / "attempts"
+        command = f'printf x >> "{attempts}"; test "$(wc -c < "{attempts}")" -ge {succeed_on}'
+        return command, attempts
+
+    def test_retries_a_command_that_fails_twice_and_then_succeeds(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            work = Path(temporary)
+            command, attempts = self.fake_command(work, succeed_on=3)
+            result = QUICK_START.run_with_retry(
+                lambda: QUICK_START.run(command, work, dict(os.environ), timeout=10),
+                delay=0,
+            )
+            self.assertEqual(result, "")
+            self.assertEqual(attempts.read_text(), "xxx")
+
+    def test_gives_up_after_three_attempts_and_reraises_the_failure(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            work = Path(temporary)
+            command, attempts = self.fake_command(work, succeed_on=4)
+            with self.assertRaisesRegex(RuntimeError, r"Command failed \(1\)"):
+                QUICK_START.run_with_retry(
+                    lambda: QUICK_START.run(command, work, dict(os.environ), timeout=10),
+                    delay=0,
+                )
+            self.assertEqual(attempts.read_text(), "xxx")
 
 
 if __name__ == "__main__":
