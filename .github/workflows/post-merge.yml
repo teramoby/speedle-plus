@@ -58,6 +58,7 @@ jobs:
           OPS_EMAIL_FROM: ${{ vars.OPS_EMAIL_FROM }}
           OPS_EMAIL_TO: ${{ vars.OPS_EMAIL_TO }}
           OPS_EMAIL_REPLY_TO: ${{ vars.OPS_EMAIL_REPLY_TO }}
+          REPORT_EMAIL_REQUIRED: "true"
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
@@ -65,4 +66,6 @@ jobs:
           # results are partial or show no failure.
           python3 -I scripts/ci/test_report.py --kind regression \
             --source "run:${RUN_RESULT}:test-results" --summary-file report.txt
-          cat report.txt >> "${GITHUB_STEP_SUMMARY}"
+          # The step summary rejects more than 1 MiB; the email points here,
+          # so keep the copy below that limit.
+          head -c 900000 report.txt >> "${GITHUB_STEP_SUMMARY}"
