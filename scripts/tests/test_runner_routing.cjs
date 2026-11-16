@@ -280,10 +280,12 @@ test('scheduled suites run through the worker and report from a hosted job', () 
 // A task routed to labels no registered runner carries would queue forever;
 // one routed to a runner the identity guard rejects fails before any test runs.
 // The guard's accepted identities are compared with this inventory below, so a
-// registration change must update both.
+// registration change must update both. The non-Go routes that use other
+// scheduling labels (the automerge waiter's controlLabels and the manual
+// MongoDB workflow's options) are asserted separately in this file.
 const runnerInventory = [
   {name: 'charming-speedle-2', os: 'Linux', arch: 'X64',
-    labels: ['self-hosted', 'Linux', 'X64', 'speedle-linux', 'speedle-runner']},
+    labels: ['self-hosted', 'Linux', 'X64', 'speedle-linux', 'speedle-control', 'speedle-runner']},
   {name: 'donkey-speedle', os: 'Linux', arch: 'X64',
     labels: ['self-hosted', 'Linux', 'X64', 'speedle-linux', 'speedle-runner']},
   // The all-repositories aliyun-reviewbot group. No Go task selects it, so a
@@ -291,7 +293,7 @@ const runnerInventory = [
   {name: 'ecs-light-teramoby', os: 'Linux', arch: 'X64',
     labels: ['self-hosted', 'Linux', 'X64']},
   {name: 'fiona', os: 'macOS', arch: 'ARM64',
-    labels: ['self-hosted', 'macOS', 'ARM64', 'speedle-runner', 'fiona-speedle']},
+    labels: ['self-hosted', 'macOS', 'ARM64', 'speedle-runner', 'speedle-macos', 'fiona-speedle']},
 ];
 // The guard tests execute the worker's real shell check, which needs these.
 const guardTools = spawnSync('bash', ['-c', 'command -v bash git python3'], {encoding: 'utf8'});
@@ -370,11 +372,11 @@ function registeredSchedulingRunners() {
   return runnerInventory.filter(runner => runner.labels.includes('speedle-runner'))
     .map(runner => `${runner.name}/${runner.os}/${runner.arch}`).sort();
 }
-test('the Go worker identity guard accepts exactly the registered scheduling runners', () => {
+test('the Go worker identity guard accepts exactly the registered speedle-runner hosts', () => {
   const guard = script(job.worker.execute, 'Verify self-hosted runner identity');
   assert.deepEqual(acceptedIdentities(guard), registeredSchedulingRunners());
 });
-test('the ReviewBot fixture guard accepts exactly the registered scheduling runners', () => {
+test('the ReviewBot fixture guard accepts exactly the registered speedle-runner hosts', () => {
   const preflight = script(job.review['diff-regression'], 'Verify runner identity and tools');
   assert.deepEqual(acceptedIdentities(preflight), registeredSchedulingRunners());
 });

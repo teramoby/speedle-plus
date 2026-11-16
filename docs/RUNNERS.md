@@ -134,8 +134,8 @@ Inspect each run's jobs and confirm `runner_name` is an accepted Speedle
 runner for `speedle-runner` jobs (including the nightly): `charming-speedle-2`,
 `donkey-speedle` or `fiona`. The weekly runs on `fiona` and build runs on a
 Linux runner.
-The regression job prints its workspace and temp paths; verify both registrations
-have distinct paths. An online/idle runner listing alone does not prove checkout,
+The regression job prints its workspace and temp paths; verify every
+registration has a distinct path. An online/idle runner listing alone does not prove checkout,
 tool setup, tests or model connectivity work. The dedicated routing regression
 and protected-worker suites are:
 
