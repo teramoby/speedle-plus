@@ -19,7 +19,13 @@
    seen so far. A page that keeps changing fails after 5 s. From before axe is
    injected until its single scan ends, any request, DOM change, style change,
    animation or transition start, or running animation fails the gate; axe
-   goes in as the smoke's own tagged script element, which is not counted. The stylesheet fingerprint covers
+   goes in as the smoke's own tagged script element, which is not counted.
+   Running animations are counted in the document and every open shadow root.
+   The proof covers the top document and its shadow roots only, so a page
+   with a frame fails until the smoke covers frames. A loopback positive
+   control proves on every page that cross-origin requests are aborted; when
+   it cannot fire, the gate fails and names any Content Security Policy
+   violation the page reported. The stylesheet fingerprint covers
    every stylesheet's rule text, media and disabled state and every inline
    style attribute. Open shadow roots are included in the DOM observation and
    the fingerprint, with their style/link elements, inline style attributes,
@@ -136,6 +142,17 @@ const server = http.createServer((req,res)=>{
           const elementIds=new WeakMap();
           let nextElementId=1;
           window.__smokeElementId=element=>{if(!elementIds.has(element))elementIds.set(element,nextElementId++);return elementIds.get(element);};
+          // Running animations in the document and in every open shadow root: each root's own
+          // getAnimations() reaches the animations inside it.
+          window.__smokeRunningAnimations=()=>{
+            const running=new Set();
+            for (const root of window.__smokeSyncRoots()) for (const animation of root.getAnimations()) if (animation.playState==='running') running.add(animation);
+            return running.size;
+          };
+          // The page's own Content Security Policy can block the route positive control below;
+          // record violations so that failure names its cause.
+          window.__smokeCspViolations=[];
+          document.addEventListener('securitypolicyviolation',event=>{window.__smokeCspViolations.push(`${event.violatedDirective} blocked ${event.blockedURI}`);},true);
           window.__smokeSyncRoots();
         });
         // Record every request problem, one entry per URL (the first reason wins, for example
@@ -227,8 +244,10 @@ const server = http.createServer((req,res)=>{
         while ((routeProbeBlocks===0||routeProbeAborts===0)&&Date.now()<probeDeadline) await new Promise(resolve=>setTimeout(resolve,25));
         assert.equal(await page.evaluate(()=>Boolean(window.__a11yRouteProbeExecuted)),false,`the ${label} at ${width}px ran the route positive control, so page.route did not abort it`);
         assertNoProblems('while checking request interception');
-        assert.ok(routeProbeBlocks>0,`the ${label} at ${width}px did not intercept and abort the route positive control; request interception may not be active`);
-        assert.ok(routeProbeAborts>0,`the ${label} at ${width}px did not see the route positive control fail with net::ERR_ABORTED; the request may not have been aborted`);
+        const csp=await page.evaluate(()=>window.__smokeCspViolations.join('; '));
+        const cspNote=csp?` (the page's Content Security Policy reported: ${csp})`:'';
+        assert.ok(routeProbeBlocks>0,`the ${label} at ${width}px did not intercept and abort the route positive control; request interception may not be active${cspNote}`);
+        assert.ok(routeProbeAborts>0,`the ${label} at ${width}px did not see the route positive control fail with net::ERR_ABORTED; the request may not have been aborted${cspNote}`);
         try {
           await page.waitForLoadState('networkidle',{timeout:15000});
         } catch (error) {
@@ -295,7 +314,7 @@ const server = http.createServer((req,res)=>{
         // changes periodically never counts as still. Both waits are bounded and fail: a page that
         // still starts or finishes a request 10 s after load fails, and so does a page that still
         // changes 5 s after load. A page that stops inside those bounds gets its full quiet period.
-        const pageState=async()=>({...await page.evaluate(()=>({mutations:window.__smokeMutations,animationStarts:window.__smokeAnimationStarts,runningAnimations:document.getAnimations().filter(animation=>animation.playState==='running').length})),sheets:await sheets()});
+        const pageState=async()=>({...await page.evaluate(()=>({mutations:window.__smokeMutations,animationStarts:window.__smokeAnimationStarts,runningAnimations:window.__smokeRunningAnimations()})),sheets:await sheets()});
         const settleStart=Date.now();
         let state=await pageState(), stillSince=Date.now(), longestChangeGap=0;
         for (;;) {
@@ -317,6 +336,11 @@ const server = http.createServer((req,res)=>{
           assert.ok(stillSince-settleStart<5000,`the ${label} at ${width}px kept changing its DOM, styles or animations for 5s after load; the contrast check measures a still page only`);
         }
         assert.ok(await page.$('main'),`the ${label} at ${width}px has no main element`);
+        // axe would also measure same-origin frames, but the still-page proof covers only the top
+        // document and its shadow roots. The home pages have no frames: require that, so a page
+        // that adds one fails here until the smoke covers frames. A frame added later is a DOM
+        // change and fails as well.
+        assert.equal(page.frames().length,1,`the ${label} at ${width}px has ${page.frames().length-1} frame(s); the a11y smoke measures the top document only, so cover frames before adding them`);
         assert.equal(await page.evaluate(()=>Boolean(navigator.serviceWorker&&navigator.serviceWorker.controller)),false,`the ${label} at ${width}px is controlled by a service worker`);
         assertNoProblems('before the contrast check');
         assert.equal(pending,0,`the ${label} at ${width}px still has requests in flight before the contrast check`);
@@ -338,7 +362,7 @@ const server = http.createServer((req,res)=>{
           // Discover shadow roots attached since the last fingerprint, so a change inside one
           // during the scan is observed as well.
           window.__smokeSyncRoots();
-          const runningAtStart=document.getAnimations().filter(animation=>animation.playState==='running').length;
+          const runningAtStart=window.__smokeRunningAnimations();
           const result=await axe.run(document,{runOnly:{type:'rule',values:['color-contrast']}});
           return {
             runningAtStart,
