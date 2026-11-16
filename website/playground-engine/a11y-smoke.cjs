@@ -70,20 +70,27 @@ const server = http.createServer((req,res)=>{
   const type={'.html':'text/html; charset=utf-8','.css':'text/css','.js':'text/javascript','.wasm':'application/wasm','.svg':'image/svg+xml','.png':'image/png','.ico':'image/x-icon','.txt':'text/plain'}[path.extname(file)] || 'application/octet-stream';
   fs.readFile(file,(error,bytes)=>{if(error){res.writeHead(404).end();return;}res.setHeader('content-type',type);res.end(bytes);});
 });
+// A listen failure is an 'error' event, not a callback: reject on it so the run fails instead of
+// waiting for a callback that never comes.
+const listen=listener=>new Promise((resolve,reject)=>{
+  listener.once('error',reject);
+  listener.listen(0,'127.0.0.1',()=>{listener.off('error',reject);resolve();});
+});
 (async()=>{
-  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
-  await new Promise(resolve=>probeServer.listen(0,'127.0.0.1',resolve));
-  const origin=`http://127.0.0.1:${server.address().port}`;
-  // A different port on the loopback interface is a different origin, so the route must
-  // abort the probe. Its aborted script is as harmless as the analytics beacon: treat its
-  // origin as quiet, or every page would fail on the deliberate probe request.
-  const probeOrigin=`http://127.0.0.1:${probeServer.address().port}`;
-  const ROUTE_PROBE=`${probeOrigin}/a11y-smoke-route-probe.js`;
-  QUIET_ORIGINS.add(probeOrigin);
-  const blockedOrigins=new Set();
-  let blockedRequests=0;
   let browser;
   try {
+    // Both servers start inside the try, so the finally below closes whichever one did start.
+    await listen(server);
+    await listen(probeServer);
+    const origin=`http://127.0.0.1:${server.address().port}`;
+    // A different port on the loopback interface is a different origin, so the route must
+    // abort the probe. Its aborted script is as harmless as the analytics beacon: treat its
+    // origin as quiet, or every page would fail on the deliberate probe request.
+    const probeOrigin=`http://127.0.0.1:${probeServer.address().port}`;
+    const ROUTE_PROBE=`${probeOrigin}/a11y-smoke-route-probe.js`;
+    QUIET_ORIGINS.add(probeOrigin);
+    const blockedOrigins=new Set();
+    let blockedRequests=0;
     browser=await chromium.launch({headless:true,...(process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH}:{})});
     let checks=0;
     for (const [route,label] of [['/','English home'],['/zh/','Chinese home']]) {
