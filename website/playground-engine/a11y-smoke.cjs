@@ -135,6 +135,9 @@ const server = http.createServer((req,res)=>{
         assertNoProblems('before the contrast check');
         assert.equal(pending,0,`the ${label} at ${width}px still has requests in flight before the contrast check`);
         await page.addScriptTag({content:axeSource});
+        // Take the baseline after injecting axe: a request the page started meanwhile must not
+        // be hidden in it.
+        assert.equal(pending,0,`the ${label} at ${width}px started a request while axe was injected`);
         const requestsBefore=requests;
         const report=await page.evaluate(async()=>{
           const result=await axe.run(document,{runOnly:{type:'rule',values:['color-contrast']}});
@@ -146,6 +149,7 @@ const server = http.createServer((req,res)=>{
         // The page must not have loaded anything while axe measured it; with no new request, no
         // request can still fail after the scan, so the problems are complete here.
         assert.equal(requests,requestsBefore,`the ${label} at ${width}px requested resources during the contrast check`);
+        assert.equal(pending,0,`the ${label} at ${width}px still has requests in flight after the contrast check`);
         assertNoProblems('during the contrast check');
         assert.deepEqual(report.violations,[],`axe color-contrast violations on the ${label} at ${width}px: ${JSON.stringify(report.violations,null,2)}`);
         checks++;
