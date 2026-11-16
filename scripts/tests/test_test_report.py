@@ -177,10 +177,47 @@ class EmailTest(unittest.TestCase):
                          "https://api.cloudflare.com/client/v4/accounts/account-id/email/sending/send")
         self.assertEqual(request.get_method(), "POST")
         self.assertEqual(request.get_header("Authorization"), "Bearer api-token")
-        self.assertEqual(json.loads(request.data), {"to": "recipient@example.com", "from": "sender@example.com",
+        self.assertEqual(json.loads(request.data), {"to": ["recipient@example.com"],
+                                                    "from": "sender@example.com",
                                                     "subject": "subject", "text": "body",
                                                     "reply_to": "reply@example.com"})
         self.assertEqual(urlopen.call_args.kwargs["timeout"], test_report.EMAIL_TIMEOUT)
+
+    def test_sends_normalized_addresses(self):
+        env = dict(self.env, OPS_EMAIL_FROM="Sender <sender@example.com>",
+                   OPS_EMAIL_TO="Ops <recipient@example.com>, second@example.com",
+                   OPS_EMAIL_REPLY_TO="Reply <reply@example.com>")
+        ok, urlopen, _ = self.send(result={"queued": ["recipient@example.com", "second@example.com"]}, env=env)
+        self.assertTrue(ok)
+        self.assertEqual(json.loads(urlopen.call_args[0][0].data),
+                         {"to": ["recipient@example.com", "second@example.com"],
+                          "from": "sender@example.com", "subject": "subject", "text": "body",
+                          "reply_to": "reply@example.com"})
+
+    def test_invalid_addresses_fail_without_a_request(self):
+        for setting in ("OPS_EMAIL_FROM", "OPS_EMAIL_TO", "OPS_EMAIL_REPLY_TO"):
+            with self.subTest(setting=setting):
+                with mock.patch("urllib.request.urlopen") as urlopen, \
+                        mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+                    self.assertFalse(test_report.send_email("s", "b", dict(self.env, **{setting: "not an address"})))
+                urlopen.assert_not_called()
+                self.assertIn("::error::", stderr.getvalue())
+
+    def test_a_configured_recipient_that_is_not_an_address_is_not_dropped(self):
+        env = dict(self.env, OPS_EMAIL_TO="recipient@example.com, not an address")
+        with mock.patch("urllib.request.urlopen") as urlopen, \
+                mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+            self.assertFalse(test_report.send_email("s", "b", env))
+        urlopen.assert_not_called()
+        self.assertIn("::error::", stderr.getvalue())
+
+    def test_rejects_more_recipients_than_the_api_accepts(self):
+        env = dict(self.env, OPS_EMAIL_TO=", ".join(f"r{i}@example.com" for i in range(51)))
+        with mock.patch("urllib.request.urlopen") as urlopen, \
+                mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+            self.assertFalse(test_report.send_email("s", "b", env))
+        urlopen.assert_not_called()
+        self.assertIn("::error::", stderr.getvalue())
 
     def test_reply_to_is_omitted_when_not_configured(self):
         env = {key: value for key, value in self.env.items() if key != "OPS_EMAIL_REPLY_TO"}
@@ -264,6 +301,23 @@ class EmailTest(unittest.TestCase):
         error = urllib.error.HTTPError("https://api.example/send", 500, "server error", None, io.BytesIO(b"{}"))
         env = dict(self.env, GITHUB_TOKEN="t", GITHUB_REPOSITORY="o/r")
         with mock.patch("urllib.request.urlopen", side_effect=error), \
+                mock.patch.object(test_report, "GitHub", return_value=github), \
+                mock.patch("sys.stdout", new=io.StringIO()), \
+                mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+            code = test_report.main(["--kind", "nightly", "--go-json", str(directory / "go.json"),
+                                     "--summary-file", str(summary)], env=env)
+        self.assertEqual(code, 0)
+        self.assertIn("::error::", stderr.getvalue())
+        self.assertIn("TestZ", summary.read_text())
+        self.assertEqual([c[2]["title"] for c in github.calls], ["Test failure: p TestZ"])
+
+    def test_an_unexpected_send_exception_still_reports_the_run(self):
+        # send_email must never be able to skip the summary or the tracking.
+        directory = Path(tempfile.mkdtemp())
+        (directory / "go.json").write_text(events(("fail", "p", "TestZ", None)))
+        summary, github = directory / "report.txt", FakeGitHub()
+        env = dict(self.env, GITHUB_TOKEN="t", GITHUB_REPOSITORY="o/r")
+        with mock.patch.object(test_report, "send_email", side_effect=RuntimeError("boom")), \
                 mock.patch.object(test_report, "GitHub", return_value=github), \
                 mock.patch("sys.stdout", new=io.StringIO()), \
                 mock.patch("sys.stderr", new=io.StringIO()) as stderr:

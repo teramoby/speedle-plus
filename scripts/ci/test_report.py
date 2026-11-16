@@ -244,49 +244,71 @@ def extract_text(payload):
 
 
 EMAIL_TIMEOUT = 30
+# The Email Service API accepts at most 50 addresses across to, cc and bcc.
+MAX_EMAIL_RECIPIENTS = 50
 
 
 def addresses(value):
-    """The bare, lowercased addresses of a configured recipient value or of one
-    key of the send result.
+    """The bare, lowercased addresses of one key of the send result.
 
-    A value is a string that may list several recipients, or a list whose
-    entries are address strings or REST address objects ({"address", "name"}).
-    Comparing bare addresses keeps a configured display name, a comma-separated
-    list or a case difference from turning a delivered report into a failure.
+    A list entry is an address string or a REST address object
+    ({"address", "name"}). Comparing bare addresses keeps a display name or a
+    case difference from turning a delivered report into a failure.
     """
-    if isinstance(value, str):
-        value = [value]
     if not isinstance(value, list):
         return []
     entries = [item.get("address") if isinstance(item, dict) else item for item in value]
     return [address.lower() for _, address in email.utils.getaddresses(
-        [entry for entry in entries if isinstance(entry, str)]) if address]
+        [entry for entry in entries if isinstance(entry, str)]) if "@" in address]
+
+
+def configured_addresses(value):
+    """The bare, lowercased addresses of one configured setting, or None when
+    the value is not a list of addresses.
+
+    A setting is a string that may list several recipients or use a display
+    name ("Ops <ops@example.com>, second@example.com"). A token without an @ is
+    a configuration error, not a recipient to drop silently.
+    """
+    if not isinstance(value, str):
+        return None
+    entries = [(name, address) for name, address in email.utils.getaddresses([value]) if address]
+    if not entries or any("@" not in address for _, address in entries):
+        return None
+    return [address.lower() for _, address in entries]
 
 
 def send_email(subject, body, env, timeout=EMAIL_TIMEOUT):
     """Send the report through the Cloudflare Email Service REST API.
 
-    Delivery is asynchronous, so a recipient is normally queued rather than
-    delivered at once. A send succeeds when the response lists every
-    configured recipient under queued or delivered. A non-2xx status,
-    success: false, a permanent bounce or a suppressed recipient is a failed
-    send. OPS_EMAIL_REPLY_TO, when set, is the reply_to address. Nothing from
-    the settings or the response is logged, because both may hold addresses.
+    The API takes to as an array of plain address strings, and from and
+    reply_to as plain address strings, so the configured values are parsed to
+    their bare addresses once and the same set is sent and verified. A send
+    succeeds when the response lists every recipient under queued or
+    delivered. A non-2xx status, success: false, a permanent bounce or a
+    suppressed recipient is a failed send. OPS_EMAIL_REPLY_TO, when set, is
+    the reply_to address. Nothing from the settings or the response is logged,
+    because both may hold addresses.
 
     A failed send is an error annotation on the run, not a failed step: the
     report job still tracks failing tests, as it did when a Feishu post failed.
     """
     account, token = env.get("CF_ACCOUNT_ID"), env.get("CF_EMAIL_TOKEN")
-    sender, to = env.get("OPS_EMAIL_FROM"), env.get("OPS_EMAIL_TO")
-    recipients = addresses(to)
-    if not (account and token and sender and recipients):
-        print("::error::Cloudflare Email is not configured (CF_ACCOUNT_ID, CF_EMAIL_TOKEN, "
-              "OPS_EMAIL_FROM, OPS_EMAIL_TO); the report is not emailed.", file=sys.stderr)
+    senders = configured_addresses(env.get("OPS_EMAIL_FROM"))
+    recipients = configured_addresses(env.get("OPS_EMAIL_TO"))
+    reply_to_setting = env.get("OPS_EMAIL_REPLY_TO")
+    reply_to = configured_addresses(reply_to_setting) if reply_to_setting else []
+    configured = bool(account and token and senders and len(senders) == 1 and recipients
+                      and len(recipients) <= MAX_EMAIL_RECIPIENTS
+                      and (not reply_to_setting or (reply_to and len(reply_to) == 1)))
+    if not configured:
+        print("::error::Cloudflare Email is not configured correctly (CF_ACCOUNT_ID, CF_EMAIL_TOKEN, "
+              "OPS_EMAIL_FROM, OPS_EMAIL_TO, OPS_EMAIL_REPLY_TO); the report is not emailed.",
+              file=sys.stderr)
         return False
-    payload = {"to": to, "from": sender, "subject": subject, "text": body}
-    if env.get("OPS_EMAIL_REPLY_TO"):
-        payload["reply_to"] = env["OPS_EMAIL_REPLY_TO"]
+    payload = {"to": recipients, "from": senders[0], "subject": subject, "text": body}
+    if reply_to:
+        payload["reply_to"] = reply_to[0]
     request = urllib.request.Request(
         EMAIL_API.format(account=account), method="POST", data=json.dumps(payload).encode(),
         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"})
@@ -460,7 +482,11 @@ def main(argv=None, env=os.environ):
         Path(args.summary_file).write_text(report)
 
     subject = f"[Speedle {policy['title']}] {'PASSED' if ok else 'FAILED'}"
-    send_email(subject, report, env)
+    try:
+        send_email(subject, report, env)
+    except Exception as error:
+        # A notification bug must not skip the summary and failure tracking.
+        print(f"::error::Email delivery failed ({type(error).__name__}).", file=sys.stderr)
 
     tracked = failures + [{"package": "check", "test": c["name"], "output": c["output"]}
                           for c in checks if not c["passed"]]
