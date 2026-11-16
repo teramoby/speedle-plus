@@ -1,7 +1,10 @@
 """Unit checks for the Quick Start checker."""
+import contextlib
 import importlib.util
+import io
 import os
 import re
+import subprocess
 import tempfile
 from pathlib import Path
 import unittest
@@ -103,6 +106,122 @@ class NetworkRetryTest(unittest.TestCase):
                     delay=0,
                 )
             self.assertEqual(attempts.read_text(), "xxx")
+
+    def test_does_not_retry_a_timeout(self):
+        # A hung command must not multiply the per-command timeout.
+        action = mock.Mock(side_effect=subprocess.TimeoutExpired(cmd="git clone", timeout=180))
+        with mock.patch.object(QUICK_START.time, "sleep") as sleep, \
+                self.assertRaises(subprocess.TimeoutExpired):
+            QUICK_START.run_with_retry(action)
+        action.assert_called_once_with()
+        sleep.assert_not_called()
+
+    def test_runs_the_reset_before_the_retried_attempt(self):
+        action = mock.Mock(side_effect=[RuntimeError("Command failed (128): git clone"), "ok"])
+        reset = mock.Mock()
+        with mock.patch.object(QUICK_START.time, "sleep"):
+            self.assertEqual(QUICK_START.run_with_retry(action, reset=reset), "ok")
+        reset.assert_called_once_with()
+
+    def test_reports_a_cleanup_failure_chained_to_the_command_failure(self):
+        action = mock.Mock(side_effect=RuntimeError("Command failed (128): git clone"))
+        reset = mock.Mock(side_effect=OSError("permission denied"))
+        with mock.patch.object(QUICK_START.time, "sleep") as sleep, \
+                self.assertRaises(OSError) as raised:
+            QUICK_START.run_with_retry(action, reset=reset)
+        self.assertIsInstance(raised.exception.__cause__, RuntimeError)
+        action.assert_called_once_with()
+        sleep.assert_not_called()
+
+    def test_reports_each_retry_with_a_neutral_command_failure_message(self):
+        action = mock.Mock(side_effect=[
+            RuntimeError("Command failed (128): git clone\nfatal: early EOF"), "ok"])
+        output = io.StringIO()
+        with mock.patch.object(QUICK_START.time, "sleep"), contextlib.redirect_stdout(output):
+            QUICK_START.run_with_retry(action)
+        self.assertEqual(
+            output.getvalue().splitlines(),
+            ["Command failed (attempt 1/3); retrying in 5s: Command failed (128): git clone"],
+        )
+
+
+class SplitNetworkCommandTest(unittest.TestCase):
+    def quick_start(self, locale=""):
+        return dict(QUICK_START.blocks(ROOT / "docs/hugo/content" / f"quick-start{locale}.md"))
+
+    def test_splits_the_documented_install_block_around_go_install(self):
+        before, command, after = QUICK_START.split_network_command(
+            self.quick_start()["install"], "go install")
+        self.assertEqual(before, "")
+        self.assertTrue(command.startswith('GOBIN="$PWD/bin" go install '), command)
+        self.assertEqual(after, "ls bin")
+
+    def test_splits_the_documented_build_block_around_go_build(self):
+        build = self.quick_start()["build"].splitlines()[2:]
+        before, command, after = QUICK_START.split_network_command("\n".join(build), "go build")
+        self.assertEqual(before, "mkdir -p bin")
+        self.assertTrue(command.startswith("go build -o ./bin/ "), command)
+        self.assertEqual(after, "ls bin")
+
+    def test_chinese_blocks_split_the_same_way(self):
+        for name, network in (("install", "go install"), ("build", "go build")):
+            with self.subTest(name=name):
+                english = QUICK_START.split_network_command(self.quick_start()[name], network)
+                chinese = QUICK_START.split_network_command(self.quick_start(".zh")[name], network)
+                self.assertEqual(english, chinese)
+
+    def test_requires_exactly_one_matching_command(self):
+        for block in ("mkdir -p bin", "go build .\nls bin\ngo build -o x ."):
+            with self.subTest(block=block), self.assertRaises(AssertionError):
+                QUICK_START.split_network_command(block, "go build")
+
+
+class DocumentedBuildTest(unittest.TestCase):
+    def test_only_the_clone_and_module_download_are_retried(self):
+        steps = QUICK_START.blocks(ROOT / "docs/hugo/content/quick-start.md")
+        version = dict(steps)["version"]
+        calls, retried = [], []
+
+        def run(command, cwd, env, timeout=60):
+            calls.append(command)
+            if isinstance(command, list):
+                return "deadbeef\n" if command == ["git", "rev-parse", "HEAD"] else ""
+            if command == version:
+                return "go version go1.26.10 darwin/arm64\n"
+            if command.startswith("git clone "):
+                for binary in ("spctl", "speedle-pms", "speedle-ads"):
+                    path = Path(cwd) / "speedle-plus" / "bin" / binary
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.touch()
+                    path.chmod(0o755)
+                return ""
+            if command == "ls bin":
+                return "spctl\nspeedle-ads\nspeedle-pms\n"
+            if command in {"cd speedle-plus", "mkdir -p bin"} or command.startswith("go build "):
+                return ""
+            raise AssertionError(f"unexpected command: {command}")
+
+        def retry(action, reset=None, attempts=3, delay=5.0):
+            start = len(calls)
+            result = action()
+            retried.extend(calls[start:])
+            return result
+
+        # Force the portable branch: CI runs Linux, where verify() re-executes
+        # itself in unprivileged namespaces instead of calling exercise().
+        with mock.patch.object(QUICK_START, "run", run), \
+                mock.patch.object(QUICK_START, "run_with_retry", retry), \
+                mock.patch.object(QUICK_START.sys, "platform", "darwin"), \
+                mock.patch.object(QUICK_START, "exercise", return_value={"steps": [], "decisions": {}}):
+            QUICK_START.verify("en", None, dict(os.environ))
+        self.assertEqual(retried, [
+            "git clone --depth 1 https://github.com/teramoby/speedle-plus.git",
+            ["go", "mod", "download"],
+        ])
+        self.assertIn(
+            "go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads", calls)
+        self.assertIn("cd speedle-plus", calls)
+        self.assertIn("ls bin", calls)
 
 
 if __name__ == "__main__":
