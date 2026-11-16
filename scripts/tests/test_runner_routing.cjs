@@ -247,10 +247,13 @@ test('scheduled suites run through the worker and report from a hosted job', () 
     assert.match(report, /persist-credentials: false/);
     assert.match(report, /ARK_API_KEY: \$\{\{ secrets.ARK_API_KEY \}\}/);
     assert.match(report, /ARK_MODEL: \$\{\{ vars.ARK_REVIEW_MODEL \|\| 'kimi-k3' \}\}/);
-    assert.match(report, /MAIL_TO: \$\{\{ vars.TEST_REPORT_MAIL_TO \|\| 'caiwl@acm.org' \}\}/);
-    assert.match(report, /FEISHU_WEBHOOK: \$\{\{ secrets.FEISHU_WEBHOOK \}\}/);
-    assert.match(report, /FEISHU_WEBHOOK_SECRET: \$\{\{ secrets.FEISHU_WEBHOOK_SECRET \}\}/);
-    assert.match(report, new RegExp(`scripts/ci/test_report.py --kind ${kind} `));
+    assert.match(report, /CF_EMAIL_TOKEN: \$\{\{ secrets.CF_EMAIL_TOKEN \}\}/);
+    assert.match(report, /CF_ACCOUNT_ID: \$\{\{ vars.CF_ACCOUNT_ID \}\}/);
+    assert.match(report, /OPS_EMAIL_FROM: \$\{\{ vars.OPS_EMAIL_FROM \}\}/);
+    assert.match(report, /OPS_EMAIL_TO: \$\{\{ vars.OPS_EMAIL_TO \}\}/);
+    assert.doesNotMatch(report, /FEISHU_|SMTP_/, `${kind}.report must not read the retired transports`);
+    assert.doesNotMatch(report, /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/, `${kind}.report must not hardcode an address`);
+    assert.match(report, new RegExp(`python3 -I scripts/ci/test_report.py --kind ${kind} `));
     for (const [id, block] of Object.entries(job[kind])) {
       if (id !== 'report') assert.doesNotMatch(block, /secrets\./, `${kind}.${id} must not receive secrets`);
     }
@@ -277,10 +280,14 @@ test('every merge to master runs the file regression and reports failures from a
   assert.match(report, /persist-credentials: false/);
   assert.match(report, /name: regression-results/);
   assert.match(report, /ARK_API_KEY: \$\{\{ secrets.ARK_API_KEY \}\}/);
-  assert.match(report, /FEISHU_WEBHOOK: \$\{\{ secrets.FEISHU_WEBHOOK \}\}/);
+  assert.match(report, /CF_EMAIL_TOKEN: \$\{\{ secrets.CF_EMAIL_TOKEN \}\}/);
+  assert.match(report, /CF_ACCOUNT_ID: \$\{\{ vars.CF_ACCOUNT_ID \}\}/);
+  assert.match(report, /OPS_EMAIL_FROM: \$\{\{ vars.OPS_EMAIL_FROM \}\}/);
+  assert.match(report, /OPS_EMAIL_TO: \$\{\{ vars.OPS_EMAIL_TO \}\}/);
   assert.match(report, /COMMIT_URL: .*\/commit\/\$\{\{ github.sha \}\}/);
-  assert.doesNotMatch(report, /SMTP_|MAIL_/, 'no email for the post-merge regression');
-  assert.match(report, /scripts\/ci\/test_report.py --kind regression /);
+  assert.doesNotMatch(report, /FEISHU_|SMTP_/);
+  assert.doesNotMatch(report, /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/, 'no hardcoded address');
+  assert.match(report, /python3 -I scripts\/ci\/test_report.py --kind regression /);
 });
 test('fixture job installs pinned Node 22 before running Node regression suites', () => {
   const block = job.review['diff-regression'];
