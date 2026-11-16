@@ -59,8 +59,8 @@ jobs:
           # Remove an identity only after its registration no longer carries
           # one: a job routed to that label would otherwise fail here before
           # it starts. scripts/tests/test_runner_routing.cjs derives the labels
-          # from every workflow and reconciles the runner inventory with the
-          # registration API.
+          # from every workflow and can reconcile the runner inventory with
+          # the registration API when it runs with a token.
           case "${RUNNER_NAME}/${RUNNER_OS}/${RUNNER_ARCH}" in
             charming-speedle-2/Linux/X64|donkey-speedle/Linux/X64)
               case "${CI_TASK}" in weekly) echo "Task ${CI_TASK} runs only on fiona." >&2; exit 1 ;; esac ;;

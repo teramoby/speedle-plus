@@ -29,9 +29,9 @@ publication continue to use the `speedle-runner` pool, and public comment author
 unprivileged inline pointer workflow remain hosted.
 See [runner configuration](RUNNERS.md).
 
-The dependency auto-merge waiter uses `speedle-control`, exclusive to
-`charming-speedle-2`, so a waiting merge occupies only that runner while the
-other two take the CI jobs it waits for. All review and CI merge gates
+The dependency auto-merge waiter uses `speedle-control`, which both Linux
+runners carry, so a waiting merge occupies one of them while the other and
+`fiona` take the CI jobs it waits for. All review and CI merge gates
 remain required.
 
 ## Comment commands

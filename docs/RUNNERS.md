@@ -39,9 +39,11 @@ Fixed-port tests take the host test lock
 host never overlap. Each registration must use its own runner installation and
 work directory.
 
-The `speedle-control` label belongs only to `charming-speedle-2`. ReviewBot's
-dependency merge waiter uses it so waiting for CI never occupies the only
-fixed-port test runner. Do not add this label to any other runner.
+The `speedle-control` label is carried by the two Linux runners,
+`charming-speedle-2` and `donkey-speedle`. ReviewBot's dependency merge waiter
+selects `[self-hosted, Linux, X64, speedle-control]`, so a waiting merge
+occupies one Linux runner while the other and `fiona` can take the CI jobs it
+waits for.
 
 The group also restricts access to these exact default-branch workflows:
 
@@ -66,7 +68,7 @@ directly select this runner or change the trusted worker's routing policy.
 | Weekly tests and benchmark comparison (`weekly.yml`) | `fiona-speedle`, serialized by the host test lock; its report job is GitHub-hosted |
 | ReviewBot human/bot same-repository PR analysis/publication | Any runner via `speedle-runner` |
 | ReviewBot fork PRs or unknown authors | GitHub-hosted |
-| Dependency auto-merge waiter | `charming-speedle-2` via `speedle-control` |
+| Dependency auto-merge waiter | Either Linux runner via `speedle-control` |
 | ReviewBot regression dispatch and authorized command analysis/publication | Any runner via `speedle-runner` |
 | Public comment authorization and unprivileged inline-comment pointer | GitHub-hosted |
 
