@@ -10,7 +10,7 @@ tocsidebar = false
 tags = ["v0.1.0", "core", "policy", "spdl"]
 categories = ["docs"]
 bref = "SPDL의 기초"
-lastmod = 2026-11-08T20:01:50+08:00
+lastmod = 2026-11-16T11:43:31+08:00
 +++
 
 SPDL은 Speedle 정책 및 역할 정책을 작성하기 위한 언어입니다. 이 페이지에서는 구문, 명명 규칙 및 예제를 설명합니다.
@@ -30,6 +30,15 @@ SPDL은 Speedle 정책 및 역할 정책을 작성하기 위한 언어입니다.
 ### 키워드
 
 `grant`, `deny`, `user`, `group`, `entity`, `role`, `from`, `on`, `if`, `in`은 예약 키워드입니다. 대소문자나 따옴표 사용 여부와 관계없이 주체 이름, ID 도메인, 역할, 작업, 리소스, 조건의 속성 이름이나 함수 이름으로 사용할 수 없습니다. 파서는 이러한 문을 거부하고 해당 키워드와 위치를 알려 줍니다. 조건에서 `in`과 `IN`은 포함 연산자이며 함수 이름은 대소문자를 구분합니다. 주체, 작업 및 리소스 이름도 대소문자를 구분합니다.
+
+예를 들어 정책 문 `grant user alice read Role`에서 `Role`은 리소스 이름입니다. `Role`도 예약 키워드이므로 `spctl check policy`로 확인하면 다음 오류와 함께 실패합니다.
+
+```console
+$ spctl check policy 'grant user alice read Role'
+"Role" is a reserved SPDL keyword and cannot be used as a resource
+grant user alice read Role
+                      ^
+```
 
 ### 명명 규칙
 
