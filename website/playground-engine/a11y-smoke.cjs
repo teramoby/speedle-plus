@@ -22,16 +22,18 @@
    goes in as the smoke's own tagged script element, which is not counted.
    Running animations are counted in the document and every open shadow root.
    The proof covers the top document and its shadow roots only, so a page
-   with a frame fails until the smoke covers frames. A loopback positive
-   control proves on every page that cross-origin requests are aborted; when
-   it cannot fire, the gate fails and names any Content Security Policy
-   violation the page reported. The stylesheet fingerprint covers
+   with a frame fails until the smoke covers frames. Each page runs in its own
+   browser context, whose route aborts every cross-origin request. Before the
+   page loads, a blank probe page in that context proves the route works by
+   loading a script from another loopback origin, so the measured page's own
+   Content Security Policy cannot block or weaken the proof. The stylesheet
+   fingerprint covers
    every stylesheet's rule text, media and disabled state and every inline
    style attribute. Open shadow roots are included in the DOM observation and
    the fingerprint, with their style/link elements, inline style attributes,
    adopted sheets and recursively imported sheets.
    Any page script error fails the gate. WebSockets and web workers, which
-   page.route cannot intercept, fail the gate. Serve a local copy of any
+   the route cannot intercept, fail the gate. Serve a local copy of any
    resource the page needs.
    Run from the repository root: node website/playground-engine/a11y-smoke.cjs
    Optional CHROMIUM_PATH selects a Chrome/Chromium binary. */
@@ -84,25 +86,25 @@ const listen=listener=>new Promise((resolve,reject)=>{
     await listen(probeServer);
     const origin=`http://127.0.0.1:${server.address().port}`;
     // A different port on the loopback interface is a different origin, so the route must
-    // abort the probe. Its aborted script is as harmless as the analytics beacon: treat its
-    // origin as quiet, or every page would fail on the deliberate probe request.
+    // abort the probe. Only the blank probe page requests it, never a measured page.
     const probeOrigin=`http://127.0.0.1:${probeServer.address().port}`;
     const ROUTE_PROBE=`${probeOrigin}/a11y-smoke-route-probe.js`;
-    QUIET_ORIGINS.add(probeOrigin);
     const blockedOrigins=new Set();
     let blockedRequests=0;
     browser=await chromium.launch({headless:true,...(process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH}:{})});
     let checks=0;
     for (const [route,label] of [['/','English home'],['/zh/','Chinese home']]) {
       for (const width of [1440,390,320]) {
-        // No service workers: their requests would not pass through page.route below. The
-        // option alone is not enough in every Chromium build, so registration is also refused
-        // before any page script runs, and a controlled page fails the gate.
-        const page=await browser.newPage({viewport:{width,height:1100},serviceWorkers:'block'});
+        // Each page gets its own browser context, whose route below covers every page in it. No
+        // service workers: their requests would not pass through the route. The option alone is
+        // not enough in every Chromium build, so registration is also refused before any page
+        // script runs, and a controlled page fails the gate.
+        const context=await browser.newContext({viewport:{width,height:1100},serviceWorkers:'block'});
+        const page=await context.newPage();
         // package.json pins Playwright 1.65.0, which has every API below. Fail with a readable
         // message rather than a TypeError if an older Playwright is installed anyway.
-        assert.equal(typeof page.routeWebSocket,'function',`the a11y smoke needs Playwright 1.48 or newer for page.routeWebSocket; the playground-engine package pins 1.65.0 - reinstall website/playground-engine dependencies`);
-        await page.addInitScript(()=>{
+        assert.equal(typeof context.routeWebSocket,'function',`the a11y smoke needs Playwright 1.48 or newer for context.routeWebSocket; the playground-engine package pins 1.65.0 - reinstall website/playground-engine dependencies`);
+        await context.addInitScript(()=>{
           if (window.ServiceWorkerContainer) ServiceWorkerContainer.prototype.register=()=>Promise.reject(new DOMException('service workers are disabled in the a11y smoke','SecurityError'));
           // Count DOM changes (elements, attributes, text) so the check can wait until the page is still.
           // Mutations inside a shadow root do not bubble to an observer on document. Walk open
@@ -110,6 +112,9 @@ const listen=listener=>new Promise((resolve,reject)=>{
           // so roots added by page script join the watch. Root discovery also feeds sheets() below.
           window.__smokeMutations=0;
           window.__smokeAnimationStarts=0;
+          // When the page last changed, by the page's own clock (the same machine clock as the
+          // smoke), so the settle wait can date a change by when it happened, not when a poll saw it.
+          window.__smokeLastChangeAt=0;
           const observedRoots=new WeakSet();
           const rootIds=new WeakMap();
           let nextRootId=1;
@@ -119,11 +124,12 @@ const listen=listener=>new Promise((resolve,reject)=>{
             for (const record of records) {
               if(record.type==='childList'&&record.removedNodes.length===0&&record.addedNodes.length>0&&Array.from(record.addedNodes).every(ownElement)) continue;
               window.__smokeMutations++;
+              window.__smokeLastChangeAt=Date.now();
             }
           });
           // An animation or transition can start and finish without any DOM or stylesheet change
           // (Element.animate from a timer, for example), so every start counts as a change.
-          const countStart=()=>{window.__smokeAnimationStarts++;};
+          const countStart=()=>{window.__smokeAnimationStarts++;window.__smokeLastChangeAt=Date.now();};
           const animate=Element.prototype.animate;
           Element.prototype.animate=function(...args){countStart();return animate.apply(this,args);};
           const observation={subtree:true,childList:true,attributes:true,characterData:true};
@@ -161,17 +167,13 @@ const listen=listener=>new Promise((resolve,reject)=>{
             for (const root of window.__smokeSyncRoots()) for (const animation of root.getAnimations()) if (animation.playState==='running') running.add(animation);
             return running.size;
           };
-          // The page's own Content Security Policy can block the route positive control below;
-          // record violations so that failure names its cause.
-          window.__smokeCspViolations=[];
-          document.addEventListener('securitypolicyviolation',event=>{window.__smokeCspViolations.push(`${event.violatedDirective} blocked ${event.blockedURI}`);},true);
           window.__smokeSyncRoots();
         });
         // Record every request problem, one entry per URL (the first reason wins, for example
         // an HTTP error before the aborted body). Chromium gives a stylesheet that failed to
         // load an empty sheet, so the page itself cannot tell.
         const problems=new Map();
-        // Per-page proof that the exact positive-control URL reached the route below and that
+        // Per-context proof that the exact positive-control URL reached the route below and that
         // Chromium reported the aborted request, not merely the route callback.
         let routeProbeBlocks=0, routeProbeAborts=0;
         // A request the page cancels itself (net::ERR_ABORTED) is exempt only for types that
@@ -180,6 +182,9 @@ const listen=listener=>new Promise((resolve,reject)=>{
         // resource types Playwright reports; Chromium reports pings, beacons, prefetches and
         // CSP reports as `other`.
         const cancelled=[];
+        // Cross-origin requests that the page's own Content Security Policy blocked in the browser:
+        // they never left it, exactly as in production, so they are only listed in the PASS line.
+        const cspBlocked=[];
         const renderIrrelevant=new Set(['media','texttrack','eventsource','websocket','manifest','other']);
         const parse=value=>{try {return new URL(value);} catch {return null;}};
         // Every request, with the time it started, and page script failures.
@@ -188,7 +193,7 @@ const listen=listener=>new Promise((resolve,reject)=>{
         const settled=()=>{pending=Math.max(0,pending-1);lastRequestAt=Date.now();};
         page.on('requestfinished',settled);
         page.on('requestfailed',settled);
-        // Requests from web workers can bypass page.route, so a page that starts one fails.
+        // Requests from web workers can bypass the route, so a page that starts one fails.
         page.on('worker',worker=>problems.set(worker.url(),'web worker: its requests may bypass the route below'));
         // An uncaught page script error can leave only part of the page initialized, so it fails
         // the gate rather than letting axe measure that reduced DOM as though it were complete.
@@ -197,7 +202,7 @@ const listen=listener=>new Promise((resolve,reject)=>{
         page.on('response',response=>{
           if(problems.has(response.url())) return;
           const url=parse(response.url());
-          // A response from any other origin means the request escaped page.route. This fails even
+          // A response from any other origin means the request escaped the route. This fails even
           // for a quiet-origin script: quiet requests are tolerated only when the route aborts them.
           if(url&&url.origin!==origin) {problems.set(response.url(),`outside ${origin}: response escaped request interception`);return;}
           if(response.status()<400) return;
@@ -205,9 +210,6 @@ const listen=listener=>new Promise((resolve,reject)=>{
         });
         page.on('requestfailed',request=>{
           const url=parse(request.url());
-          // The positive control must fail the way an aborted request does, not just pass
-          // through the route callback or load from the probe server.
-          if(request.url()===ROUTE_PROBE&&routeAborted(request.failure()?.errorText)) routeProbeAborts++;
           if (problems.has(request.url())) return;
           if (url?.origin===origin) {
             const reason=request.failure()?.errorText||'failed';
@@ -217,6 +219,7 @@ const listen=listener=>new Promise((resolve,reject)=>{
             // A quiet-origin script is tolerated only when it failed the way the route aborts it.
             // Any other failure (DNS, TLS, connection) means the route never intercepted it.
             const reason=request.failure()?.errorText||'failed';
+            if (reason==='csp') {cspBlocked.push(request.url());return;}
             const aborted=routeAborted(reason);
             if (!(aborted&&QUIET_ORIGINS.has(url?.origin)&&request.resourceType()==='script')) {
               problems.set(request.url(),aborted?`blocked: outside ${origin}; serve a local copy`:`outside ${origin} and not aborted by the route (${reason}): request interception was bypassed`);
@@ -228,12 +231,12 @@ const listen=listener=>new Promise((resolve,reject)=>{
           assert.deepEqual(list,[],`the ${label} at ${width}px had problems ${when}: ${list.join(', ')}`);
           assert.deepEqual(pageErrors,[],`the ${label} at ${width}px had page script errors ${when}: ${pageErrors.join(' | ')}`);
         };
-        // WebSockets do not pass through page.route: refuse every one (it never reaches a server)
+        // WebSockets do not pass through the route: refuse every one (it never reaches a server)
         // and fail the gate.
-        await page.routeWebSocket(/.*/,ws=>{problems.set(ws.url(),'websocket: not allowed in the a11y smoke');ws.close().catch(()=>{});});
+        await context.routeWebSocket(/.*/,ws=>{problems.set(ws.url(),'websocket: not allowed in the a11y smoke');ws.close().catch(()=>{});});
         // Consume every route outcome: a decision still in flight when the page closes must not
         // become an unhandled rejection that hides the real failure.
-        await page.route('**/*',async route=>{
+        await context.route('**/*',async route=>{
           let url;
           try {url=new URL(route.request().url());} catch {await route.abort().catch(()=>{});return;}
           if (url.origin===origin) {
@@ -248,24 +251,27 @@ const listen=listener=>new Promise((resolve,reject)=>{
           if(url.href===ROUTE_PROBE) {if(await route.abort('blockedbyclient').then(()=>true,()=>false)) routeProbeBlocks++;return;}
           await route.abort('blockedbyclient').catch(()=>{});
         });
-        // Every other origin is aborted at once, so nothing outside the local server can delay load.
-        await page.goto(origin+route,{waitUntil:'load',timeout:30000});
         // Do not infer that routing works merely because no third-party request was observed.
-        // The probe script sets a flag in the page if it ever runs, its abort must be acknowledged
-        // by the route, and Chromium must report the request as the route's own abort error: a loaded probe,
-        // an uncounted abort or a non-abort failure all fail the gate. A response from a foreign
-        // origin is caught by the response handler as well. The route and requestfailed handlers
-        // were registered before the navigation, so no event can be missed; their delivery, however,
+        // Before the page loads, a blank probe page in the same context, which shares the route,
+        // has no Content Security Policy and runs no site script, loads a script from another
+        // loopback origin. The script sets a flag if it ever runs, the route must acknowledge its
+        // abort, and Chromium must report the request with the route's own abort error: a loaded
+        // probe, an uncounted abort or any other failure fails the gate. The measured page's own
+        // CSP therefore cannot block the proof or call for weakening that policy. Event delivery
         // is independent of the script element settling, so wait for both counters, bounded.
-        await page.addScriptTag({url:ROUTE_PROBE}).catch(()=>{});
+        const probe=await context.newPage();
+        probe.on('requestfailed',request=>{if(request.url()===ROUTE_PROBE&&routeAborted(request.failure()?.errorText)) routeProbeAborts++;});
+        await probe.goto('about:blank');
+        await probe.addScriptTag({url:ROUTE_PROBE}).catch(()=>{});
         const probeDeadline=Date.now()+5000;
         while ((routeProbeBlocks===0||routeProbeAborts===0)&&Date.now()<probeDeadline) await new Promise(resolve=>setTimeout(resolve,25));
-        assert.equal(await page.evaluate(()=>Boolean(window.__a11yRouteProbeExecuted)),false,`the ${label} at ${width}px ran the route positive control, so page.route did not abort it`);
-        assertNoProblems('while checking request interception');
-        const csp=await page.evaluate(()=>window.__smokeCspViolations.join('; '));
-        const cspNote=csp?` (the page's Content Security Policy reported: ${csp})`:'';
-        assert.ok(routeProbeBlocks>0,`the ${label} at ${width}px did not intercept and abort the route positive control; request interception may not be active${cspNote}`);
-        assert.ok(routeProbeAborts>0,`the ${label} at ${width}px did not see the route positive control fail with ${ROUTE_ABORT_ERROR}; the request may not have been aborted${cspNote}`);
+        assert.equal(await probe.evaluate(()=>Boolean(window.__a11yRouteProbeExecuted)),false,`the route positive control ran for the ${label} at ${width}px, so the context route did not abort it`);
+        assert.ok(routeProbeBlocks>0,`the context route for the ${label} at ${width}px did not intercept and abort the route positive control; request interception may not be active`);
+        assert.ok(routeProbeAborts>0,`the route positive control for the ${label} at ${width}px did not fail with ${ROUTE_ABORT_ERROR}; the request may not have been aborted`);
+        await probe.close();
+        // Every other origin is aborted at once, so nothing outside the local server can delay load.
+        await page.goto(origin+route,{waitUntil:'load',timeout:30000});
+        assertNoProblems('while loading');
         try {
           await page.waitForLoadState('networkidle',{timeout:15000});
         } catch (error) {
@@ -332,14 +338,19 @@ const listen=listener=>new Promise((resolve,reject)=>{
         // changes periodically never counts as still. Both waits are bounded and fail: a page that
         // still starts or finishes a request 10 s after load fails, and so does a page that still
         // changes 5 s after load. A page that stops inside those bounds gets its full quiet period.
-        const pageState=async()=>({...await page.evaluate(()=>({mutations:window.__smokeMutations,animationStarts:window.__smokeAnimationStarts,runningAnimations:window.__smokeRunningAnimations()})),sheets:await sheets()});
+        const pageState=async()=>({...await page.evaluate(()=>({mutations:window.__smokeMutations,animationStarts:window.__smokeAnimationStarts,lastChangeAt:window.__smokeLastChangeAt,runningAnimations:window.__smokeRunningAnimations()})),sheets:await sheets()});
         const settleStart=Date.now();
         let state=await pageState(), stillSince=Date.now(), longestChangeGap=0;
         for (;;) {
           await page.waitForTimeout(250);
           const now=await pageState();
           if (now.mutations!==state.mutations||now.sheets!==state.sheets||now.animationStarts!==state.animationStarts||now.runningAnimations>0) {
-            const at=Date.now();
+            // Date a DOM change or an animation start by when the page saw it, not when this poll
+            // noticed it. A stylesheet-only edit or a still-running animation has no page timestamp
+            // and is dated by this poll.
+            const counted=now.mutations!==state.mutations||now.animationStarts!==state.animationStarts;
+            const dated=counted&&now.sheets===state.sheets&&now.runningAnimations===0;
+            const at=dated?Math.max(stillSince,Math.min(Date.now(),now.lastChangeAt)):Date.now();
             longestChangeGap=Math.max(longestChangeGap,at-stillSince);
             stillSince=at;
           }
@@ -404,8 +415,8 @@ const listen=listener=>new Promise((resolve,reject)=>{
         assertNoProblems('during the contrast check');
         assert.deepEqual(result.violations,[],`axe color-contrast violations on the ${label} at ${width}px: ${JSON.stringify(result.violations,null,2)}`);
         checks++;
-        console.log(`PASS axe color-contrast: ${label} at ${width}px (${result.unchecked.length} gradient or pseudo-element nodes not machine-checkable${cancelled.length?`; ${cancelled.length} local request(s) cancelled by the page: ${cancelled.join(', ')}`:''})`);
-        await page.close();
+        console.log(`PASS axe color-contrast: ${label} at ${width}px (${result.unchecked.length} gradient or pseudo-element nodes not machine-checkable${cancelled.length?`; ${cancelled.length} local request(s) cancelled by the page: ${cancelled.join(', ')}`:''}${cspBlocked.length?`; ${cspBlocked.length} cross-origin request(s) blocked by the page's own CSP: ${cspBlocked.join(', ')}`:''})`);
+        await context.close();
       }
     }
     console.log(`PASS ${checks} home-page axe color-contrast checks, 0 violations; served only from ${origin}, ${blockedRequests} cross-origin request(s) blocked${blockedOrigins.size?`: ${[...blockedOrigins].join(', ')}`:''}`);
