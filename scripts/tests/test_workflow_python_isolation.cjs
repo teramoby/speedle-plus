@@ -5,7 +5,15 @@
  * the flag at run time; a python3 without -I support fails the step. Module
  * (-m) invocations must pass -I as well but cannot carry the inline assertion,
  * because their code comes from the module. Script files, --version and
- * --help resolve code through sys.path on purpose and are outside this guard. */
+ * --help resolve code through sys.path on purpose and are outside this guard.
+ * -I keeps the checkout off sys.path for that code only when the interpreter
+ * also applies the safe path (Python 3.11+); older interpreters parse -I but
+ * keep the working directory on sys.path.
+ *
+ * The workflow parser covers block-style steps, block scalars, comments and
+ * heredocs. Anything else it cannot read (flow-style mappings, anchors or
+ * aliases, multi-document files) fails the test with "use block-style steps"
+ * instead of being skipped. */
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -35,8 +43,8 @@ function isItem(line) {
 function itemKeyIndent(lines, start, dashIndent) {
   const dash = lines[start].match(/^ *-[ \t]*/)[0];
   const rest = lines[start].slice(dash.length).trim();
-  if (rest.startsWith('{') || rest.startsWith('[')) {
-    throw new Error(`unsupported flow-style step at line ${start + 1}`);
+  if (/^[{[&*]/.test(rest)) {
+    throw new Error(`unsupported flow-style step at line ${start + 1}; use block-style steps`);
   }
   if (rest && !rest.startsWith('#')) return dash.length;
   for (let index = start + 1; index < lines.length; index++) {
@@ -48,15 +56,36 @@ function itemKeyIndent(lines, start, dashIndent) {
   return null;
 }
 
+// Reject YAML shapes this block-style reader cannot analyze, instead of
+// silently scanning less than the whole file.
+function assertBlockWorkflow(lines) {
+  let documents = 0;
+  for (let index = 0; index < lines.length; index++) {
+    const line = lines[index];
+    if (/^---[ \t]*(?:#.*)?$/.test(line)) {
+      documents++;
+      if (documents > 1) throw new Error(`multi-document workflow at line ${index + 1}; use block-style steps in one document`);
+      continue;
+    }
+    if (/^\.\.\.[ \t]*$/.test(line)) {
+      throw new Error(`document end marker at line ${index + 1}; use block-style steps in one document`);
+    }
+    if (/^ *[A-Za-z0-9_.-]+:[ \t]+[&*][A-Za-z_]/.test(line)) {
+      throw new Error(`unsupported YAML anchor or alias at line ${index + 1}; use block-style steps`);
+    }
+  }
+}
+
 // Locate the items of every block-style `steps:` sequence, so a `run:` key in
 // unrelated YAML (top-level data, job keys, a step's `with:`/`env:` mapping)
 // is never mistaken for shell.
 function stepItems(lines) {
+  assertBlockWorkflow(lines);
   const items = [];
   for (let index = 0; index < lines.length; index++) {
     if (!/^ *steps:/.test(lines[index])) continue;
     if (!/^ *steps:[ \t]*(?:#.*)?$/.test(lines[index])) {
-      throw new Error(`unsupported steps layout at line ${index + 1}`);
+      throw new Error(`unsupported steps layout at line ${index + 1}; use block-style steps`);
     }
     const stepsIndent = indentOf(lines[index]);
     let cursor = index + 1;
@@ -560,7 +589,13 @@ test('the guard fails closed on unsupported step layouts', () => {
   assert.throws(() => inlinePythonInvocations('name: fixture\njobs:\n  test:\n    steps: [{run: "python3 -c \'print(1)\'"}]\n'),
     /unsupported steps layout/);
   assert.throws(() => inlinePythonInvocations('name: fixture\njobs:\n  test:\n    steps: &steps\n      - run: echo hi\n'),
-    /unsupported steps layout/);
+    /unsupported YAML anchor or alias/);
   assert.throws(() => inlinePythonInvocations('name: fixture\njobs:\n  test:\n    steps:\n      - {run: "python3 -c \'print(1)\'"}\n'),
     /unsupported flow-style step/);
+  assert.throws(() => inlinePythonInvocations('name: fixture\njobs:\n  test:\n    steps:\n      - *step\n'),
+    /unsupported flow-style step/);
+  assert.throws(() => inlinePythonInvocations('name: fixture\njobs:\n  test:\n    env: &shared\n      A: b\n    steps:\n      - run: echo hi\n'),
+    /unsupported YAML anchor or alias/);
+  assert.throws(() => inlinePythonInvocations('---\nname: fixture\n---\nname: second\n'),
+    /multi-document workflow/);
 });

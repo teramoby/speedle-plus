@@ -139,7 +139,7 @@ case "${mode}" in
     if [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch && -f "${GITHUB_EVENT_PATH:-}" ]] &&
        python3 -c 'import json,sys; value=json.load(open(sys.argv[1])).get("inputs",{}).get("mysql_only",False); sys.exit(0 if value is True or value == "true" else 1)' "$GITHUB_EVENT_PATH"; then
       check mysql-full python3 scripts/ci/run-mysql-tests.py
-      check ci-script-tests bash -c 'python3 -m unittest discover -s scripts/tests -p "test_*.py" && node --test scripts/tests/*.cjs'
+      check ci-script-tests bash -c 'python3 -I -m unittest discover -s scripts/tests -p "test_*.py" && node --test scripts/tests/*.cjs'
       exit "${failed}"
     fi
     if ! CGO_ENABLED=1 go env CC >/dev/null 2>&1 || ! command -v "$(go env CC)" >/dev/null 2>&1; then
@@ -157,7 +157,7 @@ case "${mode}" in
     # Manual candidate validation can omit notification/report side effects.
     if [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch && -f "${GITHUB_EVENT_PATH:-}" ]] &&
        python3 -c 'import json,sys; value=json.load(open(sys.argv[1])).get("inputs",{}).get("stores_only",False); sys.exit(0 if value is True or value == "true" else 1)' "$GITHUB_EVENT_PATH"; then
-      check ci-script-tests bash -c 'python3 -m unittest discover -s scripts/tests -p "test_*.py" && node --test scripts/tests/*.cjs'
+      check ci-script-tests bash -c 'python3 -I -m unittest discover -s scripts/tests -p "test_*.py" && node --test scripts/tests/*.cjs'
       exit "${failed}"
     fi
     check etcd-docs with_docker python3 website/tests/check_etcd.py
@@ -166,7 +166,7 @@ case "${mode}" in
       check "quick-start-${toolchain}" python3 website/tests/check_quick_start.py --toolchain "${toolchain}"
     done
     check govulncheck go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./pkg/... ./cmd/... ./api/...
-    check ci-script-tests bash -c 'python3 -m unittest discover -s scripts/tests -p "test_*.py" && node --test scripts/tests/*.cjs'
+    check ci-script-tests bash -c 'python3 -I -m unittest discover -s scripts/tests -p "test_*.py" && node --test scripts/tests/*.cjs'
     exit "${failed}"
     ;;
   regression)

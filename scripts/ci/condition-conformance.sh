@@ -17,4 +17,4 @@ STORE_TYPE=file go test -p 1 -count=1 -timeout 300s -v ./pkg/eval -run '^TestCon
 python3 scripts/ci/condition-conformance-report.py \
   --go-version "${coverage_go_version}" \
   "${conformance_results}/coverage.out" "${conformance_results}/matrix.log"
-python3 -m unittest discover -s scripts/tests -p 'test_condition_conformance_report.py'
+python3 -I -m unittest discover -s scripts/tests -p 'test_condition_conformance_report.py'
