@@ -6,7 +6,9 @@
    neither delay nor fail the load event that the check waits for. A blocked
    request fails the gate by URL unless it is a script from an origin listed in
    QUIET_ORIGINS (third parties that cannot affect styles, such as the analytics
-   beacon); so does any local request that fails or returns an HTTP error.
+   beacon); so does any local HTTP error, and any local request that fails,
+   except a cancellation by the page itself of a request that does not shape
+   the page (not a stylesheet, script or document), which is only reported.
    These are checked once the network has settled after load and again after
    axe has run. Serve a local copy of any resource the page needs.
    Run from the repository root: node website/playground-engine/a11y-smoke.cjs
@@ -53,6 +55,11 @@ const server = http.createServer((req,res)=>{
         // an HTTP error before the aborted body). Chromium gives a stylesheet that failed to
         // load an empty sheet, so the page itself cannot tell.
         const problems=new Map();
+        // Requests the page cancels itself (net::ERR_ABORTED: an element removed or its source
+        // replaced before load) are not load failures, except for types that shape the page.
+        // They are listed in the PASS line rather than ignored.
+        const cancelled=[];
+        const shaping=new Set(['stylesheet','script','document']);
         const parse=value=>{try {return new URL(value);} catch {return null;}};
         page.on('response',response=>{
           if (response.status()<400||problems.has(response.url())) return;
@@ -62,7 +69,9 @@ const server = http.createServer((req,res)=>{
           const url=parse(request.url());
           if (problems.has(request.url())) return;
           if (url?.origin===origin) {
-            problems.set(request.url(),request.failure()?.errorText||'failed');
+            const reason=request.failure()?.errorText||'failed';
+            if (reason==='net::ERR_ABORTED'&&!shaping.has(request.resourceType())) cancelled.push(`${request.url()} (${request.resourceType()})`);
+            else problems.set(request.url(),`${request.resourceType()}: ${reason}`);
           } else if (!(QUIET_ORIGINS.has(url?.origin)&&request.resourceType()==='script')) {
             problems.set(request.url(),`blocked: outside ${origin}; serve a local copy`);
           }
@@ -71,13 +80,18 @@ const server = http.createServer((req,res)=>{
           const list=[...problems].map(([url,reason])=>`${url} (${reason})`);
           assert.deepEqual(list,[],`the ${label} at ${width}px had request problems ${when}: ${list.join(', ')}`);
         };
-        await page.route('**/*',request=>{
+        // Consume every route outcome: a decision still in flight when the page closes must not
+        // become an unhandled rejection that hides the real failure.
+        await page.route('**/*',async route=>{
           let url;
-          try {url=new URL(request.request().url());} catch {return request.abort();}
-          if (url.origin===origin) return request.continue();
+          try {url=new URL(route.request().url());} catch {await route.abort().catch(()=>{});return;}
+          if (url.origin===origin) {
+            await route.continue().catch(error=>{if(!problems.has(url.href))problems.set(url.href,`continue failed: ${error.message}`);});
+            return;
+          }
           blockedOrigins.add(url.origin);
           blockedRequests++;
-          return request.abort();
+          await route.abort().catch(()=>{});
         });
         // Every other origin is aborted at once, so nothing outside the local server can delay load,
         // and the network settles quickly afterwards; waiting for that also catches CSS requested
@@ -103,7 +117,7 @@ const server = http.createServer((req,res)=>{
         assertNoProblems('during the contrast check');
         assert.deepEqual(report.violations,[],`axe color-contrast violations on the ${label} at ${width}px: ${JSON.stringify(report.violations,null,2)}`);
         checks++;
-        console.log(`PASS axe color-contrast: ${label} at ${width}px (${report.unchecked.length} gradient or pseudo-element nodes not machine-checkable)`);
+        console.log(`PASS axe color-contrast: ${label} at ${width}px (${report.unchecked.length} gradient or pseudo-element nodes not machine-checkable${cancelled.length?`; ${cancelled.length} local request(s) cancelled by the page: ${cancelled.join(', ')}`:''})`);
         await page.close();
       }
     }
