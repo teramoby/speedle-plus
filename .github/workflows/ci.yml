@@ -76,17 +76,23 @@ jobs:
           trap 'rm -rf "${DOCKER_CONFIG}"' EXIT
           node --test scripts/tests/test_ci_scope.cjs
           shopt -s nullglob
-          suites=()
+          discovered=()
           for suite in scripts/tests/*.cjs; do
+            discovered+=("${suite}")
+          done
+          if ((${#discovered[@]} == 0)); then
+            echo 'no CI test suites discovered' >&2
+            exit 1
+          fi
+          suites=()
+          for suite in "${discovered[@]}"; do
             if [[ "${suite}" != 'scripts/tests/test_ci_scope.cjs' ]]; then
               suites+=("${suite}")
             fi
           done
-          if ((${#suites[@]} == 0)); then
-            echo 'no CI test suites discovered' >&2
-            exit 1
+          if ((${#suites[@]} > 0)); then
+            node --test "${suites[@]}"
           fi
-          node --test "${suites[@]}"
           python3 -m unittest discover -s scripts/tests -p 'test_*.py'
 
   lint:

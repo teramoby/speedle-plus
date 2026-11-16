@@ -171,8 +171,9 @@ test('CI discovers every script suite, isolates Docker config and propagates fai
     for (const name of requiredSuites) {
       assert.ok(fs.existsSync(path.join(root, 'scripts/tests', name)), `missing CI suite: ${name}`);
     }
-    // Include new filenames to catch a return to an explicit subset of suites.
-    const suites = [...fs.readdirSync(path.join(root, 'scripts/tests')).filter(name => name.endsWith('.cjs')), 'test_future.cjs'].sort();
+    // Include new filenames to catch a return to an explicit subset of suites,
+    // including a name whose glob collation can differ from JavaScript sort().
+    const suites = [...fs.readdirSync(path.join(root, 'scripts/tests')).filter(name => name.endsWith('.cjs')), 'test_future.cjs', 'test_ReviewBot.cjs'].sort();
     const globSuites = suites.filter(name => name !== 'test_ci_scope.cjs');
     for (const suite of suites) fs.writeFileSync(path.join(dir, 'scripts/tests', suite), '');
     fs.writeFileSync(path.join(dir, 'scripts/tests/test_future.py'), '');
@@ -211,10 +212,22 @@ process.exit(process.env.FAIL_TOOL === ${JSON.stringify(tool)} && invocation ===
       TMPDIR: temporary, DOCKER_CONFIG: '/unused-host-config', ...overrides}});
     const calls = () => fs.readFileSync(record, 'utf8').trim().split('\n').map(JSON.parse);
     const verifyCalls = (recorded, expected) => {
-      assert.equal(recorded.length, expected);
-      assert.deepEqual(recorded[0].args, ['--test', 'scripts/tests/test_ci_scope.cjs']);
-      if (recorded.length > 1) assert.deepEqual(recorded[1].args, ['--test', ...globSuites.map(name => `scripts/tests/${name}`)]);
-      if (recorded.length === 3) assert.deepEqual(recorded[2].args, ['-m', 'unittest', 'discover', '-s', 'scripts/tests', '-p', 'test_*.py']);
+      assert.equal(recorded.length, expected.length);
+      for (const [index, invocation] of expected.entries()) {
+        const call = recorded[index];
+        if (invocation === 'inventory') {
+          assert.equal(call.tool, 'node');
+          assert.deepEqual(call.args, ['--test', 'scripts/tests/test_ci_scope.cjs']);
+        } else if (invocation === 'bulk') {
+          assert.equal(call.tool, 'node');
+          assert.equal(call.args[0], '--test');
+          const expectedSuites = globSuites.map(name => `scripts/tests/${name}`);
+          assert.deepEqual([...call.args.slice(1)].sort(), [...expectedSuites].sort());
+        } else {
+          assert.equal(call.tool, 'python3');
+          assert.deepEqual(call.args, ['-m', 'unittest', 'discover', '-s', 'scripts/tests', '-p', 'test_*.py']);
+        }
+      }
       for (const call of recorded) {
         assert.notEqual(call.config, '/unused-host-config');
         assert.equal(path.dirname(call.config), temporary);
@@ -224,10 +237,10 @@ process.exit(process.env.FAIL_TOOL === ${JSON.stringify(tool)} && invocation ===
       }
     };
     const steps = [
-      {label: 'all invocations succeed', env: {}, status: 0, expected: 3},
-      {label: 'the inventory invocation fails', env: {FAIL_TOOL: 'node', FAIL_AT: '1'}, status: 7, expected: 1},
-      {label: 'the bulk invocation fails', env: {FAIL_TOOL: 'node', FAIL_AT: '2'}, status: 7, expected: 2},
-      {label: 'the python discovery invocation fails', env: {FAIL_TOOL: 'python3', FAIL_AT: '1'}, status: 7, expected: 3},
+      {label: 'all invocations succeed', env: {}, status: 0, expected: ['inventory', 'bulk', 'python']},
+      {label: 'the inventory invocation fails', env: {FAIL_TOOL: 'node', FAIL_AT: '1'}, status: 7, expected: ['inventory']},
+      {label: 'the bulk invocation fails', env: {FAIL_TOOL: 'node', FAIL_AT: '2'}, status: 7, expected: ['inventory', 'bulk']},
+      {label: 'the python discovery invocation fails', env: {FAIL_TOOL: 'python3', FAIL_AT: '1'}, status: 7, expected: ['inventory', 'bulk', 'python']},
     ];
     for (const {label, env, status, expected} of steps) {
       reset();
@@ -235,17 +248,23 @@ process.exit(process.env.FAIL_TOOL === ${JSON.stringify(tool)} && invocation ===
       assert.equal(result.status, status, `${label}\n${result.stderr}`);
       verifyCalls(calls(), expected);
     }
-    // An empty discovery glob must fail the step instead of running
-    // `node --test` with no paths, which falls back to Node's own discovery.
-    for (const leftover of [['test_ci_scope.cjs'], []]) {
-      for (const suite of [...suites, 'test_ci_scope.cjs']) fs.rmSync(path.join(dir, 'scripts/tests', suite), {force: true});
-      for (const suite of leftover) fs.writeFileSync(path.join(dir, 'scripts/tests', suite), '');
-      reset();
-      const result = execute();
-      assert.equal(result.status, 1, `${JSON.stringify(leftover)}\n${result.stderr}`);
-      assert.match(result.stderr, /no CI test suites discovered/);
-      verifyCalls(calls(), 1);
-    }
+    for (const suite of suites) fs.rmSync(path.join(dir, 'scripts/tests', suite), {force: true});
+    // The inventory suite still runs when it is the only discovered suite;
+    // the empty bulk invocation is skipped rather than treated as no discovery.
+    fs.writeFileSync(path.join(dir, 'scripts/tests/test_ci_scope.cjs'), '');
+    reset();
+    const inventoryOnly = execute();
+    assert.equal(inventoryOnly.status, 0, inventoryOnly.stderr);
+    verifyCalls(calls(), ['inventory', 'python']);
+
+    // A completely empty glob must fail instead of letting `node --test`
+    // without paths fall back to Node's own discovery.
+    fs.rmSync(path.join(dir, 'scripts/tests/test_ci_scope.cjs'));
+    reset();
+    const empty = execute();
+    assert.equal(empty.status, 1, empty.stderr);
+    assert.match(empty.stderr, /no CI test suites discovered/);
+    verifyCalls(calls(), ['inventory']);
   } finally {fs.rmSync(dir, {recursive: true, force: true});}
 });
 test('actual summary blocks failed/cancelled/missing selected jobs and allows intentional skips', () => {
