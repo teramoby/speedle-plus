@@ -85,8 +85,11 @@ function script(source, name) {
   return source.split(`      - name: ${name}\n`)[1].split(/^      - /m)[0]
     .split('        run: |\n')[1].split('\n').filter((line, i, lines) => lines.slice(0, i + 1).every(item => !item || item.startsWith('          '))).map(line => line.slice(10)).join('\n').trimEnd();
 }
-test('change classification preserves raw Git paths and fails on diff errors', () => {
+test('change classification preserves raw Git paths, uses the base classifier and fails on diff errors', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-ci-paths-'));
+  // The workflow stages the trusted classifier in RUNNER_TEMP, outside the
+  // checkout, and runs it with the worktree as the working directory.
+  const runnerTemp = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-ci-runner-temp-'));
   try {
     const git = (...args) => {
       const result = spawnSync('git', args, {cwd: dir, encoding: 'utf8'});
@@ -99,15 +102,18 @@ test('change classification preserves raw Git paths and fails on diff errors', (
     git('config', 'commit.gpgsign', 'false');
     git('config', 'core.quotePath', 'true');
     git('commit', '-qm', 'base', '--allow-empty');
-    const base = git('rev-parse', 'HEAD');
+    const empty = git('rev-parse', 'HEAD');
     fs.mkdirSync(path.join(dir, 'scripts/ci'), {recursive: true});
-    fs.symlinkSync(path.join(root, 'scripts/ci/classify-changes.sh'), path.join(dir, 'scripts/ci/classify-changes.sh'));
+    fs.copyFileSync(path.join(root, 'scripts/ci/classify-changes.sh'), path.join(dir, 'scripts/ci/classify-changes.sh'));
+    git('add', '--', 'scripts/ci/classify-changes.sh');
+    git('commit', '-qm', 'add the classifier');
+    const base = git('rev-parse', 'HEAD');
     const classify = (head, overrides = {}) => {
       const output = path.join(dir, 'output');
       fs.writeFileSync(output, '');
       const result = spawnSync('bash', ['-c', script(ci, 'Classify changed files')], {
         cwd: dir, encoding: 'utf8', env: {...process.env, EVENT_NAME: 'pull_request',
-          PR_BASE: base, PUSH_BEFORE: base, GITHUB_SHA: head, GITHUB_OUTPUT: output, ...overrides},
+          PR_BASE: base, PUSH_BEFORE: base, GITHUB_SHA: head, GITHUB_OUTPUT: output, RUNNER_TEMP: runnerTemp, ...overrides},
       });
       return {...result, output: fs.readFileSync(output, 'utf8')};
     };
@@ -135,6 +141,25 @@ test('change classification preserves raw Git paths and fails on diff errors', (
       assert.equal(result.output, expected, JSON.stringify(file));
       previous = head;
     }
+    // A stale merge ref: the base tip has a scripts/ci commit that the pull
+    // request side does not contain. Only the pull request's own changes count,
+    // so a docs-only change keeps its narrow route.
+    const mainline = git('rev-parse', '--abbrev-ref', 'HEAD');
+    git('checkout', '-q', '--detach', previous);
+    fs.writeFileSync(path.join(dir, 'scripts/ci/base-only.sh'), '#!/usr/bin/env bash\ntrue\n');
+    git('add', '--', 'scripts/ci/base-only.sh');
+    git('commit', '-qm', 'base-only CI script');
+    const staleBase = git('rev-parse', 'HEAD');
+    git('checkout', '-q', '--detach', previous);
+    fs.mkdirSync(path.join(dir, 'docs'), {recursive: true});
+    fs.writeFileSync(path.join(dir, 'docs/stale-ref.md'), 'fixture\n');
+    git('add', '--', 'docs/stale-ref.md');
+    git('commit', '-qm', 'docs change on an older base');
+    const staleHead = git('rev-parse', 'HEAD');
+    git('checkout', '-q', mainline);
+    const stale = classify(staleHead, {PR_BASE: staleBase});
+    assert.equal(stale.status, 0, stale.stderr);
+    assert.equal(stale.output, flags(false, false, true, false), 'base-only commits must not widen the route of a pull request');
     assert.equal(classify(previous).output, flags(true, true, true, true), 'mixed paths');
     assert.equal(classify(previous, {PR_BASE: previous}).output, flags(false, false, false, false), 'empty diff');
     const push = classify(previous, {EVENT_NAME: 'push', PR_BASE: 'missing', PUSH_BEFORE: previous});
@@ -146,10 +171,168 @@ test('change classification preserves raw Git paths and fails on diff errors', (
       assert.equal(result.status, 0, result.stderr);
       assert.equal(result.output, flags(true, true, true, true));
     }
+    // A real base revision that predates the classifier enables every route.
+    const noClassifier = classify(previous, {PR_BASE: empty});
+    assert.equal(noClassifier.status, 0, noClassifier.stderr);
+    assert.equal(noClassifier.output, flags(true, true, true, true));
     const failed = classify('missing-head');
     assert.notEqual(failed.status, 0);
     assert.equal(failed.output, '', 'diff errors must not publish successful outputs');
-  } finally { fs.rmSync(dir, {recursive: true, force: true}); }
+    // When the head tree rewrites the classifier (here to report "nothing
+    // changed"), the head copy never decides: every route runs, so routes the
+    // base copy does not know cannot be skipped either.
+    fs.writeFileSync(path.join(dir, 'scripts/ci/classify-changes.sh'),
+      '#!/usr/bin/env bash\nprintf "go=false\\nwebsite=false\\ndocs=false\\nci=false\\n" >> "${GITHUB_OUTPUT}"\n');
+    fs.mkdirSync(path.join(dir, 'docs'), {recursive: true});
+    fs.writeFileSync(path.join(dir, 'docs/guide.md'), 'fixture\n');
+    git('add', '--', 'docs/guide.md', 'scripts/ci/classify-changes.sh');
+    git('commit', '-qm', 'rewrite the classifier');
+    const rewritten = git('rev-parse', 'HEAD');
+    const guarded = classify(rewritten, {PR_BASE: previous});
+    assert.equal(guarded.status, 0, guarded.stderr);
+    assert.equal(guarded.output, flags(true, true, true, true), 'a pull request that changes the classifier must enable every route');
+    // A base classifier that omits a route key must not silently disable that
+    // route: the step validates the output contract and enables every route.
+    fs.mkdirSync(path.join(dir, 'website'), {recursive: true});
+    fs.writeFileSync(path.join(dir, 'scripts/ci/classify-changes.sh'),
+      '#!/usr/bin/env bash\nprintf "go=false\\nwebsite=false\\ndocs=true\\n" >> "${GITHUB_OUTPUT}"\n');
+    git('add', '--', 'scripts/ci/classify-changes.sh');
+    git('commit', '-qm', 'classifier that omits a key');
+    const partialBase = git('rev-parse', 'HEAD');
+    fs.writeFileSync(path.join(dir, 'docs/guide.md'), 'fixture 2\n');
+    git('add', '--', 'docs/guide.md');
+    git('commit', '-qm', 'docs change under a partial classifier');
+    const partialHead = git('rev-parse', 'HEAD');
+    const partial = classify(partialHead, {PR_BASE: partialBase});
+    assert.equal(partial.status, 0, partial.stderr);
+    assert.equal(partial.output, flags(true, true, true, true), 'a missing route key must enable every route');
+    assert.match(partial.stdout, /did not set exactly one true\/false value for: ci/);
+    // Pushes run the merged classifier under the same output contract.
+    const partialPush = classify(partialHead, {EVENT_NAME: 'push', PUSH_BEFORE: partialBase});
+    assert.equal(partialPush.status, 0, partialPush.stderr);
+    assert.equal(partialPush.output, flags(true, true, true, true), 'a push whose classifier omits a key must enable every route');
+    assert.match(partialPush.stdout, /did not set exactly one true\/false value for: ci/);
+    // A change to any other CI script also runs every route, even when the
+    // classifier itself is unchanged.
+    fs.writeFileSync(path.join(dir, 'scripts/ci/helper.sh'), '#!/usr/bin/env bash\ntrue\n');
+    git('add', '--', 'scripts/ci/helper.sh');
+    git('commit', '-qm', 'another CI script changes');
+    const helperHead = git('rev-parse', 'HEAD');
+    const helper = classify(helperHead, {PR_BASE: partialHead});
+    assert.equal(helper.status, 0, helper.stderr);
+    assert.equal(helper.output, flags(true, true, true, true), 'a pull request that changes scripts/ci must enable every route');
+    assert.match(helper.stdout, /changes scripts\/ci/);
+    // The base classifier's output is forwarded only as one true/false value
+    // per route: a repeated, empty, non-boolean or multiline value enables every
+    // route, and other lines are not forwarded.
+    const baseOutput = (body, label) => {
+      fs.writeFileSync(path.join(dir, 'scripts/ci/classify-changes.sh'),
+        `#!/usr/bin/env bash\nprintf ${JSON.stringify(body)} >> "\${GITHUB_OUTPUT}"\n`);
+      git('add', '--', 'scripts/ci/classify-changes.sh');
+      git('commit', '-qm', `classifier: ${label}`);
+      const classifierBase = git('rev-parse', 'HEAD');
+      fs.writeFileSync(path.join(dir, 'docs/guide.md'), `fixture ${label}\n`);
+      git('add', '--', 'docs/guide.md');
+      git('commit', '-qm', `docs change: ${label}`);
+      return classify(git('rev-parse', 'HEAD'), {PR_BASE: classifierBase});
+    };
+    for (const [label, body] of [
+      ['non-boolean value', 'go=yes\\nwebsite=false\\ndocs=true\\nci=false\\n'],
+      ['repeated key', 'go=false\\nwebsite=false\\ndocs=true\\nci=false\\ngo=true\\n'],
+      ['empty value', 'go=false\\nwebsite=\\ndocs=true\\nci=false\\n'],
+      ['multiline value', 'go<<EOF\\nfalse\\nEOF\\nwebsite=false\\ndocs=true\\nci=false\\n'],
+    ]) {
+      const result = baseOutput(body, label);
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal(result.output, flags(true, true, true, true), `a base classifier with a ${label} must enable every route`);
+      assert.match(result.stdout, /did not set exactly one true\/false value for: /);
+    }
+    const extra = baseOutput('go=false\\nwebsite=false\\ndocs=true\\nci=false\\nfull=true\\n', 'extra key');
+    assert.equal(extra.status, 0, extra.stderr);
+    assert.equal(extra.output, flags(false, false, true, false), 'only the route values may be forwarded');
+    // The trusted classifier and its output are staged in fresh mktemp files,
+    // never in a fixed RUNNER_TEMP path.
+    const step = script(ci, 'Classify changed files');
+    assert.match(step, /classifier=\$\(mktemp "\$\{RUNNER_TEMP\}\/classify-changes\.XXXXXX"\)/);
+    assert.doesNotMatch(step, /"\$\{RUNNER_TEMP\}\/classify-changes\.sh"/);
+    // A base entry that is a symlink is not a regular file: it must take the
+    // fallback instead of being staged and executed as text.
+    fs.rmSync(path.join(dir, 'scripts/ci/classify-changes.sh'));
+    fs.symlinkSync('../classify-target.sh', path.join(dir, 'scripts/ci/classify-changes.sh'));
+    git('add', '--', 'scripts/ci/classify-changes.sh');
+    git('commit', '-qm', 'classifier becomes a symlink');
+    const linked = git('rev-parse', 'HEAD');
+    fs.mkdirSync(path.join(dir, 'website'), {recursive: true});
+    fs.writeFileSync(path.join(dir, 'website/page.md'), 'fixture\n');
+    git('add', '--', 'website/page.md');
+    git('commit', '-qm', 'website change');
+    const linkedHead = git('rev-parse', 'HEAD');
+    const linkedFallback = classify(linkedHead, {PR_BASE: linked});
+    assert.equal(linkedFallback.status, 0, linkedFallback.stderr);
+    assert.equal(linkedFallback.output, flags(true, true, true, true), 'a non-regular base classifier must enable every route');
+    // A directory at the classifier path is a tree, not a regular file, even
+    // when it holds a regular file: it takes the fallback too.
+    fs.rmSync(path.join(dir, 'scripts/ci/classify-changes.sh'));
+    fs.mkdirSync(path.join(dir, 'scripts/ci/classify-changes.sh'));
+    fs.writeFileSync(path.join(dir, 'scripts/ci/classify-changes.sh/run.sh'), '#!/usr/bin/env bash\nexit 1\n');
+    git('add', '-A', '--', 'scripts/ci');
+    git('commit', '-qm', 'classifier path becomes a directory');
+    const tree = git('rev-parse', 'HEAD');
+    fs.writeFileSync(path.join(dir, 'website/page.md'), 'fixture 2\n');
+    git('add', '--', 'website/page.md');
+    git('commit', '-qm', 'website change under a directory');
+    const treeFallback = classify(git('rev-parse', 'HEAD'), {PR_BASE: tree});
+    assert.equal(treeFallback.status, 0, treeFallback.stderr);
+    assert.equal(treeFallback.output, flags(true, true, true, true), 'a directory at the classifier path must enable every route');
+    assert.match(treeFallback.stdout, /No trusted regular-file classifier/);
+  } finally {
+    fs.rmSync(dir, {recursive: true, force: true});
+    fs.rmSync(runnerTemp, {recursive: true, force: true});
+  }
+});
+test('the classifier fallback and output contract cover every route the workflow reads', () => {
+  const step = script(ci, 'Classify changed files');
+  const declared = step.match(/^route_keys="([^"]+)"$/m)[1].split(' ').sort();
+  // Routes come from the scope step; needs.changes.outputs.full follows labels, not paths.
+  // Consumers read them in dotted or bracket form in job conditions, and the summary's
+  // Python reads them as outputs['<route>'] or from a tuple of names iterated with outputs[key].
+  const summary = script(ci, 'Verify the selected CI path');
+  const read = [...new Set([
+    ...[...ci.matchAll(/\b(?:steps\.scope|needs\.changes)\.outputs(?:\.([A-Za-z_][\w-]*)|\[\s*['"]([A-Za-z_][\w-]*)['"]\s*\])/g)].map(match => match[1] || match[2]),
+    ...[...summary.matchAll(/\boutputs\[\s*['"]([A-Za-z_][\w-]*)['"]\s*\]/g)].map(match => match[1]),
+    ...[...summary.matchAll(/\bfor\s+\w+\s+in\s+\(([^)]*)\)/g)].flatMap(match => [...match[1].matchAll(/['"]([A-Za-z_][\w-]*)['"]/g)].map(name => name[1])),
+  ])].filter(key => key !== 'full').sort();
+  assert.deepEqual(declared, read, 'route_keys must list exactly the routes that jobs and the summary read');
+  // Every job gated on a route output must be one the summary waits for and requires,
+  // or it could fail while the stable CI check stays green.
+  const needs = ci.match(/^  summary:\n[\s\S]*?^    needs: \[([^\]]+)\]/m)[1].split(',').map(name => name.trim());
+  const jobs = ci.split(/^jobs:\n/m)[1].split(/^(?=  [a-z][a-z0-9_-]*:\n)/m).map(block => block.match(/^  ([a-z][a-z0-9_-]*):\n/)?.[1] && block)
+    .filter(Boolean);
+  // A job's condition: its `if:` line plus any continuation lines indented below it.
+  const condition = block => block.match(/^    if:([^\n]*(?:\n {6,}[^\n]*)*)/m)?.[1] || '';
+  const gated = jobs.filter(block => /needs\.changes\.outputs/.test(condition(block)))
+    .map(block => block.match(/^  ([a-z][a-z0-9_-]*):/)[1]);
+  assert.ok(gated.length > 0, 'expected route-gated jobs');
+  // The summary's required list: its initial assignment (both branches of the
+  // conditional) and every required.append(...).
+  const assignment = summary.match(/^required = ([^\n]+)$/m);
+  assert.ok(assignment, 'the summary must build a required list');
+  const required = new Set([
+    ...[...assignment[1].matchAll(/['"]([A-Za-z_][\w-]*)['"]/g)].map(match => match[1]),
+    ...[...summary.matchAll(/\brequired\.append\(\s*['"]([A-Za-z_][\w-]*)['"]\s*\)/g)].map(match => match[1]),
+  ]);
+  for (const job of gated) {
+    assert.ok(needs.includes(job), `summary must wait for ${job}`);
+    assert.ok(required.has(job), `the summary's required list must include ${job}`);
+  }
+  // Both the fallback and the contract check iterate the list instead of keeping their own copies.
+  assert.match(step, /^route_all\(\) \{ local key; for key in \$\{route_keys\}; do echo "\$\{key\}=true"/m);
+  assert.match(step, /for key in \$\{route_keys\}; do\n\s+count=\$\(grep -c "\^\$\{key\}=" "\$\{file\}"/);
+  // Every event's classifier output goes through the contract, pushes included.
+  assert.equal([...step.matchAll(/^\s*GITHUB_OUTPUT="\$\{routes\}" bash [^\n]+\n\s*forward_routes "\$\{routes\}"$/gm)].length, 2);
+  assert.doesNotMatch(step, /^\s*bash scripts\/ci\/classify-changes\.sh\s*$/m, 'no classifier may write the step output directly');
+  assert.doesNotMatch(step, /cat "\$\{(?:routes|file)\}"/, 'the classifier output must not be forwarded wholesale');
+  assert.doesNotMatch(step, /(?:go|website|docs|ci)=true/);
 });
 test('CI discovers every script suite, isolates Docker config and propagates failures from every invocation', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-script-suites-'));
