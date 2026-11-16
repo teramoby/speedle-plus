@@ -88,8 +88,10 @@ test('documented Go toolchain guard runs after checkout and setup and rejects ve
   assert.notEqual(select, -1, 'Select changed packages step missing');
   assert.ok(checkout < setup && setup < verify && verify < select,
     'toolchain guard must follow checkout and Setup Go and precede package selection');
-  assert.match(source, /^    env:\n      GOTOOLCHAIN: local$/m,
-    'the worker must pin GOTOOLCHAIN so later steps cannot switch toolchains');
+  // Only the job-level env may set GOTOOLCHAIN: a step-level override would
+  // let a later go command switch away from the verified toolchain.
+  assert.deepEqual([...source.matchAll(/^(\s*)GOTOOLCHAIN: (.*)$/gm)].map(match => [match[1], match[2]]),
+    [['      ', 'local']], 'only the job-level env may pin GOTOOLCHAIN');
 
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-go-toolchain-'));
   try {
@@ -118,6 +120,8 @@ if (args.length === 4 && args[0] === 'list' && args[1] === '-m' && args[2] === '
         message: 'Verified documented minimum Go toolchain: go1.27.4'},
       {name: 'Golang alias', readme: prerequisites('-   Golang 1.27.4 or a newer patch'), module: '1.27.4', selected: 'go1.27.4', passes: true,
         message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      {name: 'version separated from the Go word', readme: prerequisites('-   Go is required; the documented minimum version is 1.27.4'),
+        module: '1.27.4', selected: 'go1.27.4', passes: true, message: 'Verified documented minimum Go toolchain: go1.27.4'},
       // A comment inside a fenced block is not a section boundary.
       {name: 'fenced comment inside Prerequisites', readme: '### Prerequisites\n\n```sh\n# install Go 1.27.4\n```\n\n-   Go 1.27.4 or a newer patch\n',
         module: '1.27.4', selected: 'go1.27.4', passes: true, message: 'Verified documented minimum Go toolchain: go1.27.4'},
