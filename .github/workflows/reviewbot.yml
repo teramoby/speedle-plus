@@ -575,7 +575,7 @@ jobs:
 
   automerge-dependabot:
     name: Auto-merge safe dependency update
-    # Never occupy the only fixed-port test runner while waiting for its CI.
+    # Serialize waiters so at least one Linux runner remains available for CI.
     needs: [review, publish]
     if: >-
       always() && !cancelled() && needs.review.result == 'success' &&
@@ -584,6 +584,9 @@ jobs:
       github.event.pull_request.head.repo.full_name == github.repository &&
       needs.review.outputs.safe_to_merge == 'true'
     runs-on: ["self-hosted","Linux","X64","speedle-control"]
+    concurrency:
+      group: reviewbot-dependabot-automerge
+      cancel-in-progress: false
     timeout-minutes: 20
     permissions:
       actions: read

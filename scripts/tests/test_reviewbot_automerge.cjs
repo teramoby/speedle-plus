@@ -143,6 +143,11 @@ test('job-level condition requires safe verdict and same-repository Dependabot',
   assert.match(job,/needs\.review\.outputs\.safe_to_merge == 'true'/);
   assert.match(job,/needs: \[review, publish\]/);
 });
+test('dependency auto-merge waiters share a non-cancelling job concurrency group',()=>{
+  const start=workflow.indexOf('  automerge-dependabot:');
+  const job=workflow.slice(start,workflow.indexOf('    steps:',start));
+  assert.match(job,/^    concurrency:\n      group: reviewbot-dependabot-automerge\n      cancel-in-progress: false$/m);
+});
 function mergeJobEligible({reviewResult='success',publishResult='success',safe='true',author='dependabot[bot]',headRepo=`${owner}/${repo}`,cancelledWorkflow=false}={}) {
   const job=workflow.slice(workflow.indexOf('  automerge-dependabot:'));
   const condition=job.match(/    if: >-\n([\s\S]*?)\n    runs-on:/)[1].trim();

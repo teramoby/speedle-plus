@@ -30,9 +30,10 @@ unprivileged inline pointer workflow remain hosted.
 See [runner configuration](RUNNERS.md).
 
 The dependency auto-merge waiter uses `speedle-control`, which both Linux
-runners carry, so a waiting merge occupies one of them while the other and
-`fiona` take the CI jobs it waits for. All review and CI merge gates
-remain required.
+runners carry. Its shared, non-cancelling job concurrency group permits only
+one waiter at a time across dependency PRs, leaving at least one Linux runner
+available for the CI jobs it waits for. All review and CI merge gates remain
+required.
 
 ## Comment commands
 
