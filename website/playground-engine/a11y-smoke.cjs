@@ -12,13 +12,12 @@
    to settle after load: no request in flight and one second with no request
    starting or ending (a page that keeps loading resources fails). It then
    waits up to three seconds for the DOM and the stylesheets to stop
-   changing; a page that keeps animating its DOM, its CSS or its CSSOM, and
-   any page script error, is only reported in the PASS line; while the page
-   is still changing, axe samples three moments 200 ms apart and a violation
-   in any of them fails.
-   From before axe is injected until the scan ends, the page must not
-   request anything, and its styles (every stylesheet's rule text, media and
-   disabled state) must not change.
+   changing. A page that keeps animating its DOM, its CSS or its CSSOM is
+   only reported in the PASS line, but never counts as settled: axe samples
+   three moments 200 ms apart and a violation in any of them fails. Styles
+   are stricter: from before axe is injected until the sampling ends, every
+   stylesheet's rule text, media and disabled state must stay identical, or
+   the gate fails. Any page script error is only reported in the PASS line.
    WebSockets and web workers, which page.route cannot intercept, fail the
    gate. Serve a local copy of any resource the page needs.
    Run from the repository root: node website/playground-engine/a11y-smoke.cjs
@@ -136,17 +135,18 @@ const server = http.createServer((req,res)=>{
         // The styles must not change while axe measures the page: each stylesheet (including
         // adopted ones), whether it is disabled, its media and a hash of all its rule text.
         const sheets=()=>page.evaluate(()=>{
-          const hash=text=>{let h=0x811c9dc5;for(let i=0;i<text.length;i++){h^=text.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0;}return h.toString(16);};
           // StyleSheetList and CSSRuleList are array-like (length plus an indexed getter) with
           // no specified iterator: Array.from does not rely on the engine exposing one. Every
           // stylesheet is served from the local origin (anything else is aborted), so a
           // stylesheet whose rules cannot be read makes the fingerprint untrustworthy: fail
-          // instead of falling back to a comparison that no longer covers the rule text.
+          // instead of falling back to a comparison that no longer covers the rule text. The
+          // full rule text is compared, not a digest: a hash lets two different rule lists
+          // compare equal. The pages have a handful of stylesheets, so the size is no concern.
           const list=Array.from(document.styleSheets).concat(Array.from(document.adoptedStyleSheets||[]));
           return JSON.stringify(list.map(sheet=>{
             const name=sheet.href||(sheet.ownerNode&&sheet.ownerNode.nodeName)||'adopted';
             let rules;
-            try {rules=hash(Array.from(sheet.cssRules).map(rule=>rule.cssText).join('\n'));}
+            try {rules=Array.from(sheet.cssRules).map(rule=>rule.cssText);}
             catch (error) {throw new Error(`the a11y smoke cannot read the rules of stylesheet ${name}: ${error.message}`);}
             return [name,sheet.disabled,sheet.media?sheet.media.mediaText:'',rules];
           }));
@@ -226,7 +226,8 @@ const server = http.createServer((req,res)=>{
         // request can still fail after the scan, so the problems are complete here.
         assert.equal(requests,requestsBefore,`the ${label} at ${width}px requested resources during the contrast check`);
         assert.equal(pending,0,`the ${label} at ${width}px still has requests in flight after the contrast check`);
-        assert.equal(await sheets(),sheetsBefore,`the ${label} at ${width}px changed its styles during the contrast check`);
+        // Compared as a boolean: a failing assert.equal would print both whole fingerprints.
+        assert.ok((await sheets())===sheetsBefore,`the ${label} at ${width}px changed its styles during the contrast check`);
         assertNoProblems('during the contrast check');
         assert.deepEqual(report.violations,[],`axe color-contrast violations on the ${label} at ${width}px: ${JSON.stringify(report.violations,null,2)}`);
         checks++;
