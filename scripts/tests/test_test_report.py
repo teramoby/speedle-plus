@@ -215,13 +215,13 @@ class EmailTest(unittest.TestCase):
         self.assertLess(encoded + escaped_body, test_report.EMAIL_MAX_BYTES)
 
     def test_a_message_over_the_api_limit_is_not_sent(self):
-        with mock.patch.object(test_report, "EMAIL_MAX_BYTES", 64), \
+        with mock.patch.object(test_report, "EMAIL_MAX_BYTES", 1024 * 1024), \
                 mock.patch("urllib.request.urlopen") as urlopen, \
                 mock.patch("sys.stderr", new=io.StringIO()) as stderr:
-            self.assertFalse(test_report.send_email("subject", "x" * 1000, self.env))
+            self.assertFalse(test_report.send_email("subject", "x" * (1024 * 1024 + 1), self.env))
         urlopen.assert_not_called()
         self.assertIn("::error::", stderr.getvalue())
-        self.assertIn("limit", stderr.getvalue())
+        self.assertIn("1 MiB API limit", stderr.getvalue())
 
     def test_sends_normalized_addresses(self):
         env = dict(self.env, OPS_EMAIL_FROM="Sender <sender@example.com>",
@@ -281,11 +281,13 @@ class EmailTest(unittest.TestCase):
         response = mock.MagicMock()
         response.__enter__.return_value.read.return_value = json.dumps(
             {"success": True, "result": {"queued": ["recipient@example.com"]}}).encode()
-        with mock.patch("urllib.request.urlopen", side_effect=[transient, response]) as urlopen, \
+        with mock.patch.object(transient, "close") as close, \
+                mock.patch("urllib.request.urlopen", side_effect=[transient, response]) as urlopen, \
                 mock.patch.object(test_report, "EMAIL_RETRY_DELAY", 0), \
                 mock.patch("sys.stderr", new=io.StringIO()):
             self.assertTrue(test_report.send_email("s", "b", self.env))
         self.assertEqual(urlopen.call_count, 2)
+        close.assert_called_once_with()
 
     def test_a_persistent_failure_stops_after_the_retries(self):
         error = urllib.error.HTTPError("https://api.example/send", 500, "server error", None, io.BytesIO(b"{}"))

@@ -70,8 +70,16 @@ jobs:
           # The summary must be readable even when a failed required email made
           # the script exit non-zero. The step summary rejects more than 1 MiB;
           # keep this copy below that limit and cut the UTF-8 report on a
-          # character boundary.
+          # character boundary. Say when the copy was cut, and never lose the
+          # report script's exit status when the copy itself fails.
           if [[ -f report.txt ]]; then
-            head -c 900000 report.txt | iconv -f UTF-8 -t UTF-8 -c >> "${GITHUB_STEP_SUMMARY}"
+            {
+              # A cut can split the last character, so iconv drops it and
+              # reports an incomplete sequence; that alone must not warn.
+              head -c 900000 report.txt | iconv -f UTF-8 -t UTF-8 -c || :
+              if [[ $(wc -c < report.txt) -gt 900000 ]]; then
+                printf '\n[report truncated at 900000 bytes in the step summary]\n'
+              fi
+            } >> "${GITHUB_STEP_SUMMARY:-}" || echo "::warning::The step summary could not be written."
           fi
           exit "$status"

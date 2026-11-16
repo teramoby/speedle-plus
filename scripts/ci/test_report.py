@@ -332,7 +332,7 @@ def email_text(report, run_url=""):
 def report_attachment(filename, report):
     """The full report as a base64 text attachment of the email API.
 
-    The whole message is limited to 25 MiB, so a report beyond
+    The API limits the whole message to 25 MiB, so a report beyond
     ATTACHMENT_TEXT_LIMIT bytes is cut between characters and ends with a note
     that says so.
     """
@@ -403,7 +403,8 @@ def send_email(subject, body, env, attachment=None, timeout=EMAIL_TIMEOUT):
     if len(message) > EMAIL_MAX_BYTES:
         # The attachment cap keeps a real report well under this; the guard
         # only rejects a message the API would refuse.
-        print("::error::Email delivery failed (the message exceeds the 25 MiB API limit).", file=sys.stderr)
+        print(f"::error::Email delivery failed (the message exceeds the "
+              f"{EMAIL_MAX_BYTES // (1024 * 1024)} MiB API limit).", file=sys.stderr)
         return False
     request = urllib.request.Request(
         EMAIL_API.format(account=urllib.parse.quote(account, safe="")), method="POST",
@@ -418,6 +419,7 @@ def send_email(subject, body, env, attachment=None, timeout=EMAIL_TIMEOUT):
             break
         except urllib.error.HTTPError as error:
             # The response body and the URL are not logged: both may hold addresses.
+            error.close()
             if not retry or error.code not in RETRYABLE_STATUS:
                 print(f"::error::Email delivery failed (HTTP {error.code}).", file=sys.stderr)
                 return False
