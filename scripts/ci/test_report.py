@@ -16,6 +16,7 @@ import http.client
 import json
 import os
 import sys
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -28,6 +29,11 @@ ISSUE_LABEL = "test-failure"
 MAX_ISSUES = 20
 OUTPUT_LINES = 40
 PROMPT_LIMIT = 200_000
+# A transient email-API failure must not turn a passing run red. Only these
+# statuses and a network error are retried; a rejected request is not.
+EMAIL_RETRIES = 2
+EMAIL_RETRY_DELAY = 2
+RETRYABLE_STATUS = (429, 500, 502, 503, 504)
 
 # How each kind of run reports. Scheduled runs report every result in
 # Chinese, by email. The post-merge regression only speaks up when it fails,
@@ -340,8 +346,12 @@ def send_email(subject, body, env, timeout=EMAIL_TIMEOUT):
     addresses.
 
     A configuration problem is a plain notice and sends nothing. A failed
-    send is an error annotation on the run, not a failed step: the report job
-    still tracks failing tests, as it did when a Feishu post failed.
+    send is an error annotation on the run, and it fails the step only when
+    the run is a real report job (REPORT_EMAIL_REQUIRED), after the summary
+    and the failure tracking have run. A 429, a 5xx status or a network
+    error is retried twice with a short backoff, so a transient blip does
+    not turn a passing run red; a retry may duplicate a report whose first
+    response was lost. The account id is percent-encoded into the path.
     """
     if not email_configured(env):
         print("Cloudflare Email is not configured correctly (CF_ACCOUNT_ID, CF_EMAIL_TOKEN, "
@@ -356,18 +366,31 @@ def send_email(subject, body, env, timeout=EMAIL_TIMEOUT):
     payload = {"to": recipients, "from": senders[0], "subject": subject, "text": body,
                "reply_to": reply_to[0]}
     request = urllib.request.Request(
-        EMAIL_API.format(account=account), method="POST", data=json.dumps(payload).encode(),
+        EMAIL_API.format(account=urllib.parse.quote(account, safe="")), method="POST",
+        data=json.dumps(payload).encode(),
         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"})
-    try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
-            reply = json.loads(response.read() or b"{}")
-    except urllib.error.HTTPError as error:
-        # The response body and the URL are not logged: both may hold addresses.
-        print(f"::error::Email delivery failed (HTTP {error.code}).", file=sys.stderr)
-        return False
-    except (urllib.error.URLError, OSError, ValueError, http.client.HTTPException) as error:
-        print(f"::error::Email delivery failed ({type(error).__name__}).", file=sys.stderr)
-        return False
+    reply = None
+    for attempt in range(EMAIL_RETRIES + 1):
+        retry = attempt < EMAIL_RETRIES
+        try:
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                reply = json.loads(response.read() or b"{}")
+            break
+        except urllib.error.HTTPError as error:
+            # The response body and the URL are not logged: both may hold addresses.
+            if not retry or error.code not in RETRYABLE_STATUS:
+                print(f"::error::Email delivery failed (HTTP {error.code}).", file=sys.stderr)
+                return False
+        except (urllib.error.URLError, OSError, http.client.HTTPException) as error:
+            if not retry:
+                print(f"::error::Email delivery failed ({type(error).__name__}).", file=sys.stderr)
+                return False
+        except ValueError as error:
+            # An unreadable response body will not fix itself on a retry.
+            print(f"::error::Email delivery failed ({type(error).__name__}).", file=sys.stderr)
+            return False
+        if retry:
+            time.sleep(EMAIL_RETRY_DELAY)
     if not isinstance(reply, dict) or reply.get("success") is not True:
         print("::error::Email delivery failed (the API did not report success).", file=sys.stderr)
         return False

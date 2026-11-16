@@ -64,8 +64,14 @@ jobs:
           set -euo pipefail
           # A job that did not succeed is reported as failed even when its
           # results are partial or show no failure.
+          status=0
           python3 -I scripts/ci/test_report.py --kind regression \
-            --source "run:${RUN_RESULT}:test-results" --summary-file report.txt
-          # The step summary rejects more than 1 MiB; keep this copy below
-          # that limit and cut the UTF-8 report on a character boundary.
-          head -c 900000 report.txt | iconv -f UTF-8 -t UTF-8 -c >> "${GITHUB_STEP_SUMMARY}"
+            --source "run:${RUN_RESULT}:test-results" --summary-file report.txt || status=$?
+          # The summary must be readable even when a failed required email made
+          # the script exit non-zero. The step summary rejects more than 1 MiB;
+          # keep this copy below that limit and cut the UTF-8 report on a
+          # character boundary.
+          if [[ -f report.txt ]]; then
+            head -c 900000 report.txt | iconv -f UTF-8 -t UTF-8 -c >> "${GITHUB_STEP_SUMMARY}"
+          fi
+          exit "$status"

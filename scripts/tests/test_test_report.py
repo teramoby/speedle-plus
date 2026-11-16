@@ -165,6 +165,7 @@ class EmailTest(unittest.TestCase):
         response = mock.MagicMock()
         response.__enter__.return_value.read.return_value = reply
         with mock.patch("urllib.request.urlopen", return_value=response, side_effect=error) as urlopen, \
+                mock.patch.object(test_report, "EMAIL_RETRY_DELAY", 0), \
                 mock.patch("sys.stderr", new=io.StringIO()) as stderr:
             ok = test_report.send_email("subject", "body", env or self.env)
         return ok, urlopen, stderr.getvalue()
@@ -229,6 +230,40 @@ class EmailTest(unittest.TestCase):
         urlopen.assert_not_called()
         self.assertIn("not configured", stderr.getvalue())
         self.assertNotIn("::error::", stderr.getvalue())
+
+    def test_the_account_id_is_percent_encoded(self):
+        ok, urlopen, _ = self.send(env=dict(self.env, CF_ACCOUNT_ID="a/b?c"))
+        self.assertTrue(ok)
+        self.assertEqual(urlopen.call_args[0][0].full_url,
+                         "https://api.cloudflare.com/client/v4/accounts/a%2Fb%3Fc/email/sending/send")
+
+    def test_a_transient_failure_is_retried(self):
+        transient = urllib.error.HTTPError("https://api.example/send", 503, "unavailable", None, io.BytesIO(b"{}"))
+        response = mock.MagicMock()
+        response.__enter__.return_value.read.return_value = json.dumps(
+            {"success": True, "result": {"queued": ["recipient@example.com"]}}).encode()
+        with mock.patch("urllib.request.urlopen", side_effect=[transient, response]) as urlopen, \
+                mock.patch.object(test_report, "EMAIL_RETRY_DELAY", 0), \
+                mock.patch("sys.stderr", new=io.StringIO()):
+            self.assertTrue(test_report.send_email("s", "b", self.env))
+        self.assertEqual(urlopen.call_count, 2)
+
+    def test_a_persistent_failure_stops_after_the_retries(self):
+        error = urllib.error.HTTPError("https://api.example/send", 500, "server error", None, io.BytesIO(b"{}"))
+        with mock.patch("urllib.request.urlopen", side_effect=error) as urlopen, \
+                mock.patch.object(test_report, "EMAIL_RETRY_DELAY", 0), \
+                mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+            self.assertFalse(test_report.send_email("s", "b", self.env))
+        self.assertEqual(urlopen.call_count, test_report.EMAIL_RETRIES + 1)
+        self.assertIn("HTTP 500", stderr.getvalue())
+
+    def test_a_rejected_request_is_not_retried(self):
+        error = urllib.error.HTTPError("https://api.example/send", 403, "denied", None, io.BytesIO(b"{}"))
+        with mock.patch("urllib.request.urlopen", side_effect=error) as urlopen, \
+                mock.patch.object(test_report, "EMAIL_RETRY_DELAY", 0), \
+                mock.patch("sys.stderr", new=io.StringIO()):
+            self.assertFalse(test_report.send_email("s", "b", self.env))
+        self.assertEqual(urlopen.call_count, 1)
 
     def test_a_queued_or_delivered_recipient_is_success(self):
         self.assertTrue(self.send(result={"queued": ["recipient@example.com"]})[0])
@@ -389,7 +424,8 @@ class EmailTest(unittest.TestCase):
                     urlopen = mock.patch("urllib.request.urlopen", side_effect=case["error"])
                 env = dict(self.env, GITHUB_TOKEN="t", GITHUB_REPOSITORY="o/r",
                            REPORT_EMAIL_REQUIRED="true")
-                with urlopen, mock.patch.object(test_report, "GitHub", return_value=github), \
+                with urlopen, mock.patch.object(test_report, "EMAIL_RETRY_DELAY", 0), \
+                        mock.patch.object(test_report, "GitHub", return_value=github), \
                         mock.patch("sys.stdout", new=io.StringIO()), \
                         mock.patch("sys.stderr", new=io.StringIO()) as stderr:
                     code = test_report.main(["--kind", "nightly", "--go-json", str(directory / "go.json"),
@@ -398,6 +434,21 @@ class EmailTest(unittest.TestCase):
                 self.assertIn("::error::The report email could not be sent", stderr.getvalue())
                 self.assertIn("TestZ", summary.read_text())
                 self.assertEqual([c[2]["title"] for c in github.calls], ["Test failure: p TestZ"])
+
+    def test_a_passing_report_job_fails_when_the_required_send_fails(self):
+        # Nightly and weekly report passing runs too, so a broken channel
+        # makes the run red even though every test passed.
+        directory = Path(tempfile.mkdtemp())
+        (directory / "go.json").write_text(events(("pass", "p", "TestA", None)))
+        env = dict(self.env, REPORT_EMAIL_REQUIRED="true")
+        error = urllib.error.HTTPError("https://api.example/send", 403, "denied", None, io.BytesIO(b"{}"))
+        with mock.patch("urllib.request.urlopen", side_effect=error), \
+                mock.patch.object(test_report, "EMAIL_RETRY_DELAY", 0), \
+                mock.patch("sys.stdout", new=io.StringIO()), \
+                mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+            code = test_report.main(["--kind", "nightly", "--go-json", str(directory / "go.json")], env=env)
+        self.assertEqual(code, 1)
+        self.assertIn("::error::The report email could not be sent", stderr.getvalue())
 
     def test_an_unexpected_send_exception_fails_a_required_report_job(self):
         # Any exception in the send path is a failed send, even when the
@@ -434,6 +485,7 @@ class EmailTest(unittest.TestCase):
         error = urllib.error.HTTPError("https://api.example/send", 500, "server error", None, io.BytesIO(b"{}"))
         env = dict(self.env, GITHUB_TOKEN="t", GITHUB_REPOSITORY="o/r")
         with mock.patch("urllib.request.urlopen", side_effect=error), \
+                mock.patch.object(test_report, "EMAIL_RETRY_DELAY", 0), \
                 mock.patch.object(test_report, "GitHub", return_value=github), \
                 mock.patch("sys.stdout", new=io.StringIO()), \
                 mock.patch("sys.stderr", new=io.StringIO()) as stderr:
