@@ -7,11 +7,16 @@ const path = require('node:path');
 const {spawnSync} = require('node:child_process');
 
 const CI_WORKFLOW_NAME = 'Speedle CI';
-// The workflow file whose jobs and steps this gate verifies by name. A
-// pull_request run executes it from the request's merge commit, so the names
-// are only trustworthy when the request does not change this file.
+// The workflow files whose job and step names this gate verifies. A
+// pull_request run executes them from the request's merge commit when the
+// caller references them locally, so the names are only trustworthy when the
+// request does not change any of these files.
 const CI_WORKFLOW_PATH = '.github/workflows/ci.yml';
+const GUARDED_WORKFLOW_PATHS = [CI_WORKFLOW_PATH, '.github/workflows/go-ci-worker.yml'];
 const STATUS_CONTEXT = 'speedle/ci-route-gate';
+// The newest runs for one head that the supersession check inspects. A newer
+// run that never publishes a status must not suppress one that does.
+const RUN_SAMPLE_LIMIT = 100;
 const ROUTE_KEYS = ['go', 'website', 'docs', 'ci'];
 // The compare API returns at most 300 file entries. An incomplete list enables
 // every route rather than making a decision from only part of the diff.
@@ -217,14 +222,14 @@ function changedFiles(compare) {
   return {files, complete: files.length < COMPARE_FILE_LIMIT};
 }
 
-// A pull_request run executes the CI workflow from the request's merge commit,
-// so its job and step names are only trustworthy when the request does not
-// change the workflow file. The compare API reports the request's own side of
-// the change since the merge base, so a base-branch update does not count. The
-// reusable jobs this workflow calls are pinned to @master, so a change to that
-// pin is a change to this file.
-function workflowTrust(comparison, workflowPath) {
-  if (comparison.files.includes(workflowPath)) {
+// A pull_request run executes these workflow files from the request's merge
+// commit, so their job and step names are only trustworthy when the request
+// does not change any of them. The compare API reports the request's own side
+// of the change since the merge base, so a base-branch update does not count.
+// The worker is guarded even though callers pin it to @master: a local
+// reference would execute the request's copy.
+function workflowTrust(comparison, workflowPaths) {
+  if (workflowPaths.some(workflowPath => comparison.files.includes(workflowPath))) {
     return 'The pull request changes the CI workflow; the route cannot be verified from its own run';
   }
   if (!comparison.complete) {
@@ -241,12 +246,31 @@ function jobsFromPages(pages) {
   });
 }
 
-function latestRun(api, repository, headSha, completed) {
+function latestCompletedRun(api, repository, headSha) {
   assertSha(headSha, 'workflow run head');
-  const query = completed ? '&status=completed' : '';
-  const response = api(`repos/${repository}/actions/workflows/ci.yml/runs?event=pull_request&head_sha=${headSha}&per_page=1${query}`);
+  const response = api(`repos/${repository}/actions/workflows/ci.yml/runs?event=pull_request&head_sha=${headSha}&per_page=1&status=completed`);
   if (!response || !Array.isArray(response.workflow_runs)) throw new Error('workflow runs response has no run list');
   return response.workflow_runs[0] || null;
+}
+
+// A completed ignored label run never publishes a status, so it must not
+// suppress the status of the newest run that can. The runs list is ordered by
+// creation, newest first, so the first newer run that is not ignored decides.
+function supersedingRun(api, repository, run) {
+  assertSha(run?.head_sha, 'workflow run head');
+  const response = api(`repos/${repository}/actions/workflows/ci.yml/runs?event=pull_request&head_sha=${run.head_sha}&per_page=${RUN_SAMPLE_LIMIT}`);
+  if (!response || !Array.isArray(response.workflow_runs)) throw new Error('workflow runs response has no run list');
+  const runs = response.workflow_runs;
+  for (const candidate of runs) {
+    if (String(candidate?.id) === String(run.id)) return null;
+    const jobs = jobsFromPages(api(`repos/${repository}/actions/runs/${candidate.id}/jobs?per_page=100&filter=latest`, {paginate: true}));
+    if (candidate.name === CI_WORKFLOW_NAME && ignoredRun(candidate, jobs)) continue;
+    return candidate;
+  }
+  // A complete sample always contains this run. If the sample is full and none
+  // of it published, this run is the newest one that can.
+  if (runs.length < RUN_SAMPLE_LIMIT) throw new Error('cannot find this run among the runs for its head');
+  return null;
 }
 
 function assessRun({api, runner, repository, run, pr}) {
@@ -260,7 +284,7 @@ function assessRun({api, runner, repository, run, pr}) {
   // Never read job or step names from a run whose workflow the request
   // controls: it could report the names this gate requires without running
   // the jobs they belong to.
-  const untrusted = workflowTrust(comparison, run.path);
+  const untrusted = workflowTrust(comparison, GUARDED_WORKFLOW_PATHS);
   if (untrusted) return outcome({run, pr, routes: allRoutes(), state: 'failure', message: untrusted});
   const routes = comparison.complete ? classifyWithBase({
     api, runner, repository, baseSha: pr.base.sha, headSha: run.head_sha, files: comparison.files,
@@ -274,7 +298,7 @@ function execute(options, api, runner = spawnSync) {
   try {
     if (options.prNumber) {
       pr = api(`repos/${options.repository}/pulls/${options.prNumber}`);
-      run = latestRun(api, options.repository, pr?.head?.sha, true);
+      run = latestCompletedRun(api, options.repository, pr?.head?.sha);
       if (!run) {
         return outcome({pr, state: 'failure', message: 'No completed Speedle CI run for the pull request head'});
       }
@@ -283,12 +307,11 @@ function execute(options, api, runner = spawnSync) {
       const number = run?.pull_requests?.[0]?.number;
       if (!Number.isInteger(number) || number < 1) throw new Error('workflow run has no pull request number');
       pr = api(`repos/${options.repository}/pulls/${number}`);
-      const latest = latestRun(api, options.repository, run?.head_sha, false);
-      if (!latest) throw new Error('cannot confirm the latest CI run for this head');
-      if (String(latest.id) !== String(run.id)) {
+      const superseding = supersedingRun(api, options.repository, run);
+      if (superseding) {
         return outcome({
           run, pr, state: null, ignored: true,
-          message: latest.name === CI_WORKFLOW_NAME ? 'Superseded by a newer CI run' : 'Newer CI run has an unexpected workflow name',
+          message: superseding.name === CI_WORKFLOW_NAME ? 'Superseded by a newer CI run' : 'Newer CI run has an unexpected workflow name',
         });
       }
     }
@@ -399,6 +422,7 @@ if (require.main === module) main(process.argv.slice(2));
 module.exports = {
   CI_WORKFLOW_NAME,
   CI_WORKFLOW_PATH,
+  GUARDED_WORKFLOW_PATHS,
   STATUS_CONTEXT,
   allRoutes,
   changedFiles,

@@ -9,6 +9,7 @@ permissions:
   contents: read
   statuses: write
   actions: read
+  pull-requests: read
 
 # Runs for one head are serialized. The script also ignores a run when a newer
 # run exists for the same head, so completion order cannot replace its result.

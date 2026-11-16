@@ -75,8 +75,10 @@ function routesFor(files) {
   });
 }
 
-function fixtureApi({run: completedRun, pr, files, jobs: runJobs, latest, latestCompleted}) {
+function fixtureApi({run: completedRun, pr, files, jobs: runJobs, newerJobs, latest, latestCompleted}) {
   const calls = [];
+  const jobsPrefix = `repos/${repository}/actions/runs/`;
+  const jobsSuffix = '/jobs?per_page=100&filter=latest';
   const api = (endpoint, options = {}) => {
     calls.push({endpoint, options});
     if (options.method === 'POST') {
@@ -85,9 +87,10 @@ function fixtureApi({run: completedRun, pr, files, jobs: runJobs, latest, latest
     }
     if (endpoint === `repos/${repository}/actions/runs/${completedRun.id}`) return completedRun;
     if (endpoint === `repos/${repository}/pulls/${pr.number}`) return pr;
-    if (endpoint === `repos/${repository}/actions/runs/${completedRun.id}/jobs?per_page=100&filter=latest`) {
+    if (endpoint.startsWith(jobsPrefix) && endpoint.endsWith(jobsSuffix)) {
       assert.equal(options.paginate, true);
-      return [{jobs: runJobs}];
+      const id = endpoint.slice(jobsPrefix.length, -jobsSuffix.length);
+      return [{jobs: id === String(completedRun.id) ? runJobs : (newerJobs === undefined ? runJobs : newerJobs)}];
     }
     if (endpoint === `repos/${repository}/compare/${base}...${head}`) {
       return {files: files.map(filename => ({filename}))};
@@ -103,6 +106,17 @@ function fixtureApi({run: completedRun, pr, files, jobs: runJobs, latest, latest
     throw new Error(`unexpected API request: ${endpoint}`);
   };
   return {api, calls};
+}
+
+function ignoredJobs(id) {
+  return [
+    job('changes', 'skipped', []),
+    job('quick', 'skipped'),
+    job('lint', 'skipped'),
+    job('test', 'skipped'),
+    job('build', 'skipped'),
+    job(`Ignored CI event ${id}`, 'skipped'),
+  ];
 }
 
 test('a classifier edit requires every route even when the completed run narrowed them', () => {
@@ -186,6 +200,29 @@ test('the gate job and step names match the CI workflow', () => {
   // defined by the worker workflow pinned at @master.
   const worker = fs.readFileSync(path.join(root, '.github/workflows/go-ci-worker.yml'), 'utf8');
   assert.match(worker, /^  execute:\n    name: execute$/m);
+  const uses = [...ci.matchAll(/^    uses: (.+)$/gm)].map(match => match[1]);
+  assert.ok(uses.length > 0);
+  for (const value of uses) {
+    assert.equal(value, 'teramoby/speedle-plus/.github/workflows/go-ci-worker.yml@master',
+      'the gate trusts called job names only when the worker is pinned');
+  }
+  assert.deepEqual(gate.GUARDED_WORKFLOW_PATHS, ['.github/workflows/ci.yml', '.github/workflows/go-ci-worker.yml']);
+  for (const workflowPath of gate.GUARDED_WORKFLOW_PATHS) {
+    assert.ok(fs.existsSync(path.join(root, workflowPath)), `${workflowPath} must exist`);
+  }
+});
+
+test('a pull request that changes the reusable worker workflow also fails closed', () => {
+  const fixture = fixtureApi({
+    run: run(),
+    pr: pullRequest(),
+    files: ['pkg/eval/eval.go', '.github/workflows/go-ci-worker.yml'],
+    jobs: jobs({build: true}),
+  });
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.status.state, 'failure');
+  assert.equal(result.status.description,
+    'The pull request changes the CI workflow; the route cannot be verified from its own run');
 });
 
 test('a pull request that rewrites the CI workflow cannot be verified by its own run', () => {
@@ -332,26 +369,31 @@ test('PR dry-run evaluates the latest completed run without writing a status', (
 
 test('ignored label events and superseded runs do not replace an existing status', () => {
   const pr = pullRequest();
-  const ignoredJobs = [
-    job('changes', 'skipped', []),
-    job('quick', 'skipped'),
-    job('lint', 'skipped'),
-    job('test', 'skipped'),
-    job('build', 'skipped'),
-    job('Ignored CI event 101', 'skipped'),
-  ];
-  const ignoredFixture = fixtureApi({run: run(), pr, files: [], jobs: ignoredJobs});
+  const ignoredFixture = fixtureApi({run: run(), pr, files: [], jobs: ignoredJobs(101)});
   const ignored = gate.runGate({repository, runId: 101, publish: true}, ignoredFixture.api);
   assert.equal(ignored.ignored, true);
   assert.equal(ignored.status.state, null);
   assert.equal(ignoredFixture.calls.filter(call => call.options.method === 'POST').length, 0);
   assert.equal(ignoredFixture.calls.some(call => call.endpoint.includes('/compare/')), false);
 
-  const supersededFixture = fixtureApi({run: run(), pr, files: [], jobs: jobs(), latest: [run({id: 102})]});
+  const supersededFixture = fixtureApi({run: run(), pr, files: [], jobs: jobs(), latest: [run({id: 102}), run()]});
   const superseded = gate.runGate({repository, runId: 101, publish: true}, supersededFixture.api);
   assert.equal(superseded.ignored, true);
   assert.equal(superseded.status.description, 'Superseded by a newer CI run');
   assert.equal(supersededFixture.calls.filter(call => call.options.method === 'POST').length, 0);
+});
+
+test('a newer ignored label run does not suppress the last run that can publish', () => {
+  const pr = pullRequest();
+  const fixture = fixtureApi({
+    run: run(), pr, files: ['docs/guide.md'], jobs: jobs({build: true}),
+    latest: [run({id: 102}), run()], newerJobs: ignoredJobs(102),
+  });
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.ignored, false);
+  assert.equal(result.status.state, 'success');
+  assert.equal(result.status.description, 'Quick CI routes passed');
+  assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 1);
 });
 
 test('dry-run wrapper forwards exactly one PR number and never enables publishing', () => {
@@ -382,7 +424,7 @@ test('workflow_run gate uses the default branch, Node 22 and minimal permissions
   const workflow = fs.readFileSync(path.join(root, '.github/workflows/ci-route-gate.yml'), 'utf8');
   assert.match(workflow, /^  workflow_run:\n    workflows: \[Speedle CI\]\n    types: \[completed\]$/m);
   const permissions = workflow.match(/^permissions:\n((?:  [a-z-]+: (?:read|write)\n)+)/m)?.[1];
-  assert.equal(permissions, '  contents: read\n  statuses: write\n  actions: read\n');
+  assert.equal(permissions, '  contents: read\n  statuses: write\n  actions: read\n  pull-requests: read\n');
   assert.match(workflow, /^    if: github\.event\.workflow_run\.event == 'pull_request'$/m);
   assert.match(workflow, /^  cancel-in-progress: false$/m);
 
