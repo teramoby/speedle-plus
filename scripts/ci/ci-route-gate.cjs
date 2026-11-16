@@ -54,10 +54,6 @@ function outcome({run, pr, state, message, routes, ignored = false, error}) {
   };
 }
 
-function labelsOf(pr) {
-  return new Set((Array.isArray(pr?.labels) ? pr.labels : []).map(label => label?.name).filter(Boolean));
-}
-
 function requiredJobs(routes, full) {
   const required = [full ? 'test' : 'quick'];
   if (full && routes.go) required.push('lint');
@@ -75,6 +71,15 @@ function uniqueEntry(entries, name, kind) {
 
 function passed(entry) {
   return entry?.status === 'completed' && entry?.conclusion === 'success';
+}
+
+// The run's own job set records which mode it executed: a full run contains a
+// test job, a quick run leaves it skipped. Labels can change between the run
+// and this gate, so the live labels cannot select the required routes.
+function runMode(jobs) {
+  const test = uniqueEntry(jobs, ['test', 'test / execute'], 'route');
+  if (test.error) return {error: test.error};
+  return {full: test.entry?.conclusion !== 'skipped'};
 }
 
 function ignoredRun(run, jobs) {
@@ -130,7 +135,9 @@ function evaluate({run, pr, jobs, routes}) {
     }
   }
 
-  const full = labelsOf(pr).has('full-ci') || labelsOf(pr).has('merge-head');
+  const mode = runMode(jobs);
+  if (mode.error) return outcome({run, pr, routes, state: 'failure', message: mode.error});
+  const full = mode.full;
   for (const name of requiredJobs(routes, full)) {
     // A completed reusable workflow appears as "<caller> / <called job>";
     // a skipped reusable workflow retains only the caller's name.

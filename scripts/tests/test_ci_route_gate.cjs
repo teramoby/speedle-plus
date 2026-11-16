@@ -325,6 +325,26 @@ test('merge-head selects full routes and missing classification steps fail close
   assert.equal(skippedClassify.status.description, 'Required step did not pass: Classify changed files');
 });
 
+test('the completed run selects the mode, not labels changed after it finished', () => {
+  const goRoutes = routesFor(['pkg/eval/eval.go']);
+
+  // A full run whose full-ci label was removed before the gate executed.
+  const full = gate.evaluate({run: run(), pr: pullRequest(), jobs: jobs({full: true, build: true}), routes: goRoutes});
+  assert.equal(full.status.state, 'success');
+  assert.equal(full.status.description, 'Full CI routes passed');
+
+  // A quick run that was labelled full-ci after it finished.
+  const quick = gate.evaluate({run: run(), pr: pullRequest(['full-ci']), jobs: jobs({build: true}), routes: goRoutes});
+  assert.equal(quick.status.state, 'success');
+  assert.equal(quick.status.description, 'Quick CI routes passed');
+
+  // A run that exposes no test job cannot be classified into a mode.
+  const withoutTest = jobs({full: true, build: true}).filter(job => !['test', 'test / execute'].includes(job.name));
+  const missing = gate.evaluate({run: run(), pr: pullRequest(), jobs: withoutTest, routes: goRoutes});
+  assert.equal(missing.status.state, 'failure');
+  assert.equal(missing.status.description, 'Missing required route: test');
+});
+
 test('classifier output contract and incomplete compare responses widen every route', () => {
   assert.deepEqual(gate.parseClassifierOutput('go=false\nwebsite=false\ndocs=true\nci=false\n'),
     {go: false, website: false, docs: true, ci: false});
