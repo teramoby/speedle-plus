@@ -3,14 +3,21 @@
 
 Execute the documented shell commands and compile the actual Go/SPDL blocks
 against the public release and, in the merge gate, the candidate library too.
+The module download steps (`go get` and `go mod tidy`/`go build`) retry up to
+three times with exponential backoff, because a transient network failure must
+not fail the walkthrough; the documented commands stay byte for byte unchanged
+and the module-version and allow/deny checks are never retried.
 """
 import argparse
 import json
 import os
 import re
+import shutil
 import subprocess
 import tempfile
 from pathlib import Path
+
+from network_retry import run_with_retry
 
 ROOT = Path(__file__).resolve().parents[2]
 PATTERN = r"<!-- embedded: ([a-z-]+) -->\s*```(bash|go|ini)\n(.*?)\n```"
@@ -48,11 +55,18 @@ def verify(locale, steps, toolchain, candidate=False):
         if toolchain:
             assert f"go version {toolchain} " in version, version
         print(f"{locale}: {version}; runner={env.get('RUNNER_NAME', 'local')}", flush=True)
-        run(steps["setup"], work, env)
         app = work / "speedle-embedded-demo"
+
+        def setup():
+            # A failed attempt can leave the module directory behind, which
+            # would make every retry fail with "File exists"; start clean.
+            shutil.rmtree(app, ignore_errors=True)
+            return run(steps["setup"], work, env)
+
+        run_with_retry(setup)
         (app / "policies.spdl").write_text(steps["policies"] + "\n")
         (app / "main.go").write_text(steps["program"] + "\n")
-        run(steps["build"], app, env)
+        run_with_retry(lambda: run(steps["build"], app, env))
         module = json.loads(run("go list -m -json github.com/teramoby/speedle-plus", app, env))
         assert module["Version"] == "v1.6.0" and "Replace" not in module, module
         output = run(steps["run"], app, env).strip()
@@ -62,7 +76,7 @@ def verify(locale, steps, toolchain, candidate=False):
         if candidate:
             revision = run(["git", "rev-parse", "HEAD"], ROOT, env).strip()
             run(["go", "mod", "edit", "-replace", f"github.com/teramoby/speedle-plus={ROOT}"], app, env)
-            run(steps["build"], app, env)
+            run_with_retry(lambda: run(steps["build"], app, env))
             selected = json.loads(run("go list -m -json github.com/teramoby/speedle-plus", app, env))
             assert Path(selected["Replace"]["Dir"]).resolve() == ROOT.resolve(), selected
             output = run(steps["run"], app, env).strip()
