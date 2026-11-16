@@ -77,9 +77,12 @@ jobs:
           # archive over read-only module files causes noisy extraction failures.
           cache: ${{ runner.environment != 'self-hosted' }}
 
+      # Run the README/go.mod consistency check on the cheap PR paths; the
+      # repository-level regression in the changes job covers every change.
       # CI exercises the exact minimum documented under README's Prerequisites
       # heading; user builds may use a newer release.
       - name: Verify documented Go toolchain
+        if: inputs.mode == 'quick' || inputs.mode == 'lint'
         run: |
           set -euo pipefail
           python3 - <<'PYTHON'
@@ -135,8 +138,9 @@ jobs:
                                    ' in a line starting with Go or Golang')
               versions = set()
               for line in declared:
-                  # A download link on the declaration line is not a version.
-                  line = re.sub(r'<https?://[^>]*>|https?://\S+', ' ', line)
+                  # Links and paths carry no version declaration; drop those
+                  # words so a versioned download link cannot poison the scan.
+                  line = ' '.join(word for word in line.split() if '/' not in word)
                   for token in re.findall(r'(\d{1,4}\.\d{1,4}\.\d{1,4}[0-9A-Za-z.+_-]*)', line):
                       release = token.rstrip('.')  # sentence period
                       if release.endswith('+'):  # "1.27.4+" means "or newer"

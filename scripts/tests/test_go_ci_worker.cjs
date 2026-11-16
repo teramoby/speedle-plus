@@ -88,6 +88,10 @@ test('documented Go toolchain guard runs after checkout and setup and rejects ve
   assert.notEqual(select, -1, 'Select changed packages step missing');
   assert.ok(checkout < setup && setup < verify && verify < select,
     'toolchain guard must follow checkout and Setup Go and precede package selection');
+  // The README format gate runs on the cheap PR paths; build, nightly, weekly
+  // and regression rely on the repository-level regression in the changes job.
+  assert.match(step('Verify documented Go toolchain'),
+    /^        if: inputs\.mode == 'quick' \|\| inputs\.mode == 'lint'$/m);
   // Only the job-level env may set GOTOOLCHAIN: a step-level override would
   // let a later go command switch away from the verified toolchain.
   // Capture same-line indentation only: `\s` would also match a newline.
@@ -147,6 +151,8 @@ if (args.length === 4 && args[0] === 'list' && args[1] === '-m' && args[2] === '
       {name: 'versioned download links elsewhere are ignored', readme: prerequisites('-   Go 1.27.4 or a newer patch\n-   Download <https://go.dev/dl/go1.27.5.linux-amd64.tar.gz>'),
         module: '1.27.4', selected: 'go1.27.4', passes: true, message: 'Verified documented minimum Go toolchain: go1.27.4'},
       {name: 'a versioned link on the declaration line is ignored', readme: prerequisites('-   Go 1.27.4 or a newer patch <https://go.dev/dl/go1.27.5.linux-amd64.tar.gz>'),
+        module: '1.27.4', selected: 'go1.27.4', passes: true, message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      {name: 'a scheme-less versioned path is ignored', readme: prerequisites('-   Go 1.27.4 or a newer patch; see go.dev/dl/go1.27.5.linux-amd64.tar.gz'),
         module: '1.27.4', selected: 'go1.27.4', passes: true, message: 'Verified documented minimum Go toolchain: go1.27.4'},
       {name: 'prose declaration without a bullet', readme: prerequisites('Go 1.27.4 or a newer patch is required.'),
         module: '1.27.4', selected: 'go1.27.4', passes: true, message: 'Verified documented minimum Go toolchain: go1.27.4'},
