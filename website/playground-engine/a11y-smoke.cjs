@@ -37,19 +37,28 @@ const server = http.createServer((req,res)=>{
     let checks=0;
     for (const [route,label] of [['/','English home'],['/zh/','Chinese home']]) {
       for (const width of [1440,390,320]) {
-        const page=await browser.newPage({viewport:{width,height:1100}});
+        // No service workers: their requests would not pass through page.route below. The
+        // option alone is not enough in every Chromium build, so registration is also refused
+        // before any page script runs, and a controlled page fails the gate.
+        const page=await browser.newPage({viewport:{width,height:1100},serviceWorkers:'block'});
+        await page.addInitScript(()=>{
+          if (window.ServiceWorkerContainer) ServiceWorkerContainer.prototype.register=()=>Promise.reject(new DOMException('service workers are disabled in the a11y smoke','SecurityError'));
+        });
         // Stylesheets decide contrast: record every stylesheet request that is blocked or fails,
         // including @import and script-added ones. Chromium gives a failed stylesheet an empty
         // sheet, so the page itself cannot tell.
         // One entry per URL: the first reason wins (an HTTP error, then the aborted body).
         const sheetProblems=new Map();
-        page.on('response',response=>{if(response.request().resourceType()==='stylesheet'&&!response.ok()&&!sheetProblems.has(response.url()))sheetProblems.set(response.url(),`HTTP ${response.status()}`);});
+        // A stylesheet, or CSS fetched by script (for example fetch() into a <style> element).
+        const isCss=request=>{
+          if (request.resourceType()==='stylesheet') return true;
+          try {return /\.css$/i.test(new URL(request.url()).pathname);} catch {return false;}
+        };
+        page.on('response',response=>{if(isCss(response.request())&&!response.ok()&&!sheetProblems.has(response.url()))sheetProblems.set(response.url(),`HTTP ${response.status()}`);});
         page.on('requestfailed',request=>{
           let url=null;
           try {url=new URL(request.url());} catch {}
-          // A stylesheet, or CSS fetched by script (for example fetch() into a <style> element).
-          const css=request.resourceType()==='stylesheet'||Boolean(url&&/\.css$/i.test(url.pathname));
-          if (!css||sheetProblems.has(request.url())) return;
+          if (!isCss(request)||sheetProblems.has(request.url())) return;
           const local=Boolean(url&&url.origin===origin);
           sheetProblems.set(request.url(),local?(request.failure()?.errorText||'failed'):`blocked: outside ${origin}, serve a local copy`);
         });
@@ -72,6 +81,7 @@ const server = http.createServer((req,res)=>{
         }
         assert.ok(await page.$('main'),`the ${label} at ${width}px has no main element`);
         const problems=[...sheetProblems].map(([url,reason])=>`${url} (${reason})`);
+        assert.equal(await page.evaluate(()=>Boolean(navigator.serviceWorker&&navigator.serviceWorker.controller)),false,`the ${label} at ${width}px is controlled by a service worker`);
         assert.deepEqual(problems,[],`the ${label} at ${width}px could not load stylesheets: ${problems.join(', ')}`);
         await page.addScriptTag({content:axeSource});
         const report=await page.evaluate(async()=>{
