@@ -1,8 +1,10 @@
-"""Offline tests for scripts/ci/test_report.py. No Ark, SMTP or GitHub calls."""
+"""Offline tests for scripts/ci/test_report.py. No Ark, email or GitHub calls."""
+import io
 import json
 import sys
 import tempfile
 import unittest
+import urllib.error
 from pathlib import Path
 from unittest import mock
 
@@ -92,28 +94,20 @@ class SkipTest(unittest.TestCase):
         _, text = test_report.summarize("nightly", packages, [], [], "", skips=skips)
         self.assertIn("Skipped: 0 not run in any pass; 63 skipped in one store's pass but run in another's; "
                       "2 not applicable", text)
-        card = test_report.feishu_card("nightly", True, packages, [], None, "", "", skips)["elements"][0]["content"]
-        self.assertIn("3 通过，0 失败，0 未运行", card)
-        self.assertIn("跳过 65 项：63 项已在对应存储的轮次运行，2 项不适用于该存储", card)
-        self.assertNotIn("⚠️", card)
 
         not_run = [{"package": "github.com/x/cli", "test": f"T{i}", "reason": "r"} for i in range(12)]
         skips = {"elsewhere": 0, "not_applicable": 0, "not_run": not_run}
         _, text = test_report.summarize("nightly", packages, [], [], "", skips=skips)
         self.assertIn("- github.com/x/cli T0: r", text)
-        card = test_report.feishu_card("nightly", True, packages, [], None, "", "", skips)["elements"][0]["content"]
-        self.assertIn("⚠️ **未运行的测试**（12）", card)
-        self.assertIn("- cli T0：r", card)
-        self.assertIn("另有 2 项", card)
-        self.assertNotIn("T10", card)
+        self.assertIn("- github.com/x/cli T11: r", text)
 
     def test_main_classifies_across_sources(self):
         directory = Path(tempfile.mkdtemp())
         (directory / "file-go.json").write_text(events(*self.skip("mongodb", "TestStore", "MongoDB not available")))
         (directory / "mongodb-go.json").write_text(events(("pass", "mongodb", "TestStore", None)))
-        with mock.patch.object(test_report, "send_feishu", return_value=True) as send, mock.patch("builtins.print"):
+        with mock.patch.object(test_report, "send_email", return_value=True) as send, mock.patch("builtins.print"):
             test_report.main(["--kind", "nightly", "--source", f"run:success:{directory}"], env={})
-        self.assertIn("0 未运行", send.call_args[0][0]["elements"][0]["content"])
+        self.assertIn("0 not run in any pass", send.call_args[0][1])
 
 
 class SummaryTest(unittest.TestCase):
@@ -158,24 +152,111 @@ class ArkTest(unittest.TestCase):
             self.assertIsNone(test_report.ark_analyze("summary", "k", "m"))
 
 
-class MailTest(unittest.TestCase):
-    def test_skips_without_configuration(self):
-        self.assertFalse(test_report.send_mail("s", "b", {}))
+class EmailTest(unittest.TestCase):
+    env = {"CF_ACCOUNT_ID": "account-id", "CF_EMAIL_TOKEN": "api-token",
+           "OPS_EMAIL_FROM": "sender@example.com", "OPS_EMAIL_TO": "recipient@example.com"}
 
-    def test_sends_over_ssl_with_login(self):
-        with mock.patch("smtplib.SMTP_SSL") as smtp:
-            self.assertTrue(test_report.send_mail("s", "body", {
-                "SMTP_SERVER": "smtp.example", "SMTP_USERNAME": "u", "SMTP_PASSWORD": "p", "MAIL_TO": "caiwl@acm.org"}))
-        server = smtp.return_value
-        server.login.assert_called_once_with("u", "p")
-        message = server.send_message.call_args[0][0]
-        self.assertEqual(message["To"], "caiwl@acm.org")
-        self.assertEqual(message["Subject"], "s")
+    def send(self, result=None, success=True, reply=None, error=None, env=None):
+        if reply is None:
+            reply = json.dumps({"success": success, "result":
+                                {"queued": [self.env["OPS_EMAIL_TO"]]} if result is None else result}).encode()
+        response = mock.MagicMock()
+        response.__enter__.return_value.read.return_value = reply
+        with mock.patch("urllib.request.urlopen", return_value=response, side_effect=error) as urlopen, \
+                mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+            ok = test_report.send_email("subject", "body", env or self.env)
+        return ok, urlopen, stderr.getvalue()
 
-    def test_starttls_on_other_ports(self):
-        with mock.patch("smtplib.SMTP") as smtp:
-            test_report.send_mail("s", "b", {"SMTP_SERVER": "h", "SMTP_PORT": "587", "MAIL_TO": "t"})
-        smtp.return_value.starttls.assert_called_once()
+    def test_posts_the_report_with_the_configured_settings(self):
+        ok, urlopen, _ = self.send()
+        self.assertTrue(ok)
+        request = urlopen.call_args[0][0]
+        self.assertEqual(request.full_url,
+                         "https://api.cloudflare.com/client/v4/accounts/account-id/email/sending/send")
+        self.assertEqual(request.get_method(), "POST")
+        self.assertEqual(request.get_header("Authorization"), "Bearer api-token")
+        self.assertEqual(json.loads(request.data), {"to": "recipient@example.com", "from": "sender@example.com",
+                                                    "subject": "subject", "text": "body"})
+        self.assertEqual(urlopen.call_args.kwargs["timeout"], test_report.EMAIL_TIMEOUT)
+
+    def test_a_queued_or_delivered_recipient_is_success(self):
+        self.assertTrue(self.send(result={"queued": ["recipient@example.com"]})[0])
+        self.assertTrue(self.send(result={"delivered": ["recipient@example.com"]})[0])
+
+    def test_a_permanent_bounce_is_a_failure(self):
+        ok, _, warning = self.send(result={"permanent_bounces": ["recipient@example.com"]})
+        self.assertFalse(ok)
+        self.assertIn("permanent_bounces", warning)
+        self.assertNotIn("recipient@example.com", warning)
+
+    def test_a_suppressed_recipient_is_a_failure(self):
+        ok, _, warning = self.send(result={"queued": ["recipient@example.com"],
+                                           "suppressed_recipients": ["recipient@example.com"]})
+        self.assertFalse(ok)
+        self.assertIn("suppressed_recipients", warning)
+
+    def test_success_false_is_a_failure(self):
+        ok, _, warning = self.send(result={"queued": ["recipient@example.com"]}, success=False)
+        self.assertFalse(ok)
+        self.assertIn("did not report success", warning)
+
+    def test_a_non_2xx_status_is_a_failure(self):
+        error = urllib.error.HTTPError("https://api.example/send", 500, "server error", None, io.BytesIO(b"{}"))
+        ok, _, warning = self.send(error=error)
+        self.assertFalse(ok)
+        self.assertIn("HTTP 500", warning)
+        self.assertNotIn("api.example", warning, "the URL carries the account id and is not logged")
+
+    def test_an_unconfirmable_recipient_is_a_failure(self):
+        self.assertFalse(self.send(result={"queued": [], "permanent_bounces": []})[0])
+        self.assertFalse(self.send(result="not a result")[0])
+
+    def test_an_unreadable_response_is_a_failure(self):
+        self.assertFalse(self.send(reply=b"not json")[0])
+
+    def test_an_unreachable_api_is_a_failure(self):
+        self.assertFalse(self.send(error=OSError("down"))[0])
+
+    def test_missing_settings_send_nothing(self):
+        with mock.patch("urllib.request.urlopen") as urlopen, \
+                mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+            self.assertFalse(test_report.send_email("s", "b", {}))
+        urlopen.assert_not_called()
+        self.assertIn("not configured", stderr.getvalue())
+
+    def test_logs_never_echo_the_settings(self):
+        error = urllib.error.HTTPError("https://api.example/send", 403, "denied", None, io.BytesIO(b"{}"))
+        _, _, warning = self.send(error=error)
+        for value in self.env.values():
+            self.assertNotIn(value, warning)
+
+    def test_main_emails_the_report(self):
+        directory = Path(tempfile.mkdtemp())
+        (directory / "go.json").write_text(events(("fail", "p", "TestZ", None)))
+        with mock.patch.object(test_report, "send_email", return_value=True) as send, mock.patch("builtins.print"):
+            test_report.main(["--kind", "weekly", "--go-json", str(directory / "go.json")],
+                             env={"GITHUB_REPOSITORY": "o/r", "RUN_URL": "http://run"})
+        subject, body = send.call_args[0][:2]
+        self.assertEqual(subject, "[Speedle weekly] FAILED")
+        self.assertIn("p TestZ", body)
+        self.assertIn("http://run", body)
+
+    def test_main_posts_the_configured_report(self):
+        directory = Path(tempfile.mkdtemp())
+        (directory / "go.json").write_text(events(("fail", "p", "TestZ", None)))
+        response = mock.MagicMock()
+        response.__enter__.return_value.read.return_value = json.dumps(
+            {"success": True, "result": {"queued": [self.env["OPS_EMAIL_TO"]]}}).encode()
+        with mock.patch("urllib.request.urlopen", return_value=response) as urlopen, mock.patch("builtins.print"):
+            code = test_report.main(["--kind", "nightly", "--go-json", str(directory / "go.json")],
+                                    env=dict(self.env))
+        self.assertEqual(code, 0)
+        request = urlopen.call_args[0][0]
+        self.assertEqual(request.full_url,
+                         "https://api.cloudflare.com/client/v4/accounts/account-id/email/sending/send")
+        payload = json.loads(request.data)
+        self.assertEqual(payload["subject"], "[Speedle nightly] FAILED")
+        self.assertIn("TestZ", payload["text"])
 
 
 class IssueTest(unittest.TestCase):
@@ -300,87 +381,9 @@ class DedupeTest(unittest.TestCase):
         self.assertIn("etcd store", body)
         self.assertEqual(body.count("file store"), 1)
 
-    def test_feishu_lists_each_failure_once(self):
-        directory = Path(tempfile.mkdtemp())
-        for name in ("go-file.json", "go-etcd.json"):
-            (directory / name).write_text(events(("fail", "p", "TestZ", None)))
-        with mock.patch.object(test_report, "send_feishu", return_value=True) as send, mock.patch("builtins.print"):
-            test_report.main(["--kind", "nightly", "--results-dir", str(directory)], env={})
-        self.assertEqual(send.call_args[0][0]["elements"][0]["content"].count("- p TestZ"), 1)
-
-
-class FeishuTest(unittest.TestCase):
-    def card(self, ok=False, failed=("p TestX",), analysis="结论：失败"):
-        packages = {"p": {"pass": 3, "fail": 1, "skip": 2, "package_failed": False}}
-        return test_report.feishu_card("nightly", ok, packages, list(failed), analysis,
-                                       "http://run", "http://issues")
-
-    def test_signature_matches_feishu_algorithm(self):
-        import base64, hashlib, hmac
-        expected = base64.b64encode(hmac.new(b"1700000000\nsecret", b"", hashlib.sha256).digest()).decode()
-        self.assertEqual(test_report.feishu_sign("secret", "1700000000"), expected)
-
-    def test_card_content(self):
-        card = self.card()
-        self.assertEqual(card["header"]["template"], "red")
-        self.assertIn("失败", card["header"]["title"]["content"])
-        text = card["elements"][0]["content"]
-        for part in ("3 通过，1 失败，2 跳过", "- p TestX", "结论：失败", "[运行详情](http://run)", "[失败跟踪 issue](http://issues)"):
-            self.assertIn(part, text)
-        passed = self.card(ok=True, failed=(), analysis=None)
-        self.assertEqual(passed["header"]["template"], "green")
-        self.assertIn("Ark 分析不可用", passed["elements"][0]["content"])
-        self.assertNotIn("issue", passed["elements"][0]["content"])
-
-    def test_card_bounds_long_lists_and_analysis(self):
-        card = self.card(failed=[f"p Test{i}" for i in range(15)], analysis="x" * 5000)
-        text = card["elements"][0]["content"]
-        self.assertIn("另有 5 项", text)
-        self.assertNotIn("p Test10", text)
-        self.assertLess(len(text), 2500)
-
-    def send(self, env, reply=b'{"code":0,"msg":"success"}', error=None):
-        response = mock.MagicMock()
-        response.__enter__.return_value.read.return_value = reply
-        with mock.patch("urllib.request.urlopen", return_value=response, side_effect=error) as urlopen, \
-                mock.patch("builtins.print"):
-            result = test_report.send_feishu(self.card(), env, now=lambda: 1700000000.5)
-        return result, urlopen
-
-    def test_signed_message(self):
-        ok, urlopen = self.send({"FEISHU_WEBHOOK": "https://open.feishu.cn/hook/x", "FEISHU_WEBHOOK_SECRET": "secret"})
-        self.assertTrue(ok)
-        request = urlopen.call_args[0][0]
-        body = json.loads(request.data)
-        self.assertEqual(request.full_url, "https://open.feishu.cn/hook/x")
-        self.assertEqual(body["msg_type"], "interactive")
-        self.assertEqual(body["timestamp"], "1700000000")
-        self.assertEqual(body["sign"], test_report.feishu_sign("secret", "1700000000"))
-
-    def test_unsigned_message_and_failures(self):
-        ok, urlopen = self.send({"FEISHU_WEBHOOK": "https://hook"})
-        self.assertTrue(ok)
-        self.assertNotIn("sign", json.loads(urlopen.call_args[0][0].data))
-        self.assertFalse(self.send({"FEISHU_WEBHOOK": "https://hook"}, reply=b'{"code":19021,"msg":"sign match fail"}')[0])
-        self.assertFalse(self.send({"FEISHU_WEBHOOK": "https://hook"}, error=OSError("down"))[0])
-        ok, urlopen = self.send({})
-        self.assertFalse(ok)
-        urlopen.assert_not_called()
-
-    def test_main_sends_the_card(self):
-        directory = Path(tempfile.mkdtemp())
-        (directory / "go.json").write_text(events(("fail", "p", "TestZ", None)))
-        with mock.patch.object(test_report, "send_feishu", return_value=True) as send, mock.patch("builtins.print"):
-            test_report.main(["--kind", "weekly", "--go-json", str(directory / "go.json")],
-                             env={"GITHUB_REPOSITORY": "o/r", "RUN_URL": "http://run"})
-        card = send.call_args[0][0]
-        self.assertEqual(card["header"]["template"], "red")
-        self.assertIn("p TestZ", card["elements"][0]["content"])
-        self.assertIn("https://github.com/o/r/issues?q=is%3Aopen+label%3Atest-failure", card["elements"][0]["content"])
-
 
 class RegressionTest(unittest.TestCase):
-    """The post-merge regression: quiet on success, English, issues and Feishu, no mail."""
+    """The post-merge regression: quiet on success, English, issues and email."""
     env = {"GITHUB_TOKEN": "t", "GITHUB_REPOSITORY": "o/r", "RUN_URL": "http://run",
            "COMMIT_URL": "http://commit/abc", "ARK_API_KEY": "k"}
 
@@ -391,29 +394,31 @@ class RegressionTest(unittest.TestCase):
         github = FakeGitHub(issues)
         with mock.patch.object(test_report, "GitHub", return_value=github), \
                 mock.patch.object(test_report, "ark_analyze", return_value="Likely cause: nil map.") as ark, \
-                mock.patch.object(test_report, "send_feishu", return_value=True) as feishu, \
-                mock.patch.object(test_report, "send_mail") as mail, mock.patch("builtins.print"):
+                mock.patch.object(test_report, "send_email", return_value=True) as email, \
+                mock.patch("builtins.print"):
             code = test_report.main(["--kind", "regression", "--source", f"run:success:{directory}",
                                      "--summary-file", str(summary)], env=self.env)
         self.assertEqual(code, 0)
-        return github, ark, feishu, mail, summary.read_text()
+        return github, ark, email, summary.read_text()
 
     def test_a_passing_run_sends_nothing(self):
-        github, ark, feishu, mail, summary = self.run_main(events(("pass", "p", "TestA", None)))
+        github, ark, email, summary = self.run_main(events(("pass", "p", "TestA", None)))
         ark.assert_not_called()
-        feishu.assert_not_called()
-        mail.assert_not_called()
+        email.assert_not_called()
         self.assertEqual(github.calls, [])
         self.assertIn("post-merge regression test report: PASSED", summary)
         self.assertIn("Commit: http://commit/abc", summary)
 
     def test_a_failure_opens_an_issue_with_output_and_english_analysis(self):
-        github, ark, feishu, mail, summary = self.run_main(events(
+        github, ark, email, summary = self.run_main(events(
             ("output", "p", "TestB", "panic: assignment to entry in nil map\n"), ("fail", "p", "TestB", None)))
         self.assertEqual(ark.call_args.kwargs["language"], "English")
         self.assertIn("Commit: http://commit/abc", ark.call_args[0][0])
-        mail.assert_not_called()
-        self.assertIn("post-merge regression", feishu.call_args[0][0]["header"]["title"]["content"])
+        subject, body = email.call_args[0][:2]
+        self.assertEqual(subject, "[Speedle post-merge regression] FAILED")
+        for part in ("Commit: http://commit/abc", "Run: http://run",
+                     "assignment to entry in nil map", "Likely cause: nil map."):
+            self.assertIn(part, body)
         (method, path, data), = github.calls
         self.assertEqual((method, path, data["title"]), ("POST", "/issues", "Test failure: p TestB"))
         for part in ("post-merge regression run failed `TestB`", "Commit: http://commit/abc",
@@ -433,7 +438,7 @@ class RegressionTest(unittest.TestCase):
         directory = Path(tempfile.mkdtemp())
         github = FakeGitHub()
         with mock.patch.object(test_report, "GitHub", return_value=github), \
-                mock.patch.object(test_report, "send_feishu", return_value=True), mock.patch("builtins.print"):
+                mock.patch.object(test_report, "send_email", return_value=True), mock.patch("builtins.print"):
             test_report.main(["--kind", "regression", "--source", f"run:failure:{directory / 'missing'}"],
                              env={"GITHUB_TOKEN": "t", "GITHUB_REPOSITORY": "o/r"})
         self.assertEqual([c[2]["title"] for c in github.calls], ["Test failure: check results missing"])
@@ -459,7 +464,7 @@ class PerformanceTest(unittest.TestCase):
         streams, _ = test_report.expand_results_dir(directory)
         self.assertEqual([Path(s).name for s in streams], ["go-file.json"])
         summary = directory / "report.txt"
-        with mock.patch.object(test_report, "send_feishu", return_value=True), mock.patch("builtins.print"):
+        with mock.patch.object(test_report, "send_email", return_value=True), mock.patch("builtins.print"):
             test_report.main(["--kind", "weekly", "--source", f"run:success:{directory}",
                               "--summary-file", str(summary)], env={})
         text = summary.read_text()

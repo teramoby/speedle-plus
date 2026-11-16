@@ -1,29 +1,23 @@
 #!/usr/bin/env python3
 """Summarize scheduled and post-merge test results, analyze them with Ark,
-send the report and track failing tests in GitHub issues.
+email the report and track failing tests in GitHub issues.
 
 Inputs are `go test -json` streams and plain check results. Every external
 step is optional and fails soft: without an Ark key the raw summary is sent,
-without a Feishu webhook or SMTP settings nothing is sent that way, and
-without a GitHub token no issues are touched. The script exits non-zero only
-on bad input.
+without Cloudflare Email settings nothing is emailed, and without a GitHub
+token no issues are touched. The script exits non-zero only on bad input.
 """
 import argparse
-import base64
-import hashlib
-import hmac
 import json
 import os
-import smtplib
 import sys
-import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from email.message import EmailMessage
 from pathlib import Path
 
 ARK_URL = "https://ark.cn-beijing.volces.com/api/plan/v3/responses"
+EMAIL_API = "https://api.cloudflare.com/client/v4/accounts/{account}/email/sending/send"
 DEFAULT_MODEL = "kimi-k3"
 ISSUE_LABEL = "test-failure"
 MAX_ISSUES = 20
@@ -31,12 +25,12 @@ OUTPUT_LINES = 40
 PROMPT_LIMIT = 200_000
 
 # How each kind of run reports. Scheduled runs report every result in
-# Chinese, by Feishu and email. The post-merge regression only speaks up
-# when it fails, in English, by Feishu and issues.
+# Chinese, by email. The post-merge regression only speaks up when it fails,
+# in English, by email and issues.
 KINDS = {
-    "nightly": {"title": "nightly", "language": "Chinese", "mail": True, "quiet_on_pass": False},
-    "weekly": {"title": "weekly", "language": "Chinese", "mail": True, "quiet_on_pass": False},
-    "regression": {"title": "post-merge regression", "language": "English", "mail": False, "quiet_on_pass": True},
+    "nightly": {"title": "nightly", "language": "Chinese", "quiet_on_pass": False},
+    "weekly": {"title": "weekly", "language": "Chinese", "quiet_on_pass": False},
+    "regression": {"title": "post-merge regression", "language": "English", "quiet_on_pass": True},
 }
 
 
@@ -247,101 +241,57 @@ def extract_text(payload):
     return text or None
 
 
-def send_mail(subject, body, env):
-    host, to = env.get("SMTP_SERVER"), env.get("MAIL_TO")
-    if not host or not to:
-        print("::warning::SMTP_SERVER or MAIL_TO is not configured; the report is not mailed.", file=sys.stderr)
+EMAIL_TIMEOUT = 30
+
+
+def listed_addresses(result, key):
+    """The addresses under one key of a send result; other shapes are empty."""
+    value = result.get(key)
+    return [address for address in value if isinstance(address, str)] if isinstance(value, list) else []
+
+
+def send_email(subject, body, env, timeout=EMAIL_TIMEOUT):
+    """Send the report through the Cloudflare Email Service REST API.
+
+    Delivery is asynchronous, so the recipient is normally queued rather than
+    delivered at once: a queued recipient is a successful send. A non-2xx
+    status, success: false, a permanent bounce or a suppressed recipient is a
+    failed send. Nothing from the settings or the response is logged, because
+    both may hold addresses.
+    """
+    account, token = env.get("CF_ACCOUNT_ID"), env.get("CF_EMAIL_TOKEN")
+    sender, to = env.get("OPS_EMAIL_FROM"), env.get("OPS_EMAIL_TO")
+    if not (account and token and sender and to):
+        print("::warning::Cloudflare Email is not configured (CF_ACCOUNT_ID, CF_EMAIL_TOKEN, "
+              "OPS_EMAIL_FROM, OPS_EMAIL_TO); the report is not emailed.", file=sys.stderr)
         return False
-    message = EmailMessage()
-    message["Subject"] = subject
-    message["From"] = env.get("MAIL_FROM") or env.get("SMTP_USERNAME") or to
-    message["To"] = to
-    message.set_content(body)
-    port = int(env.get("SMTP_PORT") or 465)
-    user, password = env.get("SMTP_USERNAME"), env.get("SMTP_PASSWORD")
-    if port == 465:
-        server = smtplib.SMTP_SSL(host, port, timeout=60)
-    else:
-        server = smtplib.SMTP(host, port, timeout=60)
-        server.starttls()
-    with server:
-        if user and password:
-            server.login(user, password)
-        server.send_message(message)
-    return True
-
-
-FEISHU_ANALYSIS_CHARS = 1500
-FEISHU_LISTED_FAILURES = 10
-
-
-def feishu_sign(secret, timestamp):
-    """Signature of a Feishu custom bot with signature verification on."""
-    key = f"{timestamp}\n{secret}".encode()
-    return base64.b64encode(hmac.new(key, b"", hashlib.sha256).digest()).decode()
-
-
-def feishu_card(kind, ok, packages, failed, analysis, run_url, issues_url, skips=None):
-    """A short card: verdict, counts, the first failures, the analysis and links."""
-    total = {k: sum(c[k] for c in packages.values()) for k in ("pass", "fail", "skip")}
-    if skips is None:
-        lines = [f"**Go 测试**：{total['pass']} 通过，{total['fail']} 失败，{total['skip']} 跳过（{len(packages)} 个包）"]
-    else:
-        not_run = skips["not_run"]
-        lines = [f"**Go 测试**：{total['pass']} 通过，{total['fail']} 失败，{len(not_run)} 未运行（{len(packages)} 个包）"]
-        if skips["elsewhere"] or skips["not_applicable"]:
-            lines.append(f"跳过 {total['skip']} 项：{skips['elsewhere']} 项已在对应存储的轮次运行，"
-                         f"{skips['not_applicable']} 项不适用于该存储")
-        if not_run:
-            lines.append(f"⚠️ **未运行的测试**（{len(not_run)}）：")
-            lines += [f"- {s['package'].rsplit('/', 1)[-1]} {s['test']}：{s['reason'] or '未说明原因'}"
-                      for s in not_run[:LISTED_SKIPS]]
-            if len(not_run) > LISTED_SKIPS:
-                lines.append(f"- ……另有 {len(not_run) - LISTED_SKIPS} 项")
-    if failed:
-        lines.append(f"**失败项**（{len(failed)}）：")
-        lines += [f"- {name}" for name in failed[:FEISHU_LISTED_FAILURES]]
-        if len(failed) > FEISHU_LISTED_FAILURES:
-            lines.append(f"- ……另有 {len(failed) - FEISHU_LISTED_FAILURES} 项")
-    if analysis:
-        text = analysis if len(analysis) <= FEISHU_ANALYSIS_CHARS else analysis[:FEISHU_ANALYSIS_CHARS] + "……"
-        lines += ["**Ark 分析**：", text]
-    else:
-        lines.append("（Ark 分析不可用）")
-    links = [f"[运行详情]({run_url})"] if run_url else []
-    if failed and issues_url:
-        links.append(f"[失败跟踪 issue]({issues_url})")
-    if links:
-        lines.append(" · ".join(links))
-    return {
-        "header": {"template": "green" if ok else "red",
-                   "title": {"tag": "plain_text",
-                             "content": f"Speedle {KINDS[kind]['title']} 测试：{'通过' if ok else '失败'}"}},
-        "elements": [{"tag": "markdown", "content": "\n".join(lines)}],
-    }
-
-
-def send_feishu(card, env, now=time.time):
-    webhook = env.get("FEISHU_WEBHOOK")
-    if not webhook:
-        print("::warning::FEISHU_WEBHOOK is not configured; no Feishu message is sent.", file=sys.stderr)
-        return False
-    body = {"msg_type": "interactive", "card": card}
-    if env.get("FEISHU_WEBHOOK_SECRET"):
-        timestamp = str(int(now()))
-        body.update(timestamp=timestamp, sign=feishu_sign(env["FEISHU_WEBHOOK_SECRET"], timestamp))
-    request = urllib.request.Request(webhook, data=json.dumps(body).encode(), method="POST",
-                                     headers={"Content-Type": "application/json"})
+    request = urllib.request.Request(
+        EMAIL_API.format(account=account), method="POST",
+        data=json.dumps({"to": to, "from": sender, "subject": subject, "text": body}).encode(),
+        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"})
     try:
-        with urllib.request.urlopen(request, timeout=30) as response:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
             reply = json.loads(response.read() or b"{}")
-    except (urllib.error.URLError, OSError, ValueError) as error:
-        # Never echo the webhook URL: it is a credential.
-        print(f"::warning::Feishu message failed ({type(error).__name__}).", file=sys.stderr)
+    except urllib.error.HTTPError as error:
+        # The response body and the URL are not logged: both may hold addresses.
+        print(f"::warning::Email delivery failed (HTTP {error.code}).", file=sys.stderr)
         return False
-    if reply.get("code", reply.get("StatusCode", 0)) != 0:
-        print(f"::warning::Feishu rejected the message (code {reply.get('code', reply.get('StatusCode'))}).",
-              file=sys.stderr)
+    except (urllib.error.URLError, OSError, ValueError) as error:
+        print(f"::warning::Email delivery failed ({type(error).__name__}).", file=sys.stderr)
+        return False
+    if not isinstance(reply, dict) or reply.get("success") is not True:
+        print("::warning::Email delivery failed (the API did not report success).", file=sys.stderr)
+        return False
+    result = reply.get("result")
+    if not isinstance(result, dict):
+        print("::warning::Email delivery failed (the API returned no result).", file=sys.stderr)
+        return False
+    for key in ("permanent_bounces", "suppressed_recipients"):
+        if to in listed_addresses(result, key):
+            print(f"::warning::Email delivery failed (the recipient is listed in {key}).", file=sys.stderr)
+            return False
+    if not any(to in listed_addresses(result, key) for key in ("queued", "delivered")):
+        print("::warning::Email delivery failed (the API did not confirm the recipient).", file=sys.stderr)
         return False
     return True
 
@@ -487,12 +437,8 @@ def main(argv=None, env=os.environ):
     if args.summary_file:
         Path(args.summary_file).write_text(report)
 
-    if policy["mail"]:
-        subject = f"[Speedle {policy['title']}] {'PASSED' if ok else 'FAILED'}"
-        try:
-            send_mail(subject, report, env)
-        except (smtplib.SMTPException, OSError) as error:
-            print(f"::warning::Mail delivery failed ({type(error).__name__}).", file=sys.stderr)
+    subject = f"[Speedle {policy['title']}] {'PASSED' if ok else 'FAILED'}"
+    send_email(subject, report, env)
 
     tracked = failures + [{"package": "check", "test": c["name"], "output": c["output"]}
                           for c in checks if not c["passed"]]
@@ -504,11 +450,6 @@ def main(argv=None, env=os.environ):
             print(f"Tracked failures: {created} issues opened, {commented} comments added.")
         except (urllib.error.URLError, OSError, ValueError) as error:
             print(f"::warning::Failure issues not updated ({type(error).__name__}).", file=sys.stderr)
-    failed = [issue_title(f).removeprefix("Test failure: ") for f in dedupe_failures(tracked)]
-    repository = env.get("GITHUB_REPOSITORY")
-    issues_url = (f"https://github.com/{repository}/issues?q=is%3Aopen+label%3A{ISSUE_LABEL}"
-                  if repository else "")
-    send_feishu(feishu_card(args.kind, ok, packages, failed, analysis, run_url, issues_url, skips), env)
     print(summary)
     return 0
 
