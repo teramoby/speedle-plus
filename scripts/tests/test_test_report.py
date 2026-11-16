@@ -402,7 +402,8 @@ class MainTest(unittest.TestCase):
         results.write_text(events(("fail", "p", "TestX", None)))
         summary = directory / "report.txt"
         github = FakeGitHub()
-        with mock.patch.object(test_report, "GitHub", return_value=github), mock.patch("builtins.print"):
+        with mock.patch.object(test_report, "GitHub", return_value=github), \
+                mock.patch.object(test_report, "send_email", return_value=False), mock.patch("builtins.print"):
             code = test_report.main(["--kind", "nightly", "--go-json", str(results), "--go-json", str(directory / "lost.json"),
                                      "--check", "vuln=1:/missing", "--summary-file", str(summary)],
                                     env={"GITHUB_TOKEN": "t", "GITHUB_REPOSITORY": "o/r", "RUN_URL": "http://run"})
@@ -421,7 +422,7 @@ class ResultsDirTest(unittest.TestCase):
         (directory / "quick.log").write_text("step failed\n")
         (directory / "checks.txt").write_text("quick=1:quick.log\ngovulncheck=0:govulncheck.log\n")
         summary = directory / "out.txt"
-        with mock.patch("builtins.print"):
+        with mock.patch.object(test_report, "send_email", return_value=False), mock.patch("builtins.print"):
             test_report.main(["--kind", "weekly", "--results-dir", str(directory),
                               "--results-dir", str(directory / "absent"), "--summary-file", str(summary)], env={})
         text = summary.read_text()
@@ -435,7 +436,7 @@ class ResultsDirTest(unittest.TestCase):
 class SourceTest(unittest.TestCase):
     def report(self, *sources):
         summary = Path(tempfile.mkdtemp()) / "out.txt"
-        with mock.patch("builtins.print"):
+        with mock.patch.object(test_report, "send_email", return_value=False), mock.patch("builtins.print"):
             test_report.main(["--kind", "nightly", *[a for s in sources for a in ("--source", s)],
                               "--summary-file", str(summary)], env={})
         return summary.read_text()
