@@ -6,11 +6,12 @@
    neither delay nor fail the load event that the check waits for. A blocked
    request fails the gate by URL unless it is a script from an origin listed in
    QUIET_ORIGINS (third parties that cannot affect styles, such as the analytics
-   beacon); so does any local HTTP error, and any local request that fails,
-   except a cancellation by the page itself of a request that does not shape
-   the page (not a stylesheet, script or document), which is only reported.
-   These are checked once the network has settled after load and again after
-   axe has run. Serve a local copy of any resource the page needs.
+   beacon); so does any local HTTP error, any local request that fails (a
+   cancellation by the page is only reported, and only for types that cannot
+   affect rendering, such as pings or media) and any page script error. The
+   check waits for the network to settle after load and then for one second
+   with no new request and no DOM change; axe must finish without the page
+   requesting anything. Serve a local copy of any resource the page needs.
    Run from the repository root: node website/playground-engine/a11y-smoke.cjs
    Optional CHROMIUM_PATH selects a Chrome/Chromium binary. */
 const {chromium} = require('playwright');
@@ -50,17 +51,24 @@ const server = http.createServer((req,res)=>{
         const page=await browser.newPage({viewport:{width,height:1100},serviceWorkers:'block'});
         await page.addInitScript(()=>{
           if (window.ServiceWorkerContainer) ServiceWorkerContainer.prototype.register=()=>Promise.reject(new DOMException('service workers are disabled in the a11y smoke','SecurityError'));
+          // Count DOM changes (elements, attributes, text) so the check can wait until the page is still.
+          window.__smokeMutations=0;
+          new MutationObserver(records=>{window.__smokeMutations+=records.length;}).observe(document,{subtree:true,childList:true,attributes:true,characterData:true});
         });
         // Record every request problem, one entry per URL (the first reason wins, for example
         // an HTTP error before the aborted body). Chromium gives a stylesheet that failed to
         // load an empty sheet, so the page itself cannot tell.
         const problems=new Map();
-        // Requests the page cancels itself (net::ERR_ABORTED: an element removed or its source
-        // replaced before load) are not load failures, except for types that shape the page.
-        // They are listed in the PASS line rather than ignored.
+        // A request the page cancels itself (net::ERR_ABORTED) is exempt only for types that
+        // cannot affect rendering; it is listed in the PASS line rather than ignored. Every
+        // other cancellation fails, including fetch/XHR, which may carry CSS.
         const cancelled=[];
-        const shaping=new Set(['stylesheet','script','document']);
+        const renderIrrelevant=new Set(['ping','manifest','eventsource','websocket','media','texttrack','cspreport','prefetch']);
         const parse=value=>{try {return new URL(value);} catch {return null;}};
+        // Every request, with the time it started, and page script failures.
+        let requests=0, lastActivityAt=Date.now();
+        page.on('request',()=>{requests++;lastActivityAt=Date.now();});
+        page.on('pageerror',error=>{const key=`pageerror ${problems.size}`;problems.set(key,`page script error: ${error.message}`);});
         page.on('response',response=>{
           if (response.status()<400||problems.has(response.url())) return;
           if (parse(response.url())?.origin===origin) problems.set(response.url(),`HTTP ${response.status()}`);
@@ -70,7 +78,7 @@ const server = http.createServer((req,res)=>{
           if (problems.has(request.url())) return;
           if (url?.origin===origin) {
             const reason=request.failure()?.errorText||'failed';
-            if (reason==='net::ERR_ABORTED'&&!shaping.has(request.resourceType())) cancelled.push(`${request.url()} (${request.resourceType()})`);
+            if (reason==='net::ERR_ABORTED'&&renderIrrelevant.has(request.resourceType())) cancelled.push(`${request.url()} (${request.resourceType()})`);
             else problems.set(request.url(),`${request.resourceType()}: ${reason}`);
           } else if (!(QUIET_ORIGINS.has(url?.origin)&&request.resourceType()==='script')) {
             problems.set(request.url(),`blocked: outside ${origin}; serve a local copy`);
@@ -78,7 +86,7 @@ const server = http.createServer((req,res)=>{
         });
         const assertNoProblems=when=>{
           const list=[...problems].map(([url,reason])=>`${url} (${reason})`);
-          assert.deepEqual(list,[],`the ${label} at ${width}px had request problems ${when}: ${list.join(', ')}`);
+          assert.deepEqual(list,[],`the ${label} at ${width}px had problems ${when}: ${list.join(', ')}`);
         };
         // Consume every route outcome: a decision still in flight when the page closes must not
         // become an unhandled rejection that hides the real failure.
@@ -86,26 +94,36 @@ const server = http.createServer((req,res)=>{
           let url;
           try {url=new URL(route.request().url());} catch {await route.abort().catch(()=>{});return;}
           if (url.origin===origin) {
-            await route.continue().catch(error=>{if(!problems.has(url.href))problems.set(url.href,`continue failed: ${error.message}`);});
+            // A failed continue also fires requestfailed, which classifies it.
+            await route.continue().catch(()=>{});
             return;
           }
           blockedOrigins.add(url.origin);
           blockedRequests++;
           await route.abort().catch(()=>{});
         });
-        // Every other origin is aborted at once, so nothing outside the local server can delay load,
-        // and the network settles quickly afterwards; waiting for that also catches CSS requested
-        // after load (a timer or load handler).
+        // Every other origin is aborted at once, so nothing outside the local server can delay load.
         await page.goto(origin+route,{waitUntil:'load',timeout:30000});
         try {
           await page.waitForLoadState('networkidle',{timeout:15000});
         } catch (error) {
           throw new Error(`the ${label} at ${width}px kept the network busy for 15s after load`,{cause:error});
         }
+        // networkidle only means 500 ms without requests. Also require one second with no new
+        // request and no DOM change, so late styles (a timer or load handler) are in place.
+        const settleBy=Date.now()+10000;
+        for (let mutations=await page.evaluate(()=>window.__smokeMutations);;) {
+          await page.waitForTimeout(250);
+          const now=await page.evaluate(()=>window.__smokeMutations);
+          if (now!==mutations) {mutations=now;lastActivityAt=Math.max(lastActivityAt,Date.now());}
+          if (Date.now()-lastActivityAt>=1000) break;
+          assert.ok(Date.now()<settleBy,`the ${label} at ${width}px did not settle (requests or DOM changes) within 10s after load`);
+        }
         assert.ok(await page.$('main'),`the ${label} at ${width}px has no main element`);
         assert.equal(await page.evaluate(()=>Boolean(navigator.serviceWorker&&navigator.serviceWorker.controller)),false,`the ${label} at ${width}px is controlled by a service worker`);
         assertNoProblems('before the contrast check');
         await page.addScriptTag({content:axeSource});
+        const requestsBefore=requests;
         const report=await page.evaluate(async()=>{
           const result=await axe.run(document,{runOnly:{type:'rule',values:['color-contrast']}});
           return {
@@ -113,7 +131,9 @@ const server = http.createServer((req,res)=>{
             unchecked:result.incomplete.flatMap(rule=>rule.nodes.map(node=>node.target)),
           };
         });
-        // A request that failed while axe ran may have changed the styles it measured.
+        // The page must not have loaded anything while axe measured it; with no new request, no
+        // request can still fail after the scan, so the problems are complete here.
+        assert.equal(requests,requestsBefore,`the ${label} at ${width}px requested resources during the contrast check`);
         assertNoProblems('during the contrast check');
         assert.deepEqual(report.violations,[],`axe color-contrast violations on the ${label} at ${width}px: ${JSON.stringify(report.violations,null,2)}`);
         checks++;
