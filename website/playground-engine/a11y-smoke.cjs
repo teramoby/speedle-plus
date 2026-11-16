@@ -200,8 +200,12 @@ const server = http.createServer((req,res)=>{
         // The probe script sets a flag in the page if it ever runs, its abort must be acknowledged
         // by the route, and Chromium must report the request as net::ERR_ABORTED: a loaded probe,
         // an uncounted abort or a non-abort failure all fail the gate. A response from a foreign
-        // origin is caught by the response handler as well.
+        // origin is caught by the response handler as well. The route and requestfailed handlers
+        // were registered before the navigation, so no event can be missed; their delivery, however,
+        // is independent of the script element settling, so wait for both counters, bounded.
         await page.addScriptTag({url:ROUTE_PROBE}).catch(()=>{});
+        const probeDeadline=Date.now()+5000;
+        while ((routeProbeBlocks===0||routeProbeAborts===0)&&Date.now()<probeDeadline) await new Promise(resolve=>setTimeout(resolve,25));
         assert.equal(await page.evaluate(()=>Boolean(window.__a11yRouteProbeExecuted)),false,`the ${label} at ${width}px ran the route positive control, so page.route did not abort it`);
         assertNoProblems('while checking request interception');
         assert.ok(routeProbeBlocks>0,`the ${label} at ${width}px did not intercept and abort the route positive control; request interception may not be active`);
