@@ -73,6 +73,33 @@ jobs:
           # archive over read-only module files causes noisy extraction failures.
           cache: ${{ runner.environment != 'self-hosted' }}
 
+      - name: Verify documented Go toolchain
+        run: |
+          set -euo pipefail
+          python3 - <<'PYTHON'
+          import re
+          import subprocess
+          from pathlib import Path
+
+          def go(*args):
+              return subprocess.check_output(['go', *args], text=True).strip()
+
+          module = go('list', '-m', '-f', '{{.GoVersion}}')
+          actual = go('env', 'GOVERSION')
+          match = re.search(r'^-\s+Go (\d+\.\d+\.\d+) or a newer patch',
+                            Path('README.md').read_text(), re.MULTILINE)
+          if match is None:
+              raise SystemExit('README source-build Go minimum not found')
+          documented = match.group(1)
+          if module != documented:
+              raise SystemExit(
+                  f'go.mod GoVersion {module} != documented minimum {documented}')
+          if actual != f'go{module}':
+              raise SystemExit(
+                  f'selected toolchain {actual} != documented minimum go{module}')
+          print(f'Verified documented minimum Go toolchain: {actual}')
+          PYTHON
+
       - name: Select changed packages
         if: inputs.mode == 'quick'
         env:

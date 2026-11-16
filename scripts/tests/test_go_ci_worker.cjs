@@ -77,6 +77,55 @@ test('worker owns runner selection and exposes only the mode input, never a call
   assert.match(step('Setup Go'), /go-version-file: go\.mod/);
   assert.doesNotMatch(source, /secrets:|secrets\.inherit|\$\{\{\s*inputs\.(?:ref|sha|runner|store_type)/);
 });
+test('documented Go toolchain guard runs after setup and rejects version drift', () => {
+  const setup = source.indexOf('      - name: Setup Go\n');
+  const verify = source.indexOf('      - name: Verify documented Go toolchain\n');
+  const select = source.indexOf('      - name: Select changed packages\n');
+  assert.notEqual(setup, -1, 'Setup Go step missing');
+  assert.notEqual(verify, -1, 'documented Go toolchain guard missing');
+  assert.notEqual(select, -1, 'Select changed packages step missing');
+  assert.ok(setup < verify && verify < select, 'toolchain guard must follow Setup Go and precede package selection');
+
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-go-toolchain-'));
+  try {
+    const bin = path.join(directory, 'bin');
+    fs.mkdirSync(bin);
+    const stub = path.join(bin, 'go');
+    fs.writeFileSync(stub, `#!${process.execPath}
+const args = process.argv.slice(2);
+if (args.length === 4 && args[0] === 'list' && args[1] === '-m' && args[2] === '-f' && args[3] === '{{.GoVersion}}') {
+  process.stdout.write(process.env.FIXTURE_MODULE + '\\n');
+} else if (args.length === 2 && args[0] === 'env' && args[1] === 'GOVERSION') {
+  process.stdout.write(process.env.FIXTURE_GOVERSION + '\\n');
+} else {
+  process.stderr.write('unexpected go invocation: ' + args.join(' ') + '\\n');
+  process.exit(2);
+}
+`);
+    fs.chmodSync(stub, 0o755);
+    const cases = [
+      {name: 'matching versions', readme: '- Go 1.27.4 or a newer patch\n', module: '1.27.4', selected: 'go1.27.4', passes: true,
+        message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      {name: 'README and module mismatch', readme: '- Go 1.27.4 or a newer patch\n', module: '1.27.3', selected: 'go1.27.3', passes: false,
+        message: 'go.mod GoVersion 1.27.3 != documented minimum 1.27.4'},
+      {name: 'separate toolchain override', readme: '- Go 1.27.4 or a newer patch\n', module: '1.27.4', selected: 'go1.27.5', passes: false,
+        message: 'selected toolchain go1.27.5 != documented minimum go1.27.4'},
+      {name: 'missing README minimum', readme: '# Fixture without a toolchain requirement\n', module: '1.27.4', selected: 'go1.27.4', passes: false,
+        message: 'README source-build Go minimum not found'},
+    ];
+    for (const fixture of cases) {
+      fs.writeFileSync(path.join(directory, 'README.md'), fixture.readme);
+      const result = spawnSync('bash', ['-c', script('Verify documented Go toolchain')], {
+        cwd: directory, encoding: 'utf8', env: {...process.env,
+          PATH: bin + path.delimiter + process.env.PATH,
+          FIXTURE_MODULE: fixture.module, FIXTURE_GOVERSION: fixture.selected},
+      });
+      const output = result.stdout + result.stderr;
+      assert.equal(result.status === 0, fixture.passes, `${fixture.name}: ${output}`);
+      assert.ok(output.includes(fixture.message), `${fixture.name}: ${output}`);
+    }
+  } finally {fs.rmSync(directory, {recursive: true, force: true});}
+});
 test('trusted events send weekly to fiona, build to Linux and other tasks to any Speedle runner', () => {
   const push = context('push'), dispatch = context('workflow_dispatch');
   push.event = {sender: {type: 'User'}}; dispatch.event = {sender: {type: 'User'}};
