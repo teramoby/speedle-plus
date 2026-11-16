@@ -18,7 +18,8 @@
    are stricter: from before axe is injected until the sampling ends, every
    stylesheet's rule text, media and disabled state must stay identical, or
    the gate fails. Open shadow roots are included in the DOM observation and
-   stylesheet fingerprints, including their style elements and adopted sheets.
+   stylesheet fingerprints, including their style elements, adopted sheets and
+   recursively imported sheets.
    Any page script error fails the gate. WebSockets and web workers, which
    page.route cannot intercept, fail the gate. Serve a local copy of any
    resource the page needs.
@@ -162,9 +163,10 @@ const server = http.createServer((req,res)=>{
           throw new Error(`the ${label} at ${width}px kept the network busy for 15s after load`,{cause:error});
         }
         // The styles must not change while axe measures the page: in the document and every open
-        // shadow root, fingerprint every stylesheet (including adopted ones and style elements),
-        // whether it is disabled, its media and the full text of every rule. Include each root even
-        // when it has no sheets, so attaching or removing a shadow root is also a visible change.
+        // shadow root, fingerprint every stylesheet (including adopted ones, style elements and
+        // recursively imported sheets), whether it is disabled, its media and the full text of
+        // every rule. Include each root even when it has no sheets, so attaching or removing a
+        // shadow root is also a visible change.
         const sheets=()=>page.evaluate(()=>{
           // StyleSheetList and CSSRuleList are array-like (length plus an indexed getter) with
           // no specified iterator: Array.from does not rely on the engine exposing one. Every
@@ -183,16 +185,28 @@ const server = http.createServer((req,res)=>{
             // latter is not available in every Chromium version, but CSSOM edits must still count.
             const list=Array.from(new Set(Array.from(root.styleSheets||[]).concat(
               Array.from(root.adoptedStyleSheets||[]),styles.map(style=>style.sheet).filter(Boolean))));
+            const visited=new WeakSet();
+            const fingerprint=sheet=>{
+              const name=sheet.href||(sheet.ownerNode&&sheet.ownerNode.nodeName)||'adopted';
+              // @import graphs can contain cycles or reach a sheet already listed at the top level.
+              // The first visit contains the complete fingerprint, so a repeated reference is enough.
+              if(visited.has(sheet)) return [name,'already fingerprinted'];
+              visited.add(sheet);
+              let rules;
+              try {rules=Array.from(sheet.cssRules);}
+              catch (error) {throw new Error(`the a11y smoke cannot read the rules of stylesheet ${name} in ${scope}: ${error.message}`);}
+              const imports=rules.filter(rule=>rule.type===CSSRule.IMPORT_RULE).map(rule=>{
+                // A missing imported sheet leaves the fingerprint incomplete. Fail closed rather
+                // than recording only the unchanged @import statement while its rules are unknown.
+                if(!rule.styleSheet) throw new Error(`the a11y smoke cannot read imported stylesheet ${rule.href} in ${scope}`);
+                return fingerprint(rule.styleSheet);
+              });
+              return [name,sheet.disabled,sheet.media?sheet.media.mediaText:'',rules.map(rule=>rule.cssText),imports];
+            };
             return [
               scope,
               styles.map(style=>[style.textContent,style.media,style.disabled]),
-              list.map(sheet=>{
-                const name=sheet.href||(sheet.ownerNode&&sheet.ownerNode.nodeName)||'adopted';
-                let rules;
-                try {rules=Array.from(sheet.cssRules).map(rule=>rule.cssText);}
-                catch (error) {throw new Error(`the a11y smoke cannot read the rules of stylesheet ${name} in ${scope}: ${error.message}`);}
-                return [name,sheet.disabled,sheet.media?sheet.media.mediaText:'',rules];
-              }),
+              list.map(fingerprint),
             ];
           }));
         });
@@ -263,8 +277,8 @@ const server = http.createServer((req,res)=>{
           await page.waitForTimeout(200);
           scans.push(await scan());
         }
-        // A style change inside the sampling window fails even if the page reverts it before the
-        // final comparison, so axe is never measuring a state the fingerprint no longer shows.
+        // A style change observed between consecutive sampling snapshots fails even if a later
+        // snapshot shows it reverted. Fingerprints carry across the 200 ms gaps between scans.
         assert.ok(scans.every(result=>!result.sheetsChanged),`the ${label} at ${width}px changed its styles during the contrast check`);
         const uniqueTargets=(items,key,seen)=>items.filter(item=>{const id=JSON.stringify(key(item));if(seen.has(id))return false;seen.add(id);return true;});
         const report={
