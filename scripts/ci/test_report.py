@@ -30,8 +30,10 @@ MAX_ISSUES = 20
 OUTPUT_LINES = 40
 PROMPT_LIMIT = 200_000
 # A transient email-API failure must not turn a passing run red. Only these
-# statuses and a network error are retried; a rejected request is not.
-EMAIL_RETRIES = 2
+# statuses and a network error are retried; a rejected request is not. One
+# retry bounds a duplicate report whose first response was lost, while still
+# covering a single blip.
+EMAIL_RETRIES = 1
 EMAIL_RETRY_DELAY = 2
 RETRYABLE_STATUS = (429, 500, 502, 503, 504)
 
@@ -349,9 +351,10 @@ def send_email(subject, body, env, timeout=EMAIL_TIMEOUT):
     send is an error annotation on the run, and it fails the step only when
     the run is a real report job (REPORT_EMAIL_REQUIRED), after the summary
     and the failure tracking have run. A 429, a 5xx status or a network
-    error is retried twice with a short backoff, so a transient blip does
-    not turn a passing run red; a retry may duplicate a report whose first
-    response was lost. The account id is percent-encoded into the path.
+    error is retried once with a short backoff, so a single transient blip
+    does not turn a passing run red; the retry may duplicate a report whose
+    first response was lost. The account id is percent-encoded into the
+    path.
     """
     if not email_configured(env):
         print("Cloudflare Email is not configured correctly (CF_ACCOUNT_ID, CF_EMAIL_TOKEN, "
@@ -538,7 +541,7 @@ def main(argv=None, env=os.environ):
                             performance_section(directories), skips)
     if ok and policy["quiet_on_pass"]:
         if args.summary_file:
-            Path(args.summary_file).write_text(summary)
+            Path(args.summary_file).write_text(summary, encoding="utf-8")
         print(summary)
         return 0
 
@@ -549,7 +552,7 @@ def main(argv=None, env=os.environ):
     report = (f"{analysis}\n\n----\n\n" if analysis else
               "(Ark analysis unavailable; raw results follow.)\n\n") + summary
     if args.summary_file:
-        Path(args.summary_file).write_text(report)
+        Path(args.summary_file).write_text(report, encoding="utf-8")
 
     subject = f"[Speedle {policy['title']}] {'PASSED' if ok else 'FAILED'}"
     email_failed = False
@@ -574,8 +577,10 @@ def main(argv=None, env=os.environ):
     print(summary)
     # A real report job must not go green when its only notification channel
     # did not deliver, whether it is misconfigured or the send failed. Tests
-    # and local runs leave REPORT_EMAIL_REQUIRED unset.
-    if email_failed and env.get("REPORT_EMAIL_REQUIRED") == "true":
+    # and local runs leave REPORT_EMAIL_REQUIRED unset; a real job may spell
+    # the marker "true", "True", "yes" or "1".
+    required = env.get("REPORT_EMAIL_REQUIRED", "").strip().lower() in ("1", "true", "yes")
+    if email_failed and required:
         reason = "is not configured" if not email_configured(env) else "could not be sent"
         print(f"::error::The report email {reason}; failing the report job.", file=sys.stderr)
         return 1

@@ -307,6 +307,19 @@ class EmailTest(unittest.TestCase):
         self.assertGreater(len(full), test_report.EMAIL_TEXT_LIMIT)
         self.assertIn("x" * 200, full)
 
+    def test_the_summary_file_is_written_as_utf8(self):
+        # The step-summary pipeline declares UTF-8; the report file must not
+        # depend on the ambient locale to produce it.
+        directory = Path(tempfile.mkdtemp())
+        (directory / "go.json").write_text(events(
+            ("output", "p", "TestZ", "断言失败\n"), ("fail", "p", "TestZ", None)))
+        summary = directory / "report.txt"
+        with mock.patch.object(test_report, "send_email", return_value=True), \
+                mock.patch("sys.stdout", new=io.StringIO()):
+            test_report.main(["--kind", "weekly", "--go-json", str(directory / "go.json"),
+                              "--summary-file", str(summary)], env={})
+        self.assertIn("断言失败", summary.read_bytes().decode("utf-8"))
+
     def test_every_configured_recipient_must_be_confirmed(self):
         env = dict(self.env, OPS_EMAIL_TO="Recipient One <recipient@example.com>, second@example.com")
         ok, _, message = self.send(result={"queued": ["recipient@example.com"]}, env=env)
@@ -441,6 +454,30 @@ class EmailTest(unittest.TestCase):
                 self.assertIn("::error::The report email could not be sent", stderr.getvalue())
                 self.assertIn("TestZ", summary.read_text())
                 self.assertEqual([c[2]["title"] for c in github.calls], ["Test failure: p TestZ"])
+
+    def test_any_truthy_required_marker_fails_a_broken_channel(self):
+        # The marker is a human-set setting, so any usual spelling of true
+        # must keep the fail-closed guarantee.
+        for spelling in ("true", "True", "1", "yes", " TRUE "):
+            with self.subTest(spelling=spelling):
+                directory = Path(tempfile.mkdtemp())
+                (directory / "go.json").write_text(events(("fail", "p", "TestZ", None)))
+                env = {"REPORT_EMAIL_REQUIRED": spelling}
+                with mock.patch("sys.stdout", new=io.StringIO()), \
+                        mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+                    code = test_report.main(["--kind", "nightly", "--go-json",
+                                             str(directory / "go.json")], env=env)
+                self.assertEqual(code, 1)
+                self.assertIn("::error::The report email is not configured", stderr.getvalue())
+
+    def test_an_unrecognized_required_marker_keeps_a_failed_send_soft(self):
+        directory = Path(tempfile.mkdtemp())
+        (directory / "go.json").write_text(events(("fail", "p", "TestZ", None)))
+        with mock.patch("sys.stdout", new=io.StringIO()), \
+                mock.patch("sys.stderr", new=io.StringIO()):
+            code = test_report.main(["--kind", "nightly", "--go-json",
+                                     str(directory / "go.json")], env={"REPORT_EMAIL_REQUIRED": "false"})
+        self.assertEqual(code, 0)
 
     def test_a_passing_report_job_fails_when_the_required_send_fails(self):
         # Nightly and weekly report passing runs too, so a broken channel
