@@ -196,8 +196,8 @@ fails the job with an `::error::` annotation that names the setting, after the
 step summary and the failure issues have been written. A local run or a test
 without the settings only prints a notice and stays green. The step summary
 keeps the report for the run, up to 900000 bytes and with the cut marked when
-the report is longer; the whole report travels in the email attachment when one
-is sent.
+the report is longer; the email carries the full report as an attachment,
+capped at 17 MiB with a note when it had to be cut.
 
 ## Fiona full nightly trial
 
