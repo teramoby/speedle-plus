@@ -53,6 +53,7 @@ Cloud 自身故障可能退还额度，每账号每 UTC 日最多退还 1,000 �
 | `403 csrf_failed` | 使用控制台会话及所需的来源和 CSRF 请求头。 |
 | `404 service_not_found`（ADS）/ `404 not_found`（管理） | 选择当前账号中存在的服务。密钥 ID 未知、属于其他账号或已撤销时也返回 `404 not_found`。 |
 | `409 quota_exceeded` | 删除不用的服务或策略以释放名额；等待不会重置这两类上限。撤销不用的 API 密钥，或等它到期，可释放密钥名额。 |
+| `409 revision_exhausted` | 服务的修订号已达到上限，但仍可读取和导出。请按[恢复步骤](#revision-exhausted)操作。 |
 | `413 request_too_large` | 缩小正文。 |
 | `429 rate_limited` / `429 daily_quota_exceeded` | 遵守 `Retry-After` 并使用有界退避；每日额度在 UTC 午夜重置。 |
 | `503 quota_unavailable` / `503 snapshot_unavailable` / `500 internal_error` | 默认拒绝，按有界退避重试；带有 `Retry-After` 时遵守它。 |
@@ -60,3 +61,18 @@ Cloud 自身故障可能退还额度，每账号每 UTC 日最多退还 1,000 �
 API 密钥验证通过后，`X-RateLimit-Limit` 为 600，不提供精确的 `X-RateLimit-Remaining`。如果有 `X-Quota-Daily-Remaining`，它只是账号级剩余额度的估计值；并发调用和未使用的预留可能使它偏离实际可用次数。它不保证下一次请求成功，提前拒绝的响应不带此头。
 
 ADS 响应使用 `Cache-Control: no-store`，不要共享缓存判定或凭据。请使用 POST；其他方法可能收到 `405 method_not_allowed`，或更早被拦截并返回非 JSON 响应。参见[授权 API](/zh/docs/cloud/authorization-api/)。
+
+<a id="revision-exhausted"></a>
+## `409 revision_exhausted`
+
+此服务的修订号已达到上限。此服务仍可读取和导出。
+
+恢复步骤：
+
+1. 导出其策略。
+2. 创建一个新服务。
+3. 把导出文件导入该新服务。
+4. 把调用方切换到新服务名。
+5. 之后可以删除旧服务。
+
+账号的服务和策略限额仍适用于上述步骤。执行第 2、3 步前，确认账号有一个空闲服务名额和足够的策略名额来完成导入；如有必要，先删除不用的服务或策略。如果没有其他名额可释放，请确认导出文件可用，删除旧服务，再执行第 2–4 步。在新服务就绪前删除旧服务会中断其调用方的访问。

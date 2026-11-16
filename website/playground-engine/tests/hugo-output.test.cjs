@@ -302,6 +302,8 @@ for (const [locale, copy] of Object.entries(cloudCopy)) {
     assert.ok(api.includes('AbortSignal.timeout') && api.includes('SPEEDLE_API_KEY'), `Node.js ADS example in ${locale || 'en'}`);
     assert.ok(limits.includes('X-Quota-Daily-Remaining') && limits.includes('daily_quota_exceeded') && limits.includes('snapshot_unavailable'), `Cloud limits and errors in ${locale || 'en'}`);
   }
+  assert.equal((limits.match(/id="revision-exhausted"/g) || []).length, 1, `Cloud revision-exhausted anchor in ${locale || 'en'}`);
+  assert.equal((limits.match(/href="#revision-exhausted"/g) || []).length, 1, `Cloud revision-exhausted recovery link in ${locale || 'en'}`);
   assert.ok(overview.includes(`href="/docs/cloud/${copy.download}"`), `Localized Markdown download in ${locale || 'en'}`);
   // The download list opens before the localized Markdown link, because the
   // Swagger reference comes first, and ends at its own </ul>. It links the
