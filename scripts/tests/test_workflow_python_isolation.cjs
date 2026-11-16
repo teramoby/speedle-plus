@@ -10,13 +10,19 @@
  * sys.path rests on CPython's documented -I behaviour rather than on a check
  * this inventory can run.
  *
- * Every known -c, -m, heredoc and script-file invocation in
- * .github/workflows/*.yml and scripts/ci/*.sh is listed below. A new
- * inline-shaped Python invocation fails the inventory assertion so a reviewer
- * must add it explicitly. Backslash continuations are folded, and -c guards
- * are read only from a single-quoted payload on the invocation line; a
- * multi-line or otherwise unparseable payload fails closed. Comments, printed
- * examples and other commands' heredoc bodies are outside this inventory.
+ * Every interpreter token on an executable line (python, python3, python3.N,
+ * with or without a directory prefix) is classified as -c, -m, stdin (heredoc
+ * or `-`), script-file or a version/help probe, and each invocation on a line
+ * is checked individually. An interpreter token in command position that
+ * matches none of those forms fails the inventory instead of being skipped,
+ * so a new form cannot pass unreviewed. Every invocation in
+ * .github/workflows/*.yml and scripts/ci/*.sh is listed below; a new one fails
+ * the inventory assertion so a reviewer must add it explicitly. Backslash
+ * continuations are folded, and only the text after a shell separator on an
+ * echo/printf line is scanned, so printed examples stay outside the
+ * inventory. -c guards are read only from a single-quoted payload on the
+ * invocation line; a multi-line or otherwise unparseable payload fails closed.
+ * Comments and data or Python heredoc bodies are outside this inventory.
  * Shell scripts outside scripts/ci are outside this change. */
 const assert = require('node:assert/strict');
 const {spawnSync} = require('node:child_process');
@@ -33,16 +39,68 @@ const isolationGuard = 'import sys; sys.flags.isolated or sys.exit("run with pyt
 const pathGuard = 'import os; unsafe = any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p is not None); unsafe and sys.exit("python3 -I must exclude the checkout and working directory from sys.path")';
 const guard = `${isolationGuard}; ${pathGuard}`;
 const interpreter = String.raw`\bpython(?:3(?:\.[0-9]+)?)?\b`;
-const commandPattern = new RegExp(String.raw`${interpreter}(?:\s+-[A-Za-z]+)*?\s+-[A-Za-z]*c(?=\s|['"]|$)`);
-const modulePattern = new RegExp(String.raw`${interpreter}(?:\s+-[A-Za-z]+)*?\s+-[A-Za-z]*m(?=\s|['"]|$)`);
-const stdinPattern = new RegExp(String.raw`${interpreter}(?:\s+-[A-Za-z]+)*(?:(?:\s+-)?\s*<<|\s+-(?=\s|$))`);
-const scriptPattern = new RegExp(String.raw`${interpreter}(?:\s+-[A-Za-z]+)*?\s+("[^"]+"|'[^']+'|[^\s'";|&)<>][^\s'";|&)]*/[^\s'";|&)]*|[^\s'";|&)<>][^\s'";|&)]*\.py)(?=\s|$)`);
-const isolatedPattern = new RegExp(String.raw`${interpreter}\s+-I(?=\s|$)`);
+const tokenPattern = new RegExp(interpreter, 'g');
+const kinds = [
+  ['command', new RegExp(String.raw`^${interpreter}(?:\s+-[A-Za-z]+)*?\s+-[A-Za-z]*c(?=\s|['"]|$)`)],
+  ['module', new RegExp(String.raw`^${interpreter}(?:\s+-[A-Za-z]+)*?\s+-[A-Za-z]*m(?=\s|['"]|$)`)],
+  ['stdin', new RegExp(String.raw`^${interpreter}(?:\s+-[A-Za-z]+)*(?:(?:\s+-)?\s*<<|\s+-(?=\s|$))`)],
+  ['script', new RegExp(String.raw`^${interpreter}(?:\s+-[A-Za-z]+)*?\s+("[^"]+"|'[^']+'|[^\s'";|&)<>][^\s'";|&)]*/[^\s'";|&)]*|[^\s'";|&)<>][^\s'";|&)]*\.py)(?=\s|$)`)],
+];
+const probePattern = new RegExp(String.raw`^${interpreter}(?:\s+-[A-Za-z]+)*\s+(?:--version|--help|-V|-h)(?=[\s;|&)]|$)`);
+const isolatedPattern = new RegExp(String.raw`^${interpreter}(?:\s+-[A-Za-z]+)*?\s+-I(?=\s|$)`);
+const commandPosition = /(?:^|[;&|(]|\b(?:if|then|elif|else|while|until|do|!))\s*$/;
 const printedExample = /^(?:-\s*)?(?:run:\s*)?(?:echo|printf)\b/;
-const pipedPython = /\|\s*python(?:3(?:\.[0-9]+)?)?\b/;
 
 function commandGuarded(payload) {
   return payload === guard || payload.startsWith(`${guard}; `);
+}
+
+// An echo or printf line only executes the text after its first unquoted shell
+// separator; the printed words themselves are data, not commands.
+function afterPrintedExample(text) {
+  if (!printedExample.test(text)) return text;
+  let quote = null;
+  for (let index = 0; index < text.length; index++) {
+    const character = text[index];
+    if (quote) {
+      if (character === '\\' && quote === '"') index++;
+      else if (character === quote) quote = null;
+    } else if (character === "'" || character === '"') {
+      quote = character;
+    } else if (character === ';') {
+      return text.slice(index + 1);
+    } else if ((character === '&' || character === '|') && text[index + 1] === character) {
+      return text.slice(index + 2);
+    } else if (character === '|') {
+      return text.slice(index + 1);
+    }
+  }
+  return '';
+}
+
+// Classify the invocation whose interpreter token starts `rest`, returning the
+// inline payload (for -c), the file operand (for scripts) and how much of the
+// line the invocation consumes so the scan can continue after it.
+function classify(rest) {
+  for (const [kind, pattern] of kinds) {
+    const match = rest.match(pattern);
+    if (!match) continue;
+    let payload = '';
+    let operand = '';
+    let consumed = match[0].length;
+    if (kind === 'script') operand = match[1].replace(/^['"]|['"]$/g, '');
+    if (kind === 'command') {
+      const quoted = rest.slice(consumed).match(/^\s+'([^']*)'/);
+      if (quoted) {
+        payload = quoted[1];
+        consumed += quoted[0].length;
+      }
+    }
+    return {kind, payload, operand, consumed};
+  }
+  const probe = rest.match(probePattern);
+  if (probe) return {kind: 'probe', payload: '', operand: '', consumed: probe[0].length};
+  return null;
 }
 
 function sources() {
@@ -60,49 +118,52 @@ function inspectSource(file, source) {
   let heredoc = null;
   for (let index = 0; index < lines.length; index++) {
     let line = lines[index];
-    let text = line.trim();
     if (heredoc) {
-      if (text === heredoc) heredoc = null;
+      if (line.trim() === heredoc) heredoc = null;
       continue;
     }
     const start = index;
     while (line.endsWith('\\') && index + 1 < lines.length) {
       line = line.slice(0, -1) + lines[++index];
     }
-    text = line.trim();
-    if (!text || text.startsWith('#') || (printedExample.test(text) && !pipedPython.test(text))) continue;
-    let kind;
-    let payload = '';
-    let operand = '';
-    const commandMatch = line.match(commandPattern);
-    if (commandMatch) {
-      kind = 'command';
-      const afterOption = line.slice(commandMatch.index + commandMatch[0].length);
-      payload = afterOption.match(/^\s+'([^']*)'/)?.[1] ?? '';
-    } else if (modulePattern.test(line)) kind = 'module';
-    else if (stdinPattern.test(line)) kind = 'stdin';
-    else {
-      const scriptMatch = line.match(scriptPattern);
-      if (scriptMatch) {
-        kind = 'script';
-        operand = scriptMatch[1].replace(/^['"]|['"]$/g, '');
-      }
-    }
-    if (kind) {
-      const isolated = isolatedPattern.test(line);
-      invocations.push({
-        file, line: start + 1, kind, isolated, operand,
+    const trimmed = line.trim();
+    const text = afterPrintedExample(trimmed);
+    if (trimmed && !trimmed.startsWith('#')) {
+      let cursor = 0;
+      for (const token of text.matchAll(tokenPattern)) {
+        if (token.index < cursor) continue;
+        const rest = text.slice(token.index);
+        const found = classify(rest);
+        if (!found) {
+          // Fail closed: a command-shaped interpreter token in a form this
+          // inventory does not know must be reviewed, not silently skipped.
+          if (commandPosition.test(text.slice(0, token.index))) {
+            throw new Error(`${file}:${start + 1}: unrecognized python invocation ${JSON.stringify(rest.slice(0, 40))}; add it to the explicit inventory`);
+          }
+          cursor = token.index + token[0].length;
+          continue;
+        }
+        const isolated = isolatedPattern.test(rest);
+        let guarded;
         // -m and script-file invocations have no inline payload to instrument,
         // so the only available check is that -I is present; -c and stdin
-        // programs must also carry the runtime guard.
-        guarded: kind === 'module' || kind === 'script' ? isolated : (kind === 'command'
-          ? commandGuarded(payload)
-          : lines[index + 1]?.trim() === isolationGuard && lines[index + 2]?.trim() === pathGuard),
-      });
+        // programs must also carry the runtime guard. Version/help probes
+        // execute no project code, so they have nothing to guard.
+        if (found.kind === 'probe') guarded = true;
+        else if (found.kind === 'module' || found.kind === 'script') guarded = isolated;
+        else if (found.kind === 'command') guarded = commandGuarded(found.payload);
+        else guarded = lines[index + 1]?.trim() === isolationGuard && lines[index + 2]?.trim() === pathGuard;
+        invocations.push({
+          file, line: start + 1, kind: found.kind, isolated, operand: found.operand, guarded,
+        });
+        cursor = token.index + Math.max(found.consumed, token[0].length);
+      }
     }
     // Skip data heredocs as well as Python ones. This small delimiter tracker
     // avoids treating their contents as shell without parsing shell grammar.
-    const marker = line.match(/<<-?\s*['"]?([A-Za-z_][A-Za-z0-9_]*)['"]?/);
+    const marker = trimmed && !trimmed.startsWith('#')
+      ? text.match(/<<-?\s*['"]?([A-Za-z_][A-Za-z0-9_]*)['"]?/)
+      : null;
     if (marker) heredoc = marker[1];
   }
   return invocations;
@@ -122,8 +183,8 @@ test('the explicit workflow and CI-script inline-Python inventory is isolated an
   const files = sources();
   assert.ok(files.length > 0, 'no sources discovered');
   const invocations = files.flatMap(([file, absolute]) => inspectSource(file, fs.readFileSync(absolute, 'utf8')));
-  assert.equal(invocations.length, 56, 'discovered invocation count must match the reviewed inventory');
-  assert.deepEqual(invocations.filter(invocation => !invocation.isolated), []);
+  assert.equal(invocations.length, 58, `discovered invocation count ${invocations.length} must match the reviewed inventory`);
+  assert.deepEqual(invocations.filter(invocation => invocation.kind !== 'probe' && !invocation.isolated), []);
   assert.deepEqual(invocations.filter(invocation => !invocation.guarded), []);
 
   assertInventory(invocations, [
@@ -139,6 +200,7 @@ test('the explicit workflow and CI-script inline-Python inventory is isolated an
     ['.github/workflows/mongodb-nightly-validation.yml', 'command'],
     ['.github/workflows/mongodb-nightly-validation.yml', 'command'],
     ['.github/workflows/mongodb-nightly-validation.yml', 'command'],
+    ['.github/workflows/mongodb-nightly-validation.yml', 'probe'],
     ['.github/workflows/mongodb-nightly-validation.yml', 'stdin'],
     ['scripts/ci/condition-conformance.sh', 'module'],
     ['scripts/ci/run-go-tests.sh', 'command'],
@@ -160,6 +222,7 @@ test('the explicit workflow and CI-script inline-Python inventory is isolated an
     ['.github/workflows/post-merge.yml', 'script'],
     ['.github/workflows/reviewbot-command.yml', 'script'],
     ['.github/workflows/reviewbot-command.yml', 'script'],
+    ['.github/workflows/reviewbot.yml', 'probe'],
     ['.github/workflows/reviewbot.yml', 'script'],
     ['.github/workflows/reviewbot.yml', 'script'],
     ['.github/workflows/reviewbot.yml', 'script'],
@@ -186,7 +249,7 @@ test('the explicit workflow and CI-script inline-Python inventory is isolated an
   ]);
 });
 
-test('the inventory recognizes inline and script forms and ignores examples and data heredocs', () => {
+test('the inventory recognizes every invocation on a line and ignores printed examples and data heredocs', () => {
   const source = [
     `python3 -I -c '${guard}; print(1)'`,
     'python3 -I \\',
@@ -202,6 +265,9 @@ test('the inventory recognizes inline and script forms and ignores examples and 
     'python3 --version',
     'for tool in gcc python3 node jq; do command -v "${tool}"; done',
     "echo python3 -c 'not an executed example'",
+    `echo "warming cache" && python3 -I -c '${guard}; print(3)'`,
+    "printf '%s\\n' start && python3 scripts/ci/later.py",
+    'python3 -I scripts/ci/first.py && python3 scripts/ci/second.py',
     "# python3 -c 'comment only'",
     "cat <<'DATA'",
     "python3 -c 'heredoc data, not a command'",
@@ -215,7 +281,24 @@ test('the inventory recognizes inline and script forms and ignores examples and 
     {kind: 'stdin', isolated: true, guarded: true},
     {kind: 'script', isolated: true, guarded: true},
     {kind: 'script', isolated: true, guarded: true},
+    {kind: 'probe', isolated: false, guarded: true},
+    {kind: 'command', isolated: true, guarded: true},
+    {kind: 'script', isolated: false, guarded: false},
+    {kind: 'script', isolated: true, guarded: true},
+    {kind: 'script', isolated: false, guarded: false},
   ]);
+});
+
+test('unrecognized command-shaped Python invocations fail closed instead of being skipped', () => {
+  assert.throws(() => inspectSource('fixture.yml', 'python3 -X surprise'),
+    /unrecognized python invocation/);
+  assert.throws(() => inspectSource('fixture.yml', 'echo warming && python3 -X surprise'),
+    /unrecognized python invocation/);
+  assert.throws(() => inspectSource('fixture.yml', 'if python3 -X surprise; then :; fi'),
+    /unrecognized python invocation/);
+  // A bare interpreter word in an argument list is not an invocation.
+  assert.deepEqual(inspectSource('fixture.yml',
+    'for tool in python3 node; do command -v "${tool}"; done'), []);
 });
 
 test('missing guards, unparseable -c payloads and unlisted invocations fail', () => {
