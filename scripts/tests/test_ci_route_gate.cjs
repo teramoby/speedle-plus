@@ -38,6 +38,7 @@ function run(overrides = {}) {
 function pullRequest(labels = [], overrides = {}) {
   return {
     number: 590,
+    state: 'open',
     base: {sha: base, ref: 'master', repo: {default_branch: 'master'}},
     head: {sha: head},
     labels: labels.map(name => ({name})),
@@ -75,10 +76,11 @@ function routesFor(files) {
   });
 }
 
-function fixtureApi({run: completedRun, pr, files, jobs: runJobs, newerJobs, latest, latestCompleted}) {
+function fixtureApi({run: completedRun, pr, files, prFiles, jobs: runJobs, newerJobs, latest, latestCompleted, commitPulls, jobsError}) {
   const calls = [];
   const jobsPrefix = `repos/${repository}/actions/runs/`;
   const jobsSuffix = '/jobs?per_page=100&filter=latest';
+  const filesPattern = new RegExp(`^repos/${repository}/pulls/\\d+/files\\?per_page=100&page=(\\d+)$`);
   const api = (endpoint, options = {}) => {
     calls.push({endpoint, options});
     if (options.method === 'POST') {
@@ -87,8 +89,18 @@ function fixtureApi({run: completedRun, pr, files, jobs: runJobs, newerJobs, lat
     }
     if (endpoint === `repos/${repository}/actions/runs/${completedRun.id}`) return completedRun;
     if (endpoint === `repos/${repository}/pulls/${pr.number}`) return pr;
+    if (endpoint === `repos/${repository}/commits/${completedRun.head_sha}/pulls`) {
+      return commitPulls === undefined ? [pr] : commitPulls;
+    }
+    const filesMatch = filesPattern.exec(endpoint);
+    if (filesMatch) {
+      const all = prFiles === undefined ? files : prFiles;
+      const page = Number(filesMatch[1]);
+      return all.slice((page - 1) * 100, page * 100).map(filename => ({filename}));
+    }
     if (endpoint.startsWith(jobsPrefix) && endpoint.endsWith(jobsSuffix)) {
       assert.equal(options.paginate, true);
+      if (jobsError) throw new Error('jobs request failed');
       const id = endpoint.slice(jobsPrefix.length, -jobsSuffix.length);
       const other = newerJobs === undefined ? runJobs : newerJobs;
       return [{jobs: id === String(completedRun.id) ? runJobs : (typeof other === 'function' ? other(id) : other)}];
@@ -177,14 +189,56 @@ test('a pull request based on another branch publishes no status for its commit'
   assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 0);
 });
 
-test('a run for another commit publishes no status', () => {
+test('a run that no open pull request owns publishes no status', () => {
   const pr = pullRequest([], {head: {sha: '3'.repeat(40)}});
   const fixture = fixtureApi({run: run(), pr, files: ['docs/guide.md'], jobs: jobs({build: true})});
   const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
   assert.equal(result.ignored, true);
   assert.equal(result.status.state, null);
-  assert.equal(result.status.description, 'CI run does not match the pull request head');
+  assert.equal(result.status.description, 'No open pull request for this commit');
   assert.equal(fixture.calls.some(call => call.endpoint.includes('/compare/')), false);
+  assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 0);
+});
+
+test('a fork-style run resolves its pull request by head SHA', () => {
+  const pr = pullRequest();
+  const fixture = fixtureApi({
+    run: run({pull_requests: []}), pr, files: ['docs/guide.md'], jobs: jobs({build: true}), commitPulls: [pr],
+  });
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.status.state, 'success');
+  assert.equal(fixture.calls.some(call => call.endpoint === `repos/${repository}/commits/${head}/pulls`), true);
+});
+
+test('a newer run of another pull request does not suppress this result', () => {
+  const pr = pullRequest();
+  const other = run({id: 102, pull_requests: [{number: 999}]});
+  const fixture = fixtureApi({
+    run: run(), pr, files: ['docs/guide.md'], jobs: jobs({build: true}), latest: [other, run()],
+  });
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.status.state, 'success');
+  assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 1);
+});
+
+test('a newer attempt of the same run supersedes the event for an older attempt', () => {
+  const fixture = fixtureApi({
+    run: run({run_attempt: 2}), pr: pullRequest(), files: ['docs/guide.md'], jobs: jobs({build: true}),
+  });
+  const result = gate.runGate({repository, runId: 101, runAttempt: 1, publish: true}, fixture.api);
+  assert.equal(result.ignored, true);
+  assert.equal(result.status.state, null);
+  assert.equal(result.status.description, 'Superseded by a newer CI attempt');
+  assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 0);
+});
+
+test('an incomplete evaluation is not published as a route verdict', () => {
+  const fixture = fixtureApi({
+    run: run(), pr: pullRequest(), files: ['docs/guide.md'], jobs: jobs({build: true}), jobsError: true,
+  });
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.status.state, 'failure');
+  assert.equal(result.error, 'jobs request failed');
   assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 0);
 });
 
@@ -256,18 +310,27 @@ test('a pull request that rewrites the CI workflow cannot be verified by its own
   assert.equal(writes.length, 1);
   assert.equal(writes[0].options.input.state, 'failure');
 
-  // The compare API returns at most 300 files. An incomplete list cannot prove
-  // the workflow file was untouched either.
-  const truncated = fixtureApi({
-    run: run(),
-    pr: pullRequest(),
-    files: Array.from({length: 300}, (_, index) => `pkg/f${index}.go`),
-    jobs: jobs(),
+  // The compare list is capped at 300 entries, but the pull request files
+  // endpoint still proves the guarded workflows are untouched, so a large
+  // pull request is not rejected.
+  const largeFiles = Array.from({length: 300}, (_, index) => `pkg/f${index}.go`);
+  const large = fixtureApi({
+    run: run(), pr: pullRequest(), files: largeFiles, prFiles: largeFiles, jobs: jobs({ci: true, build: true}),
   });
-  const incomplete = gate.runGate({repository, runId: 101, publish: true}, truncated.api);
-  assert.equal(incomplete.status.state, 'failure');
-  assert.equal(incomplete.status.description,
-    'The changed-file list is incomplete; the CI workflow cannot be verified');
+  const largeResult = gate.runGate({repository, runId: 101, publish: true}, large.api);
+  assert.equal(largeResult.status.state, 'success');
+  assert.equal(large.calls.some(call => call.endpoint.includes('/pulls/590/files?per_page=100&page=1')), true);
+
+  const guarded = fixtureApi({
+    run: run(), pr: pullRequest(),
+    files: largeFiles,
+    prFiles: [...largeFiles.slice(0, 250), '.github/workflows/ci.yml', ...largeFiles.slice(250)],
+    jobs: jobs({ci: true, build: true}),
+  });
+  const guardedResult = gate.runGate({repository, runId: 101, publish: true}, guarded.api);
+  assert.equal(guardedResult.status.state, 'failure');
+  assert.equal(guardedResult.status.description,
+    'The pull request changes the CI workflow; the route cannot be verified from its own run');
 });
 
 test('a code-only pull request is still assessed from its base classification', () => {
@@ -493,6 +556,7 @@ test('workflow_run gate uses the default branch, Node 22 and minimal permissions
   assert.doesNotMatch(checkout, /workflow_run\.head|pull_request/);
   assert.match(workflow, /node-version: '22'/);
   assert.match(workflow, /WORKFLOW_RUN_ID: \$\{\{ github\.event\.workflow_run\.id \}\}/);
+  assert.match(workflow, /WORKFLOW_RUN_ATTEMPT: \$\{\{ github\.event\.workflow_run\.run_attempt \}\}/);
   assert.match(workflow, /run: node scripts\/ci\/ci-route-gate\.cjs --run-id "\$\{WORKFLOW_RUN_ID\}" --publish/);
   assert.match(workflow, /GH_TOKEN: \$\{\{ github\.token \}\}/);
   assert.doesNotMatch(workflow, /pull_request_target|secrets\.|actions\/upload-artifact/);
@@ -504,6 +568,9 @@ test('workflow_run gate uses the default branch, Node 22 and minimal permissions
 test('command arguments require one explicit input and keep PR mode read-only', () => {
   assert.deepEqual(gate.parseArgs(['--run-id', '101', '--publish'], {GITHUB_REPOSITORY: repository}),
     {repository, runId: 101, publish: true});
+  assert.deepEqual(gate.parseArgs(['--run-id', '101', '--publish'],
+    {GITHUB_REPOSITORY: repository, WORKFLOW_RUN_ATTEMPT: '2'}),
+  {repository, runAttempt: 2, runId: 101, publish: true});
   assert.deepEqual(gate.parseArgs(['--pr', '590', '--dry-run'], {GITHUB_REPOSITORY: repository}),
     {repository, prNumber: 590, dryRun: true});
   for (const args of [['--pr', '590'], ['--run-id', '101'], ['--pr', '0', '--dry-run'],

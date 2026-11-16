@@ -41,4 +41,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
+          WORKFLOW_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
         run: node scripts/ci/ci-route-gate.cjs --run-id "${WORKFLOW_RUN_ID}" --publish

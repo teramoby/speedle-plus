@@ -18,6 +18,8 @@ const STATUS_CONTEXT = 'speedle/ci-route-gate';
 // run that never publishes a status must not suppress one that does.
 const RUN_SAMPLE_LIMIT = 100;
 const UNRESOLVED_RUN_ORDER = Symbol('unresolved run order');
+// The pull request files endpoint pages through at most 3,000 entries.
+const PR_FILE_PAGES = 30;
 const ROUTE_KEYS = ['go', 'website', 'docs', 'ci'];
 // The compare API returns at most 300 file entries. An incomplete list enables
 // every route rather than making a decision from only part of the diff.
@@ -92,7 +94,7 @@ function ignoredRun(run, jobs) {
 // Validate the run before using its job set. An ignored label event has no
 // active jobs and must not replace the status from an active run; its shape is
 // checked against the guarded workflow files before it is honored.
-function preflight(run, pr, jobs) {
+function preflight(run, pr) {
   if (run?.name !== CI_WORKFLOW_NAME) return 'Unexpected CI workflow name';
   if (run.path !== CI_WORKFLOW_PATH) return 'Unexpected CI workflow path';
   if (run.event !== 'pull_request') return 'CI run is not a pull request run';
@@ -108,17 +110,12 @@ function preflight(run, pr, jobs) {
   if (!pr?.base?.ref || pr.base.ref !== pr?.base?.repo?.default_branch) {
     return {ignored: true, message: 'Pull request base is not the default branch'};
   }
-  if (ignoredRun(run, jobs)) {
-    // The ignored shape is reported by the run itself, which the pull
-    // request controls when it changes a workflow file. Check that first.
-    return {ignored: true, checkWorkflow: true, message: 'Ignored CI label event'};
-  }
   return null;
 }
 
 function evaluate({run, pr, jobs, routes}) {
   if (!Array.isArray(jobs)) throw new Error('jobs fixture is not an array');
-  const early = preflight(run, pr, jobs);
+  const early = preflight(run, pr);
   if (early) {
     return outcome({
       run, pr, routes,
@@ -126,6 +123,12 @@ function evaluate({run, pr, jobs, routes}) {
       message: early.ignored ? early.message : early,
       ignored: Boolean(early.ignored),
     });
+  }
+  // An ignored label event leaves any existing status alone. It is honoured
+  // only after assessRun has checked the guarded workflow files, because the
+  // shape comes from the run and the pull request controls the workflow.
+  if (ignoredRun(run, jobs)) {
+    return outcome({run, pr, routes, state: null, ignored: true, message: 'Ignored CI label event'});
   }
 
   const changes = uniqueEntry(jobs, 'changes', 'route');
@@ -236,7 +239,12 @@ function classifyWithBase({api, runner, repository, baseSha, headSha, files}) {
 function changedFiles(compare) {
   if (!compare || !Array.isArray(compare.files)) throw new Error('compare response has no file list');
   const files = compare.files.map(file => file?.filename);
-  return {files, complete: files.length < COMPARE_FILE_LIMIT};
+  const previous = compare.files.map(file => file?.previous_filename).filter(name => typeof name === 'string');
+  return {files, previous, complete: files.length < COMPARE_FILE_LIMIT};
+}
+
+function guardPaths(files) {
+  return files.some(file => GUARDED_WORKFLOW_PATHS.includes(file?.filename) || GUARDED_WORKFLOW_PATHS.includes(file?.previous_filename));
 }
 
 // A pull_request run executes these workflow files from the request's merge
@@ -244,15 +252,22 @@ function changedFiles(compare) {
 // does not change any of them. The compare API reports the request's own side
 // of the change since the merge base, so a base-branch update does not count.
 // The worker is guarded even though callers pin it to @master: a local
-// reference would execute the request's copy.
-function workflowTrust(comparison, workflowPaths) {
-  if (workflowPaths.some(workflowPath => comparison.files.includes(workflowPath))) {
-    return 'The pull request changes the CI workflow; the route cannot be verified from its own run';
+// reference would execute the request's copy. When the compare list is
+// capped, the pull request files endpoint can still prove the files are
+// untouched without rejecting a large pull request.
+function workflowTrust(api, repository, prNumber, comparison) {
+  const message = 'The pull request changes the CI workflow; the route cannot be verified from its own run';
+  if (comparison.complete) {
+    const changed = [...comparison.files, ...comparison.previous];
+    return changed.some(name => GUARDED_WORKFLOW_PATHS.includes(name)) ? message : null;
   }
-  if (!comparison.complete) {
-    return 'The changed-file list is incomplete; the CI workflow cannot be verified';
+  for (let page = 1; page <= PR_FILE_PAGES; page++) {
+    const files = api(`repos/${repository}/pulls/${prNumber}/files?per_page=100&page=${page}`);
+    if (!Array.isArray(files)) throw new Error('pull request files response is not an array');
+    if (guardPaths(files)) return message;
+    if (files.length < 100) return null;
   }
-  return null;
+  throw new Error('pull request file list is too large to verify the guarded workflows');
 }
 
 function jobsFromPages(pages) {
@@ -270,16 +285,45 @@ function latestCompletedRun(api, repository, headSha) {
   return response.workflow_runs[0] || null;
 }
 
+// Resolve the open pull request that owns this commit. The run's own
+// pull_requests array can be empty, for example for fork contributions, so the
+// commit lookup is the primary source. A pull request based on the default
+// branch is preferred when several share the commit.
+function resolvePullRequest(api, repository, run) {
+  assertSha(run?.head_sha, 'workflow run head');
+  const response = api(`repos/${repository}/commits/${run.head_sha}/pulls`);
+  if (!Array.isArray(response)) throw new Error('pull request lookup response is not an array');
+  const open = response
+    .filter(pr => pr?.state === 'open' && pr?.head?.sha === run.head_sha)
+    .sort((left, right) => (left?.number || 0) - (right?.number || 0));
+  const preferred = open.find(pr => pr?.base?.ref && pr.base.ref === pr?.base?.repo?.default_branch);
+  if (preferred) return preferred;
+  if (open.length > 0) return open[0];
+  const number = run?.pull_requests?.[0]?.number;
+  if (Number.isInteger(number) && number > 0) {
+    const pr = api(`repos/${repository}/pulls/${number}`);
+    if (pr?.state === 'open' && pr?.head?.sha === run.head_sha) return pr;
+  }
+  return null;
+}
+
+function samePullRequest(candidate, number) {
+  return Number.isInteger(candidate?.pull_requests?.[0]?.number) && candidate.pull_requests[0].number === number;
+}
+
 // A completed ignored label run never publishes a status, so it must not
 // suppress the status of the newest run that can. The runs list is ordered by
 // creation, newest first, so the first newer run that is not ignored decides.
-function supersedingRun(api, repository, run) {
+// Runs of another pull request that shares the head commit cannot publish
+// here and must not suppress this pull request's result.
+function supersedingRun(api, repository, run, pr) {
   assertSha(run?.head_sha, 'workflow run head');
   const response = api(`repos/${repository}/actions/workflows/ci.yml/runs?event=pull_request&head_sha=${run.head_sha}&per_page=${RUN_SAMPLE_LIMIT}`);
   if (!response || !Array.isArray(response.workflow_runs)) throw new Error('workflow runs response has no run list');
   const runs = response.workflow_runs;
   for (const candidate of runs) {
     if (String(candidate?.id) === String(run.id)) return null;
+    if (!samePullRequest(candidate, pr.number)) continue;
     const jobs = jobsFromPages(api(`repos/${repository}/actions/runs/${candidate.id}/jobs?per_page=100&filter=latest`, {paginate: true}));
     if (candidate.name === CI_WORKFLOW_NAME && ignoredRun(candidate, jobs)) continue;
     return candidate;
@@ -291,21 +335,17 @@ function supersedingRun(api, repository, run) {
 
 function assessRun({api, runner, repository, run, pr}) {
   const jobs = jobsFromPages(api(`repos/${repository}/actions/runs/${run.id}/jobs?per_page=100&filter=latest`, {paginate: true}));
-  const early = preflight(run, pr, jobs);
-  if (early && !early.ignored) return evaluate({run, pr, jobs, routes: allRoutes()});
-  if (early && !early.checkWorkflow) return evaluate({run, pr, jobs, routes: allRoutes()});
+  const early = preflight(run, pr);
+  if (early) return evaluate({run, pr, jobs, routes: allRoutes()});
 
   assertSha(pr?.base?.sha, 'pull request base');
   assertSha(run.head_sha, 'workflow run head');
   const comparison = changedFiles(api(`repos/${repository}/compare/${pr.base.sha}...${run.head_sha}`));
-  // Never read job or step names from a run whose workflow the request
-  // controls: it could report the names this gate requires without running
-  // the jobs they belong to. An ignored label event reports its shape the
-  // same way, so it is checked before the event is ignored.
-  const untrusted = workflowTrust(comparison, GUARDED_WORKFLOW_PATHS);
+  // Workflow integrity comes before every run-shape decision: never read job
+  // or step names, including an ignored label-event shape, from a run whose
+  // workflow the pull request controls.
+  const untrusted = workflowTrust(api, repository, pr.number, comparison);
   if (untrusted) return outcome({run, pr, routes: allRoutes(), state: 'failure', message: untrusted});
-  if (early) return evaluate({run, pr, jobs, routes: allRoutes()});
-
   const routes = comparison.complete ? classifyWithBase({
     api, runner, repository, baseSha: pr.base.sha, headSha: run.head_sha, files: comparison.files,
   }) : allRoutes();
@@ -324,10 +364,21 @@ function execute(options, api, runner = spawnSync) {
       }
     } else {
       run = api(`repos/${options.repository}/actions/runs/${options.runId}`);
-      const number = run?.pull_requests?.[0]?.number;
-      if (!Number.isInteger(number) || number < 1) throw new Error('workflow run has no pull request number');
-      pr = api(`repos/${options.repository}/pulls/${number}`);
-      const superseding = supersedingRun(api, options.repository, run);
+      // A re-run creates a newer attempt of the same run. The attempted event
+      // is passed by the workflow, so an event for an older attempt is skipped
+      // instead of publishing from a superseded execution.
+      if (options.runAttempt !== undefined) {
+        const latestAttempt = Number(run?.run_attempt);
+        if (!Number.isInteger(latestAttempt) || latestAttempt < options.runAttempt) {
+          return outcome({run, state: null, ignored: true, message: 'Workflow run attempt cannot be verified'});
+        }
+        if (latestAttempt > options.runAttempt) {
+          return outcome({run, state: null, ignored: true, message: 'Superseded by a newer CI attempt'});
+        }
+      }
+      pr = resolvePullRequest(api, options.repository, run);
+      if (!pr) return outcome({run, state: null, ignored: true, message: 'No open pull request for this commit'});
+      const superseding = supersedingRun(api, options.repository, run, pr);
       if (superseding === UNRESOLVED_RUN_ORDER) {
         return outcome({run, pr, state: null, ignored: true, message: 'Run order for this head is unresolved'});
       }
@@ -347,8 +398,11 @@ function execute(options, api, runner = spawnSync) {
   }
 }
 
+// An incomplete evaluation is not a route verdict. Leave the status alone so a
+// transport or API failure cannot replace the result of a completed run; the
+// workflow step still exits non-zero and the run is visible.
 function publish(api, repository, result) {
-  if (result.ignored || !['success', 'failure'].includes(result.status.state)) return;
+  if (result.ignored || result.error || !['success', 'failure'].includes(result.status.state)) return;
   assertSha(result.sha, 'status target');
   api(`repos/${repository}/statuses/${result.sha}`, {method: 'POST', input: result.status});
 }
@@ -388,6 +442,9 @@ function positiveInteger(value, label) {
 
 function parseArgs(argv, environment = process.env) {
   const options = {repository: environment.GITHUB_REPOSITORY || 'teramoby/speedle-plus'};
+  if (environment.WORKFLOW_RUN_ATTEMPT) {
+    options.runAttempt = positiveInteger(environment.WORKFLOW_RUN_ATTEMPT, 'workflow run attempt');
+  }
   for (let index = 0; index < argv.length; index++) {
     const argument = argv[index];
     if (argument === '--publish' || argument === '--dry-run' || argument === '--help') {
