@@ -274,7 +274,8 @@ const server = http.createServer((req,res)=>{
         // fingerprint and no running animation or transition. The still period must last at least
         // one second and longer than the longest gap between changes seen so far, so a page that
         // changes periodically never counts as still. Both waits are bounded and fail: a page that
-        // keeps loading resources fails after 10 s, and a page that keeps changing fails after 5 s.
+        // still starts or finishes a request 10 s after load fails, and so does a page that still
+        // changes 5 s after load. A page that stops inside those bounds gets its full quiet period.
         const pageState=async()=>({...await page.evaluate(()=>({mutations:window.__smokeMutations,runningAnimations:document.getAnimations().filter(animation=>animation.playState==='running').length})),sheets:await sheets()});
         const settleStart=Date.now();
         let state=await pageState(), stillSince=Date.now(), longestChangeGap=0;
@@ -290,9 +291,11 @@ const server = http.createServer((req,res)=>{
           const networkQuiet=pending===0&&Date.now()-lastRequestAt>=1000;
           const still=Date.now()-stillSince>=Math.max(1000,longestChangeGap+250);
           if (networkQuiet&&still) break;
+          // The budgets bound when the last change may happen, not when stillness must be proven:
+          // a page that stops changing inside its budget always gets the full quiet period above.
           const elapsed=Date.now()-settleStart;
-          assert.ok(networkQuiet||elapsed<10000,`the ${label} at ${width}px kept loading resources for 10s after load`);
-          assert.ok(still||elapsed<5000,`the ${label} at ${width}px kept changing its DOM, styles or animations for 5s after load; the contrast check measures a still page only`);
+          assert.ok(lastRequestAt-settleStart<10000&&(pending===0||elapsed<10000),`the ${label} at ${width}px kept loading resources for 10s after load`);
+          assert.ok(stillSince-settleStart<5000,`the ${label} at ${width}px kept changing its DOM, styles or animations for 5s after load; the contrast check measures a still page only`);
         }
         assert.ok(await page.$('main'),`the ${label} at ${width}px has no main element`);
         assert.equal(await page.evaluate(()=>Boolean(navigator.serviceWorker&&navigator.serviceWorker.controller)),false,`the ${label} at ${width}px is controlled by a service worker`);
