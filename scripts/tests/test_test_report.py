@@ -232,6 +232,14 @@ class EmailTest(unittest.TestCase):
         self.assertTrue(self.send(result={"delivered": [
             {"address": "RECIPIENT@example.com", "name": "Operators"}]})[0])
 
+    def test_case_is_preserved_on_the_wire_and_ignored_for_confirmation(self):
+        env = dict(self.env, OPS_EMAIL_FROM="Sender@Example.com", OPS_EMAIL_TO="Ops@Example.com")
+        ok, urlopen, _ = self.send(result={"queued": ["ops@example.com"]}, env=env)
+        self.assertTrue(ok)
+        payload = json.loads(urlopen.call_args[0][0].data)
+        self.assertEqual(payload["to"], ["Ops@Example.com"])
+        self.assertEqual(payload["from"], "Sender@Example.com")
+
     def test_every_configured_recipient_must_be_confirmed(self):
         env = dict(self.env, OPS_EMAIL_TO="Recipient One <recipient@example.com>, second@example.com")
         ok, _, message = self.send(result={"queued": ["recipient@example.com"]}, env=env)

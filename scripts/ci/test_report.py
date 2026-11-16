@@ -263,19 +263,20 @@ def addresses(value):
 
 
 def configured_addresses(value):
-    """The bare, lowercased addresses of one configured setting, or None when
-    the value is not a list of addresses.
+    """The bare addresses of one configured setting, in their configured case,
+    or None when the value is not a list of addresses.
 
     A setting is a string that may list several recipients or use a display
     name ("Ops <ops@example.com>, second@example.com"). A token without an @ is
-    a configuration error, not a recipient to drop silently.
+    a configuration error, not a recipient to drop silently. The case is kept
+    because the local part of an address may be case-sensitive on the server.
     """
     if not isinstance(value, str):
         return None
     entries = [(name, address) for name, address in email.utils.getaddresses([value]) if address]
     if not entries or any("@" not in address for _, address in entries):
         return None
-    return [address.lower() for _, address in entries]
+    return [address for _, address in entries]
 
 
 def send_email(subject, body, env, timeout=EMAIL_TIMEOUT):
@@ -283,12 +284,14 @@ def send_email(subject, body, env, timeout=EMAIL_TIMEOUT):
 
     The API takes to as an array of plain address strings, and from and
     reply_to as plain address strings, so the configured values are parsed to
-    their bare addresses once and the same set is sent and verified. A send
-    succeeds when the response lists every recipient under queued or
-    delivered. A non-2xx status, success: false, a permanent bounce or a
-    suppressed recipient is a failed send. OPS_EMAIL_REPLY_TO, when set, is
-    the reply_to address. Nothing from the settings or the response is logged,
-    because both may hold addresses.
+    their bare addresses once and the same set is sent and verified. The case
+    is kept on the wire, where the local part may be case-sensitive, and
+    ignored only when matching the API's reply. A send succeeds when the
+    response lists every recipient under queued or delivered. A non-2xx
+    status, success: false, a permanent bounce or a suppressed recipient is a
+    failed send. OPS_EMAIL_REPLY_TO, when set, is the reply_to address.
+    Nothing from the settings or the response is logged, because both may hold
+    addresses.
 
     A failed send is an error annotation on the run, not a failed step: the
     report job still tracks failing tests, as it did when a Feishu post failed.
@@ -329,12 +332,13 @@ def send_email(subject, body, env, timeout=EMAIL_TIMEOUT):
     if not isinstance(result, dict):
         print("::error::Email delivery failed (the API returned no result).", file=sys.stderr)
         return False
+    wanted = {address.lower() for address in recipients}
     for key in ("permanent_bounces", "suppressed_recipients"):
-        if set(recipients) & set(addresses(result.get(key))):
+        if wanted & set(addresses(result.get(key))):
             print(f"::error::Email delivery failed (a recipient is listed in {key}).", file=sys.stderr)
             return False
     confirmed = set(addresses(result.get("queued"))) | set(addresses(result.get("delivered")))
-    if not set(recipients) <= confirmed:
+    if not wanted <= confirmed:
         print("::error::Email delivery failed (the API did not confirm every recipient).", file=sys.stderr)
         return False
     return True
