@@ -5,8 +5,12 @@ The documented `go install` route runs once into a temporary GOBIN, its module
 path and version pattern are checked against the checkout, and its pinned version
 must match the highest full semantic tag on the public remote. The installed
 binaries must accept the flags used by the guide, and one documented walkthrough
-runs with those installed binaries. A public shallow clone verifies the download
-step; CI then checks out the captured candidate revision before compiling. Linux
+runs with those installed binaries. Network steps (the public clone, Go module
+downloads and the install) retry up to three times with exponential backoff,
+because a transient TLS or connection reset must not fail the walkthrough; the
+documented commands themselves stay byte for byte unchanged. A public shallow
+clone verifies the download step; CI then checks out the captured candidate
+revision before compiling. Linux
 runs the native services and clients in unprivileged user/network/PID
 namespaces, using the exact documented ports without conflicting with existing
 services. On macOS, alternate REST ports and a shared lock isolate fixture
@@ -64,6 +68,25 @@ def run(command, cwd, env, timeout=60):
     if result.returncode:
         raise RuntimeError(f"Command failed ({result.returncode}): {command}\n{result.stdout}\n{result.stderr}")
     return result.stdout
+
+
+def run_with_retry(action, attempts=3, delay=5.0):
+    """Retry a network action up to `attempts` times with exponential backoff.
+
+    Only command failures and timeouts are retried: they cover the transient
+    TLS and connection resets of the clone, module download and install steps.
+    Assertions about the result are never retried.
+    """
+    for attempt in range(1, attempts + 1):
+        try:
+            return action()
+        except (RuntimeError, subprocess.TimeoutExpired) as error:
+            if attempt == attempts:
+                raise
+            detail = str(error).splitlines()[0]
+            print(f"Transient failure (attempt {attempt}/{attempts}); retrying in {delay:.0f}s: {detail}", flush=True)
+            time.sleep(delay)
+            delay *= 2
 
 
 def help_text(path, cwd, env):
@@ -135,7 +158,9 @@ def stop(process):
 def check_latest_install_version(module, version, env):
     """Fail when the version pinned in both guides is not the highest release tag."""
     repository = "https://" + "/".join(module.split("/")[:3]) + ".git"
-    listing = run(["git", "ls-remote", "--tags", repository, "refs/tags/v*"], ROOT, env, timeout=120)
+    def list_tags():
+        return run(["git", "ls-remote", "--tags", repository, "refs/tags/v*"], ROOT, env, timeout=120)
+    listing = run_with_retry(list_tags)
     tags = {
         match.group(1)
         for line in listing.splitlines()
@@ -165,7 +190,7 @@ def verify_install_route(env):
     with tempfile.TemporaryDirectory(prefix="speedle-go-install-") as temporary:
         work = Path(temporary)
         # GOBIN is this temporary bin directory, never the shared GOPATH/bin.
-        run(english, work, env, timeout=600)
+        run_with_retry(lambda: run(english, work, env, timeout=600))
         for binary, flags in INSTALLED_FLAGS.items():
             path = work / "bin" / binary
             assert os.access(path, os.X_OK), binary
@@ -196,14 +221,21 @@ def verify(locale, toolchain, env):
         print(f"{locale}: {version}; runner={os.environ.get('RUNNER_NAME', 'local')}", flush=True)
         build = dict(steps)["build"].splitlines()
         assert build[:2] == ["git clone --depth 1 https://github.com/teramoby/speedle-plus.git", "cd speedle-plus"], source
-        run("\n".join(build[:2]), work, env, timeout=180)
         checkout = work / "speedle-plus"
+
+        def clone():
+            # A failed attempt can leave a partial checkout behind, which would
+            # make every retry fail with "already exists"; start clean.
+            shutil.rmtree(checkout, ignore_errors=True)
+            return run("\n".join(build[:2]), work, env, timeout=180)
+
+        run_with_retry(clone)
         revision = run(["git", "rev-parse", "HEAD"], ROOT, env).strip()
         # Keep the real clone step, then test this captured candidate rather than
         # a potentially older/newer master. No credentials or shared config changes.
         run(["git", "-c", "protocol.file.allow=always", "fetch", "--depth=1", "--no-tags", str(ROOT), revision], checkout, env)
         run(["git", "checkout", "--detach", revision], checkout, env)
-        output = run("\n".join(build[2:]), checkout, env, timeout=600)
+        output = run_with_retry(lambda: run("\n".join(build[2:]), checkout, env, timeout=600))
         for binary in ("spctl", "speedle-pms", "speedle-ads"):
             assert binary in output and os.access(checkout / "bin" / binary, os.X_OK), binary
         print(f"{locale}: PASS public clone and native build at {revision}", flush=True)
