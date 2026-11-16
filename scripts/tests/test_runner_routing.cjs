@@ -1,4 +1,5 @@
-/* Offline protected-callee and ReviewBot routing regressions. No GitHub or Ark calls. */
+/* Protected-callee and ReviewBot routing regressions. No GitHub or Ark calls
+ * unless the optional live runner-inventory check is enabled. */
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -115,9 +116,10 @@ test('review and command jobs retain their explicit runner policies and isolated
   assert.deepEqual(route(job.review['automerge-dependabot']), controlLabels);
   assert.equal(route(job.inline.route), 'ubuntu-24.04');
   const lint = fs.readFileSync(path.join(root, '.github/actionlint.yaml'), 'utf8');
-  assert.match(lint, /^\s+- charming-speedle$/m);
-  assert.match(lint, /^\s+- speedle-linux$/m);
-  assert.match(lint, /^\s+- speedle-control$/m);
+  for (const label of ['speedle-linux', 'speedle-control', 'speedle-runner', 'fiona-speedle']) {
+    assert.match(lint, new RegExp(`^\\s+- ${label}$`, 'm'), `${label} must stay declared for workflow lint`);
+  }
+  assert.doesNotMatch(lint, /^\s+- charming-speedle$/m, 'the retired runner identity must not stay declared');
 });
 test('same-repository human and bot authors use Speedle; forks and unknown authors stay hosted', () => {
   const human = github('pull_request_target');
@@ -269,29 +271,26 @@ test('scheduled suites run through the worker and report from a hosted job', () 
   assert.doesNotMatch(sources.mongodb, /^  schedule:/m);
   assert.match(sources.mongodb, /^  workflow_dispatch:$/m);
 });
-// Runners this repository can schedule and the labels its Go task routes
-// select. Only those scheduling labels are modelled; other labels on the same
-// registrations do not affect this check. Refresh from the runner API and its
-// groups when a registration changes:
-//   gh api orgs/teramoby/actions/runners --jq '.runners[] | {name, os, labels: [.labels[].name]}'
-//   gh api orgs/teramoby/actions/runner-groups/3/runners --jq '.runners[] | {name, labels: [.labels[].name]}'
-//   gh api orgs/teramoby/actions/runner-groups/5/runners --jq '.runners[] | {name, labels: [.labels[].name]}'
-//   gh api repos/teramoby/speedle-plus/actions/runners --jq '.runners[] | {name, os, labels: [.labels[].name]}'
-// A task routed to labels no registered runner carries would queue forever;
-// one routed to a runner the identity guard rejects fails before any test runs.
-// The guard's accepted identities are compared with this inventory below, so a
-// registration change must update both. The non-Go routes that use other
-// scheduling labels (the automerge waiter's controlLabels and the manual
-// MongoDB workflow's options) are asserted separately in this file.
+// Every registered runner and its labels, as returned by the runner API. The
+// scheduling labels are not listed here by hand: the tests below derive them
+// from every workflow's `runs-on`. Refresh this snapshot when a registration
+// or one of its labels changes:
+//   gh api --paginate orgs/teramoby/actions/runners --jq '.runners[] | {name, os, labels: [.labels[].name]}'
+//   gh api --paginate repos/teramoby/speedle-plus/actions/runners --jq '.runners[] | {name, os, labels: [.labels[].name]}'
+// A task routed to labels no registered runner carries queues until cancelled;
+// one routed to a host its identity guard rejects fails before any test runs.
+// A runner identity is removed from a guard only after its registration no
+// longer carries a scheduling label, so the guard list must equal the hosts
+// this inventory says a scheduling label can select.
 const runnerInventory = [
   {name: 'charming-speedle-2', os: 'Linux', arch: 'X64',
-    labels: ['self-hosted', 'Linux', 'X64', 'speedle-linux', 'speedle-control', 'speedle-runner']},
+    labels: ['self-hosted', 'Linux', 'X64', 'speedle-linux', 'speedle-control', 'speedle-runner', 'reviewbot']},
   {name: 'donkey-speedle', os: 'Linux', arch: 'X64',
-    labels: ['self-hosted', 'Linux', 'X64', 'speedle-linux', 'speedle-runner']},
-  // The all-repositories aliyun-reviewbot group. No Go task selects it, so a
-  // broad Linux route that reaches it correctly fails this check.
+    labels: ['self-hosted', 'Linux', 'X64', 'speedle-linux', 'speedle-control', 'speedle-runner', 'reviewbot']},
+  // The all-repositories aliyun-reviewbot group. No workflow routes a task to
+  // its labels, so a broad Linux route that reaches it fails these checks.
   {name: 'ecs-light-teramoby', os: 'Linux', arch: 'X64',
-    labels: ['self-hosted', 'Linux', 'X64']},
+    labels: ['self-hosted', 'Linux', 'X64', 'aliyun-ecs', 'reviewbot']},
   {name: 'fiona', os: 'macOS', arch: 'ARM64',
     labels: ['self-hosted', 'macOS', 'ARM64', 'speedle-runner', 'speedle-macos', 'fiona-speedle']},
 ];
@@ -368,17 +367,200 @@ function acceptedIdentities(guard) {
   return [...guard.matchAll(/^ {2}((?:[\w.-]+\/[\w.-]+\/[\w.-]+)(?:\|[\w.-]+\/[\w.-]+\/[\w.-]+)*)\)(?: ;;)?$/gm)]
     .flatMap(match => match[1].split('|')).sort();
 }
-function registeredSchedulingRunners() {
-  return runnerInventory.filter(runner => runner.labels.includes('speedle-runner'))
+const platformLabels = new Set(['self-hosted', 'Linux', 'X64', 'macOS', 'ARM64']);
+const hostedLabels = values => values.some(value => /^(?:ubuntu|windows|macos)-(?:latest|\d)/.test(value));
+const workflowFiles = fs.readdirSync(path.join(root, '.github/workflows'))
+  .filter(name => name.endsWith('.yml')).sort();
+const workflowSource = name => fs.readFileSync(path.join(root, '.github/workflows', name), 'utf8');
+// A folded `runs-on: >-` value continues on more-indented lines.
+function runsOnValues(source) {
+  const lines = source.split('\n');
+  const values = [];
+  for (let i = 0; i < lines.length; i++) {
+    const match = lines[i].match(/^\s*runs-on:\s*(.*)$/);
+    if (!match) continue;
+    const scalar = match[1].trim();
+    const keyIndent = lines[i].length - lines[i].trimStart().length;
+    if (scalar && !/^[>|][-+]?$/.test(scalar)) { values.push(scalar); continue; }
+    const parts = [];
+    if (scalar) {
+      for (let j = i + 1; j < lines.length; j++) {
+        if (!lines[j].trim()) continue;
+        if (lines[j].length - lines[j].trimStart().length <= keyIndent) break;
+        parts.push(lines[j].trim());
+      }
+    } else {
+      for (let j = i + 1; j < lines.length; j++) {
+        if (!lines[j].trim()) continue;
+        const item = lines[j].match(/^\s*-\s+(.+)$/);
+        if (!item || lines[j].length - lines[j].trimStart().length <= keyIndent) break;
+        parts.push(item[1].trim());
+      }
+    }
+    assert.ok(parts.length, `Unsupported runs-on block at line ${i + 1}`);
+    if (scalar) values.push(parts.join(' '));
+    else values.push(`[${parts.join(',')}]`);
+  }
+  return values;
+}
+// Labels from a plain scalar or a flow sequence such as ["self-hosted","Linux"].
+function scalarLabels(raw) {
+  const text = raw.trim().replace(/^['"]|['"]$/g, '');
+  if (!text) return [];
+  if (!text.startsWith('[')) return [text];
+  try { return JSON.parse(text); } catch {
+    return text.slice(1, -1).split(',').map(value => value.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean);
+  }
+}
+// The options of the workflow_dispatch input named `runner`.
+function runnerChoices(source) {
+  const lines = source.split('\n');
+  const start = lines.findIndex(line => /^\s{4,}runner:\s*$/.test(line));
+  if (start === -1) return [];
+  const indent = lines[start].length - lines[start].trimStart().length;
+  for (let i = start + 1; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line.trim()) continue;
+    if (line.length - line.trimStart().length <= indent) break;
+    const match = line.match(/^\s+options: \[([^\]]*)\]/);
+    if (match) return match[1].split(',').map(value => value.trim().replace(/^['"]|['"]$/g, '')).filter(Boolean);
+  }
+  return [];
+}
+// Label sets a workflow can pass to `runs-on`. Expressions contribute their
+// quoted label literals; a `runner` choice input contributes its options.
+function routeLabelSets(source) {
+  return runsOnValues(source).flatMap(raw => {
+    const open = raw.indexOf('${{');
+    if (open === -1) {
+      const values = scalarLabels(raw);
+      assert.ok(values.length > 0, `Unsupported runs-on value: ${JSON.stringify(raw)}`);
+      return hostedLabels(values) ? [] : [values];
+    }
+    const close = raw.lastIndexOf('}}');
+    assert.ok(close > open, `Unclosed runs-on expression: ${JSON.stringify(raw)}`);
+    let expression = raw.slice(open + 3, close);
+    // `contains(...)` tests a pull-request label and a comparison right side
+    // is a flag value, not a runner label.
+    expression = expression.replace(/contains\([^()]*\)/g, ' ');
+    expression = expression.replace(/[!=]= '[^']*'/g, ' ');
+    const sets = [];
+    for (const match of expression.matchAll(/'(\[[^']*\])'/g)) sets.push(JSON.parse(match[1]));
+    expression = expression.replace(/'\[[^']*\]'/g, ' ');
+    for (const match of expression.matchAll(/'([^']*)'/g)) {
+      if (!match[1]) continue;
+      if (!match[1].startsWith('"')) { sets.push([match[1]]); continue; }
+      const value = JSON.parse(match[1]);
+      if (!hostedLabels([value])) sets.push([value]);
+    }
+    if (/\binputs\.runner\b/.test(expression)) {
+      for (const value of runnerChoices(source)) sets.push([value]);
+    }
+    assert.ok(sets.length > 0, `Unsupported runs-on expression without a label literal: ${JSON.stringify(raw)}`);
+    return sets.filter(values => values.length > 0 && !hostedLabels(values));
+  });
+}
+function declaredRoutes() {
+  return workflowFiles.flatMap(workflow => routeLabelSets(workflowSource(workflow))
+    .map(labels => ({workflow, labels})));
+}
+function customRoutingLabels() {
+  const result = new Set(declaredRoutes().flatMap(route => route.labels));
+  for (const label of platformLabels) result.delete(label);
+  return result;
+}
+const routingLabels = customRoutingLabels();
+function runnersFor(values) {
+  return runnerInventory.filter(runner => values.every(label => runner.labels.includes(label)));
+}
+function scheduledHosts() {
+  return runnerInventory.filter(runner => runner.labels.some(label => routingLabels.has(label)))
     .map(runner => `${runner.name}/${runner.os}/${runner.arch}`).sort();
 }
-test('the Go worker identity guard accepts exactly the registered speedle-runner hosts', () => {
-  const guard = script(job.worker.execute, 'Verify self-hosted runner identity');
-  assert.deepEqual(acceptedIdentities(guard), registeredSchedulingRunners());
+test('both identity guards accept exactly the hosts a scheduling label can select', () => {
+  const expected = scheduledHosts();
+  assert.ok(expected.length >= 3, `the workflows must route to registered hosts, saw ${expected.join(', ')}`);
+  assert.deepEqual(acceptedIdentities(script(job.worker.execute, 'Verify self-hosted runner identity')), expected);
+  assert.deepEqual(acceptedIdentities(script(job.review['diff-regression'], 'Verify runner identity and tools')), expected);
 });
-test('the ReviewBot fixture guard accepts exactly the registered speedle-runner hosts', () => {
-  const preflight = script(job.review['diff-regression'], 'Verify runner identity and tools');
-  assert.deepEqual(acceptedIdentities(preflight), registeredSchedulingRunners());
+test('the runner inventory covers every scheduling label the workflows declare', () => {
+  const routes = declaredRoutes();
+  assert.ok(routes.length >= 6, `the workflow scan must find the runner routes, saw ${routes.length}`);
+  for (const label of ['fiona-speedle', 'speedle-control', 'speedle-linux', 'speedle-macos', 'speedle-runner']) {
+    assert.ok(routingLabels.has(label), `the workflow scan must find the ${label} route`);
+  }
+  for (const {workflow, labels: routed} of routes) {
+    assert.ok(runnersFor(routed).length > 0,
+      `${workflow} routes to ${routed.join(', ')}, which no registered runner carries; `
+      + 'refresh runnerInventory from the runner API commands above');
+  }
+});
+test('no declared workflow route can select a runner its identity guard rejects', () => {
+  const guarded = scheduledHosts();
+  for (const {workflow, labels: routed} of declaredRoutes()) {
+    const candidates = runnersFor(routed);
+    assert.ok(candidates.length > 0,
+      `${workflow} routes to ${routed.join(', ')}, which no registered runner carries; `
+      + 'refresh runnerInventory from the runner API commands above');
+    for (const runner of candidates) {
+      assert.ok(guarded.includes(`${runner.name}/${runner.os}/${runner.arch}`),
+        `${workflow} can select ${runner.name}, which no workflow identity guard accepts`);
+      if (workflow === 'mongodb-nightly-validation.yml') {
+        assert.ok(['Linux/X64', 'macOS/ARM64'].includes(`${runner.os}/${runner.arch}`),
+          `${workflow} can select ${runner.name} (${runner.os}/${runner.arch}), which its platform check rejects`);
+      }
+    }
+    // Execute the real worker guard for its declared routes with the least
+    // restrictive task; the per-mode tests above prove the weekly and build
+    // restrictions, and the preflight guard is compared by identity above
+    // because running it would also probe the provider endpoint.
+    if (workflow === 'go-ci-worker.yml') assertRoutedToAcceptedRunners('lint', 'declared worker route', routed);
+  }
+});
+test('the retired charming-speedle identity is not declared in workflow configuration', () => {
+  for (const file of [...workflowFiles.map(name => path.join('.github/workflows', name)), '.github/actionlint.yaml']) {
+    assert.doesNotMatch(fs.readFileSync(path.join(root, file), 'utf8'), /charming-speedle(?!-2)/,
+      `${file} must not declare the retired charming-speedle identity`);
+  }
+});
+function normalizedRunner({name, os, labels}) {
+  const sorted = [...labels].sort();
+  return {name, os, arch: sorted.includes('ARM64') ? 'ARM64' : sorted.includes('X64') ? 'X64' : '', labels: sorted};
+}
+function assertInventoryMatchesLive(live) {
+  const expected = runnerInventory.map(normalizedRunner).sort((a, b) => a.name.localeCompare(b.name));
+  const actual = live.map(normalizedRunner).sort((a, b) => a.name.localeCompare(b.name));
+  assert.deepEqual(actual, expected,
+    'registered runners changed; refresh runnerInventory from the runner API commands above');
+}
+function liveRunners() {
+  const runners = [];
+  for (const endpoint of ['orgs/teramoby/actions/runners', 'repos/teramoby/speedle-plus/actions/runners']) {
+    const result = spawnSync('gh',
+      ['api', '--paginate', endpoint, '--jq', '.runners[] | {name, os, labels: [.labels[].name]}'],
+      {encoding: 'utf8'});
+    assert.ok(!result.error, `gh is required for the live runner inventory check: ${result.error}`);
+    assert.equal(result.status, 0, `gh api ${endpoint} failed: ${String(result.stderr).trim()}`);
+    runners.push(...result.stdout.split('\n').filter(Boolean).map(line => JSON.parse(line)));
+  }
+  return runners;
+}
+test('the runner inventory matches the live registrations when a token is available', {
+  skip: process.env.GH_TOKEN || process.env.GITHUB_TOKEN || process.env.SPEEDLE_RUNNERS_LIVE === '1'
+    ? false : 'set GH_TOKEN (or SPEEDLE_RUNNERS_LIVE=1 with gh signed in) to compare with the runner API',
+}, () => {
+  assertInventoryMatchesLive(liveRunners());
+});
+test('the live comparison detects added, removed and relabelled registrations', () => {
+  const live = runnerInventory.map(runner => ({name: runner.name, os: runner.os, labels: [...runner.labels]}));
+  assertInventoryMatchesLive(live);
+  assert.throws(() => assertInventoryMatchesLive(live.filter(runner => runner.name !== 'donkey-speedle')));
+  assert.throws(() => assertInventoryMatchesLive(live.map(runner => runner.name === 'fiona'
+    ? {...runner, labels: runner.labels.filter(label => label !== 'fiona-speedle')} : runner)));
+  assert.throws(() => assertInventoryMatchesLive(live.map(runner => runner.name === 'ecs-light-teramoby'
+    ? {...runner, labels: [...runner.labels, 'speedle-runner']} : runner)));
+  assert.throws(() => assertInventoryMatchesLive([...live,
+    {name: 'charming-speedle', os: 'Linux', labels: ['self-hosted', 'Linux', 'X64', 'speedle-runner']}]));
 });
 test('the evaluator reads only own properties and opts into workflow inputs explicitly', () => {
   const context = github('workflow_dispatch');

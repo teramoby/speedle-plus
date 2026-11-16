@@ -26,6 +26,14 @@ measured it.
 A runner administrator must keep `speedle-runner` and `speedle-linux` exclusive
 to these named instances; adding another host would also admit it to
 credential-bearing jobs. A runner name alone is not a scheduling label.
+Remove an identity from the workflow identity checks only after its
+registration no longer carries any scheduling label; until then a job routed to
+that label still queues there and fails at the identity check before it starts.
+The routing regression derives the scheduling labels from every workflow
+`runs-on` and requires its runner inventory to cover them. With `GH_TOKEN` set
+it also compares that inventory with the registration API; without a token the
+live comparison is skipped, and a registration change requires refreshing the
+snapshot from the two `gh api` commands in that test.
 Fixed-port tests take the host test lock
 (`/tmp/speedle-plus-test-services.lock`), so registrations on the same physical
 host never overlap. Each registration must use its own runner installation and
@@ -149,7 +157,7 @@ after validation. Do not allow PR merge refs or wildcard workflow revisions.
 
 The workflows limit GitHub tokens to required permissions and do not persist Git
 credentials during CI checkout. `.github/actionlint.yaml` declares the custom
-label for workflow validation.
+scheduling labels for workflow validation.
 
 ## Database regression allocation
 

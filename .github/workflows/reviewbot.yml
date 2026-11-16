@@ -26,6 +26,10 @@ jobs:
           REVIEWBOT_PROVIDER: ${{ vars.REVIEWBOT_PROVIDER || 'ark' }}
         run: |
           set -euo pipefail
+          # Accept every host that carries a scheduling label this repository
+          # routes on; remove an identity only after its registration no longer
+          # carries one. scripts/tests/test_runner_routing.cjs checks this list
+          # against the labels derived from every workflow.
           case "${RUNNER_NAME}/${RUNNER_OS}/${RUNNER_ARCH}" in
             charming-speedle-2/Linux/X64|donkey-speedle/Linux/X64|fiona/macOS/ARM64) ;;
             *) echo 'Unexpected runner.' >&2; exit 1 ;;
