@@ -19,6 +19,7 @@ const STATUS_CONTEXT = 'speedle/ci-route-gate';
 // run that never publishes a status must not suppress one that does.
 const RUN_SAMPLE_LIMIT = 100;
 const UNRESOLVED_RUN_ORDER = Symbol('unresolved run order');
+const UNKNOWN_OWNERSHIP = Symbol('unknown run ownership');
 // The pull request files endpoint pages through at most 3,000 entries.
 const PR_FILE_PAGES = 30;
 const ROUTE_KEYS = ['go', 'website', 'docs', 'ci'];
@@ -107,9 +108,10 @@ function preflight(run, pr) {
   if (run.head_sha !== pr?.head?.sha) return {ignored: true, message: 'CI run does not match the pull request head'};
   // A pull request to another branch would let that branch's copy of the
   // classifier decide the routes, so only the default branch is a trusted
-  // classification source.
+  // classification source. The failure replaces any earlier success on the
+  // commit, because that success was computed for another base.
   if (!pr?.base?.ref || pr.base.ref !== pr?.base?.repo?.default_branch) {
-    return {ignored: true, message: 'Pull request base is not the default branch'};
+    return `base is ${pr?.base?.ref || 'unknown'}; the route gate verifies only ${pr?.base?.repo?.default_branch || 'the default branch'}`;
   }
   return null;
 }
@@ -286,61 +288,73 @@ function latestCompletedRun(api, repository, headSha) {
   return response.workflow_runs[0] || null;
 }
 
-// Resolve the open pull request that owns this run. The run's own association
-// is authoritative when present; the commit lookup covers fork contributions,
-// whose pull_requests array can be empty. More than one open pull request for
-// one commit makes a SHA-scoped verdict ambiguous, so none is published.
-function resolvePullRequest(api, repository, run) {
-  assertSha(run?.head_sha, 'workflow run head');
+function associatedNumbers(run) {
   const associated = Array.isArray(run?.pull_requests) ? run.pull_requests : [];
-  const numbers = associated.map(pr => pr?.number).filter(number => Number.isInteger(number) && number > 0);
-  if (numbers.length > 0) {
-    for (const number of numbers) {
-      const pr = api(`repos/${repository}/pulls/${number}`);
-      if (pr?.state === 'open' && pr?.head?.sha === run.head_sha) return pr;
-    }
-    return null;
-  }
-  const response = api(`repos/${repository}/commits/${run.head_sha}/pulls`);
-  if (!Array.isArray(response)) throw new Error('pull request lookup response is not an array');
-  const open = response.filter(pr => pr?.state === 'open' && pr?.head?.sha === run.head_sha);
-  return open.length === 1 ? open[0] : null;
+  return associated.map(pr => pr?.number).filter(number => Number.isInteger(number) && number > 0);
 }
 
-// The run's pull_requests array can be empty for fork contributions, so fall
-// back to the commit lookup and return null only when ownership still cannot
-// be established.
-function samePullRequest(api, repository, candidate, number) {
-  const pullRequests = candidate?.pull_requests;
-  if (Array.isArray(pullRequests) && pullRequests.length > 0) {
-    return pullRequests.some(pr => pr?.number === number);
+function openPullRequests(api, repository, run) {
+  assertSha(run?.head_sha, 'workflow run head');
+  const response = api(`repos/${repository}/commits/${run.head_sha}/pulls`);
+  if (!Array.isArray(response)) throw new Error('pull request lookup response is not an array');
+  return response.filter(pr => pr?.state === 'open' && pr?.head?.sha === run.head_sha);
+}
+
+// Rule 1: ownership always comes from the commit lookup. More than one open
+// pull request for the commit cannot be represented by one SHA status. The
+// run's association selects the owner among them; a fork run with no
+// association uses the unique open pull request. A run whose pull request is
+// closed or has moved on leaves the status alone.
+function resolveOwnership(api, repository, run) {
+  const open = openPullRequests(api, repository, run);
+  if (open.length > 1) {
+    return {failure: `${open.length} open pull requests share this head; one SHA status cannot represent them`};
   }
-  const resolved = resolvePullRequest(api, repository, candidate);
-  return resolved ? resolved.number === number : null;
+  const numbers = associatedNumbers(run);
+  if (numbers.length > 0) {
+    const owned = open.filter(pr => numbers.includes(pr?.number));
+    if (owned.length !== 1) return {ignored: 'The run pull request is closed or has moved on'};
+    return {pr: owned[0]};
+  }
+  if (open.length === 0) return {ignored: 'Cannot resolve one open pull request for this commit'};
+  return {pr: open[0]};
+}
+
+// Rule 3: a newer run is provably this pull request's, provably another
+// pull request's, or unknown. Unknown ownership must never be treated as
+// "publish nothing".
+function candidateOwnership(api, repository, candidate, number) {
+  const numbers = associatedNumbers(candidate);
+  if (numbers.length > 0) return numbers.includes(number) ? 'same' : 'other';
+  const open = openPullRequests(api, repository, candidate);
+  if (open.length === 1) return open[0].number === number ? 'same' : 'other';
+  return 'unknown';
 }
 
 // A completed ignored label run never publishes a status, so it must not
 // suppress the status of the newest run that can. The runs list is ordered by
 // creation, newest first, so the first newer run that is not ignored decides.
-// Runs of another pull request that shares the head commit cannot publish
-// here and must not suppress this pull request's result.
+// Another pull request's run cannot publish here and is skipped. An unknown
+// owner is reported so the caller can fail this run's success closed.
 function supersedingRun(api, repository, run, pr) {
   assertSha(run?.head_sha, 'workflow run head');
   const response = api(`repos/${repository}/actions/workflows/ci.yml/runs?event=pull_request&head_sha=${run.head_sha}&per_page=${RUN_SAMPLE_LIMIT}`);
   if (!response || !Array.isArray(response.workflow_runs)) throw new Error('workflow runs response has no run list');
   const runs = response.workflow_runs;
+  let unknown = false;
   for (const candidate of runs) {
-    if (String(candidate?.id) === String(run.id)) return null;
-    const ownership = samePullRequest(api, repository, candidate, pr.number);
-    // Another pull request's runs cannot publish here. When the owner is
-    // unknown, this run cannot be proven newest, so it must not publish.
-    if (ownership === false) continue;
-    if (ownership === null) return candidate;
+    if (String(candidate?.id) === String(run.id)) return unknown ? UNKNOWN_OWNERSHIP : null;
+    const ownership = candidateOwnership(api, repository, candidate, pr.number);
+    if (ownership === 'other') continue;
+    if (ownership === 'unknown') {
+      unknown = true;
+      continue;
+    }
     const jobs = jobsFromPages(api(`repos/${repository}/actions/runs/${candidate.id}/jobs?per_page=100&filter=latest`, {paginate: true}));
     // The ignored shape is only meaningful from the guarded workflow file.
     // supersedingRun runs only after workflowTrust passed for this commit.
     if (candidate.name === CI_WORKFLOW_NAME && candidate.path === CI_WORKFLOW_PATH && ignoredRun(candidate, jobs)) continue;
-    return candidate;
+    return {run: candidate};
   }
   // Without this run in the sample, newer runs between the sample and this one
   // may exist, so its place in the order cannot be established.
@@ -384,17 +398,28 @@ function execute(options, api, runner = spawnSync) {
       if (options.runAttempt !== undefined) {
         const latestAttempt = Number(run?.run_attempt);
         if (!Number.isInteger(latestAttempt) || latestAttempt < options.runAttempt) {
-          return outcome({run, state: null, ignored: true, message: 'Workflow run attempt cannot be verified'});
+          return outcome({run, state: 'failure', message: 'Workflow run attempt cannot be verified'});
         }
         if (latestAttempt > options.runAttempt) {
           return outcome({run, state: null, ignored: true, message: 'Superseded by a newer CI attempt'});
         }
       }
-      pr = resolvePullRequest(api, options.repository, run);
-      if (!pr) return outcome({run, state: null, ignored: true, message: 'Cannot resolve one open pull request for this commit'});
-      // Out-of-scope runs are decided without reading the diff: a non-default
-      // base publishes nothing, and identity failures are not a route verdict.
-      if (preflight(run, pr)) return assessRun({api, runner, repository: options.repository, run, pr});
+      const ownership = resolveOwnership(api, options.repository, run);
+      if (ownership.failure) return outcome({run, state: 'failure', message: ownership.failure});
+      if (ownership.ignored) return outcome({run, state: null, ignored: true, message: ownership.ignored});
+      pr = ownership.pr;
+      // Rule 2: a base other than the default branch publishes failure so an
+      // earlier success for another base cannot stand. A head mismatch is
+      // left alone.
+      const early = preflight(run, pr);
+      if (early) {
+        return outcome({
+          run, pr, routes: allRoutes(),
+          state: early.ignored ? null : 'failure',
+          message: early.ignored ? early.message : early,
+          ignored: Boolean(early.ignored),
+        });
+      }
       // Rule 1: the guarded workflow files are a property of the head commit,
       // so this verdict holds for every run of it and is published before any
       // supersession or ignored-run decision.
@@ -405,12 +430,22 @@ function execute(options, api, runner = spawnSync) {
       if (untrusted) return outcome({run, pr, routes: allRoutes(), state: 'failure', message: untrusted});
       const superseding = supersedingRun(api, options.repository, run, pr);
       if (superseding === UNRESOLVED_RUN_ORDER) {
-        return outcome({run, pr, state: null, ignored: true, message: 'Run order for this head is unresolved'});
+        return outcome({run, pr, routes: allRoutes(), state: 'failure', message: 'Run order for this head is unresolved'});
+      }
+      if (superseding === UNKNOWN_OWNERSHIP) {
+        // Rule 3: an unknown newer owner never suppresses a failure, and a
+        // success becomes a failure because the newest result is unknown.
+        const result = assessRun({api, runner, repository: options.repository, run, pr, comparison, trusted: true});
+        if (result.status.state === 'success') {
+          result.status.state = 'failure';
+          result.status.description = 'a newer run on this head has unknown ownership';
+        }
+        return result;
       }
       if (superseding) {
         return outcome({
           run, pr, state: null, ignored: true,
-          message: superseding.name === CI_WORKFLOW_NAME ? 'Superseded by a newer CI run' : 'Newer CI run has an unexpected workflow name',
+          message: superseding.run.name === CI_WORKFLOW_NAME ? 'Superseded by a newer CI run' : 'Newer CI run has an unexpected workflow name',
         });
       }
       return assessRun({api, runner, repository: options.repository, run, pr, comparison, trusted: true});

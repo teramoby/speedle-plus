@@ -81,6 +81,7 @@ function fixtureApi({run: completedRun, pr, files, prFiles, jobs: runJobs, newer
   const jobsPrefix = `repos/${repository}/actions/runs/`;
   const jobsSuffix = '/jobs?per_page=100&filter=latest';
   const filesPattern = new RegExp(`^repos/${repository}/pulls/\\d+/files\\?per_page=100&page=(\\d+)$`);
+  let commitsCalls = 0;
   const api = (endpoint, options = {}) => {
     calls.push({endpoint, options});
     if (options.method === 'POST') {
@@ -90,6 +91,8 @@ function fixtureApi({run: completedRun, pr, files, prFiles, jobs: runJobs, newer
     if (endpoint === `repos/${repository}/actions/runs/${completedRun.id}`) return completedRun;
     if (endpoint === `repos/${repository}/pulls/${pr.number}`) return pr;
     if (endpoint === `repos/${repository}/commits/${completedRun.head_sha}/pulls`) {
+      commitsCalls += 1;
+      if (typeof commitPulls === 'function') return commitPulls(commitsCalls);
       return commitPulls === undefined ? [pr] : commitPulls;
     }
     const filesMatch = filesPattern.exec(endpoint);
@@ -177,43 +180,61 @@ test('a renamed workflow is rejected instead of publishing a route success', () 
   assert.equal(result.status.description, 'Unexpected CI workflow name');
 });
 
-test('a pull request based on another branch publishes no status for its commit', () => {
+test('a pull request retargeted away from the default base publishes failure', () => {
   const pr = pullRequest([], {base: {sha: base, ref: 'release', repo: {default_branch: 'master'}}});
   const fixture = fixtureApi({run: run(), pr, files: ['docs/guide.md'], jobs: jobs({build: true})});
   const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
-  assert.equal(result.ignored, true);
-  assert.equal(result.status.state, null);
-  assert.equal(result.status.description, 'Pull request base is not the default branch');
+  assert.equal(result.ignored, false);
+  assert.equal(result.status.state, 'failure');
+  assert.equal(result.status.description, 'base is release; the route gate verifies only master');
   assert.equal(fixture.calls.some(call => call.endpoint.includes('/compare/')), false);
   assert.equal(fixture.calls.some(call => call.endpoint.includes('/contents/')), false);
-  assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 0);
+  const writes = fixture.calls.filter(call => call.options.method === 'POST');
+  assert.equal(writes.length, 1);
+  assert.equal(writes[0].options.input.state, 'failure');
 });
 
-test('a run that no open pull request owns publishes no status', () => {
+test('a run whose pull request has moved on publishes no status', () => {
   const pr = pullRequest([], {head: {sha: '3'.repeat(40)}});
   const fixture = fixtureApi({run: run(), pr, files: ['docs/guide.md'], jobs: jobs({build: true})});
   const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
   assert.equal(result.ignored, true);
   assert.equal(result.status.state, null);
-  assert.equal(result.status.description, 'Cannot resolve one open pull request for this commit');
+  assert.equal(result.status.description, 'The run pull request is closed or has moved on');
   assert.equal(fixture.calls.some(call => call.endpoint.includes('/compare/')), false);
   assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 0);
 });
 
-test('a commit with two open pull requests publishes no status', () => {
-  const other = pullRequest([], {number: 591, base: {sha: base, ref: 'release', repo: {default_branch: 'master'}}});
-  const fixture = fixtureApi({
-    run: run({pull_requests: []}), pr: pullRequest(), files: ['docs/guide.md'],
-    jobs: jobs({build: true}), commitPulls: [pullRequest(), other],
+test('two open pull requests sharing the head publish failure in both orders', () => {
+  const first = pullRequest([], {number: 590});
+  const second = pullRequest([], {number: 591});
+  const expected = '2 open pull requests share this head; one SHA status cannot represent them';
+  for (const [index, association] of [first, second].entries()) {
+    const fixture = fixtureApi({
+      run: run({pull_requests: [{number: association.number}]}),
+      pr: association,
+      files: ['docs/guide.md'], jobs: jobs({build: true}),
+      commitPulls: index === 0 ? [first, second] : [second, first],
+    });
+    const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+    assert.equal(result.status.state, 'failure');
+    assert.equal(result.status.description, expected);
+    const writes = fixture.calls.filter(call => call.options.method === 'POST');
+    assert.equal(writes.length, 1);
+    assert.equal(writes[0].options.input.state, 'failure');
+  }
+
+  // A fork-style run with no association is no exception.
+  const fork = fixtureApi({
+    run: run({pull_requests: []}), pr: first, files: ['docs/guide.md'],
+    jobs: jobs({build: true}), commitPulls: [first, second],
   });
-  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
-  assert.equal(result.ignored, true);
-  assert.equal(result.status.state, null);
-  assert.equal(result.status.description, 'Cannot resolve one open pull request for this commit');
-  assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 0);
+  const forkResult = gate.runGate({repository, runId: 101, publish: true}, fork.api);
+  assert.equal(forkResult.status.state, 'failure');
+  assert.equal(forkResult.status.description, expected);
 });
 
-test('a run association selects its pull request over a shared commit', () => {
+test('the run association selects its pull request among shared commits', () => {
   const release = pullRequest([], {
     number: 591, base: {sha: base, ref: 'release', repo: {default_branch: 'master'}},
   });
@@ -222,11 +243,11 @@ test('a run association selects its pull request over a shared commit', () => {
     jobs: jobs({build: true}),
   });
   const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
-  assert.equal(result.ignored, true);
-  assert.equal(result.status.state, null);
-  assert.equal(result.status.description, 'Pull request base is not the default branch');
-  assert.equal(fixture.calls.some(call => call.endpoint.includes('/commits/')), false);
-  assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 0);
+  assert.equal(result.status.state, 'failure');
+  assert.equal(result.status.description, 'base is release; the route gate verifies only master');
+  // Rule 1 always runs the commit lookup, whatever the association says.
+  assert.equal(fixture.calls.some(call => call.endpoint.includes('/commits/')), true);
+  assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 1);
 });
 
 test('a fork-style run resolves its pull request by head SHA', () => {
@@ -250,16 +271,31 @@ test('a newer run of another pull request does not suppress this result', () => 
   assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 1);
 });
 
-test('a newer run with unknown ownership suppresses an older result', () => {
+test('an unknown newer owner turns a success into failure', () => {
   const fixture = fixtureApi({
-    run: run(), pr: pullRequest(), files: ['docs/guide.md'], jobs: jobs({build: true}), commitPulls: [],
+    run: run(), pr: pullRequest(), files: ['docs/guide.md'], jobs: jobs({build: true}),
+    commitPulls: call => (call === 1 ? [pullRequest()] : []),
     latest: [run({id: 102, pull_requests: []}), run()],
   });
   const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
-  assert.equal(result.ignored, true);
-  assert.equal(result.status.state, null);
-  assert.equal(result.status.description, 'Superseded by a newer CI run');
-  assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 0);
+  assert.equal(result.ignored, false);
+  assert.equal(result.status.state, 'failure');
+  assert.equal(result.status.description, 'a newer run on this head has unknown ownership');
+  const writes = fixture.calls.filter(call => call.options.method === 'POST');
+  assert.equal(writes.length, 1);
+  assert.equal(writes[0].options.input.state, 'failure');
+});
+
+test('an unknown newer owner never hides this run failure', () => {
+  const fixture = fixtureApi({
+    run: run(), pr: pullRequest(), files: ['docs/guide.md'], jobs: jobs(),
+    commitPulls: call => (call === 1 ? [pullRequest()] : []),
+    latest: [run({id: 102, pull_requests: []}), run()],
+  });
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.status.state, 'failure');
+  assert.equal(result.status.description, 'Required route did not pass: build');
+  assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 1);
 });
 
 test('a fork run with an empty association is attributed through the commit lookup', () => {
@@ -299,6 +335,12 @@ test('a newer attempt of the same run supersedes the event for an older attempt'
   assert.equal(result.status.state, null);
   assert.equal(result.status.description, 'Superseded by a newer CI attempt');
   assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 0);
+
+  const unverified = fixtureApi({run: run(), pr: pullRequest(), files: ['docs/guide.md'], jobs: jobs({build: true})});
+  const unverifiedResult = gate.runGate({repository, runId: 101, runAttempt: 2, publish: true}, unverified.api);
+  assert.equal(unverifiedResult.status.state, 'failure');
+  assert.equal(unverifiedResult.status.description, 'Workflow run attempt cannot be verified');
+  assert.equal(unverified.calls.filter(call => call.options.method === 'POST').length, 1);
 });
 
 test('an incomplete evaluation is not published as a route verdict', () => {
@@ -560,7 +602,7 @@ test('an ignored-looking run cannot skip the guarded workflow check', () => {
   assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 1);
 });
 
-test('a run missing from the newest runs sample is not published', () => {
+test('a run missing from the newest runs sample publishes failure', () => {
   const pr = pullRequest();
   const newer = Array.from({length: 100}, (_, index) => run({id: 200 + index}));
   const fixture = fixtureApi({
@@ -568,10 +610,9 @@ test('a run missing from the newest runs sample is not published', () => {
     latest: newer, newerJobs: id => ignoredJobs(id),
   });
   const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
-  assert.equal(result.ignored, true);
-  assert.equal(result.status.state, null);
+  assert.equal(result.status.state, 'failure');
   assert.equal(result.status.description, 'Run order for this head is unresolved');
-  assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 0);
+  assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 1);
 });
 
 test('a newer ignored label run does not suppress the last run that can publish', () => {
