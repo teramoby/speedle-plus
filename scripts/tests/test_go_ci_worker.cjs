@@ -310,7 +310,7 @@ if (args.length === 4 && args[0] === 'list' && args[1] === '-m' && args[2] === '
     });
     assert.equal(missingPython.status, 1, missingPython.stderr);
     assert.match(missingPython.stderr,
-      /python3 is required for the documented Go toolchain check; install Python 3 on the runner\./);
+      /python3 is required for the documented Go toolchain check; install Python 3\.11 or newer on the runner\./);
     assert.doesNotMatch(missingPython.stderr, /command not found|Traceback/);
   } finally {fs.rmSync(directory, {recursive: true, force: true});}
 });
@@ -409,14 +409,22 @@ test('identity check accepts the Speedle runners for the tasks each may run', ()
     const git = path.join(directory, 'git');
     fs.writeFileSync(git, '#!/bin/sh\nexit 0\n');
     fs.chmodSync(git, 0o755);
-    const result = spawnSync(realBash, ['-c', script('Verify self-hosted runner identity')], {
-      encoding: 'utf8', env: {...process.env, PATH: directory,
-        RUNNER_NAME: 'charming-speedle', RUNNER_OS: 'Linux', RUNNER_ARCH: 'X64', CI_TASK: 'lint'},
-    });
+    const environment = {...process.env, PATH: directory,
+      RUNNER_NAME: 'charming-speedle', RUNNER_OS: 'Linux', RUNNER_ARCH: 'X64', CI_TASK: 'lint'};
+    const result = spawnSync(realBash, ['-c', script('Verify self-hosted runner identity')], {encoding: 'utf8', env: environment});
     assert.equal(result.status, 1, result.stderr);
     assert.match(result.stderr,
-      /python3 is required on self-hosted runners; install Python 3 before running this workflow\./);
+      /python3 is required on self-hosted runners; install Python 3\.11 or newer before running this workflow\./);
     assert.doesNotMatch(result.stderr, /command not found/);
+    // An interpreter that rejects -P fails closed with the version message.
+    const python = path.join(directory, 'python3');
+    fs.writeFileSync(python, '#!/bin/sh\necho "Unknown option: -P" >&2\nexit 2\n');
+    fs.chmodSync(python, 0o755);
+    const oldPython = spawnSync(realBash, ['-c', script('Verify self-hosted runner identity')], {encoding: 'utf8', env: environment});
+    assert.equal(oldPython.status, 1, oldPython.stderr);
+    assert.match(oldPython.stderr,
+      /python3 3\.11 or newer is required: -I -P keeps the checkout off sys\.path, and older interpreters reject -P\./);
+    assert.doesNotMatch(oldPython.stderr, /command not found|Traceback/);
   } finally {fs.rmSync(directory, {recursive: true, force: true});}
 });
 test('task validation permits only exact enum values and treats shell metacharacters as data', () => {

@@ -45,6 +45,7 @@ jobs:
           PR_BASE: ${{ github.event.pull_request.base.sha }}
         run: |
           python3 -I -P - <<'PYTHON'
+          import sys; assert sys.flags.isolated, 'run with python3 -I'
           import os
           from pathlib import Path
           import subprocess
