@@ -17,8 +17,9 @@
    the stylesheet fingerprint and no running CSS animation or transition, for
    longer than one second and longer than the longest gap between changes
    seen so far. A page that keeps changing fails after 5 s. From before axe is
-   injected until its single scan ends, any request, DOM change, style change
-   or running animation fails the gate. The stylesheet fingerprint covers
+   injected until its single scan ends, any request, DOM change, style change,
+   animation or transition start, or running animation fails the gate; axe
+   goes in as the smoke's own tagged script element, which is not counted. The stylesheet fingerprint covers
    every stylesheet's rule text, media and disabled state and every inline
    style attribute. Open shadow roots are included in the DOM observation and
    the fingerprint, with their style/link elements, inline style attributes,
@@ -90,10 +91,23 @@ const server = http.createServer((req,res)=>{
           // shadow roots recursively, observe each one, and repeat the walk whenever state is read
           // so roots added by page script join the watch. Root discovery also feeds sheets() below.
           window.__smokeMutations=0;
+          window.__smokeAnimationStarts=0;
           const observedRoots=new WeakSet();
           const rootIds=new WeakMap();
           let nextRootId=1;
-          const observer=new MutationObserver(records=>{window.__smokeMutations+=records.length;});
+          // The smoke's own axe script element (data-a11y-smoke="axe") is not a page change.
+          const ownElement=node=>node.nodeType===1&&node.getAttribute('data-a11y-smoke')==='axe';
+          const observer=new MutationObserver(records=>{
+            for (const record of records) {
+              if(record.type==='childList'&&record.removedNodes.length===0&&record.addedNodes.length>0&&Array.from(record.addedNodes).every(ownElement)) continue;
+              window.__smokeMutations++;
+            }
+          });
+          // An animation or transition can start and finish without any DOM or stylesheet change
+          // (Element.animate from a timer, for example), so every start counts as a change.
+          const countStart=()=>{window.__smokeAnimationStarts++;};
+          const animate=Element.prototype.animate;
+          Element.prototype.animate=function(...args){countStart();return animate.apply(this,args);};
           const observation={subtree:true,childList:true,attributes:true,characterData:true};
           window.__smokeSyncRoots=()=>{
             const roots=[document], known=new Set(roots);
@@ -107,7 +121,12 @@ const server = http.createServer((req,res)=>{
             }
             for(const root of roots) {
               if(!rootIds.has(root)) rootIds.set(root,nextRootId++);
-              if(!observedRoots.has(root)) {observer.observe(root,observation);observedRoots.add(root);}
+              if(!observedRoots.has(root)) {
+                observer.observe(root,observation);
+                // CSS animation and transition events are not composed, so listen on every root.
+                for (const type of ['animationstart','transitionrun']) root.addEventListener(type,countStart,true);
+                observedRoots.add(root);
+              }
             }
             return roots;
           };
@@ -276,13 +295,13 @@ const server = http.createServer((req,res)=>{
         // changes periodically never counts as still. Both waits are bounded and fail: a page that
         // still starts or finishes a request 10 s after load fails, and so does a page that still
         // changes 5 s after load. A page that stops inside those bounds gets its full quiet period.
-        const pageState=async()=>({...await page.evaluate(()=>({mutations:window.__smokeMutations,runningAnimations:document.getAnimations().filter(animation=>animation.playState==='running').length})),sheets:await sheets()});
+        const pageState=async()=>({...await page.evaluate(()=>({mutations:window.__smokeMutations,animationStarts:window.__smokeAnimationStarts,runningAnimations:document.getAnimations().filter(animation=>animation.playState==='running').length})),sheets:await sheets()});
         const settleStart=Date.now();
         let state=await pageState(), stillSince=Date.now(), longestChangeGap=0;
         for (;;) {
           await page.waitForTimeout(250);
           const now=await pageState();
-          if (now.mutations!==state.mutations||now.sheets!==state.sheets||now.runningAnimations>0) {
+          if (now.mutations!==state.mutations||now.sheets!==state.sheets||now.animationStarts!==state.animationStarts||now.runningAnimations>0) {
             const at=Date.now();
             longestChangeGap=Math.max(longestChangeGap,at-stillSince);
             stillSince=at;
@@ -302,20 +321,27 @@ const server = http.createServer((req,res)=>{
         assertNoProblems('before the contrast check');
         assert.equal(pending,0,`the ${label} at ${width}px still has requests in flight before the contrast check`);
         // From here until the scan ends nothing may change: no request, no DOM change, no style
-        // change and no running animation. One scan of a still page is the whole measurement.
-        // Injecting axe appends exactly one script element, which is one DOM change record; any
-        // other change while axe is injected fails like a change during the scan.
+        // change, no animation start and no running animation. One scan of a still page is the
+        // whole measurement. axe goes in as the smoke's own tagged script element, which the DOM
+        // observer ignores, so any DOM change while it is injected fails as well.
         const requestsBefore=requests, before=await pageState();
-        await page.addScriptTag({content:axeSource});
+        assert.equal(before.runningAnimations,0,`the ${label} at ${width}px ran a CSS animation or transition before the contrast check`);
+        await page.evaluate(source=>{
+          const script=document.createElement('script');
+          script.setAttribute('data-a11y-smoke','axe');
+          script.textContent=source;
+          document.head.append(script);
+        },axeSource);
         assert.equal(pending,0,`the ${label} at ${width}px started a request while axe was injected`);
-        const injected=await page.evaluate(()=>window.__smokeMutations);
-        assert.equal(injected-before.mutations,1,`the ${label} at ${width}px changed its DOM while axe was injected`);
+        assert.equal(await page.evaluate(()=>window.__smokeMutations),before.mutations,`the ${label} at ${width}px changed its DOM while axe was injected`);
         const result=await page.evaluate(async()=>{
           // Discover shadow roots attached since the last fingerprint, so a change inside one
           // during the scan is observed as well.
           window.__smokeSyncRoots();
+          const runningAtStart=document.getAnimations().filter(animation=>animation.playState==='running').length;
           const result=await axe.run(document,{runOnly:{type:'rule',values:['color-contrast']}});
           return {
+            runningAtStart,
             violations:result.violations.flatMap(rule=>rule.nodes.map(node=>({target:node.target,summary:node.failureSummary}))),
             unchecked:result.incomplete.flatMap(rule=>rule.nodes.map(node=>node.target)),
           };
@@ -325,9 +351,13 @@ const server = http.createServer((req,res)=>{
         // request can still fail after the scan, so the problems are complete here.
         assert.equal(requests,requestsBefore,`the ${label} at ${width}px requested resources during the contrast check`);
         assert.equal(pending,0,`the ${label} at ${width}px still has requests in flight after the contrast check`);
-        assert.equal(after.mutations,injected,`the ${label} at ${width}px changed its DOM during the contrast check`);
+        assert.equal(after.mutations,before.mutations,`the ${label} at ${width}px changed its DOM during the contrast check`);
         // Compared as a boolean: a failing assert.equal would print both whole fingerprints.
         assert.ok(after.sheets===before.sheets,`the ${label} at ${width}px changed its styles during the contrast check`);
+        // An animation that starts and ends inside the scan leaves nothing running afterwards, so
+        // check the start count as well as the running animations at both ends of the scan.
+        assert.equal(result.runningAtStart,0,`the ${label} at ${width}px ran a CSS animation or transition when the contrast check started`);
+        assert.equal(after.animationStarts,before.animationStarts,`the ${label} at ${width}px started a CSS animation or transition during the contrast check`);
         assert.equal(after.runningAnimations,0,`the ${label} at ${width}px ran a CSS animation or transition during the contrast check`);
         assertNoProblems('during the contrast check');
         assert.deepEqual(result.violations,[],`axe color-contrast violations on the ${label} at ${width}px: ${JSON.stringify(result.violations,null,2)}`);
@@ -338,13 +368,11 @@ const server = http.createServer((req,res)=>{
     }
     console.log(`PASS ${checks} home-page axe color-contrast checks, 0 violations; served only from ${origin}, ${blockedRequests} cross-origin request(s) blocked${blockedOrigins.size?`: ${[...blockedOrigins].join(', ')}`:''}`);
   } finally {
-    // Shut both servers down even when closing the browser fails. Drop any connection the
-    // browser left open first, or server.close would wait for it and hang the job.
-    try {
-      if(browser) await browser.close();
-    } finally {
-      for (const listener of [server,probeServer]) listener.closeAllConnections();
-      await Promise.all([server,probeServer].map(listener=>new Promise(resolve=>listener.close(()=>resolve()))));
-    }
+    // Cleanup must not replace the check's own failure: a failed browser close is reported and
+    // fails the run, but the earlier error still propagates. Both servers shut down either way;
+    // drop any connection the browser left open first, or server.close would wait for it.
+    if(browser) await browser.close().catch(error=>{console.error(`closing the browser failed: ${error.message}`);process.exitCode=1;});
+    for (const listener of [server,probeServer]) listener.closeAllConnections();
+    await Promise.all([server,probeServer].map(listener=>new Promise(resolve=>listener.close(()=>resolve()))));
   }
 })().catch(error=>{console.error(error);process.exitCode=1;});
