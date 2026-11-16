@@ -11,7 +11,6 @@ from unittest import mock
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "website" / "tests"))
 import check_embedded
-import network_retry
 
 SETUP = (
     "mkdir speedle-embedded-demo\n"
@@ -83,7 +82,7 @@ class FakeRun:
 class EmbeddedRetryTest(unittest.TestCase):
     def verify(self, fake, candidate=False):
         with mock.patch.object(check_embedded, "run", fake), \
-                mock.patch.object(network_retry.time, "sleep") as sleep, \
+                mock.patch.object(check_embedded.time, "sleep") as sleep, \
                 contextlib.redirect_stdout(io.StringIO()):
             check_embedded.verify("en", STEPS, None, candidate)
         return sleep
@@ -118,7 +117,7 @@ class EmbeddedRetryTest(unittest.TestCase):
             return fake(command, cwd, env)
 
         with mock.patch.object(check_embedded, "run", run), \
-                mock.patch.object(network_retry.time, "sleep"), \
+                mock.patch.object(check_embedded.time, "sleep"), \
                 contextlib.redirect_stdout(io.StringIO()):
             check_embedded.verify("en", STEPS, None)
         self.assertEqual(partial_present, [False])
@@ -138,7 +137,7 @@ class EmbeddedRetryTest(unittest.TestCase):
     def test_a_wrong_allow_deny_result_fails_at_once(self):
         fake = FakeRun(run_output="alice allowed=true\nbob allowed=true\n")
         with mock.patch.object(check_embedded, "run", fake), \
-                mock.patch.object(network_retry.time, "sleep") as sleep, \
+                mock.patch.object(check_embedded.time, "sleep") as sleep, \
                 contextlib.redirect_stdout(io.StringIO()), \
                 self.assertRaisesRegex(AssertionError, "bob allowed=true"):
             check_embedded.verify("en", STEPS, None)
@@ -148,7 +147,7 @@ class EmbeddedRetryTest(unittest.TestCase):
     def test_gives_up_after_three_failed_setup_attempts(self):
         fake = FakeRun(failures={SETUP: (1, 2, 3)})
         with mock.patch.object(check_embedded, "run", fake), \
-                mock.patch.object(network_retry.time, "sleep") as sleep, \
+                mock.patch.object(check_embedded.time, "sleep") as sleep, \
                 contextlib.redirect_stdout(io.StringIO()), \
                 self.assertRaisesRegex(RuntimeError, "Command failed"):
             check_embedded.verify("en", STEPS, None)
@@ -160,7 +159,8 @@ class EmbeddedRetryTest(unittest.TestCase):
 class CheckerImportTest(unittest.TestCase):
     def test_checkers_load_without_the_caller_adding_their_directory(self):
         # Isolated mode keeps the working directory and the site packages out
-        # of sys.path: the checkers must locate the shared helper themselves.
+        # of sys.path: the checkers must import nothing from their own
+        # directory, so the retry helpers stay private copies.
         script = (
             "import importlib.util, sys\n"
             "directory = sys.argv[1]\n"
