@@ -94,7 +94,7 @@ jobs:
             echo 'python3 is required for the documented Go toolchain check; install Python 3 on the runner.' >&2
             exit 1
           fi
-          python3 - <<'PYTHON'
+          python3 -I - <<'PYTHON'
           import re
           import stat
           import subprocess

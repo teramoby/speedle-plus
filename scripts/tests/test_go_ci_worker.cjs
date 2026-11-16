@@ -97,6 +97,8 @@ test('documented Go toolchain guard runs after checkout and setup and rejects ve
   // Capture same-line indentation only: `\s` would also match a newline.
   assert.deepEqual([...source.matchAll(/^([ \t]*)GOTOOLCHAIN: (.*)$/gm)].map(match => [match[1], match[2]]),
     [['      ', 'local']], 'only the job-level env may pin GOTOOLCHAIN');
+  assert.match(script('Verify documented Go toolchain'), /^python3 -I - <<'PYTHON'$/m,
+    'the documented-toolchain check must run Python in isolated mode');
 
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-go-toolchain-'));
   try {
@@ -128,6 +130,9 @@ if (args.length === 4 && args[0] === 'list' && args[1] === '-m' && args[2] === '
       {name: 'reworded prerequisite', readme: prerequisites('- Go (1.27.4) or newer.'), module: '1.27.4', selected: 'go1.27.4', passes: true,
         message: 'Verified documented minimum Go toolchain: go1.27.4'},
       {name: 'Golang alias', readme: prerequisites('-   Golang 1.27.4 or a newer patch'), module: '1.27.4', selected: 'go1.27.4', passes: true,
+        message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      {name: 'checkout-local re.py is not imported', readme: prerequisites('-   Go 1.27.4 or a newer patch'),
+        module: '1.27.4', selected: 'go1.27.4', shadowModule: true, passes: true,
         message: 'Verified documented minimum Go toolchain: go1.27.4'},
       {name: 'version separated from the Go word', readme: prerequisites('-   Go is required; the documented minimum version is 1.27.4'),
         module: '1.27.4', selected: 'go1.27.4', passes: true, message: 'Verified documented minimum Go toolchain: go1.27.4'},
@@ -243,6 +248,11 @@ if (args.length === 4 && args[0] === 'list' && args[1] === '-m' && args[2] === '
         } else {
           fs.writeFileSync(readmePath, fixture.readme);
           if (fixture.oversize) fs.truncateSync(readmePath, 1024 * 1024 + 1);
+        }
+        const shadowModule = path.join(directory, 're.py');
+        fs.rmSync(shadowModule, {force: true});
+        if (fixture.shadowModule) {
+          fs.writeFileSync(shadowModule, "raise RuntimeError('checkout-local re.py was imported')\n");
         }
       }
       const result = spawnSync('bash', ['-c', script('Verify documented Go toolchain')], {
