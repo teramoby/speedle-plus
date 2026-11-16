@@ -8,6 +8,7 @@ without Cloudflare Email settings nothing is emailed, and without a GitHub
 token no issues are touched. The script exits non-zero only on bad input.
 """
 import argparse
+import http.client
 import json
 import os
 import sys
@@ -256,8 +257,9 @@ def send_email(subject, body, env, timeout=EMAIL_TIMEOUT):
     Delivery is asynchronous, so the recipient is normally queued rather than
     delivered at once: a queued recipient is a successful send. A non-2xx
     status, success: false, a permanent bounce or a suppressed recipient is a
-    failed send. Nothing from the settings or the response is logged, because
-    both may hold addresses.
+    failed send. OPS_EMAIL_REPLY_TO, when set, is the reply_to address.
+    Nothing from the settings or the response is logged, because both may
+    hold addresses.
     """
     account, token = env.get("CF_ACCOUNT_ID"), env.get("CF_EMAIL_TOKEN")
     sender, to = env.get("OPS_EMAIL_FROM"), env.get("OPS_EMAIL_TO")
@@ -265,9 +267,11 @@ def send_email(subject, body, env, timeout=EMAIL_TIMEOUT):
         print("::warning::Cloudflare Email is not configured (CF_ACCOUNT_ID, CF_EMAIL_TOKEN, "
               "OPS_EMAIL_FROM, OPS_EMAIL_TO); the report is not emailed.", file=sys.stderr)
         return False
+    payload = {"to": to, "from": sender, "subject": subject, "text": body}
+    if env.get("OPS_EMAIL_REPLY_TO"):
+        payload["reply_to"] = env["OPS_EMAIL_REPLY_TO"]
     request = urllib.request.Request(
-        EMAIL_API.format(account=account), method="POST",
-        data=json.dumps({"to": to, "from": sender, "subject": subject, "text": body}).encode(),
+        EMAIL_API.format(account=account), method="POST", data=json.dumps(payload).encode(),
         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"})
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:
@@ -276,7 +280,7 @@ def send_email(subject, body, env, timeout=EMAIL_TIMEOUT):
         # The response body and the URL are not logged: both may hold addresses.
         print(f"::warning::Email delivery failed (HTTP {error.code}).", file=sys.stderr)
         return False
-    except (urllib.error.URLError, OSError, ValueError) as error:
+    except (urllib.error.URLError, OSError, ValueError, http.client.HTTPException) as error:
         print(f"::warning::Email delivery failed ({type(error).__name__}).", file=sys.stderr)
         return False
     if not isinstance(reply, dict) or reply.get("success") is not True:

@@ -251,6 +251,7 @@ test('scheduled suites run through the worker and report from a hosted job', () 
     assert.match(report, /CF_ACCOUNT_ID: \$\{\{ vars.CF_ACCOUNT_ID \}\}/);
     assert.match(report, /OPS_EMAIL_FROM: \$\{\{ vars.OPS_EMAIL_FROM \}\}/);
     assert.match(report, /OPS_EMAIL_TO: \$\{\{ vars.OPS_EMAIL_TO \}\}/);
+    assert.match(report, /OPS_EMAIL_REPLY_TO: \$\{\{ vars.OPS_EMAIL_REPLY_TO \}\}/);
     assert.doesNotMatch(report, /FEISHU_|SMTP_/, `${kind}.report must not read the retired transports`);
     assert.doesNotMatch(report, /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/, `${kind}.report must not hardcode an address`);
     assert.match(report, new RegExp(`python3 -I scripts/ci/test_report.py --kind ${kind} `));
@@ -284,6 +285,7 @@ test('every merge to master runs the file regression and reports failures from a
   assert.match(report, /CF_ACCOUNT_ID: \$\{\{ vars.CF_ACCOUNT_ID \}\}/);
   assert.match(report, /OPS_EMAIL_FROM: \$\{\{ vars.OPS_EMAIL_FROM \}\}/);
   assert.match(report, /OPS_EMAIL_TO: \$\{\{ vars.OPS_EMAIL_TO \}\}/);
+  assert.match(report, /OPS_EMAIL_REPLY_TO: \$\{\{ vars.OPS_EMAIL_REPLY_TO \}\}/);
   assert.match(report, /COMMIT_URL: .*\/commit\/\$\{\{ github.sha \}\}/);
   assert.doesNotMatch(report, /FEISHU_|SMTP_/);
   assert.doesNotMatch(report, /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/, 'no hardcoded address');

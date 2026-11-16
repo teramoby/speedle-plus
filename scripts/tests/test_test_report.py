@@ -1,4 +1,5 @@
 """Offline tests for scripts/ci/test_report.py. No Ark, email or GitHub calls."""
+import http.client
 import io
 import json
 import sys
@@ -154,7 +155,8 @@ class ArkTest(unittest.TestCase):
 
 class EmailTest(unittest.TestCase):
     env = {"CF_ACCOUNT_ID": "account-id", "CF_EMAIL_TOKEN": "api-token",
-           "OPS_EMAIL_FROM": "sender@example.com", "OPS_EMAIL_TO": "recipient@example.com"}
+           "OPS_EMAIL_FROM": "sender@example.com", "OPS_EMAIL_TO": "recipient@example.com",
+           "OPS_EMAIL_REPLY_TO": "reply@example.com"}
 
     def send(self, result=None, success=True, reply=None, error=None, env=None):
         if reply is None:
@@ -176,8 +178,14 @@ class EmailTest(unittest.TestCase):
         self.assertEqual(request.get_method(), "POST")
         self.assertEqual(request.get_header("Authorization"), "Bearer api-token")
         self.assertEqual(json.loads(request.data), {"to": "recipient@example.com", "from": "sender@example.com",
-                                                    "subject": "subject", "text": "body"})
+                                                    "subject": "subject", "text": "body",
+                                                    "reply_to": "reply@example.com"})
         self.assertEqual(urlopen.call_args.kwargs["timeout"], test_report.EMAIL_TIMEOUT)
+
+    def test_reply_to_is_omitted_when_not_configured(self):
+        env = {key: value for key, value in self.env.items() if key != "OPS_EMAIL_REPLY_TO"}
+        _, urlopen, _ = self.send(env=env)
+        self.assertNotIn("reply_to", json.loads(urlopen.call_args[0][0].data))
 
     def test_a_queued_or_delivered_recipient_is_success(self):
         self.assertTrue(self.send(result={"queued": ["recipient@example.com"]})[0])
@@ -216,6 +224,11 @@ class EmailTest(unittest.TestCase):
 
     def test_an_unreachable_api_is_a_failure(self):
         self.assertFalse(self.send(error=OSError("down"))[0])
+
+    def test_a_truncated_response_is_a_failure(self):
+        ok, _, warning = self.send(error=http.client.IncompleteRead(b"{}"))
+        self.assertFalse(ok)
+        self.assertIn("IncompleteRead", warning)
 
     def test_missing_settings_send_nothing(self):
         with mock.patch("urllib.request.urlopen") as urlopen, \
@@ -442,6 +455,19 @@ class RegressionTest(unittest.TestCase):
             test_report.main(["--kind", "regression", "--source", f"run:failure:{directory / 'missing'}"],
                              env={"GITHUB_TOKEN": "t", "GITHUB_REPOSITORY": "o/r"})
         self.assertEqual([c[2]["title"] for c in github.calls], ["Test failure: check results missing"])
+
+    def test_a_failed_send_still_tracks_the_failure(self):
+        directory = Path(tempfile.mkdtemp())
+        (directory / "go-file.json").write_text(events(("fail", "p", "TestB", None)))
+        github, summary = FakeGitHub(), directory / "report.txt"
+        with mock.patch.object(test_report, "GitHub", return_value=github), \
+                mock.patch.object(test_report, "ark_analyze", return_value=None), \
+                mock.patch.object(test_report, "send_email", return_value=False), mock.patch("builtins.print"):
+            code = test_report.main(["--kind", "regression", "--source", f"run:success:{directory}",
+                                     "--summary-file", str(summary)], env=self.env)
+        self.assertEqual(code, 0)
+        self.assertEqual([c[2]["title"] for c in github.calls], ["Test failure: p TestB"])
+        self.assertIn("TestB", summary.read_text())
 
     def test_scheduled_runs_keep_chinese_analysis(self):
         response = mock.MagicMock()

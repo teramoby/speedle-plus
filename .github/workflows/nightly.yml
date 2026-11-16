@@ -71,6 +71,7 @@ jobs:
           CF_ACCOUNT_ID: ${{ vars.CF_ACCOUNT_ID }}
           OPS_EMAIL_FROM: ${{ vars.OPS_EMAIL_FROM }}
           OPS_EMAIL_TO: ${{ vars.OPS_EMAIL_TO }}
+          OPS_EMAIL_REPLY_TO: ${{ vars.OPS_EMAIL_REPLY_TO }}
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
