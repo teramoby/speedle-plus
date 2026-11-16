@@ -729,6 +729,29 @@ test('nightly checks the isolated interpreter before interpreting trial inputs',
       /python3 with safe -I support is required for isolated inline Python; install a Python 3 whose -I excludes the checkout and working directory from sys\.path\./);
   } finally {fs.rmSync(directory, {recursive: true, force: true});}
 });
+test('nightly distinguishes a missing interpreter from unsafe -I support', () => {
+  // A runner without python3 must say so, not send the operator looking for a
+  // different -I problem.
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-nightly-python-'));
+  try {
+    const bin = path.join(directory, 'bin');
+    fs.mkdirSync(bin);
+    for (const tool of ['dirname', 'mkdir', 'uname']) {
+      const found = spawnSync('sh', ['-c', `command -v ${tool}`], {encoding: 'utf8'}).stdout.trim();
+      fs.symlinkSync(fs.realpathSync(found), path.join(bin, tool));
+    }
+    const result = spawnSync(realBash, [path.join(repoRoot, 'scripts/ci/run-go-tests.sh'), 'nightly'], {
+      encoding: 'utf8', env: {...process.env,
+        PATH: bin,
+        DOCKER_CONFIG: path.join(directory, 'docker-config'),
+        RESULTS_DIR: path.join(directory, 'results')},
+    });
+    assert.equal(result.status, 1, result.stderr);
+    assert.match(result.stderr,
+      /python3 is required on self-hosted runners; install Python 3 before running this workflow\./);
+    assert.doesNotMatch(result.stderr, /safe -I support/);
+  } finally {fs.rmSync(directory, {recursive: true, force: true});}
+});
 test('nightly refuses a dispatch whose event payload is missing', () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-nightly-event-'));
   try {

@@ -138,6 +138,12 @@ case "${mode}" in
     ;;
   nightly)
     mkdir -p "${results}"; : > "${results}/checks.txt"
+    # A missing interpreter and an interpreter without safe -I support need
+    # different fixes, so report them separately.
+    if ! command -v python3 >/dev/null 2>&1; then
+      echo 'python3 is required on self-hosted runners; install Python 3 before running this workflow.' >&2
+      exit 1
+    fi
     # A failing guard inside the trial conditions below would look like a false
     # input and silently run the full nightly, so check it separately first.
     if ! python3 -I -c 'import sys; sys.flags.isolated or sys.exit("run with python3 -I"); sys.flags.optimize == 0 or sys.exit("python3 inline checks require optimization to be disabled"); import os; unsafe = any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p is not None); unsafe and sys.exit("python3 -I must exclude the checkout and working directory from sys.path")' >/dev/null 2>&1; then
