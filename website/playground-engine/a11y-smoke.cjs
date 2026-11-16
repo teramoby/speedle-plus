@@ -4,12 +4,11 @@
    The check is hermetic: every request to an origin other than the local server
    is aborted at once and counted, so a slow or unreachable third party can
    neither delay nor fail the load event that the check waits for. A blocked
-   request fails the gate by URL unless its origin is listed in QUIET_ORIGINS
-   (third parties that cannot affect styles, such as the analytics beacon), and
-   a stylesheet request fails it even then; so does a local HTTP error or a
-   local stylesheet that does not load. These are checked once the network has
-   settled after load and again after axe has run. Serve a local copy of any
-   resource the page needs.
+   request fails the gate by URL unless it is a script from an origin listed in
+   QUIET_ORIGINS (third parties that cannot affect styles, such as the analytics
+   beacon); so does any local request that fails or returns an HTTP error.
+   These are checked once the network has settled after load and again after
+   axe has run. Serve a local copy of any resource the page needs.
    Run from the repository root: node website/playground-engine/a11y-smoke.cjs
    Optional CHROMIUM_PATH selects a Chrome/Chromium binary. */
 const {chromium} = require('playwright');
@@ -19,8 +18,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const assert = require('node:assert/strict');
 const root = path.resolve(__dirname, '../../docs');
-// Third-party origins the home pages contact that cannot affect styles: requests to
-// them are blocked and counted without failing the gate (stylesheets still fail).
+// Third-party origins whose scripts the home pages load and that cannot affect styles:
+// their script requests are blocked and counted without failing the gate. Any other
+// request to them (a stylesheet, fetch, image, ...) fails like any other origin.
 const QUIET_ORIGINS = new Set(['https://static.cloudflareinsights.com']);
 const server = http.createServer((req,res)=>{
   let url;
@@ -54,8 +54,6 @@ const server = http.createServer((req,res)=>{
         // load an empty sheet, so the page itself cannot tell.
         const problems=new Map();
         const parse=value=>{try {return new URL(value);} catch {return null;}};
-        // A stylesheet, or CSS fetched by script (for example fetch() into a <style> element).
-        const isCss=request=>request.resourceType()==='stylesheet'||/\.css$/i.test(parse(request.url())?.pathname||'');
         page.on('response',response=>{
           if (response.status()<400||problems.has(response.url())) return;
           if (parse(response.url())?.origin===origin) problems.set(response.url(),`HTTP ${response.status()}`);
@@ -64,8 +62,8 @@ const server = http.createServer((req,res)=>{
           const url=parse(request.url());
           if (problems.has(request.url())) return;
           if (url?.origin===origin) {
-            if (isCss(request)) problems.set(request.url(),request.failure()?.errorText||'failed');
-          } else if (isCss(request)||!QUIET_ORIGINS.has(url?.origin)) {
+            problems.set(request.url(),request.failure()?.errorText||'failed');
+          } else if (!(QUIET_ORIGINS.has(url?.origin)&&request.resourceType()==='script')) {
             problems.set(request.url(),`blocked: outside ${origin}; serve a local copy`);
           }
         });
