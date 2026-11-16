@@ -47,6 +47,11 @@ const root = path.resolve(__dirname, '../../docs');
 // blocked and counted without failing the gate. Any other request to them (a stylesheet,
 // fetch, image, ...) fails like any other origin.
 const QUIET_ORIGINS = new Set(['https://static.cloudflareinsights.com']);
+// The route aborts every cross-origin request with this distinctive error, so a failure the route
+// caused cannot be confused with a request the page cancelled itself (net::ERR_ABORTED).
+// Chromium reports it as net::ERR_BLOCKED_BY_CLIENT with a suffix naming the blocker (.Inspector).
+const ROUTE_ABORT_ERROR='net::ERR_BLOCKED_BY_CLIENT';
+const routeAborted=errorText=>typeof errorText==='string'&&errorText.startsWith(ROUTE_ABORT_ERROR);
 // A second loopback server, on its own port and therefore its own origin, serves a script
 // that only sets a flag. Every page must have its request for it aborted by the route and
 // must not run it, which proves that cross-origin blocking really works. If interception is
@@ -195,14 +200,20 @@ const server = http.createServer((req,res)=>{
           const url=parse(request.url());
           // The positive control must fail the way an aborted request does, not just pass
           // through the route callback or load from the probe server.
-          if(request.url()===ROUTE_PROBE&&request.failure()?.errorText==='net::ERR_ABORTED') routeProbeAborts++;
+          if(request.url()===ROUTE_PROBE&&routeAborted(request.failure()?.errorText)) routeProbeAborts++;
           if (problems.has(request.url())) return;
           if (url?.origin===origin) {
             const reason=request.failure()?.errorText||'failed';
             if (reason==='net::ERR_ABORTED'&&renderIrrelevant.has(request.resourceType())) cancelled.push(`${request.url()} (${request.resourceType()})`);
             else problems.set(request.url(),`${request.resourceType()}: ${reason}`);
-          } else if (!(QUIET_ORIGINS.has(url?.origin)&&request.resourceType()==='script')) {
-            problems.set(request.url(),`blocked: outside ${origin}; serve a local copy`);
+          } else {
+            // A quiet-origin script is tolerated only when it failed the way the route aborts it.
+            // Any other failure (DNS, TLS, connection) means the route never intercepted it.
+            const reason=request.failure()?.errorText||'failed';
+            const aborted=routeAborted(reason);
+            if (!(aborted&&QUIET_ORIGINS.has(url?.origin)&&request.resourceType()==='script')) {
+              problems.set(request.url(),aborted?`blocked: outside ${origin}; serve a local copy`:`outside ${origin} and not aborted by the route (${reason}): request interception was bypassed`);
+            }
           }
         });
         const assertNoProblems=when=>{
@@ -227,14 +238,14 @@ const server = http.createServer((req,res)=>{
           blockedRequests++;
           // Count the probe only when Chromium acknowledged the abort: a callback that ran
           // but whose abort failed may have let the request through.
-          if(url.href===ROUTE_PROBE) {if(await route.abort('aborted').then(()=>true,()=>false)) routeProbeBlocks++;return;}
-          await route.abort().catch(()=>{});
+          if(url.href===ROUTE_PROBE) {if(await route.abort('blockedbyclient').then(()=>true,()=>false)) routeProbeBlocks++;return;}
+          await route.abort('blockedbyclient').catch(()=>{});
         });
         // Every other origin is aborted at once, so nothing outside the local server can delay load.
         await page.goto(origin+route,{waitUntil:'load',timeout:30000});
         // Do not infer that routing works merely because no third-party request was observed.
         // The probe script sets a flag in the page if it ever runs, its abort must be acknowledged
-        // by the route, and Chromium must report the request as net::ERR_ABORTED: a loaded probe,
+        // by the route, and Chromium must report the request as the route's own abort error: a loaded probe,
         // an uncounted abort or a non-abort failure all fail the gate. A response from a foreign
         // origin is caught by the response handler as well. The route and requestfailed handlers
         // were registered before the navigation, so no event can be missed; their delivery, however,
@@ -247,7 +258,7 @@ const server = http.createServer((req,res)=>{
         const csp=await page.evaluate(()=>window.__smokeCspViolations.join('; '));
         const cspNote=csp?` (the page's Content Security Policy reported: ${csp})`:'';
         assert.ok(routeProbeBlocks>0,`the ${label} at ${width}px did not intercept and abort the route positive control; request interception may not be active${cspNote}`);
-        assert.ok(routeProbeAborts>0,`the ${label} at ${width}px did not see the route positive control fail with net::ERR_ABORTED; the request may not have been aborted${cspNote}`);
+        assert.ok(routeProbeAborts>0,`the ${label} at ${width}px did not see the route positive control fail with ${ROUTE_ABORT_ERROR}; the request may not have been aborted${cspNote}`);
         try {
           await page.waitForLoadState('networkidle',{timeout:15000});
         } catch (error) {
