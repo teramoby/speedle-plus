@@ -332,6 +332,7 @@ test('every inline Python invocation in every workflow uses isolated mode', () =
     ['go-ci-worker.yml', 'stdin'],
     ['go-ci-worker.yml', 'stdin'],
     ['go-ci-worker.yml', 'stdin'],
+    ['go-ci-worker.yml', 'stdin'],
     ['image-smoke.yml', 'stdin'],
     ['mongodb-nightly-validation.yml', 'command'],
     ['mongodb-nightly-validation.yml', 'stdin'],
