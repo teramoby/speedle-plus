@@ -289,29 +289,29 @@ def send_email(subject, body, env, timeout=EMAIL_TIMEOUT):
     ignored only when matching the API's reply. A send succeeds when the
     response lists every recipient under queued or delivered. A non-2xx
     status, success: false, a permanent bounce or a suppressed recipient is a
-    failed send. OPS_EMAIL_REPLY_TO, when set, is the reply_to address.
-    Nothing from the settings or the response is logged, because both may hold
+    failed send. OPS_EMAIL_REPLY_TO is required: the sender is an outbound
+    address that cannot receive mail, so without it a reply is lost. Nothing
+    from the settings or the response is logged, because both may hold
     addresses.
 
-    A failed send is an error annotation on the run, not a failed step: the
-    report job still tracks failing tests, as it did when a Feishu post failed.
+    A configuration problem is a plain notice and sends nothing. A failed
+    send is an error annotation on the run, not a failed step: the report job
+    still tracks failing tests, as it did when a Feishu post failed.
     """
     account, token = env.get("CF_ACCOUNT_ID"), env.get("CF_EMAIL_TOKEN")
     senders = configured_addresses(env.get("OPS_EMAIL_FROM"))
     recipients = configured_addresses(env.get("OPS_EMAIL_TO"))
-    reply_to_setting = env.get("OPS_EMAIL_REPLY_TO")
-    reply_to = configured_addresses(reply_to_setting) if reply_to_setting else []
+    reply_to = configured_addresses(env.get("OPS_EMAIL_REPLY_TO"))
     configured = bool(account and token and senders and len(senders) == 1 and recipients
                       and len(recipients) <= MAX_EMAIL_RECIPIENTS
-                      and (not reply_to_setting or (reply_to and len(reply_to) == 1)))
+                      and reply_to and len(reply_to) == 1)
     if not configured:
-        print("::error::Cloudflare Email is not configured correctly (CF_ACCOUNT_ID, CF_EMAIL_TOKEN, "
+        print("Cloudflare Email is not configured correctly (CF_ACCOUNT_ID, CF_EMAIL_TOKEN, "
               "OPS_EMAIL_FROM, OPS_EMAIL_TO, OPS_EMAIL_REPLY_TO); the report is not emailed.",
               file=sys.stderr)
         return False
-    payload = {"to": recipients, "from": senders[0], "subject": subject, "text": body}
-    if reply_to:
-        payload["reply_to"] = reply_to[0]
+    payload = {"to": recipients, "from": senders[0], "subject": subject, "text": body,
+               "reply_to": reply_to[0]}
     request = urllib.request.Request(
         EMAIL_API.format(account=account), method="POST", data=json.dumps(payload).encode(),
         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"})

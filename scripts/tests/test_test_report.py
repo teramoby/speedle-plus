@@ -201,7 +201,8 @@ class EmailTest(unittest.TestCase):
                         mock.patch("sys.stderr", new=io.StringIO()) as stderr:
                     self.assertFalse(test_report.send_email("s", "b", dict(self.env, **{setting: "not an address"})))
                 urlopen.assert_not_called()
-                self.assertIn("::error::", stderr.getvalue())
+                self.assertIn("not configured", stderr.getvalue())
+                self.assertNotIn("::error::", stderr.getvalue())
 
     def test_a_configured_recipient_that_is_not_an_address_is_not_dropped(self):
         env = dict(self.env, OPS_EMAIL_TO="recipient@example.com, not an address")
@@ -209,7 +210,7 @@ class EmailTest(unittest.TestCase):
                 mock.patch("sys.stderr", new=io.StringIO()) as stderr:
             self.assertFalse(test_report.send_email("s", "b", env))
         urlopen.assert_not_called()
-        self.assertIn("::error::", stderr.getvalue())
+        self.assertNotIn("::error::", stderr.getvalue())
 
     def test_rejects_more_recipients_than_the_api_accepts(self):
         env = dict(self.env, OPS_EMAIL_TO=", ".join(f"r{i}@example.com" for i in range(51)))
@@ -217,12 +218,17 @@ class EmailTest(unittest.TestCase):
                 mock.patch("sys.stderr", new=io.StringIO()) as stderr:
             self.assertFalse(test_report.send_email("s", "b", env))
         urlopen.assert_not_called()
-        self.assertIn("::error::", stderr.getvalue())
+        self.assertNotIn("::error::", stderr.getvalue())
 
-    def test_reply_to_is_omitted_when_not_configured(self):
+    def test_a_missing_reply_to_sends_nothing(self):
+        # The sender is outbound-only, so an email without Reply-To loses replies.
         env = {key: value for key, value in self.env.items() if key != "OPS_EMAIL_REPLY_TO"}
-        _, urlopen, _ = self.send(env=env)
-        self.assertNotIn("reply_to", json.loads(urlopen.call_args[0][0].data))
+        with mock.patch("urllib.request.urlopen") as urlopen, \
+                mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+            self.assertFalse(test_report.send_email("s", "b", env))
+        urlopen.assert_not_called()
+        self.assertIn("not configured", stderr.getvalue())
+        self.assertNotIn("::error::", stderr.getvalue())
 
     def test_a_queued_or_delivered_recipient_is_success(self):
         self.assertTrue(self.send(result={"queued": ["recipient@example.com"]})[0])
@@ -293,8 +299,24 @@ class EmailTest(unittest.TestCase):
                 mock.patch("sys.stderr", new=io.StringIO()) as stderr:
             self.assertFalse(test_report.send_email("s", "b", {}))
         urlopen.assert_not_called()
-        self.assertIn("::error::", stderr.getvalue())
         self.assertIn("not configured", stderr.getvalue())
+        self.assertNotIn("::error::", stderr.getvalue())
+
+    def test_missing_settings_still_track_the_failure(self):
+        # No email is sent, but the run summary and the tracking issue still are.
+        directory = Path(tempfile.mkdtemp())
+        (directory / "go.json").write_text(events(("fail", "p", "TestZ", None)))
+        summary, github = directory / "report.txt", FakeGitHub()
+        env = {"GITHUB_TOKEN": "t", "GITHUB_REPOSITORY": "o/r"}
+        with mock.patch.object(test_report, "GitHub", return_value=github), \
+                mock.patch("sys.stdout", new=io.StringIO()), \
+                mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+            code = test_report.main(["--kind", "nightly", "--go-json", str(directory / "go.json"),
+                                     "--summary-file", str(summary)], env=env)
+        self.assertEqual(code, 0)
+        self.assertNotIn("::error::", stderr.getvalue())
+        self.assertIn("TestZ", summary.read_text())
+        self.assertEqual([c[2]["title"] for c in github.calls], ["Test failure: p TestZ"])
 
     def test_a_failed_send_is_an_error_annotation(self):
         ok, _, message = self.send(error=OSError("down"))
