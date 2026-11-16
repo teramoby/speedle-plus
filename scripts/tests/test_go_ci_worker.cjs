@@ -77,6 +77,284 @@ test('worker owns runner selection and exposes only the mode input, never a call
   assert.match(step('Setup Go'), /go-version-file: go\.mod/);
   assert.doesNotMatch(source, /secrets:|secrets\.inherit|\$\{\{\s*inputs\.(?:ref|sha|runner|store_type)/);
 });
+test('documented Go toolchain guard runs after checkout and setup and rejects version drift', () => {
+  const checkout = source.indexOf('      - name: Checkout code\n');
+  const setup = source.indexOf('      - name: Setup Go\n');
+  const verify = source.indexOf('      - name: Verify documented Go toolchain\n');
+  const select = source.indexOf('      - name: Select changed packages\n');
+  assert.notEqual(checkout, -1, 'Checkout code step missing');
+  assert.notEqual(setup, -1, 'Setup Go step missing');
+  assert.notEqual(verify, -1, 'documented Go toolchain guard missing');
+  assert.notEqual(select, -1, 'Select changed packages step missing');
+  assert.ok(checkout < setup && setup < verify && verify < select,
+    'toolchain guard must follow checkout and Setup Go and precede package selection');
+  // The README format gate runs on the cheap PR paths; build, nightly, weekly
+  // and regression rely on the repository-level regression in the changes job.
+  assert.match(step('Verify documented Go toolchain'),
+    /^        if: inputs\.mode == 'quick' \|\| inputs\.mode == 'lint'$/m);
+  // Only the job-level env may set GOTOOLCHAIN: a step-level override would
+  // let a later go command switch away from the verified toolchain.
+  // Capture same-line indentation only: `\s` would also match a newline.
+  assert.deepEqual([...source.matchAll(/^([ \t]*)GOTOOLCHAIN: (.*)$/gm)].map(match => [match[1], match[2]]),
+    [['      ', 'local']], 'only the job-level env may pin GOTOOLCHAIN');
+  assert.match(script('Verify documented Go toolchain'), /^python3 -I - <<'PYTHON'$/m,
+    'the documented-toolchain check must run Python in isolated mode');
+
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-go-toolchain-'));
+  try {
+    const bin = path.join(directory, 'bin');
+    fs.mkdirSync(bin);
+    const stub = path.join(bin, 'go');
+    fs.writeFileSync(stub, `#!${process.execPath}
+const args = process.argv.slice(2);
+if (args.length === 4 && args[0] === 'list' && args[1] === '-m' && args[2] === '-f' && args[3] === '{{.GoVersion}}') {
+  if (process.env.FIXTURE_GO_LIST_ERROR) {
+    process.stderr.write(process.env.FIXTURE_GO_LIST_ERROR + '\\n');
+    process.exit(1);
+  }
+  process.stdout.write(process.env.FIXTURE_MODULE + '\\n');
+} else if (args.length === 2 && args[0] === 'env' && args[1] === 'GOVERSION') {
+  process.stdout.write(process.env.FIXTURE_GOVERSION + '\\n');
+} else if (args.length === 2 && args[0] === 'env' && args[1] === 'GOTOOLCHAIN') {
+  process.stdout.write(process.env.FIXTURE_GOTOOLCHAIN + '\\n');
+} else {
+  process.stderr.write('unexpected go invocation: ' + args.join(' ') + '\\n');
+  process.exit(2);
+}
+`);
+    fs.chmodSync(stub, 0o755);
+    const prerequisites = body => `### Prerequisites\n\n${body}\n`;
+    const cases = [
+      {name: 'matching versions', readme: prerequisites('-   Go 1.27.4 or a newer patch'), module: '1.27.4', selected: 'go1.27.4', passes: true,
+        message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      {name: 'reworded prerequisite', readme: prerequisites('- Go (1.27.4) or newer.'), module: '1.27.4', selected: 'go1.27.4', passes: true,
+        message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      {name: 'Golang alias', readme: prerequisites('-   Golang 1.27.4 or a newer patch'), module: '1.27.4', selected: 'go1.27.4', passes: true,
+        message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      // Markdown accepts either list style, any of the three bullet markers,
+      // emphasis around the tool name or the whole item, and extra whitespace.
+      {name: 'asterisk bullet', readme: prerequisites('* Go 1.27.4 or a newer patch'), module: '1.27.4', selected: 'go1.27.4', passes: true,
+        message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      {name: 'plus bullet', readme: prerequisites('+ Go 1.27.4 or a newer patch'), module: '1.27.4', selected: 'go1.27.4', passes: true,
+        message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      {name: 'ordered list marker', readme: prerequisites('1. Go 1.27.4 or a newer patch'), module: '1.27.4', selected: 'go1.27.4', passes: true,
+        message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      {name: 'parenthesised ordered list marker', readme: prerequisites('1) Go 1.27.4 or a newer patch'), module: '1.27.4', selected: 'go1.27.4', passes: true,
+        message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      {name: 'multi-digit ordered list marker', readme: prerequisites('12. Go 1.27.4 or a newer patch'), module: '1.27.4', selected: 'go1.27.4', passes: true,
+        message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      {name: 'emphasised tool name', readme: prerequisites('-   **Go** 1.27.4 or a newer patch'), module: '1.27.4', selected: 'go1.27.4', passes: true,
+        message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      {name: 'underscore-emphasised tool name', readme: prerequisites('-   __Go__ 1.27.4 or a newer patch'), module: '1.27.4', selected: 'go1.27.4', passes: true,
+        message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      {name: 'emphasised Golang alias', readme: prerequisites('-   **Golang** 1.27.4 or a newer patch'), module: '1.27.4', selected: 'go1.27.4', passes: true,
+        message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      {name: 'emphasised prerequisite item', readme: prerequisites('-   **Go 1.27.4 or a newer patch**'), module: '1.27.4', selected: 'go1.27.4', passes: true,
+        message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      {name: 'underscore-emphasised prerequisite item', readme: prerequisites('1. __Go 1.27.4 or a newer patch__'), module: '1.27.4', selected: 'go1.27.4', passes: true,
+        message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      {name: 'emphasised version', readme: prerequisites('-   Go __1.27.4__ or a newer patch'), module: '1.27.4', selected: 'go1.27.4', passes: true,
+        message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      {name: 'surrounding whitespace', readme: prerequisites('   -\t  **Go** 1.27.4 or a newer patch   '), module: '1.27.4', selected: 'go1.27.4', passes: true,
+        message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      {name: 'checkout-local re.py is not imported', readme: prerequisites('-   Go 1.27.4 or a newer patch'),
+        module: '1.27.4', selected: 'go1.27.4', shadowModule: true, passes: true,
+        message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      {name: 'version separated from the Go word', readme: prerequisites('-   Go is required; the documented minimum version is 1.27.4'),
+        module: '1.27.4', selected: 'go1.27.4', passes: true, message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      // A comment inside a fenced block is not a section boundary.
+      {name: 'fenced comment inside Prerequisites', readme: '### Prerequisites\n\n```sh\n# install Go 1.27.4\n```\n\n-   Go 1.27.4 or a newer patch\n',
+        module: '1.27.4', selected: 'go1.27.4', passes: true, message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      // Only prose declares the minimum; fenced examples are ignored.
+      {name: 'fenced example version is ignored', readme: '### Prerequisites\n\n-   Go 1.27.4 or a newer patch\n\n```sh\n# tested with Go 1.26.10\n```\n',
+        module: '1.27.4', selected: 'go1.27.4', passes: true, message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      {name: 'version only in a fenced example', readme: '### Prerequisites\n\n-   Install a recent Go release.\n\n```sh\n$ go version go1.27.4\n```\n',
+        module: '1.27.4', selected: 'go1.27.4', passes: false,
+        message: 'README Prerequisites must declare the Go minimum in a Go or Golang item'},
+      // Only an item or paragraph whose subject is Go or Golang declares the
+      // minimum; other tools' versions are not declarations.
+      {name: 'version without a Go declaration does not satisfy the guard', readme: prerequisites('-   Tool X 1.27.4 or newer'),
+        module: '1.27.4', selected: 'go1.27.4', passes: false,
+        message: 'README Prerequisites must declare the Go minimum in a Go or Golang item'},
+      {name: 'Google is not a Go declaration', readme: prerequisites('-   Install Google Chrome 99.0.1'),
+        module: '1.27.4', selected: 'go1.27.4', passes: false,
+        message: 'README Prerequisites must declare the Go minimum in a Go or Golang item'},
+      {name: 'emphasised Google decoy is not a Go declaration', readme: prerequisites('-   **Google Chrome** 99.0.1'),
+        module: '1.27.4', selected: 'go1.27.4', passes: false,
+        message: 'README Prerequisites must declare the Go minimum in a Go or Golang item'},
+      {name: 'GoLand is not a Go declaration', readme: prerequisites('-   GoLand 1.27.4 or a newer patch'),
+        module: '1.27.4', selected: 'go1.27.4', passes: false,
+        message: 'README Prerequisites must declare the Go minimum in a Go or Golang item'},
+      {name: 'ordered list marker without separating space', readme: prerequisites('1.Go 1.27.4 or a newer patch'),
+        module: '1.27.4', selected: 'go1.27.4', passes: false,
+        message: 'README Prerequisites must declare the Go minimum in a Go or Golang item'},
+      // Other version-shaped tokens in the section are ignored, not fatal.
+      {name: 'other tool versions are ignored', readme: prerequisites('-   Go 1.27.4 or a newer patch\n-   CMake 3.30.5 for the container image'),
+        module: '1.27.4', selected: 'go1.27.4', passes: true, message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      {name: 'inline code versions elsewhere are ignored', readme: prerequisites('-   Go 1.27.4 or a newer patch\n-   Tested on `go1.27.5`'),
+        module: '1.27.4', selected: 'go1.27.4', passes: true, message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      {name: 'versioned download links elsewhere are ignored', readme: prerequisites('-   Go 1.27.4 or a newer patch\n-   Download <https://go.dev/dl/go1.27.5.linux-amd64.tar.gz>'),
+        module: '1.27.4', selected: 'go1.27.4', passes: true, message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      {name: 'a versioned link on the declaration line is ignored', readme: prerequisites('-   Go 1.27.4 or a newer patch <https://go.dev/dl/go1.27.5.linux-amd64.tar.gz>'),
+        module: '1.27.4', selected: 'go1.27.4', passes: true, message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      {name: 'a scheme-less versioned path is ignored', readme: prerequisites('-   Go 1.27.4 or a newer patch; see go.dev/dl/go1.27.5.linux-amd64.tar.gz'),
+        module: '1.27.4', selected: 'go1.27.4', passes: true, message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      {name: 'prose declaration without a bullet', readme: prerequisites('Go 1.27.4 or a newer patch is required.'),
+        module: '1.27.4', selected: 'go1.27.4', passes: true, message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      {name: 'three-space declaration indentation', readme: prerequisites('   - Go 1.27.4 or a newer patch'),
+        module: '1.27.4', selected: 'go1.27.4', passes: true, message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      {name: 'indented code block is not a declaration', readme: '### Prerequisites\n\nRequires Go 1.26 or newer.\n\n    Go 1.27.4\n',
+        module: '1.27.4', selected: 'go1.27.4', passes: false,
+        message: 'README Prerequisites must declare the Go minimum in a Go or Golang item'},
+      {name: 'tab-indented code block is not a declaration', readme: prerequisites('\tGo 1.27.4 or a newer patch'),
+        module: '1.27.4', selected: 'go1.27.4', passes: false,
+        message: 'README Prerequisites must declare the Go minimum in a Go or Golang item'},
+      // An ATX closing sequence renders as the same heading text.
+      {name: 'ATX closing sequence', readme: '### Prerequisites ###\n\n-   Go 1.27.4 or a newer patch\n', module: '1.27.4', selected: 'go1.27.4', passes: true,
+        message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      // The guard reads the README in text mode, which normalizes CRLF.
+      {name: 'CRLF line endings', readme: '### Prerequisites\r\n\r\n-   Go 1.27.4 or a newer patch\r\n', module: '1.27.4', selected: 'go1.27.4', passes: true,
+        message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      {name: 'automatic toolchain switching', readme: prerequisites('-   Go 1.27.4 or a newer patch'), module: '1.27.4', selected: 'go1.27.4',
+        gotoolchain: 'auto', passes: false, message: 'go env GOTOOLCHAIN auto != local; CI must not switch toolchains'},
+      // A version quoted outside the Prerequisites section must not satisfy the guard.
+      {name: 'version outside Prerequisites is ignored', readme: `# Fixture\n\n- Go 9.9.9 or a newer patch\n\n${prerequisites('-   Go 1.27.4 or a newer patch')}`,
+        module: '1.27.4', selected: 'go1.27.4', passes: true, message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      {name: 'README and module mismatch', readme: prerequisites('-   Go 1.27.4 or a newer patch'), module: '1.27.3', selected: 'go1.27.3', passes: false,
+        message: 'go.mod GoVersion 1.27.3 != documented minimum 1.27.4'},
+      {name: 'go.mod requires a newer toolchain', readme: prerequisites('-   Go 1.27.4 or a newer patch'), module: '1.27.5', selected: 'go1.27.4', passes: false,
+        listError: 'go: go.mod requires go >= 1.27.5 (running go 1.27.4; GOTOOLCHAIN=local)',
+        message: 'go list -m -f {{.GoVersion}} failed: go: go.mod requires go >= 1.27.5 (running go 1.27.4; GOTOOLCHAIN=local)'},
+      {name: 'separate toolchain override', readme: prerequisites('-   Go 1.27.4 or a newer patch'), module: '1.27.4', selected: 'go1.27.5', passes: false,
+        message: 'selected toolchain go1.27.5 != required CI minimum go1.27.4'},
+      {name: 'missing Prerequisites section', readme: '# Fixture without a prerequisite section\n', module: '1.27.4', selected: 'go1.27.4', passes: false,
+        message: 'README Prerequisites section not found'},
+      {name: 'README must be a regular file', readme: '', symlink: true, module: '1.27.4', selected: 'go1.27.4', passes: false,
+        message: 'README.md must be a regular file'},
+      {name: 'README size is bounded', readme: prerequisites('-   Go 1.27.4 or a newer patch'), oversize: true,
+        module: '1.27.4', selected: 'go1.27.4', passes: false, message: 'README.md exceeds the 1 MiB size limit'},
+      // A decoy section must not satisfy the guard while the real one is stale.
+      {name: 'duplicate Prerequisites sections', readme: `### Prerequisites\n\n-   Go 9.9.9 or newer\n\n## Quick start\n\n${prerequisites('-   Go 1.27.4 or a newer patch')}`,
+        module: '1.27.4', selected: 'go1.27.4', passes: false,
+        message: 'README must contain exactly one Prerequisites section, found 2'},
+      {name: 'Prerequisites without a Go declaration', readme: prerequisites('-   A recent Go release'), module: '1.27.4', selected: 'go1.27.4', passes: false,
+        message: 'README Prerequisites must declare the Go minimum in a Go or Golang item'},
+      {name: 'declaration without a version', readme: prerequisites('-   Go, a recent release'), module: '1.27.4', selected: 'go1.27.4', passes: false,
+        message: 'README Prerequisites must name exactly one Go version, found none'},
+      {name: 'ambiguous prerequisite versions', readme: prerequisites('-   Go 1.27.4 or a newer patch\n-   Go 1.26.10 on older hosts'),
+        module: '1.27.4', selected: 'go1.27.4', passes: false,
+        message: "README Prerequisites must name exactly one Go version, found ['1.26.10', '1.27.4']"},
+      {name: 'prerelease prerequisite', readme: prerequisites('-   Go 1.27.4rc1 or a newer patch'), module: '1.27.4', selected: 'go1.27.4', passes: false,
+        message: 'README Prerequisites names a non-release Go version 1.27.4rc1'},
+      {name: 'four-part prerequisite version', readme: prerequisites('-   Go 1.27.4.1 or a newer patch'), module: '1.27.4', selected: 'go1.27.4', passes: false,
+        message: 'README Prerequisites names a non-release Go version 1.27.4.1'},
+      // A deeper sub-heading belongs to the section; a peer heading ends it.
+      {name: 'deeper sub-heading inside Prerequisites', readme: '### Prerequisites\n\n#### Linux packages\n\n-   Go 1.27.4 or a newer patch\n',
+        module: '1.27.4', selected: 'go1.27.4', passes: true, message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      {name: 'same-level heading ends Prerequisites', readme: '### Prerequisites\n\n-   Install a recent Go release.\n\n### Compatibility\n\n-   Go 1.27.4 or a newer patch\n',
+        module: '1.27.4', selected: 'go1.27.4', passes: false,
+        message: 'README Prerequisites must declare the Go minimum in a Go or Golang item'},
+      // A level-1 heading also ends the section.
+      {name: 'version after a level-1 heading is ignored', readme: '### Prerequisites\n\n-   A recent Go release\n\n# Compatibility\n\nTested with Go 1.27.4.\n',
+        module: '1.27.4', selected: 'go1.27.4', passes: false,
+        message: 'README Prerequisites must declare the Go minimum in a Go or Golang item'},
+    ];
+    const root = path.resolve(__dirname, '../..');
+    const moduleSource = fs.readFileSync(path.join(root, 'go.mod'), 'utf8');
+    const moduleVersion = moduleSource.match(/^go (\d+\.\d+\.\d+)$/m)?.[1];
+    assert.ok(moduleVersion, 'repository go.mod must declare an exact Go version');
+    // A newer toolchain pin would stop CI from exercising the documented
+    // minimum, which the guard rejects in every job; fail here first.
+    const toolchain = moduleSource.match(/^toolchain (go\d+\.\d+\.\d+)$/m)?.[1];
+    assert.ok(!toolchain || toolchain === `go${moduleVersion}`,
+      `go.mod toolchain ${toolchain} must keep CI on the documented minimum go${moduleVersion}`);
+    const selected = toolchain ?? `go${moduleVersion}`;
+    cases.push({name: 'repository README and go.mod', repository: true,
+      module: moduleVersion, selected, passes: true,
+      message: `Verified documented minimum Go toolchain: ${selected}`});
+    for (const fixture of cases) {
+      const cwd = fixture.repository ? root : directory;
+      if (!fixture.repository) {
+        const readmePath = path.join(directory, 'README.md');
+        fs.rmSync(readmePath, {force: true});
+        if (fixture.symlink) {
+          const target = path.join(directory, 'README-target.md');
+          fs.writeFileSync(target, prerequisites('-   Go 1.27.4 or a newer patch'));
+          fs.symlinkSync(target, readmePath);
+        } else {
+          fs.writeFileSync(readmePath, fixture.readme);
+          if (fixture.oversize) fs.truncateSync(readmePath, 1024 * 1024 + 1);
+        }
+        const shadowModule = path.join(directory, 're.py');
+        fs.rmSync(shadowModule, {force: true});
+        if (fixture.shadowModule) {
+          fs.writeFileSync(shadowModule, "raise RuntimeError('checkout-local re.py was imported')\n");
+        }
+      }
+      const result = spawnSync('bash', ['-c', script('Verify documented Go toolchain')], {
+        cwd, encoding: 'utf8', env: {...process.env,
+          PATH: bin + path.delimiter + process.env.PATH,
+          FIXTURE_MODULE: fixture.module, FIXTURE_GOVERSION: fixture.selected,
+          FIXTURE_GOTOOLCHAIN: fixture.gotoolchain ?? 'local',
+          FIXTURE_GO_LIST_ERROR: fixture.listError ?? ''},
+      });
+      const output = result.stdout + result.stderr;
+      assert.equal(result.status === 0, fixture.passes, `${fixture.name}: ${output}`);
+      assert.ok(output.includes(fixture.message), `${fixture.name}: ${output}`);
+      if (fixture.listError) assert.doesNotMatch(output, /Traceback/, `${fixture.name}: ${output}`);
+    }
+    const withoutPython = path.join(directory, 'without-python');
+    fs.mkdirSync(withoutPython);
+    const missingPython = spawnSync(realBash, ['-c', script('Verify documented Go toolchain')], {
+      cwd: directory, encoding: 'utf8', env: {...process.env, PATH: withoutPython},
+    });
+    assert.equal(missingPython.status, 1, missingPython.stderr);
+    assert.match(missingPython.stderr,
+      /python3 is required for the documented Go toolchain check; install Python 3 on the runner\./);
+    assert.doesNotMatch(missingPython.stderr, /command not found|Traceback/);
+  } finally {fs.rmSync(directory, {recursive: true, force: true});}
+});
+test('workflow steps keep their keys and block scalars inside the sequence entry', () => {
+  // Node has no built-in YAML parser, so check the block structure the parser
+  // relies on: sibling keys stay under the `- name:` entry and a `run: |`
+  // body stays deeper than its key. This catches a dedented key or script.
+  assert.doesNotMatch(source, /^\t/m, 'workflow indentation must use spaces');
+  const lines = source.split('\n');
+  let steps = 0;
+  for (let index = 0; index < lines.length; index++) {
+    const entry = lines[index].match(/^( *)- (?:name|uses|run):/);
+    if (!entry) continue;
+    steps += 1;
+    const indent = entry[1].length;
+    for (let cursor = index + 1; cursor < lines.length; cursor++) {
+      const line = lines[cursor];
+      if (!line.trim() || line.trimStart().startsWith('#')) continue;
+      const leading = line.length - line.trimStart().length;
+      if (leading < indent) break; // the sequence ended
+      if (leading === indent) {
+        assert.match(line.slice(indent), /^- /,
+          `line ${cursor + 1} must start the next step instead of dedenting a key`);
+        break;
+      }
+    }
+  }
+  assert.ok(steps > 20, `expected the workflow steps, saw ${steps}`);
+  for (const match of source.matchAll(/^( *)run: \|$/gm)) {
+    const keyIndent = match[1].length;
+    const body = source.slice(match.index + match[0].length + 1).split('\n');
+    const first = body.find(line => line.trim());
+    assert.ok(first, 'run block must not be empty');
+    const bodyIndent = first.length - first.trimStart().length;
+    assert.ok(bodyIndent > keyIndent, 'run block body must be indented below its key');
+    for (const line of body) {
+      if (!line.trim()) continue;
+      const leading = line.length - line.trimStart().length;
+      if (leading <= keyIndent) break; // the block ended
+      assert.ok(leading >= bodyIndent,
+        `run block line ${JSON.stringify(line)} must keep the block indentation`);
+    }
+  }
+});
 test('trusted events send weekly to fiona, build to Linux and other tasks to any Speedle runner', () => {
   const push = context('push'), dispatch = context('workflow_dispatch');
   push.event = {sender: {type: 'User'}}; dispatch.event = {sender: {type: 'User'}};
@@ -125,6 +403,21 @@ test('identity check accepts the Speedle runners for the tasks each may run', ()
       assert.equal(result.status === 0, allowed, `${host}/${CI_TASK}: ${result.stderr}`);
     }
   }
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-runner-python-'));
+  try {
+    // Let the identity check reach its Python preflight without providing it.
+    const git = path.join(directory, 'git');
+    fs.writeFileSync(git, '#!/bin/sh\nexit 0\n');
+    fs.chmodSync(git, 0o755);
+    const result = spawnSync(realBash, ['-c', script('Verify self-hosted runner identity')], {
+      encoding: 'utf8', env: {...process.env, PATH: directory,
+        RUNNER_NAME: 'charming-speedle', RUNNER_OS: 'Linux', RUNNER_ARCH: 'X64', CI_TASK: 'lint'},
+    });
+    assert.equal(result.status, 1, result.stderr);
+    assert.match(result.stderr,
+      /python3 is required on self-hosted runners; install Python 3 before running this workflow\./);
+    assert.doesNotMatch(result.stderr, /command not found/);
+  } finally {fs.rmSync(directory, {recursive: true, force: true});}
 });
 test('task validation permits only exact enum values and treats shell metacharacters as data', () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-worker-input-'));
