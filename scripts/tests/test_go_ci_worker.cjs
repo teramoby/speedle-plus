@@ -126,12 +126,25 @@ if (args.length === 4 && args[0] === 'list' && args[1] === '-m' && args[2] === '
       {name: 'ambiguous prerequisite versions', readme: prerequisites('-   Go 1.27.4 or a newer patch\n-   Or Go 1.26.10 on older hosts'),
         module: '1.27.4', selected: 'go1.27.4', passes: false,
         message: "README Prerequisites must name exactly one Go version, found ['1.26.10', '1.27.4']"},
+      {name: 'prerelease prerequisite', readme: prerequisites('-   Go 1.27.4rc1 or a newer patch'), module: '1.27.4', selected: 'go1.27.4', passes: false,
+        message: 'README Prerequisites names a non-release Go version 1.27.4rc1'},
+      {name: 'four-part prerequisite version', readme: prerequisites('-   Go 1.27.4.1 or a newer patch'), module: '1.27.4', selected: 'go1.27.4', passes: false,
+        message: 'README Prerequisites names a non-release Go version 1.27.4.1'},
+      // A level-1 heading also ends the section.
+      {name: 'version after a level-1 heading is ignored', readme: '### Prerequisites\n\n-   A recent Go release\n\n# Compatibility\n\nTested with Go 1.27.4.\n',
+        module: '1.27.4', selected: 'go1.27.4', passes: false,
+        message: 'README Prerequisites must name exactly one Go version, found none'},
     ];
     const root = path.resolve(__dirname, '../..');
     const moduleSource = fs.readFileSync(path.join(root, 'go.mod'), 'utf8');
     const moduleVersion = moduleSource.match(/^go (\d+\.\d+\.\d+)$/m)?.[1];
     assert.ok(moduleVersion, 'repository go.mod must declare an exact Go version');
-    const selected = moduleSource.match(/^toolchain (go\d+\.\d+\.\d+)$/m)?.[1] ?? `go${moduleVersion}`;
+    // A newer toolchain pin would stop CI from exercising the documented
+    // minimum, which the guard rejects in every job; fail here first.
+    const toolchain = moduleSource.match(/^toolchain (go\d+\.\d+\.\d+)$/m)?.[1];
+    assert.ok(!toolchain || toolchain === `go${moduleVersion}`,
+      `go.mod toolchain ${toolchain} must keep CI on the documented minimum go${moduleVersion}`);
+    const selected = toolchain ?? `go${moduleVersion}`;
     cases.push({name: 'repository README and go.mod', readme: fs.readFileSync(path.join(root, 'README.md'), 'utf8'),
       module: moduleVersion, selected, passes: true,
       message: `Verified documented minimum Go toolchain: ${selected}`});

@@ -89,14 +89,22 @@ jobs:
           def documented_minimum(text):
               # Scope the search to the Prerequisites section so another Go
               # version mentioned elsewhere in README cannot satisfy the guard,
-              # and accept any wording that names one Go x.y.z there.
-              headings = list(re.finditer(r'^#{2,6}[ \t]+(.+?)[ \t]*$', text, re.MULTILINE))
+              # and accept any wording that names one release Go version there.
+              headings = list(re.finditer(r'^#{1,6}[ \t]+(.+?)[ \t]*$', text, re.MULTILINE))
               start = next((h for h in headings if h.group(1) == 'Prerequisites'), None)
               if start is None:
                   raise SystemExit('README Prerequisites section not found')
               end = next((h.start() for h in headings if h.start() > start.end()), len(text))
-              versions = set(re.findall(r'\bGo\b[^0-9\n]{0,20}(\d+\.\d+\.\d+)',
-                                        text[start.end():end]))
+              versions = set()
+              for token in re.findall(r'\bGo\b[^0-9\n]{0,20}(\d+(?:\.\d+){2,}[0-9A-Za-z.+_-]*)',
+                                      text[start.end():end]):
+                  release = token.rstrip('.')  # sentence period
+                  if release.endswith('+'):  # "1.27.4+" means "or newer"
+                      release = release[:-1]
+                  if not re.fullmatch(r'\d+\.\d+\.\d+', release):
+                      raise SystemExit(
+                          f'README Prerequisites names a non-release Go version {token.rstrip(".")}')
+                  versions.add(release)
               if len(versions) != 1:
                   raise SystemExit('README Prerequisites must name exactly one Go version,'
                                    f' found {sorted(versions) or "none"}')
