@@ -34,12 +34,13 @@ function run(overrides = {}) {
   };
 }
 
-function pullRequest(labels = []) {
+function pullRequest(labels = [], overrides = {}) {
   return {
     number: 590,
-    base: {sha: base},
+    base: {sha: base, ref: 'master', repo: {default_branch: 'master'}},
     head: {sha: head},
     labels: labels.map(name => ({name})),
+    ...overrides,
   };
 }
 
@@ -146,6 +147,25 @@ test('a renamed workflow is rejected instead of publishing a route success', () 
   });
   assert.equal(result.status.state, 'failure');
   assert.equal(result.status.description, 'Unexpected CI workflow name');
+});
+
+test('a pull request based on another branch fails closed without reading a classifier', () => {
+  const pr = pullRequest([], {base: {sha: base, ref: 'release', repo: {default_branch: 'master'}}});
+  const fixture = fixtureApi({run: run(), pr, files: ['docs/guide.md'], jobs: jobs({build: true})});
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.status.state, 'failure');
+  assert.equal(result.status.description, 'Pull request base is not the default branch');
+  assert.equal(fixture.calls.some(call => call.endpoint.includes('/compare/')), false);
+  assert.equal(fixture.calls.some(call => call.endpoint.includes('/contents/')), false);
+  const writes = fixture.calls.filter(call => call.options.method === 'POST');
+  assert.equal(writes.length, 1);
+  assert.equal(writes[0].options.input.state, 'failure');
+});
+
+test('the gate subscription matches the name of the CI workflow', () => {
+  const ci = fs.readFileSync(path.join(root, '.github/workflows/ci.yml'), 'utf8');
+  const name = /^name: (.+)$/m.exec(ci)?.[1].trim();
+  assert.equal(name, gate.CI_WORKFLOW_NAME, 'renaming the CI workflow stops the gate from running');
 });
 
 test('a docs-only pull request requires quick and build but no Go lint or CI scripts', () => {

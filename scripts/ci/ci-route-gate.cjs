@@ -81,6 +81,12 @@ function preflight(run, pr, jobs) {
   if (run.event !== 'pull_request') return 'CI run is not a pull request run';
   if (run.status !== 'completed') return 'CI run is not completed';
   if (run.head_sha !== pr?.head?.sha) return 'CI run does not match the pull request head';
+  // A pull request to another branch would let that branch's copy of the
+  // classifier decide the routes, so only the default branch is a trusted
+  // classification source.
+  if (!pr?.base?.ref || pr.base.ref !== pr?.base?.repo?.default_branch) {
+    return 'Pull request base is not the default branch';
+  }
   if (ignoredRun(run, jobs)) return {ignored: true, message: 'Ignored CI label event'};
   return null;
 }
