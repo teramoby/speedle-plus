@@ -545,9 +545,18 @@ function liveRunners() {
   }
   return runners;
 }
-test('the runner inventory matches the live registrations when a token is available', {
-  skip: process.env.GH_TOKEN || process.env.GITHUB_TOKEN || process.env.SPEEDLE_RUNNERS_LIVE === '1'
-    ? false : 'set GH_TOKEN (or SPEEDLE_RUNNERS_LIVE=1 with gh signed in) to compare with the runner API',
+function liveInventoryRequested(env = process.env) {
+  return env.SPEEDLE_RUNNERS_LIVE === '1';
+}
+test('ambient GitHub tokens do not enable the live runner inventory comparison', () => {
+  for (const env of [{}, {GH_TOKEN: 'fixture'}, {GITHUB_TOKEN: 'fixture'},
+    {GH_TOKEN: 'fixture', GITHUB_TOKEN: 'fixture', SPEEDLE_RUNNERS_LIVE: '0'}]) {
+    assert.equal(liveInventoryRequested(env), false);
+  }
+  assert.equal(liveInventoryRequested({SPEEDLE_RUNNERS_LIVE: '1'}), true);
+});
+test('the runner inventory matches the live registrations with explicit opt-in', {
+  skip: liveInventoryRequested() ? false : 'set SPEEDLE_RUNNERS_LIVE=1 to compare with the runner API through gh',
 }, () => {
   assertInventoryMatchesLive(liveRunners());
 });

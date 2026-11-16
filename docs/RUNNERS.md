@@ -30,9 +30,10 @@ Remove an identity from the workflow identity checks only after its
 registration no longer carries any scheduling label; until then a job routed to
 that label still queues there and fails at the identity check before it starts.
 The routing regression derives the scheduling labels from every workflow
-`runs-on` and requires its runner inventory to cover them. With `GH_TOKEN` set
-it also compares that inventory with the registration API; without a token the
-live comparison is skipped, and a registration change requires refreshing the
+`runs-on` and requires its runner inventory to cover them. Setting
+`SPEEDLE_RUNNERS_LIVE=1` also compares that inventory with the registration API
+through `gh`; otherwise the live comparison is skipped, even when `GH_TOKEN` or
+`GITHUB_TOKEN` is present. A registration change requires refreshing the
 snapshot from the two `gh api` commands in that test.
 Fixed-port tests take the host test lock
 (`/tmp/speedle-plus-test-services.lock`), so registrations on the same physical
@@ -41,9 +42,10 @@ work directory.
 
 The `speedle-control` label is carried by the two Linux runners,
 `charming-speedle-2` and `donkey-speedle`. ReviewBot's dependency merge waiter
-selects `[self-hosted, Linux, X64, speedle-control]`, so a waiting merge
-occupies one Linux runner while the other and `fiona` can take the CI jobs it
-waits for.
+selects `[self-hosted, Linux, X64, speedle-control]`. Its shared job concurrency
+group permits only one running waiter, so waiters cannot occupy both Linux
+runners while their CI jobs are queued. See [ReviewBot](REVIEWBOT.md) for the
+pending-waiter replacement and rerun behavior.
 
 The group also restricts access to these exact default-branch workflows:
 

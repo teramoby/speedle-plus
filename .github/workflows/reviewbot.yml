@@ -575,7 +575,8 @@ jobs:
 
   automerge-dependabot:
     name: Auto-merge safe dependency update
-    # Serialize waiters so at least one Linux runner remains available for CI.
+    # Keep at most one waiter running. GitHub retains only the newest pending
+    # waiter; docs/REVIEWBOT.md documents the rerun for a cancelled pending waiter.
     needs: [review, publish]
     if: >-
       always() && !cancelled() && needs.review.result == 'success' &&

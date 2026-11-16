@@ -30,10 +30,13 @@ unprivileged inline pointer workflow remain hosted.
 See [runner configuration](RUNNERS.md).
 
 The dependency auto-merge waiter uses `speedle-control`, which both Linux
-runners carry. Its shared, non-cancelling job concurrency group permits only
-one waiter at a time across dependency PRs, leaving at least one Linux runner
-available for the CI jobs it waits for. All review and CI merge gates remain
-required.
+runners carry. Its shared job concurrency group permits only one running waiter
+across dependency PRs, and `cancel-in-progress: false` protects that active
+waiter, so waiters cannot occupy both Linux runners while their CI jobs are
+queued. GitHub retains only the newest pending waiter in the group: when another
+waiter enters a full group, the older pending waiter is cancelled. A human must
+rerun that cancelled workflow if its auto-merge is still wanted. All review and
+CI merge gates remain required.
 
 ## Comment commands
 

@@ -143,7 +143,7 @@ test('job-level condition requires safe verdict and same-repository Dependabot',
   assert.match(job,/needs\.review\.outputs\.safe_to_merge == 'true'/);
   assert.match(job,/needs: \[review, publish\]/);
 });
-test('dependency auto-merge waiters share a non-cancelling job concurrency group',()=>{
+test('dependency auto-merge concurrency protects the running waiter',()=>{
   const start=workflow.indexOf('  automerge-dependabot:');
   const job=workflow.slice(start,workflow.indexOf('    steps:',start));
   assert.match(job,/^    concurrency:\n      group: reviewbot-dependabot-automerge\n      cancel-in-progress: false$/m);
