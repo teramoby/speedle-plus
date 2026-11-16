@@ -83,6 +83,10 @@ jobs:
             echo 'no CI test suites discovered' >&2
             exit 1
           fi
+          if [[ ! -f scripts/tests/test_ci_scope.cjs ]]; then
+            echo 'CI scope guard suite scripts/tests/test_ci_scope.cjs is missing' >&2
+            exit 1
+          fi
           node --test scripts/tests/test_ci_scope.cjs
           suites=()
           for suite in "${discovered[@]}"; do

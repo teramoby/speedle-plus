@@ -158,6 +158,8 @@ test('CI discovers every script suite, isolates Docker config and propagates fai
     const temporary = path.join(dir, 'temp dir');
     fs.mkdirSync(temporary);
     fs.mkdirSync(path.join(dir, 'scripts/tests'), {recursive: true});
+    // This deletion canary is intentionally coupled to the current layout:
+    // update it in the same change as any suite rename, split or consolidation.
     const requiredSuites = [
       'test_ci_scope.cjs',
       'test_go_ci_worker.cjs',
@@ -267,6 +269,15 @@ process.exit(process.env.FAIL_TOOL === ${JSON.stringify(tool)} && invocation ===
     const empty = execute();
     assert.equal(empty.status, 1, empty.stderr);
     assert.match(empty.stderr, /no CI test suites discovered/);
+    verifyCalls(calls(), []);
+
+    // Another suite must not hide a missing inventory guard. Its dedicated
+    // diagnostic is emitted before either runner is invoked.
+    fs.writeFileSync(path.join(dir, 'scripts/tests/test_future.cjs'), '');
+    reset();
+    const missingInventory = execute();
+    assert.equal(missingInventory.status, 1, missingInventory.stderr);
+    assert.match(missingInventory.stderr, /CI scope guard suite scripts\/tests\/test_ci_scope\.cjs is missing/);
     verifyCalls(calls(), []);
   } finally {fs.rmSync(dir, {recursive: true, force: true});}
 });
