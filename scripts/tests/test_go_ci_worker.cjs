@@ -338,7 +338,7 @@ if (args.length === 4 && args[0] === 'list' && args[1] === '-m' && args[2] === '
 if [ "$1" = "-I" ] && [ "$2" = "-c" ]; then
   code=$3
   shift 3
-  exec ${realPython} -I -c "import os,sys; sys.path.insert(0, os.environ['UNSAFE_PYTHON_PATH']); \${code}" "$@"
+  exec ${realPython} -I -c "import os,sys; sys.path.insert(0, os.environ['UNSAFE_PYTHON_PATH']); exec(sys.argv[1])" "$code" "$@"
 fi
 exit 0
 `);
@@ -352,6 +352,26 @@ exit 0
       assert.match(unsafe.stderr,
         /python3 with safe -I support is required for isolated inline Python; install a Python 3 whose -I excludes the checkout and working directory from sys\.path\./);
       assert.doesNotMatch(unsafe.stderr, /Traceback/);
+    }
+    // Optimization strips assert statements. Explicit sys.exit guards must
+    // still reject an optimizing wrapper, whether or not it also drops -I.
+    const optimizingIsolation = path.join(directory, 'optimizing-isolation');
+    fs.mkdirSync(optimizingIsolation);
+    const optimizingPython = path.join(optimizingIsolation, 'python3');
+    fs.writeFileSync(optimizingPython, `#!/bin/sh
+if [ "\${DROP_I:-0}" = 1 ] && [ "$1" = "-I" ]; then shift; fi
+exec ${realPython} -O "$@"
+`);
+    fs.chmodSync(optimizingPython, 0o755);
+    for (const dropIsolation of [false, true]) {
+      const optimized = spawnSync(realBash, ['-c', script('Verify documented Go toolchain')], {
+        cwd: directory, encoding: 'utf8', env: {...process.env, PATH: optimizingIsolation,
+          DROP_I: dropIsolation ? '1' : '0'},
+      });
+      assert.equal(optimized.status, 1, optimized.stderr);
+      assert.match(optimized.stderr,
+        /python3 with safe -I support is required for isolated inline Python; install a Python 3 whose -I excludes the checkout and working directory from sys\.path\./);
+      assert.doesNotMatch(optimized.stderr, /Traceback/);
     }
   } finally {fs.rmSync(directory, {recursive: true, force: true});}
 });

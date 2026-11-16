@@ -1,25 +1,34 @@
-/* Guard the reviewed inline-Python inventory in .github/workflows.
+/* Guard the reviewed inline-Python inventory in .github/workflows and scripts/ci.
  *
  * This is deliberately a line-oriented inventory, not a shell or YAML parser.
- * The runtime guarantee is python3 -I plus two statements in every inline
- * program: sys.flags.isolated must be true, and neither the checkout nor the
- * current directory may be on sys.path. Module invocations only require -I.
- * Script files execute their own path on purpose and are outside this guard.
+ * The runtime guarantee is python3 -I plus two statements at the top of every
+ * inline program: sys.flags.isolated must be true and optimization must be
+ * off, and neither the checkout, the current directory nor an empty string may
+ * be on sys.path. Those statements exit non-zero instead of using assert,
+ * which python -O strips. Module invocations only require -I.
  *
- * Every known -c, -m and heredoc invocation is listed below. A new inline-shaped
- * Python invocation fails the inventory assertion so a reviewer must add it
- * explicitly. Backslash continuations are folded, and -c assertions are read
- * only from the single-quoted payload shape used by the reviewed invocations.
- * Comments, printed examples and other commands' heredoc bodies are ignored;
- * this test does not attempt to classify arbitrary shell grammar. */
+ * Every known -c, -m and heredoc invocation in .github/workflows/*.yml and
+ * scripts/ci/*.sh is listed below. A new inline-shaped Python invocation fails
+ * the inventory assertion so a reviewer must add it explicitly. Backslash
+ * continuations are folded, and -c guards are read only from a single-quoted
+ * payload on the invocation line; a multi-line or otherwise unparseable
+ * payload fails closed. Comments, printed examples, other commands' heredoc
+ * bodies and Python script files (which execute their own path) are outside
+ * this inventory. Shell scripts outside scripts/ci are outside this change. */
 const assert = require('node:assert/strict');
+const {spawnSync} = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
 
-const workflows = path.resolve(__dirname, '../../.github/workflows');
-const isolationAssertion = 'import sys; assert sys.flags.isolated';
-const pathAssertion = 'import os; assert not any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p is not None)';
+const repo = path.resolve(__dirname, '../..');
+const sourceRoots = [
+  {directory: path.join(repo, '.github/workflows'), pattern: /\.ya?ml$/},
+  {directory: path.join(repo, 'scripts/ci'), pattern: /\.sh$/},
+];
+const isolationGuard = 'import sys; sys.flags.isolated or sys.exit("run with python3 -I"); sys.flags.optimize == 0 or sys.exit("python3 inline checks require optimization to be disabled")';
+const pathGuard = 'import os; unsafe = any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p is not None); unsafe and sys.exit("python3 -I must exclude the checkout and working directory from sys.path")';
+const guard = `${isolationGuard}; ${pathGuard}`;
 const interpreter = String.raw`\bpython(?:3(?:\.[0-9]+)?)?\b`;
 const commandPattern = new RegExp(String.raw`${interpreter}(?:\s+-[A-Za-z]+)*?\s+-[A-Za-z]*c(?=\s|['"]|$)`);
 const modulePattern = new RegExp(String.raw`${interpreter}(?:\s+-[A-Za-z]+)*?\s+-[A-Za-z]*m(?=\s|['"]|$)`);
@@ -28,15 +37,20 @@ const isolatedPattern = new RegExp(String.raw`${interpreter}\s+-I(?=\s|$)`);
 const printedExample = /^(?:-\s*)?(?:run:\s*)?(?:echo|printf)\b/;
 const pipedPython = /\|\s*python(?:3(?:\.[0-9]+)?)?\b/;
 
-function commandAssertsSafePath(payload) {
-  if (!payload.startsWith(isolationAssertion)) return false;
-  const rest = payload.slice(isolationAssertion.length);
-  return rest.startsWith(`; ${pathAssertion}`) ||
-    rest.startsWith(`, "run with python3 -I"; ${pathAssertion}`) ||
-    rest.startsWith(`, 'run with python3 -I'; ${pathAssertion}`);
+function commandGuarded(payload) {
+  return payload === guard || payload.startsWith(`${guard}; `);
 }
 
-function inspectWorkflow(file, source) {
+function sources() {
+  return sourceRoots.flatMap(({directory, pattern}) => fs.readdirSync(directory)
+    .filter(name => pattern.test(name)).sort()
+    .map(name => {
+      const absolute = path.join(directory, name);
+      return [path.relative(repo, absolute), absolute];
+    }));
+}
+
+function inspectSource(file, source) {
   const lines = source.split('\n');
   const invocations = [];
   let heredoc = null;
@@ -66,12 +80,9 @@ function inspectWorkflow(file, source) {
       invocations.push({
         file, line: start + 1, kind,
         isolated: isolatedPattern.test(line),
-        asserted: kind === 'module' || (kind === 'command'
-          ? payload.startsWith(isolationAssertion)
-          : lines[index + 1]?.trim().startsWith(isolationAssertion) ?? false),
-        pathSafe: kind === 'module' || (kind === 'command'
-          ? commandAssertsSafePath(payload)
-          : lines[index + 2]?.trim().startsWith(pathAssertion) ?? false),
+        guarded: kind === 'module' || (kind === 'command'
+          ? commandGuarded(payload)
+          : lines[index + 1]?.trim() === isolationGuard && lines[index + 2]?.trim() === pathGuard),
       });
     }
     // Skip data heredocs as well as Python ones. This small delimiter tracker
@@ -92,41 +103,48 @@ function assertInventory(actual, expected) {
   assert.deepEqual(remaining, [], 'unexpected inline Python invocation; review it and update the explicit inventory');
 }
 
-test('the explicit workflow inline-Python inventory is isolated and path-safe', () => {
-  const files = fs.readdirSync(workflows).filter(name => /\.ya?ml$/.test(name)).sort();
-  assert.ok(files.length > 0, 'no workflows discovered');
-  const invocations = files.flatMap(file => inspectWorkflow(file, fs.readFileSync(path.join(workflows, file), 'utf8')));
-  assert.equal(invocations.length, 13, 'discovered invocation count must match the reviewed inventory');
+test('the explicit workflow and CI-script inline-Python inventory is isolated and guarded', () => {
+  const files = sources();
+  assert.ok(files.length > 0, 'no sources discovered');
+  const invocations = files.flatMap(([file, absolute]) => inspectSource(file, fs.readFileSync(absolute, 'utf8')));
+  assert.equal(invocations.length, 21, 'discovered invocation count must match the reviewed inventory');
   assert.deepEqual(invocations.filter(invocation => !invocation.isolated), []);
-  assert.deepEqual(invocations.filter(invocation => !invocation.asserted), []);
-  assert.deepEqual(invocations.filter(invocation => !invocation.pathSafe), []);
+  assert.deepEqual(invocations.filter(invocation => !invocation.guarded), []);
 
   assertInventory(invocations, [
-    ['ci.yml', 'module'],
-    ['ci.yml', 'stdin'],
-    ['go-ci-worker.yml', 'command'],
-    ['go-ci-worker.yml', 'command'],
-    ['go-ci-worker.yml', 'stdin'],
-    ['go-ci-worker.yml', 'stdin'],
-    ['go-ci-worker.yml', 'stdin'],
-    ['go-ci-worker.yml', 'stdin'],
-    ['image-smoke.yml', 'stdin'],
-    ['mongodb-nightly-validation.yml', 'command'],
-    ['mongodb-nightly-validation.yml', 'command'],
-    ['mongodb-nightly-validation.yml', 'command'],
-    ['mongodb-nightly-validation.yml', 'stdin'],
+    ['.github/workflows/ci.yml', 'module'],
+    ['.github/workflows/ci.yml', 'stdin'],
+    ['.github/workflows/go-ci-worker.yml', 'command'],
+    ['.github/workflows/go-ci-worker.yml', 'command'],
+    ['.github/workflows/go-ci-worker.yml', 'stdin'],
+    ['.github/workflows/go-ci-worker.yml', 'stdin'],
+    ['.github/workflows/go-ci-worker.yml', 'stdin'],
+    ['.github/workflows/go-ci-worker.yml', 'stdin'],
+    ['.github/workflows/image-smoke.yml', 'stdin'],
+    ['.github/workflows/mongodb-nightly-validation.yml', 'command'],
+    ['.github/workflows/mongodb-nightly-validation.yml', 'command'],
+    ['.github/workflows/mongodb-nightly-validation.yml', 'command'],
+    ['.github/workflows/mongodb-nightly-validation.yml', 'stdin'],
+    ['scripts/ci/condition-conformance.sh', 'module'],
+    ['scripts/ci/run-go-tests.sh', 'command'],
+    ['scripts/ci/run-go-tests.sh', 'command'],
+    ['scripts/ci/run-go-tests.sh', 'stdin'],
+    ['scripts/ci/run-go-tests.sh', 'module'],
+    ['scripts/ci/run-go-tests.sh', 'module'],
+    ['scripts/ci/run-go-tests.sh', 'module'],
+    ['scripts/ci/validate-mongodb.sh', 'stdin'],
   ]);
 });
 
 test('the inventory recognizes inline forms and ignores files, examples and data heredocs', () => {
   const source = [
-    `python3 -I -c '${isolationAssertion}; ${pathAssertion}; print(1)'`,
+    `python3 -I -c '${guard}; print(1)'`,
     'python3 -I \\',
-    `-c '${isolationAssertion}; ${pathAssertion}; print(2)'`,
+    `-c '${guard}; print(2)'`,
     'python3.12 -I -m unittest discover',
     "python -I - <<'PY'",
-    isolationAssertion,
-    pathAssertion,
+    isolationGuard,
+    pathGuard,
     "print('stdin')",
     'PY',
     'python3 scripts/ci/test_report.py -c',
@@ -137,33 +155,44 @@ test('the inventory recognizes inline forms and ignores files, examples and data
     "python3 -c 'heredoc data, not a command'",
     'DATA',
   ].join('\n');
-  assert.deepEqual(inspectWorkflow('fixture.yml', source).map(({kind, isolated, asserted, pathSafe}) =>
-    ({kind, isolated, asserted, pathSafe})), [
-    {kind: 'command', isolated: true, asserted: true, pathSafe: true},
-    {kind: 'command', isolated: true, asserted: true, pathSafe: true},
-    {kind: 'module', isolated: true, asserted: true, pathSafe: true},
-    {kind: 'stdin', isolated: true, asserted: true, pathSafe: true},
+  assert.deepEqual(inspectSource('scripts/ci/fixture.sh', source)
+    .map(({kind, isolated, guarded}) => ({kind, isolated, guarded})), [
+    {kind: 'command', isolated: true, guarded: true},
+    {kind: 'command', isolated: true, guarded: true},
+    {kind: 'module', isolated: true, guarded: true},
+    {kind: 'stdin', isolated: true, guarded: true},
   ]);
 });
 
-test('missing runtime assertions and unlisted invocations fail', () => {
-  const unsafe = inspectWorkflow('fixture.yml', [
+test('missing guards, unparseable -c payloads and unlisted invocations fail', () => {
+  const unsafe = inspectSource('fixture.yml', [
     "python3 -c 'print(1)'",
-    `python3 -I -c '${isolationAssertion}; print(1)'`,
-    `python3 -I -c 'print(1)' # ${isolationAssertion}; ${pathAssertion}`,
+    `python3 -I -c '${isolationGuard}; print(1)'`,
+    `python3 -I -c 'print(1)' # ${guard}`,
+    "python3 -I -c 'import sys",
+    "print(1)'",
     "python3 -I - <<'PY'",
-    isolationAssertion,
+    isolationGuard,
     "print('stdin')",
     'PY',
     "printf 'print(1)' | python3 -I -",
   ].join('\n'));
-  assert.deepEqual(unsafe.map(({kind, isolated, asserted, pathSafe}) => ({kind, isolated, asserted, pathSafe})), [
-    {kind: 'command', isolated: false, asserted: false, pathSafe: false},
-    {kind: 'command', isolated: true, asserted: true, pathSafe: false},
-    {kind: 'command', isolated: true, asserted: false, pathSafe: false},
-    {kind: 'stdin', isolated: true, asserted: true, pathSafe: false},
-    {kind: 'stdin', isolated: true, asserted: false, pathSafe: false},
+  assert.deepEqual(unsafe.map(({kind, isolated, guarded}) => ({kind, isolated, guarded})), [
+    {kind: 'command', isolated: false, guarded: false},
+    {kind: 'command', isolated: true, guarded: false},
+    {kind: 'command', isolated: true, guarded: false},
+    {kind: 'command', isolated: true, guarded: false},
+    {kind: 'stdin', isolated: true, guarded: false},
+    {kind: 'stdin', isolated: true, guarded: false},
   ]);
   assert.throws(() => assertInventory(unsafe, []), /unexpected inline Python invocation/);
   assert.throws(() => assertInventory([], [['fixture.yml', 'command']]), /missing expected command invocation/);
+});
+
+test('the runtime guard exits non-zero on an optimizing interpreter', () => {
+  const isolated = spawnSync('python3', ['-I', '-c', guard], {encoding: 'utf8'});
+  assert.equal(isolated.status, 0, isolated.stderr);
+  const optimized = spawnSync('python3', ['-I', '-O', '-c', guard], {encoding: 'utf8'});
+  assert.notEqual(optimized.status, 0);
+  assert.match(optimized.stderr, /python3 inline checks require optimization to be disabled/);
 });
