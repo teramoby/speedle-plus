@@ -323,8 +323,36 @@ if (args.length === 4 && args[0] === 'list' && args[1] === '-m' && args[2] === '
     });
     assert.equal(noIsolation.status, 1, noIsolation.stderr);
     assert.match(noIsolation.stderr,
-      /python3 with -I support is required for isolated inline Python; install Python 3\.4 or newer on the runner\./);
+      /python3 with safe -I support is required for isolated inline Python; install a Python 3 whose -I excludes the checkout and working directory from sys\.path\./);
     assert.doesNotMatch(noIsolation.stderr, /Traceback/);
+    // Accepting -I and setting its flag is insufficient if the interpreter
+    // leaves either protected location importable. Exercise each independently.
+    const discoveredPython = spawnSync('python3', ['-I', '-c', 'import sys; print(sys.executable)'], {encoding: 'utf8'});
+    assert.equal(discoveredPython.status, 0, discoveredPython.stderr);
+    const realPython = discoveredPython.stdout.trim();
+    assert.ok(realPython, 'the test interpreter must report its executable path');
+    const unsafeIsolation = path.join(directory, 'unsafe-isolation');
+    fs.mkdirSync(unsafeIsolation);
+    const unsafePython = path.join(unsafeIsolation, 'python3');
+    fs.writeFileSync(unsafePython, `#!/bin/sh
+if [ "$1" = "-I" ] && [ "$2" = "-c" ]; then
+  code=$3
+  shift 3
+  exec ${realPython} -I -c "import os,sys; sys.path.insert(0, os.environ['UNSAFE_PYTHON_PATH']); \${code}" "$@"
+fi
+exit 0
+`);
+    fs.chmodSync(unsafePython, 0o755);
+    for (const unsafePath of [fs.realpathSync(directory), path.join(directory, 'checkout')]) {
+      const unsafe = spawnSync(realBash, ['-c', script('Verify documented Go toolchain')], {
+        cwd: directory, encoding: 'utf8', env: {...process.env, PATH: unsafeIsolation,
+          GITHUB_WORKSPACE: path.join(directory, 'checkout'), UNSAFE_PYTHON_PATH: unsafePath},
+      });
+      assert.equal(unsafe.status, 1, unsafe.stderr);
+      assert.match(unsafe.stderr,
+        /python3 with safe -I support is required for isolated inline Python; install a Python 3 whose -I excludes the checkout and working directory from sys\.path\./);
+      assert.doesNotMatch(unsafe.stderr, /Traceback/);
+    }
   } finally {fs.rmSync(directory, {recursive: true, force: true});}
 });
 test('workflow steps keep their keys and block scalars inside the sequence entry', () => {
@@ -429,14 +457,14 @@ test('identity check accepts the Speedle runners for the tasks each may run', ()
     assert.match(result.stderr,
       /python3 is required on self-hosted runners; install Python 3 before running this workflow./);
     assert.doesNotMatch(result.stderr, /command not found/);
-    // An interpreter that rejects -P fails closed with the version message.
+    // An interpreter that rejects -I fails closed with the preflight message.
     const python = path.join(directory, 'python3');
-    fs.writeFileSync(python, '#!/bin/sh\necho "Unknown option: -P" >&2\nexit 2\n');
+    fs.writeFileSync(python, '#!/bin/sh\necho "Unknown option: -I" >&2\nexit 2\n');
     fs.chmodSync(python, 0o755);
     const oldPython = spawnSync(realBash, ['-c', script('Verify self-hosted runner identity')], {encoding: 'utf8', env: environment});
     assert.equal(oldPython.status, 1, oldPython.stderr);
     assert.match(oldPython.stderr,
-      /python3 with -I support is required for isolated inline Python; install Python 3\.4 or newer on the runner\./);
+      /python3 with safe -I support is required for isolated inline Python; install a Python 3 whose -I excludes the checkout and working directory from sys\.path\./);
     assert.doesNotMatch(oldPython.stderr, /command not found|Traceback/);
   } finally {fs.rmSync(directory, {recursive: true, force: true});}
 });

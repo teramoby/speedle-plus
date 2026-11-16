@@ -66,8 +66,8 @@ jobs:
             exit 1
           fi
           # Fail closed if this python3 cannot run inline code with -I.
-          if ! python3 -I -c 'import sys; assert sys.flags.isolated, "run with python3 -I"' >/dev/null 2>&1; then
-            echo 'python3 with -I support is required for isolated inline Python; install Python 3.4 or newer on the runner.' >&2
+          if ! python3 -I -c 'import sys; assert sys.flags.isolated, "run with python3 -I"; import os; assert not any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p), "python3 -I must exclude the checkout and working directory from sys.path"' >/dev/null 2>&1; then
+            echo 'python3 with safe -I support is required for isolated inline Python; install a Python 3 whose -I excludes the checkout and working directory from sys.path.' >&2
             exit 1
           fi
           echo "Using runner ${RUNNER_NAME} (${RUNNER_OS}/${RUNNER_ARCH})."
@@ -100,8 +100,8 @@ jobs:
             exit 1
           fi
           # Fail closed if this python3 cannot run inline code with -I.
-          if ! python3 -I -c 'import sys; assert sys.flags.isolated, "run with python3 -I"' >/dev/null 2>&1; then
-            echo 'python3 with -I support is required for isolated inline Python; install Python 3.4 or newer on the runner.' >&2
+          if ! python3 -I -c 'import sys; assert sys.flags.isolated, "run with python3 -I"; import os; assert not any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p), "python3 -I must exclude the checkout and working directory from sys.path"' >/dev/null 2>&1; then
+            echo 'python3 with safe -I support is required for isolated inline Python; install a Python 3 whose -I excludes the checkout and working directory from sys.path.' >&2
             exit 1
           fi
           python3 -I - <<'PYTHON'

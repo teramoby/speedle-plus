@@ -6,9 +6,9 @@
  * (-m) invocations must pass -I as well but cannot carry the inline assertion,
  * because their code comes from the module. Script files, --version and
  * --help resolve code through sys.path on purpose and are outside this guard.
- * -I keeps the checkout off sys.path for that code only when the interpreter
- * also applies the safe path (Python 3.11+); older interpreters parse -I but
- * keep the working directory on sys.path.
+ * For -c and stdin code, -I also keeps the working directory off sys.path;
+ * self-hosted preflights assert that and the checkout's absence rather than
+ * assuming a version.
  *
  * The workflow parser covers block-style steps, block scalars, comments and
  * heredocs. Anything else it cannot read (flow-style mappings, anchors or
@@ -377,11 +377,16 @@ function hasInlinePythonArguments(command, index) {
 
 function inspectCommand(command, findings, depth) {
   const prefixes = new Set(['if', 'elif', 'while', 'until', 'then', 'else', 'do', '!']);
+  const dataCommands = new Set(['echo', 'printf', 'grep']);
   const optionArguments = {
     env: new Set(['-u', '--unset', '-C', '--chdir', '-S', '--split-string']),
     sudo: new Set(['-u', '--user', '-g', '--group', '-h', '--host', '-p', '--prompt', '-C', '-T', '-t', '-D', '-R']),
+    exec: new Set(['-a']),
+    timeout: new Set(['-k', '--kill-after', '-s', '--signal']),
+    xargs: new Set(['-a', '--arg-file', '-d', '--delimiter', '-E', '-I', '-L', '-n', '--max-args', '-P', '--max-procs', '-s', '--max-chars']),
   };
   let wrapper = '';
+  let timeoutDuration = false;
   for (let index = 0; index < command.length;) {
     const length = redirectLength(command, index);
     if (length) {index += length; continue;}
@@ -393,6 +398,7 @@ function inspectCommand(command, findings, depth) {
     if (wrapper && (value === '-v' || value === '-V') && wrapper === 'command') return;
     if (wrapper && /^[A-Za-z_][A-Za-z0-9_]*=/.test(value)) {index++; continue;}
     if (wrapper && value.startsWith('-')) {index += optionArguments[wrapper]?.has(value) ? 2 : 1; continue;}
+    if (wrapper === 'timeout' && timeoutDuration) {timeoutDuration = false; index++; continue;}
     // An indirected command with inline-Python arguments could hide an
     // interpreter; fail closed instead of assuming it is not Python.
     if (/[$`]/.test(value) && hasInlinePythonArguments(command, index)) {
@@ -401,7 +407,20 @@ function inspectCommand(command, findings, depth) {
     }
     if (/^python(?:3(?:\.[0-9]+)?)?$/.test(name)) {inspectPython(command, index, findings); return;}
     if (name === 'bash' || name === 'sh') {inspectShell(command, index, findings, depth); return;}
-    if (['env', 'sudo', 'nohup', 'command', 'time'].includes(name)) {wrapper = name; index++; continue;}
+    // These commands only print or search their arguments. A Python example in
+    // their data is not executed; loop headers likewise contain data words.
+    if (dataCommands.has(name) || name === 'for') return;
+    if (['env', 'sudo', 'nohup', 'command', 'time', 'exec', 'timeout', 'xargs'].includes(name)) {
+      wrapper = name;
+      timeoutDuration = name === 'timeout';
+      index++;
+      continue;
+    }
+    // Do not silently skip an interpreter behind a shell prefix this parser
+    // does not know, even when the eventual Python invocation runs a file.
+    const hidden = command.slice(index + 1).find(later => later.type === 'word' &&
+      /^python(?:3(?:\.[0-9]+)?)?$/.test(later.value.slice(later.value.lastIndexOf('/') + 1)));
+    if (hidden) findings.push({line: hidden.line, kind: 'unsupported', isolated: false, asserted: false});
     return;
   }
 }
@@ -525,9 +544,37 @@ test('the guard covers interpreter spellings, paths, wrappers and heredoc forms'
   ]);
 });
 
+test('execution wrappers are parsed and unknown Python prefixes fail closed', () => {
+  const assertLine = 'import sys; assert sys.flags.isolated';
+  const source = workflowWithSteps([
+    "- run: exec python3 -c 'print(1)'",
+    `- run: exec python3 -I -c '${assertLine}; print(1)'`,
+    blockStep("timeout 300 python3 - <<'PY'\nprint('stdin')\nPY"),
+    `- run: timeout -s TERM 300 python3 -I -c '${assertLine}; print(1)'`,
+    `- run: timeout --preserve-status 30 /usr/bin/python3 -I -c '${assertLine}'`,
+    "- run: xargs -0 python3 -c 'print(1)'",
+    `- run: xargs -n 1 python3 -I -c '${assertLine}'`,
+    `- run: setpriv --reuid 1000 python3 -I -c '${assertLine}'`,
+    '- run: nice python3 scripts/ci/test_report.py',
+  ]);
+  assert.deepEqual(inlinePythonInvocations(source).map(({kind, isolated, asserted}) => ({kind, isolated, asserted})), [
+    {kind: 'command', isolated: false, asserted: false},
+    {kind: 'command', isolated: true, asserted: true},
+    {kind: 'stdin', isolated: false, asserted: false},
+    {kind: 'command', isolated: true, asserted: true},
+    {kind: 'command', isolated: true, asserted: true},
+    {kind: 'command', isolated: false, asserted: false},
+    {kind: 'command', isolated: true, asserted: true},
+    {kind: 'unsupported', isolated: false, asserted: false},
+    {kind: 'unsupported', isolated: false, asserted: false},
+  ]);
+});
+
 test('the guard ignores non-run YAML, quoted data, comments, heredoc bodies and file execution', () => {
   const source = workflowWithRuns([
     "echo 'log; python3 -c \"not a command\"'",
+    "echo python3 -c 'not an executed example'",
+    'grep -c python3 README.md',
     '# (python3 -c "comment only")',
     "python3 <<'PY'\npython3 -c 'heredoc body, not a shell command'\nPY",
     'python3 scripts/ci/test_report.py -c',
