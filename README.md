@@ -173,7 +173,7 @@ Replicas, resources, probes and store flags are in `deployment/helm/speedle/valu
 
 ### Prerequisites
 
--   Go 1.27.4 or a newer patch on the Go 1.27 release branch <https://go.dev/doc/install>. Go sets `GOROOT` and `GOPATH` itself.
+-   Go 1.27.4 or newer <https://go.dev/doc/install>. CI verifies the minimum; newer releases are supported. Go sets `GOROOT` and `GOPATH` itself.
 
 ### Steps
 

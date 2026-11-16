@@ -78,7 +78,7 @@ jobs:
           cache: ${{ runner.environment != 'self-hosted' }}
 
       # CI exercises the exact minimum documented under README's Prerequisites
-      # heading; user builds may use a newer patch.
+      # heading; user builds may use a newer release.
       - name: Verify documented Go toolchain
         run: |
           set -euo pipefail
@@ -109,13 +109,17 @@ jobs:
                       heading = re.match(r'^#{1,6}[ \t]+(.*)$', bare)
                       if heading:
                           # Accept an optional ATX closing sequence.
+                          level = len(bare) - len(bare.lstrip('#'))
                           title = heading.group(1).strip().rstrip('#').strip()
-                          headings.append((offset, title))
+                          headings.append((offset, level, title))
                   offset += len(line)
-              start = next((entry for entry in headings if entry[1] == 'Prerequisites'), None)
+              start = next((entry for entry in headings if entry[2] == 'Prerequisites'), None)
               if start is None:
                   raise SystemExit('README Prerequisites section not found')
-              end = next((entry[0] for entry in headings if entry[0] > start[0]), len(text))
+              # Deeper sub-headings belong to the section; a heading at the same
+              # or a higher level ends it.
+              end = next((entry[0] for entry in headings
+                          if entry[0] > start[0] and entry[1] <= start[1]), len(text))
               prose = []
               fenced = False
               for line in text[start[0]:end].splitlines():

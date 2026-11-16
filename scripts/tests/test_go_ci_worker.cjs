@@ -178,6 +178,12 @@ if (args.length === 4 && args[0] === 'list' && args[1] === '-m' && args[2] === '
         message: 'README Prerequisites names a non-release Go version 1.27.4rc1'},
       {name: 'four-part prerequisite version', readme: prerequisites('-   Go 1.27.4.1 or a newer patch'), module: '1.27.4', selected: 'go1.27.4', passes: false,
         message: 'README Prerequisites names a non-release Go version 1.27.4.1'},
+      // A deeper sub-heading belongs to the section; a peer heading ends it.
+      {name: 'deeper sub-heading inside Prerequisites', readme: '### Prerequisites\n\n#### Linux packages\n\n-   Go 1.27.4 or a newer patch\n',
+        module: '1.27.4', selected: 'go1.27.4', passes: true, message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      {name: 'same-level heading ends Prerequisites', readme: '### Prerequisites\n\n-   Install a recent Go release.\n\n### Compatibility\n\n-   Go 1.27.4 or a newer patch\n',
+        module: '1.27.4', selected: 'go1.27.4', passes: false,
+        message: 'README Prerequisites must declare the Go minimum in a line starting with Go or Golang'},
       // A level-1 heading also ends the section.
       {name: 'version after a level-1 heading is ignored', readme: '### Prerequisites\n\n-   A recent Go release\n\n# Compatibility\n\nTested with Go 1.27.4.\n',
         module: '1.27.4', selected: 'go1.27.4', passes: false,
