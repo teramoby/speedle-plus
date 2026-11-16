@@ -2,12 +2,14 @@
    pages at desktop and phone widths. Requires Playwright and axe-core in the
    development environment, like site-smoke.cjs.
    The check is hermetic: every request to an origin other than the local server
-   is aborted at once and counted, so a slow or unreachable third party (for
-   example the analytics beacon) can neither delay nor fail the load event that
-   the check waits for. Stylesheets decide contrast, so a stylesheet request that
-   is blocked (another origin, whether linked, imported, added by script or
-   fetched as CSS, up to the moment the network settles after load) or does not
-   load fails the gate by URL: serve a local copy instead.
+   is aborted at once and counted, so a slow or unreachable third party can
+   neither delay nor fail the load event that the check waits for. A blocked
+   request fails the gate by URL unless its origin is listed in QUIET_ORIGINS
+   (third parties that cannot affect styles, such as the analytics beacon), and
+   a stylesheet request fails it even then; so does a local HTTP error or a
+   local stylesheet that does not load. These are checked once the network has
+   settled after load and again after axe has run. Serve a local copy of any
+   resource the page needs.
    Run from the repository root: node website/playground-engine/a11y-smoke.cjs
    Optional CHROMIUM_PATH selects a Chrome/Chromium binary. */
 const {chromium} = require('playwright');
@@ -17,6 +19,9 @@ const fs = require('node:fs');
 const path = require('node:path');
 const assert = require('node:assert/strict');
 const root = path.resolve(__dirname, '../../docs');
+// Third-party origins the home pages contact that cannot affect styles: requests to
+// them are blocked and counted without failing the gate (stylesheets still fail).
+const QUIET_ORIGINS = new Set(['https://static.cloudflareinsights.com']);
 const server = http.createServer((req,res)=>{
   let url;
   try {url=decodeURIComponent(new URL(req.url,'http://localhost').pathname)} catch {res.writeHead(400).end();return;}
@@ -44,24 +49,30 @@ const server = http.createServer((req,res)=>{
         await page.addInitScript(()=>{
           if (window.ServiceWorkerContainer) ServiceWorkerContainer.prototype.register=()=>Promise.reject(new DOMException('service workers are disabled in the a11y smoke','SecurityError'));
         });
-        // Stylesheets decide contrast: record every stylesheet request that is blocked or fails,
-        // including @import and script-added ones. Chromium gives a failed stylesheet an empty
-        // sheet, so the page itself cannot tell.
-        // One entry per URL: the first reason wins (an HTTP error, then the aborted body).
-        const sheetProblems=new Map();
+        // Record every request problem, one entry per URL (the first reason wins, for example
+        // an HTTP error before the aborted body). Chromium gives a stylesheet that failed to
+        // load an empty sheet, so the page itself cannot tell.
+        const problems=new Map();
+        const parse=value=>{try {return new URL(value);} catch {return null;}};
         // A stylesheet, or CSS fetched by script (for example fetch() into a <style> element).
-        const isCss=request=>{
-          if (request.resourceType()==='stylesheet') return true;
-          try {return /\.css$/i.test(new URL(request.url()).pathname);} catch {return false;}
-        };
-        page.on('response',response=>{if(isCss(response.request())&&!response.ok()&&!sheetProblems.has(response.url()))sheetProblems.set(response.url(),`HTTP ${response.status()}`);});
-        page.on('requestfailed',request=>{
-          let url=null;
-          try {url=new URL(request.url());} catch {}
-          if (!isCss(request)||sheetProblems.has(request.url())) return;
-          const local=Boolean(url&&url.origin===origin);
-          sheetProblems.set(request.url(),local?(request.failure()?.errorText||'failed'):`blocked: outside ${origin}, serve a local copy`);
+        const isCss=request=>request.resourceType()==='stylesheet'||/\.css$/i.test(parse(request.url())?.pathname||'');
+        page.on('response',response=>{
+          if (response.status()<400||problems.has(response.url())) return;
+          if (parse(response.url())?.origin===origin) problems.set(response.url(),`HTTP ${response.status()}`);
         });
+        page.on('requestfailed',request=>{
+          const url=parse(request.url());
+          if (problems.has(request.url())) return;
+          if (url?.origin===origin) {
+            if (isCss(request)) problems.set(request.url(),request.failure()?.errorText||'failed');
+          } else if (isCss(request)||!QUIET_ORIGINS.has(url?.origin)) {
+            problems.set(request.url(),`blocked: outside ${origin}; serve a local copy`);
+          }
+        });
+        const assertNoProblems=when=>{
+          const list=[...problems].map(([url,reason])=>`${url} (${reason})`);
+          assert.deepEqual(list,[],`the ${label} at ${width}px had request problems ${when}: ${list.join(', ')}`);
+        };
         await page.route('**/*',request=>{
           let url;
           try {url=new URL(request.request().url());} catch {return request.abort();}
@@ -80,9 +91,8 @@ const server = http.createServer((req,res)=>{
           throw new Error(`the ${label} at ${width}px kept the network busy for 15s after load`,{cause:error});
         }
         assert.ok(await page.$('main'),`the ${label} at ${width}px has no main element`);
-        const problems=[...sheetProblems].map(([url,reason])=>`${url} (${reason})`);
         assert.equal(await page.evaluate(()=>Boolean(navigator.serviceWorker&&navigator.serviceWorker.controller)),false,`the ${label} at ${width}px is controlled by a service worker`);
-        assert.deepEqual(problems,[],`the ${label} at ${width}px could not load stylesheets: ${problems.join(', ')}`);
+        assertNoProblems('before the contrast check');
         await page.addScriptTag({content:axeSource});
         const report=await page.evaluate(async()=>{
           const result=await axe.run(document,{runOnly:{type:'rule',values:['color-contrast']}});
@@ -91,6 +101,8 @@ const server = http.createServer((req,res)=>{
             unchecked:result.incomplete.flatMap(rule=>rule.nodes.map(node=>node.target)),
           };
         });
+        // A request that failed while axe ran may have changed the styles it measured.
+        assertNoProblems('during the contrast check');
         assert.deepEqual(report.violations,[],`axe color-contrast violations on the ${label} at ${width}px: ${JSON.stringify(report.violations,null,2)}`);
         checks++;
         console.log(`PASS axe color-contrast: ${label} at ${width}px (${report.unchecked.length} gradient or pseudo-element nodes not machine-checkable)`);
