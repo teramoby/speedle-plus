@@ -26,7 +26,10 @@
    browser context, whose route aborts every cross-origin request. Before the
    page loads, a blank probe page in that context proves the route works by
    loading a script from another loopback origin, so the measured page's own
-   Content Security Policy cannot block or weaken the proof. The stylesheet
+   Content Security Policy cannot block or weaken the proof. A cross-origin
+   request may fail only because the route aborted it or because the page's
+   own CSP blocked it, which the page must confirm with a
+   securitypolicyviolation event; any other failure fails the gate. The stylesheet
    fingerprint covers
    every stylesheet's rule text, media and disabled state and every inline
    style attribute. Open shadow roots are included in the DOM observation and
@@ -49,11 +52,6 @@ const root = path.resolve(__dirname, '../../docs');
 // blocked and counted without failing the gate. Any other request to them (a stylesheet,
 // fetch, image, ...) fails like any other origin.
 const QUIET_ORIGINS = new Set(['https://static.cloudflareinsights.com']);
-// The route aborts every cross-origin request with this distinctive error, so a failure the route
-// caused cannot be confused with a request the page cancelled itself (net::ERR_ABORTED).
-// Chromium reports it as net::ERR_BLOCKED_BY_CLIENT with a suffix naming the blocker (.Inspector).
-const ROUTE_ABORT_ERROR='net::ERR_BLOCKED_BY_CLIENT';
-const routeAborted=errorText=>typeof errorText==='string'&&errorText.startsWith(ROUTE_ABORT_ERROR);
 // A second loopback server, on its own port and therefore its own origin, serves a script
 // that only sets a flag. Every page must have its request for it aborted by the route and
 // must not run it, which proves that cross-origin blocking really works. If interception is
@@ -167,6 +165,10 @@ const listen=listener=>new Promise((resolve,reject)=>{
             for (const root of window.__smokeSyncRoots()) for (const animation of root.getAnimations()) if (animation.playState==='running') running.add(animation);
             return running.size;
           };
+          // The page's own Content Security Policy violations, so a cross-origin request that the
+          // policy blocked in the browser can be told apart from one that escaped the route.
+          window.__smokeCspViolations=[];
+          document.addEventListener('securitypolicyviolation',event=>{window.__smokeCspViolations.push(event.blockedURI);},true);
           window.__smokeSyncRoots();
         });
         // Record every request problem, one entry per URL (the first reason wins, for example
@@ -185,6 +187,15 @@ const listen=listener=>new Promise((resolve,reject)=>{
         // Cross-origin requests that the page's own Content Security Policy blocked in the browser:
         // they never left it, exactly as in production, so they are only listed in the PASS line.
         const cspBlocked=[];
+        // Cross-origin failures the route did not cause, settled against the page's CSP violations
+        // when problems are checked.
+        const cspCandidates=new Map();
+        // Requests the route itself aborted, counted per URL: a failure is attributed to the route
+        // only when the route really aborted that request, never by matching an error string.
+        const routeAborts=new Map();
+        const markRouteAbort=href=>routeAborts.set(href,(routeAborts.get(href)||0)+1);
+        const unmarkRouteAbort=href=>{const left=(routeAborts.get(href)||0)-1;if(left>0)routeAborts.set(href,left);else routeAborts.delete(href);};
+        const consumeRouteAbort=href=>{if(!routeAborts.has(href))return false;unmarkRouteAbort(href);return true;};
         const renderIrrelevant=new Set(['media','texttrack','eventsource','websocket','manifest','other']);
         const parse=value=>{try {return new URL(value);} catch {return null;}};
         // Every request, with the time it started, and page script failures.
@@ -216,17 +227,25 @@ const listen=listener=>new Promise((resolve,reject)=>{
             if (reason==='net::ERR_ABORTED'&&renderIrrelevant.has(request.resourceType())) cancelled.push(`${request.url()} (${request.resourceType()})`);
             else problems.set(request.url(),`${request.resourceType()}: ${reason}`);
           } else {
-            // A quiet-origin script is tolerated only when it failed the way the route aborts it.
-            // Any other failure (DNS, TLS, connection) means the route never intercepted it.
+            // A cross-origin request may fail only because the route aborted it (a quiet-origin
+            // script is then tolerated) or because the page's own CSP blocked it in the browser,
+            // which the page confirms with a securitypolicyviolation event for the URL. Anything
+            // else means the route never intercepted it.
             const reason=request.failure()?.errorText||'failed';
-            if (reason==='csp') {cspBlocked.push(request.url());return;}
-            const aborted=routeAborted(reason);
-            if (!(aborted&&QUIET_ORIGINS.has(url?.origin)&&request.resourceType()==='script')) {
-              problems.set(request.url(),aborted?`blocked: outside ${origin}; serve a local copy`:`outside ${origin} and not aborted by the route (${reason}): request interception was bypassed`);
-            }
+            if (!consumeRouteAbort(request.url())) {cspCandidates.set(request.url(),reason);return;}
+            if (!(QUIET_ORIGINS.has(url?.origin)&&request.resourceType()==='script')) problems.set(request.url(),`blocked: outside ${origin}; serve a local copy`);
           }
         });
-        const assertNoProblems=when=>{
+        const assertNoProblems=async when=>{
+          if (cspCandidates.size) {
+            const violations=await page.evaluate(()=>window.__smokeCspViolations.slice());
+            for (const [url,reason] of cspCandidates) {
+              const parsed=parse(url);
+              if (violations.some(blocked=>blocked===url||(parsed&&blocked===parsed.origin))) cspBlocked.push(url);
+              else problems.set(url,`outside ${origin}, not aborted by the route (${reason}) and with no CSP violation reported for it: request interception was bypassed`);
+            }
+            cspCandidates.clear();
+          }
           const list=[...problems].map(([url,reason])=>`${url} (${reason})`);
           assert.deepEqual(list,[],`the ${label} at ${width}px had problems ${when}: ${list.join(', ')}`);
           assert.deepEqual(pageErrors,[],`the ${label} at ${width}px had page script errors ${when}: ${pageErrors.join(' | ')}`);
@@ -246,10 +265,13 @@ const listen=listener=>new Promise((resolve,reject)=>{
           }
           blockedOrigins.add(url.origin);
           blockedRequests++;
-          // Count the probe only when Chromium acknowledged the abort: a callback that ran
-          // but whose abort failed may have let the request through.
-          if(url.href===ROUTE_PROBE) {if(await route.abort('blockedbyclient').then(()=>true,()=>false)) routeProbeBlocks++;return;}
-          await route.abort('blockedbyclient').catch(()=>{});
+          // Mark the abort before issuing it, because requestfailed can arrive before abort()
+          // resolves, and unmark it if the abort itself failed. Count the probe only when the abort
+          // was acknowledged: a callback that ran but whose abort failed may have let it through.
+          markRouteAbort(url.href);
+          const aborted=await route.abort('blockedbyclient').then(()=>true,()=>false);
+          if(!aborted) unmarkRouteAbort(url.href);
+          if(url.href===ROUTE_PROBE&&aborted) routeProbeBlocks++;
         });
         // Do not infer that routing works merely because no third-party request was observed.
         // Before the page loads, a blank probe page in the same context, which shares the route,
@@ -260,18 +282,18 @@ const listen=listener=>new Promise((resolve,reject)=>{
         // CSP therefore cannot block the proof or call for weakening that policy. Event delivery
         // is independent of the script element settling, so wait for both counters, bounded.
         const probe=await context.newPage();
-        probe.on('requestfailed',request=>{if(request.url()===ROUTE_PROBE&&routeAborted(request.failure()?.errorText)) routeProbeAborts++;});
+        probe.on('requestfailed',request=>{if(request.url()===ROUTE_PROBE&&consumeRouteAbort(ROUTE_PROBE)) routeProbeAborts++;});
         await probe.goto('about:blank');
         await probe.addScriptTag({url:ROUTE_PROBE}).catch(()=>{});
         const probeDeadline=Date.now()+5000;
         while ((routeProbeBlocks===0||routeProbeAborts===0)&&Date.now()<probeDeadline) await new Promise(resolve=>setTimeout(resolve,25));
         assert.equal(await probe.evaluate(()=>Boolean(window.__a11yRouteProbeExecuted)),false,`the route positive control ran for the ${label} at ${width}px, so the context route did not abort it`);
         assert.ok(routeProbeBlocks>0,`the context route for the ${label} at ${width}px did not intercept and abort the route positive control; request interception may not be active`);
-        assert.ok(routeProbeAborts>0,`the route positive control for the ${label} at ${width}px did not fail with ${ROUTE_ABORT_ERROR}; the request may not have been aborted`);
+        assert.ok(routeProbeAborts>0,`the route positive control for the ${label} at ${width}px did not fail after the route aborted it; the request may not have been aborted`);
         await probe.close();
         // Every other origin is aborted at once, so nothing outside the local server can delay load.
         await page.goto(origin+route,{waitUntil:'load',timeout:30000});
-        assertNoProblems('while loading');
+        await assertNoProblems('while loading');
         try {
           await page.waitForLoadState('networkidle',{timeout:15000});
         } catch (error) {
@@ -371,7 +393,7 @@ const listen=listener=>new Promise((resolve,reject)=>{
         // change and fails as well.
         assert.equal(page.frames().length,1,`the ${label} at ${width}px has ${page.frames().length-1} frame(s); the a11y smoke measures the top document only, so cover frames before adding them`);
         assert.equal(await page.evaluate(()=>Boolean(navigator.serviceWorker&&navigator.serviceWorker.controller)),false,`the ${label} at ${width}px is controlled by a service worker`);
-        assertNoProblems('before the contrast check');
+        await assertNoProblems('before the contrast check');
         assert.equal(pending,0,`the ${label} at ${width}px still has requests in flight before the contrast check`);
         // From here until the scan ends nothing may change: no request, no DOM change, no style
         // change, no animation start and no running animation. One scan of a still page is the
@@ -412,7 +434,7 @@ const listen=listener=>new Promise((resolve,reject)=>{
         assert.equal(result.runningAtStart,0,`the ${label} at ${width}px ran a CSS animation or transition when the contrast check started`);
         assert.equal(after.animationStarts,before.animationStarts,`the ${label} at ${width}px started a CSS animation or transition during the contrast check`);
         assert.equal(after.runningAnimations,0,`the ${label} at ${width}px ran a CSS animation or transition during the contrast check`);
-        assertNoProblems('during the contrast check');
+        await assertNoProblems('during the contrast check');
         assert.deepEqual(result.violations,[],`axe color-contrast violations on the ${label} at ${width}px: ${JSON.stringify(result.violations,null,2)}`);
         checks++;
         console.log(`PASS axe color-contrast: ${label} at ${width}px (${result.unchecked.length} gradient or pseudo-element nodes not machine-checkable${cancelled.length?`; ${cancelled.length} local request(s) cancelled by the page: ${cancelled.join(', ')}`:''}${cspBlocked.length?`; ${cspBlocked.length} cross-origin request(s) blocked by the page's own CSP: ${cspBlocked.join(', ')}`:''})`);
