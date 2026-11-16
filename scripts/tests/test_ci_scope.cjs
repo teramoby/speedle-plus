@@ -218,10 +218,37 @@ test('change classification preserves raw Git paths, uses the base classifier an
     const linkedFallback = classify(linkedHead, {PR_BASE: linked});
     assert.equal(linkedFallback.status, 0, linkedFallback.stderr);
     assert.equal(linkedFallback.output, flags(true, true, true, true), 'a non-regular base classifier must enable every route');
+    // A directory at the classifier path is a tree, not a regular file, even
+    // when it holds a regular file: it takes the fallback too.
+    fs.rmSync(path.join(dir, 'scripts/ci/classify-changes.sh'));
+    fs.mkdirSync(path.join(dir, 'scripts/ci/classify-changes.sh'));
+    fs.writeFileSync(path.join(dir, 'scripts/ci/classify-changes.sh/run.sh'), '#!/usr/bin/env bash\nexit 1\n');
+    git('add', '-A', '--', 'scripts/ci');
+    git('commit', '-qm', 'classifier path becomes a directory');
+    const tree = git('rev-parse', 'HEAD');
+    fs.writeFileSync(path.join(dir, 'website/page.md'), 'fixture 2\n');
+    git('add', '--', 'website/page.md');
+    git('commit', '-qm', 'website change under a directory');
+    const treeFallback = classify(git('rev-parse', 'HEAD'), {PR_BASE: tree});
+    assert.equal(treeFallback.status, 0, treeFallback.stderr);
+    assert.equal(treeFallback.output, flags(true, true, true, true), 'a directory at the classifier path must enable every route');
+    assert.match(treeFallback.stdout, /No trusted regular-file classifier/);
   } finally {
     fs.rmSync(dir, {recursive: true, force: true});
     fs.rmSync(runnerTemp, {recursive: true, force: true});
   }
+});
+test('the classifier fallback and output contract cover every route the workflow reads', () => {
+  const step = script(ci, 'Classify changed files');
+  const declared = step.match(/^route_keys="([^"]+)"$/m)[1].split(' ').sort();
+  // Routes come from the scope step; needs.changes.outputs.full follows labels, not paths.
+  const read = [...new Set([...ci.matchAll(/\b(?:steps\.scope|needs\.changes)\.outputs\.([a-z_]+)/g)].map(match => match[1]))]
+    .filter(key => key !== 'full').sort();
+  assert.deepEqual(declared, read, 'route_keys must list exactly the routes that jobs read');
+  // Both the fallback and the contract check iterate the list instead of keeping their own copies.
+  assert.match(step, /^route_all\(\) \{ local key; for key in \$\{route_keys\}; do echo "\$\{key\}=true"/m);
+  assert.match(step, /for key in \$\{route_keys\}; do\n\s+grep -q "\^\$\{key\}=" "\$\{routes\}"/);
+  assert.doesNotMatch(step, /(?:go|website|docs|ci)=true/);
 });
 test('CI discovers every script suite, isolates Docker config and propagates failures', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-script-suites-'));

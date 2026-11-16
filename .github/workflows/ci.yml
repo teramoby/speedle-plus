@@ -59,8 +59,13 @@ jobs:
           PUSH_BEFORE: ${{ github.event.before }}
         run: |
           set -euo pipefail
+          # Every changed-path route that jobs read from this step. The fallback and
+          # the output contract below both use this list, and test_ci_scope.cjs
+          # checks it against the routes the workflow reads, so a new route cannot
+          # be left out of either.
+          route_keys="go website docs ci"
           # Enable every changed-path route; full CI still follows the full-ci label.
-          route_all() { printf 'go=true\nwebsite=true\ndocs=true\nci=true\n' >> "${GITHUB_OUTPUT}"; }
+          route_all() { local key; for key in ${route_keys}; do echo "${key}=true" >> "${GITHUB_OUTPUT}"; done; }
           if [[ "${EVENT_NAME}" == pull_request ]]; then
             # Classify with the base revision's script, so that an edit to
             # scripts/ci cannot quietly change the route of its own pull
@@ -73,8 +78,11 @@ jobs:
             if [[ -n "${base}" && "${base}" != 0000000000000000000000000000000000000000 ]]; then
               entry=$(git ls-tree "${base}" -- scripts/ci/classify-changes.sh 2>/dev/null || true)
             fi
-            mode=${entry%% *}
-            if [[ "${mode}" != 100644 && "${mode}" != 100755 ]]; then
+            # Trust only a regular file (a blob with a file mode): not a tree,
+            # symlink or submodule.
+            mode="" type=""
+            read -r mode type _ <<< "${entry}" || true
+            if [[ "${type}" != blob || ( "${mode}" != 100644 && "${mode}" != 100755 ) ]]; then
               echo "::warning::No trusted regular-file classifier in the base revision; enabling every changed-path route."
               route_all
             else
@@ -96,7 +104,7 @@ jobs:
                 git show "${base}:scripts/ci/classify-changes.sh" > "${classifier}"
                 GITHUB_OUTPUT="${routes}" bash "${classifier}"
                 missing=""
-                for key in go website docs ci; do
+                for key in ${route_keys}; do
                   grep -q "^${key}=" "${routes}" || missing="${missing} ${key}"
                 done
                 if [[ -n "${missing}" ]]; then
