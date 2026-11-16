@@ -1,27 +1,28 @@
 /* Home-page accessibility: axe color-contrast on the English and Chinese home
    pages at desktop and phone widths. Requires Playwright and axe-core in the
    development environment, like site-smoke.cjs.
-   The check is hermetic: every request to an origin other than the local server
-   is aborted at once and counted, so a slow or unreachable third party can
-   neither delay nor fail the load event that the check waits for. A blocked
-   request fails the gate by URL unless it is a script from an origin listed in
-   QUIET_ORIGINS (third parties that cannot affect styles, such as the analytics
-   beacon); so does any local HTTP error, any local request that fails (a
-   cancellation by the page is only reported, and only for types that cannot
-   affect rendering, such as pings or media). The check waits for the network
-   to settle after load: no request in flight and one second with no request
-   starting or ending (a page that keeps loading resources fails). It then
-   waits up to three seconds for the DOM and the stylesheets to stop
-   changing. A page that keeps animating its DOM, its CSS or its CSSOM is
-   only reported in the PASS line, but never counts as settled: axe samples
-   three moments 200 ms apart and a violation in any of them fails. Those
-   three samples are a spot check of an animation, not a proof that every
-   frame is compliant. Styles are stricter: from before axe is injected
-   until the sampling ends, every stylesheet's rule text, media and disabled
-   state and every inline style attribute must stay identical, or the gate
-   fails. Open shadow roots are included in the DOM observation and
-   stylesheet fingerprints, including their style/link elements, inline
-   style attributes, adopted sheets and recursively imported sheets.
+   The check is hermetic: every request to an origin other than the local
+   server is aborted at once and counted, so a slow or unreachable third party
+   can neither delay nor fail the load event that the check waits for. A
+   blocked request fails the gate by URL unless it is a script from an origin
+   listed in QUIET_ORIGINS (origins that cannot affect styles, such as the
+   analytics beacon and the loopback probe); so does any local HTTP error, any
+   local request that fails (a cancellation by the page is only reported, and
+   only for types that cannot affect rendering, such as pings or media). The
+   check waits for the network to settle after load: no request in flight and
+   one second with no request starting or ending (a page that keeps loading
+   resources fails). It then waits up to three seconds for the DOM and the
+   stylesheets to stop changing and for CSS animations and transitions to
+   finish: a page that still has one running after that window fails, because
+   a few samples cannot cover an animation. A page that keeps changing its
+   DOM or its CSSOM is only reported in the PASS line, but never counts as
+   settled: axe samples three moments 200 ms apart and a violation in any of
+   them fails. Styles are stricter: from before axe is injected until the
+   sampling ends, every stylesheet's rule text, media and disabled state and
+   every inline style attribute must stay identical, or the gate fails. Open
+   shadow roots are included in the DOM observation and stylesheet
+   fingerprints, including their style/link elements, inline style attributes,
+   adopted sheets and recursively imported sheets.
    Any page script error fails the gate. WebSockets and web workers, which
    page.route cannot intercept, fail the gate. Serve a local copy of any
    resource the page needs.
@@ -34,9 +35,10 @@ const fs = require('node:fs');
 const path = require('node:path');
 const assert = require('node:assert/strict');
 const root = path.resolve(__dirname, '../../docs');
-// Third-party origins whose scripts the home pages load and that cannot affect styles:
-// their script requests are blocked and counted without failing the gate. Any other
-// request to them (a stylesheet, fetch, image, ...) fails like any other origin.
+// Origins whose scripts cannot affect styles: the third-party origins the home pages
+// load, plus the loopback probe origin added at run time. Their script requests are
+// blocked and counted without failing the gate. Any other request to them (a stylesheet,
+// fetch, image, ...) fails like any other origin.
 const QUIET_ORIGINS = new Set(['https://static.cloudflareinsights.com']);
 // A second loopback server, on its own port and therefore its own origin, serves a script
 // that only sets a flag. Every page must have its request for it aborted by the route and
@@ -121,8 +123,9 @@ const server = http.createServer((req,res)=>{
         // an HTTP error before the aborted body). Chromium gives a stylesheet that failed to
         // load an empty sheet, so the page itself cannot tell.
         const problems=new Map();
-        // Per-page proof that the exact positive-control URL reached the route below.
-        let routeProbeBlocks=0;
+        // Per-page proof that the exact positive-control URL reached the route below and that
+        // Chromium reported the aborted request, not merely the route callback.
+        let routeProbeBlocks=0, routeProbeAborts=0;
         // A request the page cancels itself (net::ERR_ABORTED) is exempt only for types that
         // cannot affect rendering; it is listed in the PASS line rather than ignored. Every
         // other cancellation fails, including fetch/XHR, which may carry CSS. These are the
@@ -154,6 +157,9 @@ const server = http.createServer((req,res)=>{
         });
         page.on('requestfailed',request=>{
           const url=parse(request.url());
+          // The positive control must fail the way an aborted request does, not just pass
+          // through the route callback or load from the probe server.
+          if(request.url()===ROUTE_PROBE&&request.failure()?.errorText==='net::ERR_ABORTED') routeProbeAborts++;
           if (problems.has(request.url())) return;
           if (url?.origin===origin) {
             const reason=request.failure()?.errorText||'failed';
@@ -185,19 +191,21 @@ const server = http.createServer((req,res)=>{
           blockedRequests++;
           // Count the probe only when Chromium acknowledged the abort: a callback that ran
           // but whose abort failed may have let the request through.
-          if(url.href===ROUTE_PROBE) {if(await route.abort().then(()=>true,()=>false)) routeProbeBlocks++;return;}
+          if(url.href===ROUTE_PROBE) {if(await route.abort('aborted').then(()=>true,()=>false)) routeProbeBlocks++;return;}
           await route.abort().catch(()=>{});
         });
         // Every other origin is aborted at once, so nothing outside the local server can delay load.
         await page.goto(origin+route,{waitUntil:'load',timeout:30000});
         // Do not infer that routing works merely because no third-party request was observed.
-        // The probe script sets a flag in the page if it ever runs, and its aborted request must
-        // be counted: either a loaded probe or an uncounted abort fails the gate. A response from
-        // a foreign origin is caught by the response handler as well.
+        // The probe script sets a flag in the page if it ever runs, its abort must be acknowledged
+        // by the route, and Chromium must report the request as net::ERR_ABORTED: a loaded probe,
+        // an uncounted abort or a non-abort failure all fail the gate. A response from a foreign
+        // origin is caught by the response handler as well.
         await page.addScriptTag({url:ROUTE_PROBE}).catch(()=>{});
         assert.equal(await page.evaluate(()=>Boolean(window.__a11yRouteProbeExecuted)),false,`the ${label} at ${width}px ran the route positive control, so page.route did not abort it`);
         assertNoProblems('while checking request interception');
         assert.ok(routeProbeBlocks>0,`the ${label} at ${width}px did not intercept and abort the route positive control; request interception may not be active`);
+        assert.ok(routeProbeAborts>0,`the ${label} at ${width}px did not see the route positive control fail with net::ERR_ABORTED; the request may not have been aborted`);
         try {
           await page.waitForLoadState('networkidle',{timeout:15000});
         } catch (error) {
@@ -279,6 +287,11 @@ const server = http.createServer((req,res)=>{
           if (networkQuiet&&(domSettled||Date.now()-settleStart>=3000)) break;
           assert.ok(Date.now()-settleStart<10000,`the ${label} at ${width}px kept loading resources for 10s after load`);
         }
+        // The settle loop above waits for CSS animations and transitions, but stops after three
+        // seconds. Sampling cannot cover an animation, so one that is still running is a failure
+        // rather than a reason to take a few more snapshots.
+        const runningAnimations=await page.evaluate(()=>document.getAnimations().filter(animation=>animation.playState==='running').length);
+        assert.equal(runningAnimations,0,`the ${label} at ${width}px still has CSS animations or transitions running after the 3s settle window`);
         assert.ok(await page.$('main'),`the ${label} at ${width}px has no main element`);
         assert.equal(await page.evaluate(()=>Boolean(navigator.serviceWorker&&navigator.serviceWorker.controller)),false,`the ${label} at ${width}px is controlled by a service worker`);
         assertNoProblems('before the contrast check');
@@ -287,11 +300,11 @@ const server = http.createServer((req,res)=>{
         const requestsBefore=requests, sheetsBefore=await sheets();
         await page.addScriptTag({content:axeSource});
         assert.equal(pending,0,`the ${label} at ${width}px started a request while axe was injected`);
-        // axe runs mostly synchronously, so it measures one moment of an animation. When the DOM
-        // has not settled, or any scan sees a DOM change, a running animation or a change to the
-        // stylesheet fingerprint, sample three moments 200 ms apart: a violation in any scan fails
-        // the gate, so animation alone cannot fail it. The three samples are a spot check of a
-        // longer animation, not a proof that every frame is compliant.
+        // CSS animations and transitions have already finished (an animation seen running is a
+        // failure above), so axe measures a still page. When the DOM has not settled, or any scan
+        // sees a DOM change or a change to the stylesheet fingerprint, sample three moments 200 ms
+        // apart: a violation in any scan fails the gate. A scan that sees an animation start is a
+        // failure too, for the same reason as above.
         // Once a change is seen the budget stays at three scans, even if a later scan happens to be
         // still. Mutation counts and the stylesheet fingerprint carry from the end of one scan into
         // the next, so changes during the 200 ms gaps count too.
@@ -318,13 +331,16 @@ const server = http.createServer((req,res)=>{
           return {...result,sheetsChanged:sheetsAt!==previousSheets};
         };
         const scans=[await scan()];
-        while (scans.length<3&&(!domSettled||scans.some(result=>result.mutations>0||result.animated||result.sheetsChanged))) {
+        while (scans.length<3&&(!domSettled||scans.some(result=>result.mutations>0||result.sheetsChanged))) {
           await page.waitForTimeout(200);
           scans.push(await scan());
         }
         // A style change observed between consecutive sampling snapshots fails even if a later
         // snapshot shows it reverted. Fingerprints carry across the 200 ms gaps between scans.
         assert.ok(scans.every(result=>!result.sheetsChanged),`the ${label} at ${width}px changed its styles during the contrast check`);
+        // An animation that starts after the settle window would otherwise be measured at one or
+        // three instants only; failing is the only honest outcome for the documented invariant.
+        assert.ok(scans.every(result=>!result.animated),`the ${label} at ${width}px ran a CSS animation or transition during the contrast check`);
         const uniqueTargets=(items,key,seen)=>items.filter(item=>{const id=JSON.stringify(key(item));if(seen.has(id))return false;seen.add(id);return true;});
         const report={
           violations:uniqueTargets(scans.flatMap(result=>result.violations),violation=>violation.target,new Set()),
@@ -340,7 +356,7 @@ const server = http.createServer((req,res)=>{
         assertNoProblems('during the contrast check');
         assert.deepEqual(report.violations,[],`axe color-contrast violations on the ${label} at ${width}px: ${JSON.stringify(report.violations,null,2)}`);
         checks++;
-        console.log(`PASS axe color-contrast: ${label} at ${width}px (${report.unchecked.length} gradient or pseudo-element nodes not machine-checkable${cancelled.length?`; ${cancelled.length} local request(s) cancelled by the page: ${cancelled.join(', ')}`:''}${domSettled?'':'; the DOM was still changing or animating when measured'}${scans.length>1?`; measured ${scans.length} times (${scanMutations} DOM change(s) during the sampling)`:''})`);
+        console.log(`PASS axe color-contrast: ${label} at ${width}px (${report.unchecked.length} gradient or pseudo-element nodes not machine-checkable${cancelled.length?`; ${cancelled.length} local request(s) cancelled by the page: ${cancelled.join(', ')}`:''}${domSettled?'':'; the DOM or CSSOM was still changing when measured'}${scans.length>1?`; measured ${scans.length} times (${scanMutations} DOM change(s) during the sampling)`:''})`);
         await page.close();
       }
     }
