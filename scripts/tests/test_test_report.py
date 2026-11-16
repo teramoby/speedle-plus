@@ -1,4 +1,5 @@
 """Offline tests for scripts/ci/test_report.py. No Ark, email or GitHub calls."""
+import base64
 import http.client
 import io
 import json
@@ -158,7 +159,7 @@ class EmailTest(unittest.TestCase):
            "OPS_EMAIL_FROM": "sender@example.com", "OPS_EMAIL_TO": "recipient@example.com",
            "OPS_EMAIL_REPLY_TO": "reply@example.com"}
 
-    def send(self, result=None, success=True, reply=None, error=None, env=None):
+    def send(self, result=None, success=True, reply=None, error=None, env=None, attachment=None):
         if reply is None:
             reply = json.dumps({"success": success, "result":
                                 {"queued": [self.env["OPS_EMAIL_TO"]]} if result is None else result}).encode()
@@ -167,7 +168,7 @@ class EmailTest(unittest.TestCase):
         with mock.patch("urllib.request.urlopen", return_value=response, side_effect=error) as urlopen, \
                 mock.patch.object(test_report, "EMAIL_RETRY_DELAY", 0), \
                 mock.patch("sys.stderr", new=io.StringIO()) as stderr:
-            ok = test_report.send_email("subject", "body", env or self.env)
+            ok = test_report.send_email("subject", "body", env or self.env, attachment=attachment)
         return ok, urlopen, stderr.getvalue()
 
     def test_posts_the_report_with_the_configured_settings(self):
@@ -182,7 +183,45 @@ class EmailTest(unittest.TestCase):
                                                     "from": "sender@example.com",
                                                     "subject": "subject", "text": "body",
                                                     "reply_to": "reply@example.com"})
+        self.assertNotIn("attachments", json.loads(request.data))
         self.assertEqual(urlopen.call_args.kwargs["timeout"], test_report.EMAIL_TIMEOUT)
+
+    def test_an_attachment_is_sent_as_base64_text(self):
+        report = "断言失败\n" * 2000
+        attachment = test_report.report_attachment("speedle-nightly-report.txt", report)
+        ok, urlopen, _ = self.send(attachment=attachment)
+        self.assertTrue(ok)
+        [sent] = json.loads(urlopen.call_args[0][0].data)["attachments"]
+        self.assertEqual(sent["filename"], "speedle-nightly-report.txt")
+        self.assertEqual(sent["type"], "text/plain")
+        self.assertEqual(sent["disposition"], "attachment")
+        self.assertEqual(base64.b64decode(sent["content"]).decode("utf-8"), report)
+
+    def test_an_attachment_beyond_its_cap_is_cut_between_characters(self):
+        limit = 200
+        report = "断言失败\n" * 100
+        with mock.patch.object(test_report, "ATTACHMENT_TEXT_LIMIT", limit):
+            attachment = test_report.report_attachment("report.txt", report)
+        text = base64.b64decode(attachment["content"]).decode("utf-8")
+        self.assertLessEqual(len(text.encode("utf-8")), limit)
+        self.assertTrue(text.startswith("断言失败"))
+        self.assertIn("truncated at 200 bytes in the attachment", text)
+
+    def test_the_attachment_cap_fits_the_message_limit(self):
+        # Base64 of the capped text plus a body whose every character is
+        # escaped as a surrogate pair (12 bytes) stays under 25 MiB.
+        encoded = 4 * ((test_report.ATTACHMENT_TEXT_LIMIT + 2) // 3)
+        escaped_body = 12 * test_report.EMAIL_TEXT_LIMIT
+        self.assertLess(encoded + escaped_body, test_report.EMAIL_MAX_BYTES)
+
+    def test_a_message_over_the_api_limit_is_not_sent(self):
+        with mock.patch.object(test_report, "EMAIL_MAX_BYTES", 64), \
+                mock.patch("urllib.request.urlopen") as urlopen, \
+                mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+            self.assertFalse(test_report.send_email("subject", "x" * 1000, self.env))
+        urlopen.assert_not_called()
+        self.assertIn("::error::", stderr.getvalue())
+        self.assertIn("limit", stderr.getvalue())
 
     def test_sends_normalized_addresses(self):
         env = dict(self.env, OPS_EMAIL_FROM="Sender <sender@example.com>",
@@ -302,10 +341,18 @@ class EmailTest(unittest.TestCase):
         body = send.call_args[0][1]
         self.assertLessEqual(len(body), test_report.EMAIL_TEXT_LIMIT)
         self.assertIn("[report truncated", body)
+        self.assertIn("the full report is attached", body)
         self.assertIn("the workflow run (http://run)", body)
         full = summary.read_text()
         self.assertGreater(len(full), test_report.EMAIL_TEXT_LIMIT)
         self.assertIn("x" * 200, full)
+        # The attachment is what makes the email self-contained: it carries
+        # the complete report, not the body's prefix.
+        attachment = send.call_args.kwargs["attachment"]
+        self.assertEqual(attachment["filename"], "speedle-weekly-report.txt")
+        attached = base64.b64decode(attachment["content"]).decode("utf-8")
+        self.assertEqual(attached, full)
+        self.assertNotIn("[report truncated", attached)
 
     def test_the_summary_file_is_written_as_utf8(self):
         # The step-summary pipeline declares UTF-8; the report file must not
@@ -573,6 +620,9 @@ class EmailTest(unittest.TestCase):
         self.assertEqual(subject, "[Speedle weekly] FAILED")
         self.assertIn("p TestZ", body)
         self.assertIn("http://run", body)
+        attachment = send.call_args.kwargs["attachment"]
+        self.assertEqual(attachment["filename"], "speedle-weekly-report.txt")
+        self.assertEqual(base64.b64decode(attachment["content"]).decode("utf-8"), body)
 
     def test_main_posts_the_configured_report(self):
         directory = Path(tempfile.mkdtemp())
@@ -590,6 +640,9 @@ class EmailTest(unittest.TestCase):
         payload = json.loads(request.data)
         self.assertEqual(payload["subject"], "[Speedle nightly] FAILED")
         self.assertIn("TestZ", payload["text"])
+        [attachment] = payload["attachments"]
+        self.assertEqual(attachment["filename"], "speedle-nightly-report.txt")
+        self.assertEqual(base64.b64decode(attachment["content"]).decode("utf-8"), payload["text"])
 
 
 class IssueTest(unittest.TestCase):

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Summarize scheduled and post-merge test results, analyze them with Ark,
-email the report and track failing tests in GitHub issues.
+email the report with its full text attached, and track failing tests in
+GitHub issues.
 
 Inputs are `go test -json` streams and plain check results. Ark analysis and
 GitHub tracking are optional and fail soft: without an Ark key the raw
@@ -11,6 +12,7 @@ report job, marked by REPORT_EMAIL_REQUIRED; tests and local runs stay
 green. The script exits non-zero on bad input and on such a failure.
 """
 import argparse
+import base64
 import email.utils
 import http.client
 import json
@@ -257,10 +259,18 @@ def extract_text(payload):
 EMAIL_TIMEOUT = 30
 # The Email Service API accepts at most 50 addresses across to, cc and bcc.
 MAX_EMAIL_RECIPIENTS = 50
-# A mass-failure report can grow to megabytes. The email is the notification
-# channel, so it carries a bounded prefix and points at the full report in the
-# run summary and the tracked issues.
+# A mass-failure report can grow to megabytes. The message body carries a
+# bounded prefix, and the full report travels in the attachment, so the email
+# does not depend on the run summary or the issues for the whole text.
 EMAIL_TEXT_LIMIT = 100_000
+# The Email Service API accepts at most 25 MiB for the whole message,
+# attachments included. Base64 expands the attachment by a third, so 17 MiB of
+# report text becomes about 22.7 MiB, and even a body of EMAIL_TEXT_LIMIT
+# characters, every one escaped in JSON, fits beside it. No real report comes
+# near the cap; it keeps a pathological one from failing the send.
+EMAIL_MAX_BYTES = 25 * 1024 * 1024
+ATTACHMENT_TEXT_LIMIT = 17 * 1024 * 1024
+REPORT_FILENAME = "speedle-{kind}-report.txt"
 
 
 def addresses(value):
@@ -309,15 +319,32 @@ def note_in_summary(env, message):
 
 
 def email_text(report, run_url=""):
-    """The report as far as the email carries it, with a pointer when the full
-    report is longer. The summary file keeps every line, and the run page
-    always exists."""
+    """The report as far as the message body carries it, with a pointer to the
+    attachment when the full report is longer."""
     if len(report) <= EMAIL_TEXT_LIMIT:
         return report
     where = f"the workflow run ({run_url})" if run_url else "the workflow run page"
-    footer = (f"\n\n[report truncated at {EMAIL_TEXT_LIMIT} characters; "
-              f"see {where} and the tracked issues]\n")
+    footer = (f"\n\n[report truncated at {EMAIL_TEXT_LIMIT} characters; the full report is attached; "
+              f"see also {where} and the tracked issues]\n")
     return report[:EMAIL_TEXT_LIMIT - len(footer)] + footer
+
+
+def report_attachment(filename, report):
+    """The full report as a base64 text attachment of the email API.
+
+    The whole message is limited to 25 MiB, so a report beyond
+    ATTACHMENT_TEXT_LIMIT bytes is cut between characters and ends with a note
+    that says so.
+    """
+    text = report
+    data = report.encode("utf-8")
+    if len(data) > ATTACHMENT_TEXT_LIMIT:
+        note = (f"\n\n[report truncated at {ATTACHMENT_TEXT_LIMIT} bytes in the attachment; "
+                f"see the workflow run]\n")
+        data = data[:ATTACHMENT_TEXT_LIMIT - len(note.encode("utf-8"))]
+        text = data.decode("utf-8", "ignore") + note
+    return {"content": base64.b64encode(text.encode("utf-8")).decode("ascii"),
+            "filename": filename, "type": "text/plain", "disposition": "attachment"}
 
 
 def email_configured(env):
@@ -332,20 +359,22 @@ def email_configured(env):
                 and reply_to and len(reply_to) == 1)
 
 
-def send_email(subject, body, env, timeout=EMAIL_TIMEOUT):
+def send_email(subject, body, env, attachment=None, timeout=EMAIL_TIMEOUT):
     """Send the report through the Cloudflare Email Service REST API.
 
     The API takes to as an array of plain address strings, and from and
     reply_to as plain address strings, so the configured values are parsed to
     their bare addresses once and the same set is sent and verified. The case
     is kept on the wire, where the local part may be case-sensitive, and
-    ignored only when matching the API's reply. A send succeeds when the
-    response lists every recipient under queued or delivered. A non-2xx
-    status, success: false, a permanent bounce or a suppressed recipient is a
-    failed send. OPS_EMAIL_REPLY_TO is required: the sender is an outbound
-    address that cannot receive mail, so without it a reply is lost. Nothing
-    from the settings or the response is logged, because both may hold
-    addresses.
+    ignored only when matching the API's reply. An attachment, built by
+    report_attachment, carries the full report as base64 text. A send
+    succeeds when the response lists every recipient under queued or
+    delivered. A non-2xx status, success: false, a permanent bounce or a
+    suppressed recipient is a failed send. OPS_EMAIL_REPLY_TO is required:
+    the sender is an outbound address that cannot receive mail, so without it
+    a reply is lost. A message the API's size limit would reject is a failed
+    send and sends nothing. Nothing from the settings or the response is
+    logged, because both may hold addresses.
 
     A configuration problem is a plain notice and sends nothing. A failed
     send is an error annotation on the run, and it fails the step only when
@@ -368,9 +397,17 @@ def send_email(subject, body, env, timeout=EMAIL_TIMEOUT):
     reply_to = configured_addresses(env["OPS_EMAIL_REPLY_TO"])
     payload = {"to": recipients, "from": senders[0], "subject": subject, "text": body,
                "reply_to": reply_to[0]}
+    if attachment is not None:
+        payload["attachments"] = [attachment]
+    message = json.dumps(payload).encode()
+    if len(message) > EMAIL_MAX_BYTES:
+        # The attachment cap keeps a real report well under this; the guard
+        # only rejects a message the API would refuse.
+        print("::error::Email delivery failed (the message exceeds the 25 MiB API limit).", file=sys.stderr)
+        return False
     request = urllib.request.Request(
         EMAIL_API.format(account=urllib.parse.quote(account, safe="")), method="POST",
-        data=json.dumps(payload).encode(),
+        data=message,
         headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"})
     reply = None
     for attempt in range(EMAIL_RETRIES + 1):
@@ -557,7 +594,9 @@ def main(argv=None, env=os.environ):
     subject = f"[Speedle {policy['title']}] {'PASSED' if ok else 'FAILED'}"
     email_failed = False
     try:
-        email_failed = not send_email(subject, email_text(report, run_url), env)
+        email_failed = not send_email(subject, email_text(report, run_url), env,
+                                      attachment=report_attachment(
+                                          REPORT_FILENAME.format(kind=args.kind), report))
     except Exception as error:
         # A notification bug must not skip the summary and failure tracking.
         email_failed = True
