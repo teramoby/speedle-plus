@@ -745,11 +745,12 @@ func TestConditionConformanceInjectedTypesAndValues(t *testing.T) {
 		t.Fatalf("request_time = %T, want int64", result.Attributes["request_time"])
 	}
 	// populateContext reads the clock once per request, so request_time must
-	// fall inside this call's window. Allow one second per side for whole-second
-	// truncation and a clock adjustment during the call; a cached or
-	// construction-time instant fails well outside it.
-	if timestamp < before-1 || timestamp > after+1 {
-		t.Fatalf("request_time %d is outside the request window [%d,%d]", timestamp, before-1, after+1)
+	// fall inside this call's window. Unix() truncates and before/after are
+	// sampled around the same call, so an uncached read needs no slack; a
+	// cached or construction-time instant fails the lower bound even when it
+	// differs from `before` by less than a second.
+	if timestamp < before || timestamp > after {
+		t.Fatalf("request_time %d is outside the request window [%d,%d]", timestamp, before, after)
 	}
 	instant := time.Unix(timestamp, 0).In(time.Local)
 	for name, want := range map[string]interface{}{
