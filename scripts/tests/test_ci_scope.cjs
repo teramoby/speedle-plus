@@ -294,9 +294,29 @@ test('the classifier fallback and output contract cover every route the workflow
   const step = script(ci, 'Classify changed files');
   const declared = step.match(/^route_keys="([^"]+)"$/m)[1].split(' ').sort();
   // Routes come from the scope step; needs.changes.outputs.full follows labels, not paths.
-  const read = [...new Set([...ci.matchAll(/\b(?:steps\.scope|needs\.changes)\.outputs\.([a-z_]+)/g)].map(match => match[1]))]
-    .filter(key => key !== 'full').sort();
-  assert.deepEqual(declared, read, 'route_keys must list exactly the routes that jobs read');
+  // Consumers read them in dotted or bracket form in job conditions, and the summary's
+  // Python reads them as outputs['<route>'] or from a tuple of names iterated with outputs[key].
+  const summary = script(ci, 'Verify the selected CI path');
+  const read = [...new Set([
+    ...[...ci.matchAll(/\b(?:steps\.scope|needs\.changes)\.outputs(?:\.([A-Za-z_][\w-]*)|\[\s*['"]([A-Za-z_][\w-]*)['"]\s*\])/g)].map(match => match[1] || match[2]),
+    ...[...summary.matchAll(/\boutputs\[\s*['"]([A-Za-z_][\w-]*)['"]\s*\]/g)].map(match => match[1]),
+    ...[...summary.matchAll(/\bfor\s+\w+\s+in\s+\(([^)]*)\)/g)].flatMap(match => [...match[1].matchAll(/['"]([A-Za-z_][\w-]*)['"]/g)].map(name => name[1])),
+  ])].filter(key => key !== 'full').sort();
+  assert.deepEqual(declared, read, 'route_keys must list exactly the routes that jobs and the summary read');
+  // Every job gated on a route output must be one the summary waits for and requires,
+  // or it could fail while the stable CI check stays green.
+  const needs = ci.match(/^  summary:\n[\s\S]*?^    needs: \[([^\]]+)\]/m)[1].split(',').map(name => name.trim());
+  const jobs = ci.split(/^jobs:\n/m)[1].split(/^(?=  [a-z][a-z0-9_-]*:\n)/m).map(block => block.match(/^  ([a-z][a-z0-9_-]*):\n/)?.[1] && block)
+    .filter(Boolean);
+  // A job's condition: its `if:` line plus any continuation lines indented below it.
+  const condition = block => block.match(/^    if:([^\n]*(?:\n {6,}[^\n]*)*)/m)?.[1] || '';
+  const gated = jobs.filter(block => /needs\.changes\.outputs/.test(condition(block)))
+    .map(block => block.match(/^  ([a-z][a-z0-9_-]*):/)[1]);
+  assert.ok(gated.length > 0, 'expected route-gated jobs');
+  for (const job of gated) {
+    assert.ok(needs.includes(job), `summary must wait for ${job}`);
+    assert.match(summary, new RegExp(`['"]${job}['"]`), `the summary's required list must name ${job}`);
+  }
   // Both the fallback and the contract check iterate the list instead of keeping their own copies.
   assert.match(step, /^route_all\(\) \{ local key; for key in \$\{route_keys\}; do echo "\$\{key\}=true"/m);
   assert.match(step, /for key in \$\{route_keys\}; do\n\s+count=\$\(grep -c "\^\$\{key\}=" "\$\{file\}"/);
