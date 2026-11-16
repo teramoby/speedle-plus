@@ -98,6 +98,18 @@ class ConditionCoverageReportTest(unittest.TestCase):
         self.assertTrue(failed)
         self.assertIn('audited source changed; re-audit required', output)
 
+    def test_missing_audited_sources_do_not_hide_other_failures(self):
+        extra = ('github.com/teramoby/speedle-plus/pkg/eval/condition/'
+                 'condition.go:2.1,2.2 1 0\n')
+        with tempfile.TemporaryDirectory() as missing_root, \
+                mock.patch.object(reporter, 'ROOT', Path(missing_root)):
+            failed, output = self.run_report(extra=extra)
+        self.assertTrue(failed)
+        self.assertEqual(output.count('ERROR: audited source unavailable:'),
+                         len(reporter.AUDITED_SOURCE_SHA256))
+        self.assertIn('ERROR: uncovered reachable block:', output)
+        self.assertIn('| File | Covered / statements |', output)
+
     def test_changed_excluded_sql_sources_fail(self):
         for file in ('EvaluableExpression_sql.go', 'expressionOutputStream.go'):
             with self.subTest(file=file), mock.patch.dict(reporter.AUDITED_SOURCE_SHA256, {file: 'changed'}):

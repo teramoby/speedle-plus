@@ -744,8 +744,13 @@ func TestConditionConformanceInjectedTypesAndValues(t *testing.T) {
 	if !ok {
 		t.Fatalf("request_time = %T, want int64", result.Attributes["request_time"])
 	}
+	// populateContext reads the clock once per request, so request_time must
+	// fall inside this call's window. The bounds are whole seconds sampled
+	// around the call, so an instant read more than one second before it fails
+	// the lower bound; sub-second staleness that truncates to the same second
+	// is not detectable from the int64 attribute.
 	if timestamp < before || timestamp > after {
-		t.Fatalf("request_time %d is outside request window [%d,%d]", timestamp, before, after)
+		t.Fatalf("request_time %d is outside the request window [%d,%d]", timestamp, before, after)
 	}
 	instant := time.Unix(timestamp, 0).In(time.Local)
 	for name, want := range map[string]interface{}{
