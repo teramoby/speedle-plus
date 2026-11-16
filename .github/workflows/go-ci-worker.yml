@@ -92,10 +92,12 @@ jobs:
 
           def documented_minimum(text):
               # Scope the search to the Prerequisites section so a version
-              # mentioned elsewhere in README cannot satisfy the guard, and
-              # accept any wording that names one release Go version there.
-              # README is pull-request content, so scan line by line and bound
-              # the digit runs to keep every regex linear on crafted input.
+              # mentioned elsewhere in README cannot satisfy the guard. Only a
+              # prerequisite line that starts with Go or Golang declares the
+              # minimum, so an unrelated version inside the section is ignored
+              # rather than allowed to satisfy or poison the guard. README is
+              # pull-request content, so scan line by line and bound the digit
+              # runs to keep every regex linear on crafted input.
               headings = []
               fenced = False
               offset = 0
@@ -121,16 +123,24 @@ jobs:
                       fenced = not fenced
                   elif not fenced:
                       prose.append(line)
+              declaration = re.compile(
+                  r'^[ \t]*(?:[-*+][ \t]+)?(?:Go|Golang)(?![0-9A-Za-z_])', re.IGNORECASE)
+              declared = [line for line in prose if declaration.match(line)]
+              if not declared:
+                  raise SystemExit('README Prerequisites must declare the Go minimum'
+                                   ' in a line starting with Go or Golang')
               versions = set()
-              for token in re.findall(r'(\d{1,4}\.\d{1,4}\.\d{1,4}[0-9A-Za-z.+_-]*)',
-                                      '\n'.join(prose)):
-                  release = token.rstrip('.')  # sentence period
-                  if release.endswith('+'):  # "1.27.4+" means "or newer"
-                      release = release[:-1]
-                  if not re.fullmatch(r'\d{1,4}\.\d{1,4}\.\d{1,4}', release):
-                      raise SystemExit(
-                          f'README Prerequisites names a non-release Go version {token.rstrip(".")}')
-                  versions.add(release)
+              for line in declared:
+                  # A download link on the declaration line is not a version.
+                  line = re.sub(r'<https?://[^>]*>|https?://\S+', ' ', line)
+                  for token in re.findall(r'(\d{1,4}\.\d{1,4}\.\d{1,4}[0-9A-Za-z.+_-]*)', line):
+                      release = token.rstrip('.')  # sentence period
+                      if release.endswith('+'):  # "1.27.4+" means "or newer"
+                          release = release[:-1]
+                      if not re.fullmatch(r'\d{1,4}\.\d{1,4}\.\d{1,4}', release):
+                          raise SystemExit(
+                              f'README Prerequisites names a non-release Go version {token.rstrip(".")}')
+                      versions.add(release)
               if len(versions) != 1:
                   raise SystemExit('README Prerequisites must name exactly one Go version,'
                                    f' found {sorted(versions) or "none"}')

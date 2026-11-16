@@ -141,7 +141,7 @@ brew install teramoby/tap/speedle
 
 The [Homebrew](https://engine.speedle.io/docs/deployment/homebrew/) page shows how to start the services and run a demo.
 
-With the [minimum Go toolchain for this module](#prerequisites):
+With a Go toolchain that meets the minimum in the installed release's `go.mod` (see [Prerequisites](#prerequisites) for a checkout):
 
 ```
 go install github.com/teramoby/speedle-plus/cmd/...@latest
