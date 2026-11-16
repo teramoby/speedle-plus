@@ -207,8 +207,11 @@ class DocumentedBuildTest(unittest.TestCase):
             retried.extend(calls[start:])
             return result
 
+        # Force the portable branch: CI runs Linux, where verify() re-executes
+        # itself in unprivileged namespaces instead of calling exercise().
         with mock.patch.object(QUICK_START, "run", run), \
                 mock.patch.object(QUICK_START, "run_with_retry", retry), \
+                mock.patch.object(QUICK_START.sys, "platform", "darwin"), \
                 mock.patch.object(QUICK_START, "exercise", return_value={"steps": [], "decisions": {}}):
             QUICK_START.verify("en", None, dict(os.environ))
         self.assertEqual(retried, [
