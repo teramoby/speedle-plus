@@ -359,6 +359,7 @@ test('CI discovers every script suite, isolates Docker config and propagates fai
       'test_reviewbot_commands.cjs',
       'test_reviewbot_handoff.cjs',
       'test_runner_routing.cjs',
+      'test_workflow_python_isolation.cjs',
     ];
     for (const name of requiredSuites) {
       assert.ok(fs.existsSync(path.join(root, 'scripts/tests', name)), `missing CI suite: ${name}`);
@@ -420,7 +421,7 @@ process.exit(process.env.FAIL_TOOL === ${JSON.stringify(tool)} && invocation ===
           assert.deepEqual([...call.args.slice(1)].sort(), [...expectedSuites].sort());
         } else {
           assert.equal(call.tool, 'python3');
-          assert.deepEqual(call.args, ['-m', 'unittest', 'discover', '-s', 'scripts/tests', '-p', 'test_*.py']);
+          assert.deepEqual(call.args, ['-I', '-m', 'unittest', 'discover', '-s', 'scripts/tests', '-p', 'test_*.py']);
         }
       }
       for (const call of recorded) {

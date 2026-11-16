@@ -69,14 +69,14 @@ jobs:
           package-manager-cache: false
 
       - name: Verify actual prompt construction with synthetic history
-        run: python3 scripts/tests/test_reviewbot_diff.py -v
+        run: python3 -I scripts/tests/test_reviewbot_diff.py -v
 
       - name: Verify response diagnostics and bounded retry with stubbed HTTP
-        run: python3 scripts/tests/test_reviewbot_response.py -v
+        run: python3 -I scripts/tests/test_reviewbot_response.py -v
 
       - name: Verify review handoff sealing and publication
         run: |
-          python3 scripts/tests/test_reviewbot_handoff.py -v
+          python3 -I scripts/tests/test_reviewbot_handoff.py -v
           node --test scripts/tests/test_reviewbot_handoff.cjs
 
       - name: Verify command authorization, replies and idempotence
@@ -375,7 +375,7 @@ jobs:
               exit 1
             fi
 
-            if python3 "${response_parser}" "${response_body}" "${review_result}" "${request_model}" "${provider}"; then
+            if python3 -I "${response_parser}" "${response_body}" "${review_result}" "${request_model}" "${provider}"; then
               break
             else
               response_status=$?

@@ -553,7 +553,7 @@ jobs:
               exit 1
             fi
 
-            if python3 "${response_parser}" "${response_body}" "${review_result}" "${request_model}" "${provider}"; then
+            if python3 -I "${response_parser}" "${response_body}" "${review_result}" "${request_model}" "${provider}"; then
               break
             else
               response_status=$?

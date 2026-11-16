@@ -4,6 +4,7 @@
 This is executed by the GitHub Actions runner, not a resident host service.
 The database, native PMS/ADS, CLI config and every listen port belong to this run.
 """
+import importlib.util
 import json
 import grp
 import os
@@ -18,7 +19,29 @@ import sys
 import tempfile
 import time
 import urllib.request
-from store_regression import run_regression
+
+
+def _load_sibling(name):
+    """Load a sibling script by path; -I keeps this directory off sys.path."""
+    if name in sys.modules:
+        return sys.modules[name]
+    path = Path(__file__).resolve().with_name(f"{name}.py")
+    if not path.is_file():
+        raise ImportError(f"missing sibling module {path}")
+    spec = importlib.util.spec_from_file_location(name, path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"cannot load sibling module {path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    try:
+        spec.loader.exec_module(module)
+    except BaseException:
+        sys.modules.pop(name, None)
+        raise
+    return module
+
+
+run_regression = _load_sibling("store_regression").run_regression
 
 ROOT = Path(__file__).resolve().parents[2]
 IMAGE = "mysql:8.4@sha256:a0225d1ea6631c8bc2385dc4c2faba17bbf1834ecf369e1659a9a382bd8d5dd7"
@@ -47,7 +70,8 @@ def ensure_docker_access():
             and os.environ.get("SPEEDLE_DOCKER_GROUP_REFRESHED") != "1"):
         print("Refreshing the runner account's existing docker group for this job.", flush=True)
         environment = dict(os.environ, SPEEDLE_DOCKER_GROUP_REFRESHED="1")
-        command = "exec " + shlex.join([sys.executable, str(Path(__file__).resolve()), *sys.argv[1:]])
+        isolated = ["-I"] if sys.flags.isolated else []
+        command = "exec " + shlex.join([sys.executable, *isolated, str(Path(__file__).resolve()), *sys.argv[1:]])
         os.execvpe("sg", ["sg", "docker", "-c", command], environment)
     raise RuntimeError("runner cannot access Docker; " + probe.stderr.strip())
 
