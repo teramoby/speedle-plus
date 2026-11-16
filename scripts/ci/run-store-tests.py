@@ -1,10 +1,25 @@
 #!/usr/bin/env python3
 """Run the shared four-backend regression against an explicitly provisioned store."""
+import importlib.util
 import json
 import os
 import secrets
+import sys
 from pathlib import Path
-from store_regression import run_regression
+
+
+def _load_sibling(name):
+    """Load a sibling script by path; -I keeps this directory off sys.path."""
+    if name in sys.modules:
+        return sys.modules[name]
+    spec = importlib.util.spec_from_file_location(name, Path(__file__).resolve().with_name(f"{name}.py"))
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+run_regression = _load_sibling("store_regression").run_regression
 
 
 def main():

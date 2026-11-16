@@ -387,7 +387,7 @@ jobs:
       - name: Clean owned MySQL containers
         if: always() && inputs.mode == 'nightly'
         run: |
-          python3 scripts/ci/run-mysql-tests.py --cleanup
+          python3 -I scripts/ci/run-mysql-tests.py --cleanup
 
       - name: Upload coverage
         if: always() && inputs.mode == 'test'
@@ -435,10 +435,10 @@ jobs:
         run: |
           set -euo pipefail
           toolchain=$(go env GOVERSION)
-          python3 website/tests/check_quick_start.py --toolchain "${toolchain}"
-          python3 website/tests/check_embedded.py --toolchain "${toolchain}" --candidate
+          python3 -I website/tests/check_quick_start.py --toolchain "${toolchain}"
+          python3 -I website/tests/check_embedded.py --toolchain "${toolchain}" --candidate
           go test -count=1 ./website/tests/docscheck
-          python3 website/tests/check_docs.py
+          python3 -I website/tests/check_docs.py
 
       # The default-branch worker keeps scheduling policy outside PR control.
       - name: Setup pinned Playground Go

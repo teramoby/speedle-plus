@@ -99,4 +99,4 @@ export STORE_TYPE=mongodb
 export SPEEDLE_REQUIRE_MYSQL=0
 export RESULTS_DIR="${RESULTS_DIR:-mongodb-results}"
 unset SPEEDLE_TEST_STORE_PROPS
-python3 scripts/ci/run-store-tests.py
+python3 -I scripts/ci/run-store-tests.py

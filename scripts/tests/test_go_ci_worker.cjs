@@ -640,7 +640,7 @@ const goTests = records => records.filter(r => r.tool === 'go' && r.args[0] === 
 test('gate runs every package once, only store-dependent packages again with etcd, then the coverage gate', () => {
   const {result, records: allRecords} = runSuite('test'); assert.equal(result.status, 0, result.stderr);
   const conditionReports = allRecords.filter(r => r.tool === 'python3' &&
-    (r.args[0] === 'scripts/ci/condition-conformance-report.py' || r.args.includes('test_condition_conformance_report.py')));
+    ((r.args[0] === '-I' && r.args[1] === 'scripts/ci/condition-conformance-report.py') || r.args.includes('test_condition_conformance_report.py')));
   // Check condition auditing separately from the existing documentation calls.
   const records = allRecords.filter(r => !conditionReports.includes(r));
   const [file, etcd] = goTests(records);
@@ -663,16 +663,16 @@ test('gate runs every package once, only store-dependent packages again with etc
   assert.deepEqual(matrix.args.slice(-3), ['./pkg/eval', '-run', '^TestConditionConformanceMatrix$']);
   assert.deepEqual(docs.args, ['test', '-count=1', './website/tests/docscheck']);
   assert.deepEqual(conditionReports.map(r => r.args), [
-    ['scripts/ci/condition-conformance-report.py', '--go-version', 'go1.27.4', profile, profile.replace(/coverage\.out$/, 'matrix.log')],
+    ['-I', 'scripts/ci/condition-conformance-report.py', '--go-version', 'go1.27.4', profile, profile.replace(/coverage\.out$/, 'matrix.log')],
     ['-I', '-m', 'unittest', 'discover', '-s', 'scripts/tests', '-p', 'test_condition_conformance_report.py'],
   ]);
   const gate = records.find(r => r.tool === 'python3');
-  assert.deepEqual(gate.args.slice(0, 6),
-    ['scripts/ci/coverage.py', 'coverage.out', '--merge', 'coverage-cli.out', '--min-file', 'scripts/ci/coverage-min.txt']);
+  assert.deepEqual(gate.args.slice(0, 7),
+    ['-I', 'scripts/ci/coverage.py', 'coverage.out', '--merge', 'coverage-cli.out', '--min-file', 'scripts/ci/coverage-min.txt']);
   assert.deepEqual(records.filter(r => r.tool === 'python3').slice(1).map(r => r.args), [
-    ['website/tests/check_quick_start.py', '--toolchain', 'go1.27.4'],
-    ['website/tests/check_embedded.py', '--toolchain', 'go1.27.4', '--candidate'],
-    ['website/tests/check_docs.py'],
+    ['-I', 'website/tests/check_quick_start.py', '--toolchain', 'go1.27.4'],
+    ['-I', 'website/tests/check_embedded.py', '--toolchain', 'go1.27.4', '--candidate'],
+    ['-I', 'website/tests/check_docs.py'],
   ]);
   for (const record of allRecords) {
     for (const key of cleanKeys) assert.equal(record.env[key], '', key);
@@ -733,7 +733,7 @@ test('nightly runs every suite even after a failure, records checks and fails at
   const {result, records, checks} = runSuite('nightly', {failMatching: 'go1.27.4'});
   assert.equal(result.status, 1);
   assert.equal(goTests(records).length, 0, 'every backend runs through the shared regression engine');
-  const file = records.find(r => r.tool === 'python3' && r.args[0] === 'scripts/ci/run-store-tests.py');
+  const file = records.find(r => r.tool === 'python3' && r.args[0] === '-I' && r.args[1] === 'scripts/ci/run-store-tests.py');
   assert.equal(file.env.STORE_TYPE, 'file'); assert.ok(file.env.RESULTS_DIR.endsWith('results'));
   for (const launcher of ['scripts/ci/validate-etcd.sh', 'scripts/ci/validate-mongodb.sh']) {
     assert.ok(records.some(r => r.tool === 'bash' && r.args[0] === launcher), launcher);
@@ -775,13 +775,13 @@ test('Docker guide checks use the account docker group the runner process lacks'
   const guides = ['website/tests/check_etcd.py', 'website/tests/check_mongodb.py'];
   const direct = runSuite('nightly');
   assert.equal(direct.result.status, 0, direct.result.stderr);
-  for (const guide of guides) assert.ok(direct.records.some(r => r.tool === 'python3' && r.args[0] === guide), guide);
+  for (const guide of guides) assert.ok(direct.records.some(r => r.tool === 'python3' && r.args[0] === '-I' && r.args[1] === guide), guide);
   assert.ok(!direct.records.some(r => r.tool === 'sg'));
   const {result, records, checks} = runSuite('nightly', {docker: 'group'});
   assert.equal(result.status, 0, result.stderr);
   for (const guide of guides) {
-    assert.ok(records.some(r => r.tool === 'sg' && r.args[0] === 'docker' && r.args[1] === '-c' && r.args[2] === `python3 ${guide} `), guide);
-    assert.ok(!records.some(r => r.tool === 'python3' && r.args[0] === guide), guide);
+    assert.ok(records.some(r => r.tool === 'sg' && r.args[0] === 'docker' && r.args[1] === '-c' && r.args[2] === `python3 -I ${guide} `), guide);
+    assert.ok(!records.some(r => r.tool === 'python3' && r.args[0] === '-I' && r.args[1] === guide), guide);
   }
   assert.match(checks, /^etcd-docs=0:etcd-docs\.log$/m); assert.match(checks, /^mongodb-docs=0:mongodb-docs\.log$/m);
   const none = runSuite('nightly', {docker: 'none'});
@@ -791,9 +791,9 @@ test('weekly tests the current supported Go release, compares benchmarks with th
   const {result, records, checks} = runSuite('weekly'); assert.equal(result.status, 0, result.stderr);
   assert.equal(goTests(records)[0].env.GOTOOLCHAIN, 'go1.27.4');
   assert.ok(goTests(records).some(r => r.args.includes('feature_stress') && r.args.includes('^TestFeatureLargePolicyRoleSets$')));
-  const bench = records.find(r => r.tool === 'python3' && r.args[0] === 'scripts/ci/benchmark.py');
+  const bench = records.find(r => r.tool === 'python3' && r.args[0] === '-I' && r.args[1] === 'scripts/ci/benchmark.py');
   assert.ok(bench, 'the benchmark comparison runs');
-  assert.equal(bench.args[1], '--results');
+  assert.equal(bench.args[2], '--results');
   assert.match(checks, /^performance=0:performance\.log$/m);
   assert.match(checks, /^staticcheck=0:staticcheck\.log$/m);
   // A performance regression fails the weekly run but not the checks after it.
@@ -935,8 +935,8 @@ test('unlabeled content build selects documentation checks and propagates walkth
       assert.equal(calls.length, failure ? commands.indexOf(failure) + 2 : 5);
       if (!failure) {
         assert.deepEqual(calls.slice(1), [
-          [commands[0], '--toolchain', 'go1.26.11'], [commands[1], '--toolchain', 'go1.26.11', '--candidate'],
-          ['test', '-count=1', commands[2]], [commands[3]],
+          ['-I', commands[0], '--toolchain', 'go1.26.11'], ['-I', commands[1], '--toolchain', 'go1.26.11', '--candidate'],
+          ['test', '-count=1', commands[2]], ['-I', commands[3]],
         ]);
       }
     }

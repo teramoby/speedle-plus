@@ -122,7 +122,7 @@ case "${mode}" in
     SPEEDLE_CLI_COVERPROFILE="${PWD}/coverage-cli.out" STORE_TYPE=file \
       go test -p 1 -count=1 -timeout 300s -coverprofile=coverage.out "${pkgs[@]}"
     STORE_TYPE=etcd go test -p 1 -count=1 -timeout 300s "${store_dependent[@]}"
-    python3 scripts/ci/coverage.py coverage.out --merge coverage-cli.out \
+    python3 -I scripts/ci/coverage.py coverage.out --merge coverage-cli.out \
       --min-file scripts/ci/coverage-min.txt "${pkgs[@]}"
     # The fork's tests are outside packages()'s product-package list. Run the
     # condition suite and its statement audit explicitly, retaining the global
@@ -131,10 +131,10 @@ case "${mode}" in
     # Read the candidate's documentation on every run. These execute the actual
     # fenced commands/program/policy blocks; failures block the same test job.
     toolchain=$(go env GOVERSION)
-    python3 website/tests/check_quick_start.py --toolchain "${toolchain}"
-    python3 website/tests/check_embedded.py --toolchain "${toolchain}" --candidate
+    python3 -I website/tests/check_quick_start.py --toolchain "${toolchain}"
+    python3 -I website/tests/check_embedded.py --toolchain "${toolchain}" --candidate
     go test -count=1 ./website/tests/docscheck
-    python3 website/tests/check_docs.py
+    python3 -I website/tests/check_docs.py
     ;;
   nightly)
     mkdir -p "${results}"; : > "${results}/checks.txt"
@@ -159,7 +159,7 @@ case "${mode}" in
       case "${trial_inputs}" in *stores_only=1*) stores_only=true ;; esac
     fi
     if [[ "${mysql_only}" == true ]]; then
-      check mysql-full python3 scripts/ci/run-mysql-tests.py
+      check mysql-full python3 -I scripts/ci/run-mysql-tests.py
       check ci-script-tests bash -c 'python3 -I -m unittest discover -s scripts/tests -p "test_*.py" && node --test scripts/tests/*.cjs'
       exit "${failed}"
     fi
@@ -171,19 +171,19 @@ case "${mode}" in
     # Every backend runs the identical regression; the launchers only provision
     # the store, and the engine writes <backend>-*.json into RESULTS_DIR.
     export RESULTS_DIR="${results}"
-    check file-full env STORE_TYPE=file python3 scripts/ci/run-store-tests.py
+    check file-full env STORE_TYPE=file python3 -I scripts/ci/run-store-tests.py
     check etcd-full bash scripts/ci/validate-etcd.sh
-    check mysql-full python3 scripts/ci/run-mysql-tests.py
+    check mysql-full python3 -I scripts/ci/run-mysql-tests.py
     check mongodb-full bash scripts/ci/validate-mongodb.sh
     # Manual candidate validation can omit notification/report side effects.
     if [[ "${stores_only}" == true ]]; then
       check ci-script-tests bash -c 'python3 -I -m unittest discover -s scripts/tests -p "test_*.py" && node --test scripts/tests/*.cjs'
       exit "${failed}"
     fi
-    check etcd-docs with_docker python3 website/tests/check_etcd.py
-    check mongodb-docs with_docker python3 website/tests/check_mongodb.py
+    check etcd-docs with_docker python3 -I website/tests/check_etcd.py
+    check mongodb-docs with_docker python3 -I website/tests/check_mongodb.py
     for toolchain in "${all_toolchains[@]}"; do
-      check "quick-start-${toolchain}" python3 website/tests/check_quick_start.py --toolchain "${toolchain}"
+      check "quick-start-${toolchain}" python3 -I website/tests/check_quick_start.py --toolchain "${toolchain}"
     done
     check govulncheck go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./pkg/... ./cmd/... ./api/...
     check ci-script-tests bash -c 'python3 -I -m unittest discover -s scripts/tests -p "test_*.py" && node --test scripts/tests/*.cjs'
@@ -195,10 +195,10 @@ case "${mode}" in
     set_race
     gotest_json go-file STORE_TYPE=file -- -p 1 -count=1 -timeout 600s "${race[@]}" "${pkgs[@]}"
     toolchain=$(go env GOVERSION)
-    check quick-start python3 website/tests/check_quick_start.py --toolchain "${toolchain}"
-    check embedded python3 website/tests/check_embedded.py --toolchain "${toolchain}" --candidate
+    check quick-start python3 -I website/tests/check_quick_start.py --toolchain "${toolchain}"
+    check embedded python3 -I website/tests/check_embedded.py --toolchain "${toolchain}" --candidate
     check docs-contract go test -count=1 ./website/tests/docscheck
-    check docs python3 website/tests/check_docs.py
+    check docs python3 -I website/tests/check_docs.py
     exit "${failed}"
     ;;
   weekly)
@@ -210,7 +210,7 @@ case "${mode}" in
     gotest_json feature-large STORE_TYPE=file SPEEDLE_STRESS_POLICIES=100000 -- -race -count=1 -timeout 1200s -tags feature_stress ./pkg/eval -run '^TestFeatureLargePolicyRoleSets$'
     # Evaluation speed against master as it stood in May 2026, measured on
     # this runner in this run (scripts/ci/benchmark.py).
-    check performance python3 scripts/ci/benchmark.py --results "${results}"
+    check performance python3 -I scripts/ci/benchmark.py --results "${results}"
     check staticcheck go run honnef.co/go/tools/cmd/staticcheck@v0.8.2 ./pkg/... ./cmd/... ./api/...
     exit "${failed}"
     ;;

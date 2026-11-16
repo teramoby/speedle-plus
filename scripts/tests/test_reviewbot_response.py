@@ -2,6 +2,7 @@
 """Run both real workflow shell blocks with synthetic Git and stubbed HTTP only."""
 
 import base64
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -13,7 +14,20 @@ import unittest
 
 sys.dont_write_bytecode = True
 
-from test_reviewbot_diff import ROOT, WORKFLOWS, workflow_script
+
+def _load_sibling(name):
+    """Load a sibling script by path; -I keeps this directory off sys.path."""
+    if name in sys.modules:
+        return sys.modules[name]
+    spec = importlib.util.spec_from_file_location(name, Path(__file__).resolve().with_name(f"{name}.py"))
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+_reviewbot_diff = _load_sibling("test_reviewbot_diff")
+ROOT, WORKFLOWS, workflow_script = _reviewbot_diff.ROOT, _reviewbot_diff.WORKFLOWS, _reviewbot_diff.workflow_script
 
 
 FIXTURES = ROOT / "scripts/tests/fixtures/reviewbot"

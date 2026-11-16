@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Execute the paired external-etcd guides against owned Docker fixtures."""
 import argparse
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -11,8 +12,22 @@ import subprocess
 import tempfile
 import time
 import socket
+import sys
 
-from check_mysql import port, stop
+
+def _load_sibling(name):
+    """Load a sibling script by path; -I keeps this directory off sys.path."""
+    if name in sys.modules:
+        return sys.modules[name]
+    spec = importlib.util.spec_from_file_location(name, Path(__file__).resolve().with_name(f"{name}.py"))
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+_check_mysql = _load_sibling("check_mysql")
+port, stop = _check_mysql.port, _check_mysql.stop
 
 ROOT = Path(__file__).resolve().parents[2]
 PAGE = ROOT / "docs/hugo/content/docs/store/etcd.md"
