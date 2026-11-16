@@ -97,7 +97,7 @@ test('documented Go toolchain guard runs after checkout and setup and rejects ve
   // Capture same-line indentation only: `\s` would also match a newline.
   assert.deepEqual([...source.matchAll(/^([ \t]*)GOTOOLCHAIN: (.*)$/gm)].map(match => [match[1], match[2]]),
     [['      ', 'local']], 'only the job-level env may pin GOTOOLCHAIN');
-  assert.match(script('Verify documented Go toolchain'), /^python3 -I - <<'PYTHON'$/m,
+  assert.match(script('Verify documented Go toolchain'), /^python3 -I -P - <<'PYTHON'$/m,
     'the documented-toolchain check must run Python in isolated mode');
 
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-go-toolchain-'));
@@ -536,7 +536,7 @@ const fail=process.env.FIXTURE_FAIL;process.exit(fail&&a.join(' ').includes(fail
       PATH: `${directory}${path.delimiter}${process.env.PATH}`, FIXTURE_CALLS: calls,
       FIXTURE_GOPATH: directory, FIXTURE_LIST_EXIT: String(listExit), FIXTURE_FAIL: failMatching, FIXTURE_DOCKER: docker, FIXTURE_REAL_BASH: realBash,
     }});
-    const records = fs.existsSync(calls) ? fs.readFileSync(calls, 'utf8').trim().split('\n').map(line => JSON.parse(line)).filter(r => !(r.tool === 'python3' && r.args[0] === '-I' && r.args[1] === '-')) : [];
+    const records = fs.existsSync(calls) ? fs.readFileSync(calls, 'utf8').trim().split('\n').map(line => JSON.parse(line)).filter(r => !(r.tool === 'python3' && r.args[0] === '-I' && r.args[1] === '-P' && r.args[2] === '-')) : [];
     const checks = fs.existsSync(path.join(work, 'results', 'checks.txt')) ? fs.readFileSync(path.join(work, 'results', 'checks.txt'), 'utf8') : '';
     return {result, records, checks, directory};
   } finally {fs.rmSync(directory, {recursive: true, force: true}); fs.rmSync(path.join(repoRoot, 'coverage.out'), {force: true});}
@@ -704,12 +704,12 @@ async function freePorts(excluded = []) {
 function guard(ports) {
   const selected = step('Run Go tests');
   assert.match(selected, /flock -w 7200 9/);
-  const body = script('Run Go tests').match(/python3 -I - <<'PYTHON'\n([\s\S]+?)\nPYTHON/)?.[1];
+  const body = script('Run Go tests').match(/python3 -I -P - <<'PYTHON'\n([\s\S]+?)\nPYTHON/)?.[1];
   assert.ok(body); assert.equal((body.match(/for port in \(2379, 2380, 27017, 6733, 6734\):/g) || []).length, 1);
   assert.equal(new Set(ports).size, 5);
   for (const port of ports) assert.ok(![2379, 2380, 27017, 6733, 6734].includes(port));
   const remapped = body.replace('for port in (2379, 2380, 27017, 6733, 6734):', `for port in (${ports.join(', ')}):`);
-  return spawnSync('python3', ['-I', '-c', remapped], {encoding: 'utf8'});
+  return spawnSync('python3', ['-I', '-P', '-c', remapped], {encoding: 'utf8'});
 }
 test('actual service guard accepts five free test-owned ephemeral ports', async () => {
   const result = guard(await freePorts()); assert.equal(result.status, 0, result.stderr);

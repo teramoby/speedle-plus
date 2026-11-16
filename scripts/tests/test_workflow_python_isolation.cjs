@@ -1,9 +1,8 @@
 /* Inline workflow Python must not import from the checkout or runner-local paths.
  *
- * Every inline invocation must pass -I. On Python 3.11+ -I also implies -P,
- * which keeps the working directory off sys.path for -c and stdin code; on
- * 3.9/3.10 it does not, so these steps assume a runner python3 >= 3.11
- * (ubuntu-latest ships 3.12+). */
+ * Every inline invocation must pass both -I and -P. From Python 3.11 -P keeps
+ * the working directory off sys.path for -c and stdin code (and -I implies it);
+ * older interpreters reject -P and fail closed instead of running unisolated. */
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -222,7 +221,9 @@ function redirectLength(tokens, index) {
 
 function inspectPython(tokens, index, findings) {
   let isolated = false;
+  let safePath = false;
   const interpreter = tokens[index];
+  const report = kind => findings.push({line: interpreter.line, kind, isolated, safePath});
   for (let current = index + 1; current < tokens.length;) {
     // Redirections never decide what Python executes; skip them and their
     // operand so a script file with redirected input stays a file execution.
@@ -232,21 +233,23 @@ function inspectPython(tokens, index, findings) {
     if (token.type !== 'word') {current++; continue;}
     const value = token.value;
     if (value === '-') {
-      findings.push({line: interpreter.line, kind: 'stdin', isolated});
+      report('stdin');
       return;
     }
     if (value.startsWith('-c')) {
-      findings.push({line: interpreter.line, kind: 'command', isolated});
+      report('command');
       return;
     }
     const clustered = value.match(/^-([BbEhiIOoPqRsStuUvVx]*)(c)$/);
     if (clustered) {
-      if (clustered[1].includes('I')) isolated = true;
-      findings.push({line: interpreter.line, kind: 'command', isolated});
+      isolated = isolated || clustered[1].includes('I');
+      safePath = safePath || clustered[1].includes('P');
+      report('command');
       return;
     }
     if (/^-[BbEhiIOoPqRsStuUvVx]+$/.test(value)) {
-      if (value.includes('I')) isolated = true;
+      isolated = isolated || value.includes('I');
+      safePath = safePath || value.includes('P');
       current++;
       continue;
     }
@@ -257,7 +260,7 @@ function inspectPython(tokens, index, findings) {
     return;
   }
   // No script argument: Python executes its standard input.
-  findings.push({line: interpreter.line, kind: 'stdin', isolated});
+  report('stdin');
 }
 
 function inspectSource(source, findings, depth = 0) {
@@ -326,6 +329,7 @@ test('every inline Python invocation in every workflow uses isolated mode', () =
   const invocations = files.flatMap(file => inlinePythonInvocations(fs.readFileSync(path.join(workflows, file), 'utf8'))
     .map(invocation => ({file, ...invocation})));
   assert.deepEqual(invocations.filter(invocation => !invocation.isolated), []);
+  assert.deepEqual(invocations.filter(invocation => !invocation.safePath), []);
 
   const expected = [
     ['ci.yml', 'stdin'],
@@ -362,43 +366,49 @@ function workflowWithRuns(scripts) {
 test('the guard covers interpreter spellings, paths, wrappers and heredoc forms', () => {
   const source = workflowWithSteps([
     blockStep("python3 - <<'PY'\nprint('stdin')\nPY"),
-    blockStep("python3 -I - <<'PY'\nprint('stdin')\nPY"),
+    blockStep("python3 -I -P - <<'PY'\nprint('stdin')\nPY"),
     blockStep("python3 <<'PY'\nprint('stdin')\nPY"),
-    blockStep("python3 -I <<'PY'\nprint('stdin')\nPY"),
-    blockStep("python3 -I<<'PY'\nprint('stdin')\nPY"),
+    blockStep("python3 -I -P <<'PY'\nprint('stdin')\nPY"),
+    blockStep("python3 -IP <<'PY'\nprint('stdin')\nPY"),
     blockStep("python <<'PY'\nprint('stdin')\nPY"),
     "- run: python3 -c'print(1)'",
-    "- run: /usr/bin/python3 -I -c 'print(1)'",
+    "- run: /usr/bin/python3 -I -P -c 'print(1)'",
     "- run: env python3 -c 'print(1)'",
-    "- run: /usr/bin/env python3 -I -c 'print(1)'",
-    "- run: sudo python3 -I -c 'print(1)'",
+    "- run: /usr/bin/env python3 -I -P -c 'print(1)'",
+    "- run: sudo python3 -I -P -c 'print(1)'",
     "- run: bash -c \"python3 -c 'print(1)'\"",
-    "- run: FOO=\"a b\" python3 -I -c 'print(1)'",
+    "- run: FOO=\"a b\" python3 -I -P -c 'print(1)'",
     "- run: python3 -c 'print(1)' 2>/dev/null",
-    "- run: python3 -I < input.txt",
+    "- run: python3 -I -P < input.txt",
+    "- run: python3 -IPc 'print(1)'",
     "- run: python -c 'print(1)'",
-    "- run: python -I -c 'print(1)'",
+    "- run: python -I -P -c 'print(1)'",
     "- run: python3.12 -c 'print(1)'",
+    "- run: python3 -I -c 'isolated without safe path'",
+    "- run: python3 -P -c 'safe path without isolated mode'",
   ]);
-  assert.deepEqual(inlinePythonInvocations(source).map(({kind, isolated}) => ({kind, isolated})), [
-    {kind: 'stdin', isolated: false},
-    {kind: 'stdin', isolated: true},
-    {kind: 'stdin', isolated: false},
-    {kind: 'stdin', isolated: true},
-    {kind: 'stdin', isolated: true},
-    {kind: 'stdin', isolated: false},
-    {kind: 'command', isolated: false},
-    {kind: 'command', isolated: true},
-    {kind: 'command', isolated: false},
-    {kind: 'command', isolated: true},
-    {kind: 'command', isolated: true},
-    {kind: 'command', isolated: false},
-    {kind: 'command', isolated: true},
-    {kind: 'command', isolated: false},
-    {kind: 'stdin', isolated: true},
-    {kind: 'command', isolated: false},
-    {kind: 'command', isolated: true},
-    {kind: 'command', isolated: false},
+  assert.deepEqual(inlinePythonInvocations(source).map(({kind, isolated, safePath}) => ({kind, isolated, safePath})), [
+    {kind: 'stdin', isolated: false, safePath: false},
+    {kind: 'stdin', isolated: true, safePath: true},
+    {kind: 'stdin', isolated: false, safePath: false},
+    {kind: 'stdin', isolated: true, safePath: true},
+    {kind: 'stdin', isolated: true, safePath: true},
+    {kind: 'stdin', isolated: false, safePath: false},
+    {kind: 'command', isolated: false, safePath: false},
+    {kind: 'command', isolated: true, safePath: true},
+    {kind: 'command', isolated: false, safePath: false},
+    {kind: 'command', isolated: true, safePath: true},
+    {kind: 'command', isolated: true, safePath: true},
+    {kind: 'command', isolated: false, safePath: false},
+    {kind: 'command', isolated: true, safePath: true},
+    {kind: 'command', isolated: false, safePath: false},
+    {kind: 'stdin', isolated: true, safePath: true},
+    {kind: 'command', isolated: true, safePath: true},
+    {kind: 'command', isolated: false, safePath: false},
+    {kind: 'command', isolated: true, safePath: true},
+    {kind: 'command', isolated: false, safePath: false},
+    {kind: 'command', isolated: true, safePath: false},
+    {kind: 'command', isolated: false, safePath: true},
   ]);
 });
 
@@ -415,8 +425,8 @@ test('the guard ignores non-run YAML, quoted data, comments, heredoc bodies and 
     'for tool in bash python3; do command -v "$tool"; done',
     "bash -c \"echo 'python3 -c quoted text'\"",
   ]);
-  assert.deepEqual(inlinePythonInvocations(source).map(({kind, isolated}) => ({kind, isolated})), [
-    {kind: 'stdin', isolated: false},
+  assert.deepEqual(inlinePythonInvocations(source).map(({kind, isolated, safePath}) => ({kind, isolated, safePath})), [
+    {kind: 'stdin', isolated: false, safePath: false},
   ]);
 });
 
@@ -436,25 +446,25 @@ jobs:
         env:
           run: python3 -c 'step environment, not a command'
         run: |
-          python3 -I -c 'real command'
+          python3 -I -P -c 'real command'
       -
-        run: python3 -I -c 'bare dash step'
+        run: python3 -I -P -c 'bare dash step'
     run: python3 -c 'job data after the step list'
 `;
-  assert.deepEqual(inlinePythonInvocations(source).map(({kind, isolated}) => ({kind, isolated})), [
-    {kind: 'command', isolated: true},
-    {kind: 'command', isolated: true},
+  assert.deepEqual(inlinePythonInvocations(source).map(({kind, isolated, safePath}) => ({kind, isolated, safePath})), [
+    {kind: 'command', isolated: true, safePath: true},
+    {kind: 'command', isolated: true, safePath: true},
   ]);
 });
 
 test('the guard reads standard block scalar headers', () => {
   const source = workflowWithSteps([
-    blockStep("python3 -c 'strip'", '|-'),
-    blockStep("python3 -c 'keep'", '|+'),
-    blockStep("python3 -c 'folded'", '>-'),
-    blockStep("python3 -c 'explicit indent'", '|2'),
-    blockStep("python3 -c 'explicit strip'", '|-2'),
-    blockStep("python3 -c 'comment'", '| # comment'),
+    blockStep("python3 -I -P -c 'strip'", '|-'),
+    blockStep("python3 -I -P -c 'keep'", '|+'),
+    blockStep("python3 -I -P -c 'folded'", '>-'),
+    blockStep("python3 -I -P -c 'explicit indent'", '|2'),
+    blockStep("python3 -I -P -c 'explicit strip'", '|-2'),
+    blockStep("python3 -I -P -c 'comment'", '| # comment'),
   ]);
   assert.deepEqual(inlinePythonInvocations(source).map(({kind}) => kind), [
     'command', 'command', 'command', 'command', 'command', 'command',

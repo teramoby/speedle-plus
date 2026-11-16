@@ -94,7 +94,7 @@ jobs:
             echo 'python3 is required for the documented Go toolchain check; install Python 3 on the runner.' >&2
             exit 1
           fi
-          python3 -I - <<'PYTHON'
+          python3 -I -P - <<'PYTHON'
           import re
           import stat
           import subprocess
@@ -212,7 +212,7 @@ jobs:
         env:
           PR_BASE: ${{ github.event.pull_request.base.sha }}
         run: |
-          python3 -I - <<'PYTHON'
+          python3 -I -P - <<'PYTHON'
           import os
           from pathlib import Path
           import subprocess
@@ -329,7 +329,7 @@ jobs:
           # port preflight and every service lifetime, never kill foreign jobs.
           exec 9>/tmp/speedle-plus-test-services.lock
           flock -w 7200 9
-          python3 -I - <<'PYTHON'
+          python3 -I -P - <<'PYTHON'
           import errno
           import socket
           for port in (2379, 2380, 27017, 6733, 6734):
@@ -402,7 +402,7 @@ jobs:
         env:
           PR_BASE: ${{ github.event.pull_request.base.sha }}
         run: |
-          python3 -I - <<'PYTHON'
+          python3 -I -P - <<'PYTHON'
           import os
           from pathlib import Path
           import subprocess
