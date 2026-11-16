@@ -86,6 +86,8 @@ jobs:
         run: node --test scripts/tests/test_reviewbot_automerge.cjs
 
       - name: Verify runner routing and shared-host port guards
+        env:
+          CONFIGURED_REVIEWBOT_RUNS_ON: ${{ vars.REVIEWBOT_RUNS_ON || '["self-hosted","speedle-runner"]' }}
         run: node --test scripts/tests/test_runner_routing.cjs
 
       - name: Verify protected CI worker and release publishing guards
@@ -575,8 +577,8 @@ jobs:
 
   automerge-dependabot:
     name: Auto-merge safe dependency update
-    # Keep at most one waiter running. GitHub retains only the newest pending
-    # waiter; docs/REVIEWBOT.md documents the rerun for a cancelled pending waiter.
+    # Wait on a hosted runner so a dependency PR never occupies a Speedle host,
+    # and group waiters per pull request so no other PR's run can displace one.
     needs: [review, publish]
     if: >-
       always() && !cancelled() && needs.review.result == 'success' &&
@@ -584,9 +586,9 @@ jobs:
       github.event.pull_request.user.login == 'dependabot[bot]' &&
       github.event.pull_request.head.repo.full_name == github.repository &&
       needs.review.outputs.safe_to_merge == 'true'
-    runs-on: ["self-hosted","Linux","X64","speedle-control"]
+    runs-on: ubuntu-24.04
     concurrency:
-      group: reviewbot-dependabot-automerge
+      group: reviewbot-dependabot-automerge-${{ github.event.pull_request.number }}
       cancel-in-progress: false
     timeout-minutes: 20
     permissions:

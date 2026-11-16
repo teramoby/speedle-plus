@@ -41,11 +41,10 @@ host never overlap. Each registration must use its own runner installation and
 work directory.
 
 The `speedle-control` label is carried by the two Linux runners,
-`charming-speedle-2` and `donkey-speedle`. ReviewBot's dependency merge waiter
-selects `[self-hosted, Linux, X64, speedle-control]`. Its shared job concurrency
-group permits only one running waiter, so waiters cannot occupy both Linux
-runners while their CI jobs are queued. See [ReviewBot](REVIEWBOT.md) for the
-pending-waiter replacement and rerun behavior.
+`charming-speedle-2` and `donkey-speedle`; no workflow currently routes on it.
+ReviewBot's dependency auto-merge job runs on GitHub-hosted `ubuntu-24.04` and
+groups its waiters per pull request, so an auto-merge wait never occupies a
+self-hosted runner. See [ReviewBot](REVIEWBOT.md) for its merge gates.
 
 The group also restricts access to these exact default-branch workflows:
 
@@ -70,7 +69,7 @@ directly select this runner or change the trusted worker's routing policy.
 | Weekly tests and benchmark comparison (`weekly.yml`) | `fiona-speedle`, serialized by the host test lock; its report job is GitHub-hosted |
 | ReviewBot human/bot same-repository PR analysis/publication | Any runner via `speedle-runner` |
 | ReviewBot fork PRs or unknown authors | GitHub-hosted |
-| Dependency auto-merge waiter | Either Linux runner via `speedle-control` |
+| Dependency auto-merge waiter | GitHub-hosted Ubuntu |
 | ReviewBot regression dispatch and authorized command analysis/publication | Any runner via `speedle-runner` |
 | Public comment authorization and unprivileged inline-comment pointer | GitHub-hosted |
 

@@ -18,24 +18,23 @@ jobs:
     # Quick uses QUICK_RUNS_ON (hosted Ubuntu by default). It starts no
     # integration services and supports Linux x64 and macOS ARM64.
     # Every other task but build and weekly goes to any Speedle runner
-    # (speedle-runner: both charming instances and fiona). Build needs the
-    # Linux Hugo release, so its default is the Linux pool. Weekly stays on
+    # (speedle-runner: charming-speedle-2, donkey-speedle and fiona). Build needs
+    # the Linux Hugo release, so its default is the Linux pool. Weekly stays on
     # fiona to reduce timing noise in its benchmark comparison; its label list
     # also names the macOS ARM64 platform, so a mislabelled Linux runner can
-    # never take it. The identity check also accepts donkey-speedle (Linux x64)
-    # for every task but weekly. The fiona host is registered once, as the
-    # repository runner fiona, and carries the fiona-speedle scheduling label
-    # used by weekly and MongoDB runs.
+    # never take it. The fiona host is registered once, as the repository runner
+    # fiona, and carries the fiona-speedle scheduling label used by weekly and
+    # MongoDB runs.
     # merge-head may reserve HEAD_RUNS_ON (a JSON string or labels array)
     # for full jobs, including build. That pool must supply an approved Linux
     # runner; identity checks still reject build on macOS. Scheduled weekly
     # jobs never use the PR-only override.
     # Without it, retain the existing task pools. Labels only select scheduling;
     # the trusted-event predicate and runner identity checks still apply.
-    # The host lock below keeps fixed-port tests from overlapping on the charming host.
+    # The host lock below keeps fixed-port tests from overlapping on shared hosts.
     runs-on: >-
       ${{ github.repository == 'teramoby/speedle-plus' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && github.ref == 'refs/heads/master') || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.event.sender.type == 'User' || github.event.sender.type == 'Bot')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.user.type == 'User' || github.event.pull_request.user.type == 'Bot'))) && fromJSON(inputs.mode == 'quick' && (vars.QUICK_RUNS_ON || '"ubuntu-latest"') || github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'merge-head') && vars.HEAD_RUNS_ON || inputs.mode == 'build' && '["self-hosted","Linux","X64","speedle-linux"]' || inputs.mode == 'weekly' && '["self-hosted","macOS","ARM64","fiona-speedle"]' || '["self-hosted","speedle-runner"]') || 'ubuntu-latest' }}
-    # test can wait on the host lock behind a nightly on the other charming runner.
+    # test can wait on the host lock behind a nightly on the same host.
     timeout-minutes: ${{ (inputs.mode == 'nightly' || inputs.mode == 'weekly' || inputs.mode == 'regression' || inputs.mode == 'test') && 150 || 30 }}
     # Never let a later go command pick another toolchain than the installed
     # and verified one; a go.mod requirement for a newer release must fail.
@@ -59,8 +58,8 @@ jobs:
           # Remove an identity only after its registration no longer carries
           # one: a job routed to that label would otherwise fail here before
           # it starts. scripts/tests/test_runner_routing.cjs derives the labels
-          # from every workflow and can reconcile the runner inventory with
-          # the registration API when it runs with a token.
+          # from every workflow and reconciles the runner inventory with the
+          # registration API when SPEEDLE_RUNNERS_LIVE=1.
           case "${RUNNER_NAME}/${RUNNER_OS}/${RUNNER_ARCH}" in
             charming-speedle-2/Linux/X64|donkey-speedle/Linux/X64)
               case "${CI_TASK}" in weekly) echo "Task ${CI_TASK} runs only on fiona." >&2; exit 1 ;; esac ;;

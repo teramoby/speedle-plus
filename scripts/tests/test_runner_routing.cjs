@@ -10,7 +10,6 @@ const vm = require('node:vm');
 const root = path.resolve(__dirname, '../..');
 const canonical = 'teramoby/speedle-plus';
 const labels = ['self-hosted', 'speedle-runner'];
-const controlLabels = ['self-hosted', 'Linux', 'X64', 'speedle-control'];
 const read = name => fs.readFileSync(path.join(root, '.github/workflows', name), 'utf8');
 const sources = {
   ci: read('ci.yml'), review: read('reviewbot.yml'),
@@ -113,7 +112,7 @@ test('review and command jobs retain their explicit runner policies and isolated
   for (const name of ['diff-regression']) assert.deepEqual(route(job.review[name]), labels);
   assert.equal(route(job.commands.prepare), 'ubuntu-24.04');
   for (const id of ['analyze', 'publish']) assert.deepEqual(route(job.commands[id]), labels);
-  assert.deepEqual(route(job.review['automerge-dependabot']), controlLabels);
+  assert.equal(route(job.review['automerge-dependabot']), 'ubuntu-24.04');
   assert.equal(route(job.inline.route), 'ubuntu-24.04');
   const lint = fs.readFileSync(path.join(root, '.github/actionlint.yaml'), 'utf8');
   for (const label of ['speedle-linux', 'speedle-control', 'speedle-runner', 'fiona-speedle']) {
@@ -168,13 +167,15 @@ test('REVIEWBOT_RUNS_ON overrides only the two model-calling ReviewBot jobs and 
   }
 
   assert.deepEqual(route(job.review['diff-regression'], github('workflow_dispatch'), customVars), labels);
-  assert.deepEqual(route(job.review['automerge-dependabot'], human, customVars), controlLabels);
+  assert.match(job.review['diff-regression'],
+    /CONFIGURED_REVIEWBOT_RUNS_ON: \$\{\{ vars\.REVIEWBOT_RUNS_ON/,
+    'the trusted regression validates the configured override without routing on it');
+  assert.equal(route(job.review['automerge-dependabot'], human, customVars), 'ubuntu-24.04');
   assert.equal(route(job.commands.prepare, github('issue_comment'), customVars), 'ubuntu-24.04');
   assert.deepEqual(route(job.commands.publish, github('issue_comment'), customVars), labels);
   assert.equal(route(job.inline.route, github('pull_request_review_comment'), customVars), 'ubuntu-24.04');
 
   for (const [name, block] of [
-    ['review.diff-regression', job.review['diff-regression']],
     ['review.publish', job.review.publish],
     ['review.automerge-dependabot', job.review['automerge-dependabot']],
     ['commands.prepare', job.commands.prepare],
@@ -287,8 +288,9 @@ const runnerInventory = [
     labels: ['self-hosted', 'Linux', 'X64', 'speedle-linux', 'speedle-control', 'speedle-runner', 'reviewbot']},
   {name: 'donkey-speedle', os: 'Linux', arch: 'X64',
     labels: ['self-hosted', 'Linux', 'X64', 'speedle-linux', 'speedle-control', 'speedle-runner', 'reviewbot']},
-  // The all-repositories aliyun-reviewbot group. No workflow routes a task to
-  // its labels, so a broad Linux route that reaches it fails these checks.
+  // The all-repositories aliyun-reviewbot group. Its labels serve ReviewBot for
+  // the whole organization; no workflow default route selects them, and a
+  // REVIEWBOT_RUNS_ON override that does is checked against this inventory.
   {name: 'ecs-light-teramoby', os: 'Linux', arch: 'X64',
     labels: ['self-hosted', 'Linux', 'X64', 'aliyun-ecs', 'reviewbot']},
   {name: 'fiona', os: 'macOS', arch: 'ARM64',
@@ -477,6 +479,37 @@ function scheduledHosts() {
   return runnerInventory.filter(runner => runner.labels.some(label => routingLabels.has(label)))
     .map(runner => `${runner.name}/${runner.os}/${runner.arch}`).sort();
 }
+// Runners the model-calling ReviewBot jobs may use: the dedicated
+// speedle-runner pool and the organization's ReviewBot runner group.
+const reviewBotLabels = new Set(['speedle-runner', 'reviewbot']);
+function reviewBotOverrideCandidates(raw) {
+  const values = JSON.parse(raw);
+  assert.ok(Array.isArray(values) && values.length > 0 &&
+    values.every(label => typeof label === 'string' && label.length > 0),
+  'REVIEWBOT_RUNS_ON must be a non-empty JSON array of labels');
+  assert.ok(values.some(label => reviewBotLabels.has(label)),
+    'REVIEWBOT_RUNS_ON must resolve through a ReviewBot or Speedle runner label');
+  const candidates = runnersFor(values);
+  assert.ok(candidates.length > 0,
+    'REVIEWBOT_RUNS_ON matches no runner in the recorded inventory');
+  for (const runner of candidates) {
+    assert.ok(runner.labels.some(label => reviewBotLabels.has(label)),
+      `REVIEWBOT_RUNS_ON can select ${runner.name}, outside the ReviewBot and Speedle pools`);
+  }
+  return candidates;
+}
+test('ReviewBot overrides resolve only to recorded ReviewBot runners', () => {
+  const orgGroup = JSON.stringify(['self-hosted', 'Linux', 'X64', 'reviewbot']);
+  assert.deepEqual(reviewBotOverrideCandidates(orgGroup).map(runner => runner.name),
+    ['charming-speedle-2', 'donkey-speedle', 'ecs-light-teramoby']);
+  assert.deepEqual(reviewBotOverrideCandidates(JSON.stringify(labels)).map(runner => runner.name),
+    ['charming-speedle-2', 'donkey-speedle', 'fiona']);
+  for (const raw of ['not-json', '{}', '[]', '["self-hosted",1]',
+    JSON.stringify(['self-hosted', 'Linux', 'X64', 'aliyun-ecs'])]) {
+    assert.throws(() => reviewBotOverrideCandidates(raw));
+  }
+  reviewBotOverrideCandidates(process.env.CONFIGURED_REVIEWBOT_RUNS_ON || JSON.stringify(labels));
+});
 test('both identity guards accept exactly the hosts a scheduling label can select', () => {
   const expected = scheduledHosts();
   assert.ok(expected.length >= 3, `the workflows must route to registered hosts, saw ${expected.join(', ')}`);
@@ -486,7 +519,7 @@ test('both identity guards accept exactly the hosts a scheduling label can selec
 test('the runner inventory covers every scheduling label the workflows declare', () => {
   const routes = declaredRoutes();
   assert.ok(routes.length >= 6, `the workflow scan must find the runner routes, saw ${routes.length}`);
-  for (const label of ['fiona-speedle', 'speedle-control', 'speedle-linux', 'speedle-macos', 'speedle-runner']) {
+  for (const label of ['fiona-speedle', 'speedle-linux', 'speedle-macos', 'speedle-runner']) {
     assert.ok(routingLabels.has(label), `the workflow scan must find the ${label} route`);
   }
   for (const {workflow, labels: routed} of routes) {

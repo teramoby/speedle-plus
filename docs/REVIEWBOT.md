@@ -23,20 +23,27 @@ execute, build or test PR code. By default, human- and bot-authored same-reposit
 on any self-hosted Speedle runner via `speedle-runner` (`charming-speedle-2`,
 `donkey-speedle` and `fiona`), while `REVIEWBOT_RUNS_ON` can override the
 runner labels of only the two model-calling jobs (`Analyze pull request` and
-`Analyze ReviewBot command`). Fork PRs and unknown author types always use GitHub-hosted
-`ubuntu-24.04`. Review publication, regression dispatch and comment-command
-publication continue to use the `speedle-runner` pool, and public comment authorization and the
-unprivileged inline pointer workflow remain hosted.
+`Analyze ReviewBot command`). The override must resolve only to the
+organization's ReviewBot runner group (`reviewbot`) or the dedicated
+`speedle-runner` pool; a broader label set could place provider credentials on
+an unrelated organization runner.
+Fork PRs and unknown author types always use GitHub-hosted `ubuntu-24.04`.
+Review publication, regression dispatch and comment-command publication
+continue to use the `speedle-runner` pool, and public comment authorization and
+the unprivileged inline pointer workflow remain hosted.
 See [runner configuration](RUNNERS.md).
 
-The dependency auto-merge waiter uses `speedle-control`, which both Linux
-runners carry. Its shared job concurrency group permits only one running waiter
-across dependency PRs, and `cancel-in-progress: false` protects that active
-waiter, so waiters cannot occupy both Linux runners while their CI jobs are
-queued. GitHub retains only the newest pending waiter in the group: when another
-waiter enters a full group, the older pending waiter is cancelled. A human must
-rerun that cancelled workflow if its auto-merge is still wanted. All review and
-CI merge gates remain required.
+The dependency auto-merge job runs on GitHub-hosted `ubuntu-24.04`, so waiting
+for dependency CI never occupies a Speedle host. Its job concurrency group
+includes the pull-request number: a waiter is queued only behind another run of
+the same pull request, never behind another dependency PR's run. A newer run for
+the same pull request supersedes a stale queued waiter, so the newest head
+always has a waiter, and a waiter for a superseded head stops when it observes
+that the head changed. The waiter re-reads the pull request, the `ci.yml`
+pull-request run for the exact head and its four required jobs, then merges with
+a squash at that exact head only after all of them succeed. Any other state
+fails the job visibly without merging. All review and CI merge gates remain
+required.
 
 ## Comment commands
 
@@ -95,11 +102,17 @@ reveal credentials, change repository settings, approve or merge PRs.
   `reviewbot.yml` for human- and bot-authored same-repository PRs, and `Analyze
   ReviewBot command` in `reviewbot-command.yml`); fork PRs and unknown author
   types remain on `ubuntu-24.04`, and every other job keeps its existing
-  `runs-on` configuration. Any runner selected through `REVIEWBOT_RUNS_ON` must
-  provide a GitHub Actions runner supporting Node 24-based actions (`2.327.1` or
-  newer), `bash`, `git`, `curl`, `jq`, `python3` (standard library only),
-  standard POSIX/GNU coreutils, and outbound HTTPS to GitHub and the active
-  provider endpoint.
+  `runs-on` configuration. These jobs receive provider credentials and have no
+  host identity check, so the value must resolve only to the organization's
+  ReviewBot runner group (`reviewbot`) or the dedicated `speedle-runner` pool.
+  A broader label set could select an unrelated organization runner. The
+  trusted `diff-regression` routing suite reads the configured value and
+  rejects a value with no ReviewBot or Speedle label, a label set that matches
+  no recorded runner, or a selection outside those two pools. Any selected
+  runner must also provide a GitHub Actions runner supporting Node 24-based
+  actions (`2.327.1` or newer), `bash`, `git`, `curl`, `jq`, `python3`
+  (standard library only), standard POSIX/GNU coreutils, and outbound HTTPS to
+  GitHub and the active provider endpoint.
 - Authentication for GitHub reads/reviews: the job-scoped `GITHUB_TOKEN`; no PAT
   or GitHub App installation is needed.
 
