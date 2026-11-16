@@ -9,9 +9,11 @@
    beacon); so does any local HTTP error, any local request that fails (a
    cancellation by the page is only reported, and only for types that cannot
    affect rendering, such as pings or media) and any page script error. The
-   check waits for the network to settle after load and then for one second
-   with no new request and no DOM change; axe must finish without the page
-   requesting anything. Serve a local copy of any resource the page needs.
+   check waits for the network to settle after load and then until no request
+   is in flight and one second has passed with no request starting or ending
+   and no DOM change; axe must finish without the page requesting anything.
+   WebSockets and web workers, which page.route cannot intercept, fail the
+   gate. Serve a local copy of any resource the page needs.
    Run from the repository root: node website/playground-engine/a11y-smoke.cjs
    Optional CHROMIUM_PATH selects a Chrome/Chromium binary. */
 const {chromium} = require('playwright');
@@ -66,8 +68,13 @@ const server = http.createServer((req,res)=>{
         const renderIrrelevant=new Set(['ping','manifest','eventsource','websocket','media','texttrack','cspreport','prefetch']);
         const parse=value=>{try {return new URL(value);} catch {return null;}};
         // Every request, with the time it started, and page script failures.
-        let requests=0, lastActivityAt=Date.now();
-        page.on('request',()=>{requests++;lastActivityAt=Date.now();});
+        let requests=0, pending=0, lastActivityAt=Date.now();
+        page.on('request',()=>{requests++;pending++;lastActivityAt=Date.now();});
+        const settled=()=>{pending=Math.max(0,pending-1);lastActivityAt=Date.now();};
+        page.on('requestfinished',settled);
+        page.on('requestfailed',settled);
+        // Requests from web workers can bypass page.route, so a page that starts one fails.
+        page.on('worker',worker=>problems.set(worker.url(),'web worker: its requests may bypass the route below'));
         page.on('pageerror',error=>{const key=`pageerror ${problems.size}`;problems.set(key,`page script error: ${error.message}`);});
         page.on('response',response=>{
           if (response.status()<400||problems.has(response.url())) return;
@@ -88,6 +95,9 @@ const server = http.createServer((req,res)=>{
           const list=[...problems].map(([url,reason])=>`${url} (${reason})`);
           assert.deepEqual(list,[],`the ${label} at ${width}px had problems ${when}: ${list.join(', ')}`);
         };
+        // WebSockets do not pass through page.route: refuse every one (it never reaches a server)
+        // and fail the gate.
+        await page.routeWebSocket(/.*/,ws=>{problems.set(ws.url(),'websocket: not allowed in the a11y smoke');ws.close().catch(()=>{});});
         // Consume every route outcome: a decision still in flight when the page closes must not
         // become an unhandled rejection that hides the real failure.
         await page.route('**/*',async route=>{
@@ -109,19 +119,21 @@ const server = http.createServer((req,res)=>{
         } catch (error) {
           throw new Error(`the ${label} at ${width}px kept the network busy for 15s after load`,{cause:error});
         }
-        // networkidle only means 500 ms without requests. Also require one second with no new
-        // request and no DOM change, so late styles (a timer or load handler) are in place.
+        // networkidle only means 500 ms without requests. Also require no request in flight and
+        // one second with no request starting or ending and no DOM change, so late styles (a
+        // timer or load handler, or a slow response) are in place.
         const settleBy=Date.now()+10000;
         for (let mutations=await page.evaluate(()=>window.__smokeMutations);;) {
           await page.waitForTimeout(250);
           const now=await page.evaluate(()=>window.__smokeMutations);
           if (now!==mutations) {mutations=now;lastActivityAt=Math.max(lastActivityAt,Date.now());}
-          if (Date.now()-lastActivityAt>=1000) break;
+          if (pending===0&&Date.now()-lastActivityAt>=1000) break;
           assert.ok(Date.now()<settleBy,`the ${label} at ${width}px did not settle (requests or DOM changes) within 10s after load`);
         }
         assert.ok(await page.$('main'),`the ${label} at ${width}px has no main element`);
         assert.equal(await page.evaluate(()=>Boolean(navigator.serviceWorker&&navigator.serviceWorker.controller)),false,`the ${label} at ${width}px is controlled by a service worker`);
         assertNoProblems('before the contrast check');
+        assert.equal(pending,0,`the ${label} at ${width}px still has requests in flight before the contrast check`);
         await page.addScriptTag({content:axeSource});
         const requestsBefore=requests;
         const report=await page.evaluate(async()=>{
