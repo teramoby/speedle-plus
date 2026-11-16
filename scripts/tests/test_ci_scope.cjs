@@ -151,7 +151,7 @@ test('change classification preserves raw Git paths and fails on diff errors', (
     assert.equal(failed.output, '', 'diff errors must not publish successful outputs');
   } finally { fs.rmSync(dir, {recursive: true, force: true}); }
 });
-test('CI discovers every script suite, isolates Docker config and propagates failures', () => {
+test('CI discovers every script suite, isolates Docker config and propagates failures from every invocation', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-script-suites-'));
   try {
     fs.mkdirSync(path.join(dir, 'bin'));
@@ -177,12 +177,20 @@ test('CI discovers every script suite, isolates Docker config and propagates fai
     for (const suite of suites) fs.writeFileSync(path.join(dir, 'scripts/tests', suite), '');
     fs.writeFileSync(path.join(dir, 'scripts/tests/test_future.py'), '');
     const record = path.join(dir, 'calls');
+    const counters = ['node', 'python3'].map(tool => `${record}.${tool}.count`);
     for (const tool of ['node', 'python3']) {
+      // FAIL_AT selects the one invocation that exits 7, so a failing bulk
+      // `node --test` run can be distinguished from a failing first run.
       fs.writeFileSync(path.join(dir, 'bin', tool), `#!${process.execPath}
 const fs = require('node:fs');
 const config = process.env.DOCKER_CONFIG;
 fs.appendFileSync(process.env.RECORD, JSON.stringify({tool: ${JSON.stringify(tool)}, args: process.argv.slice(2), config, files: fs.readdirSync(config)}) + '\\n');
-process.exit(process.env.FAIL_TOOL === ${JSON.stringify(tool)} ? 7 : 0);
+const counter = process.env.RECORD + '.${tool}.count';
+let invocation = 0;
+try { invocation = Number(fs.readFileSync(counter, 'utf8')); } catch {}
+invocation += 1;
+fs.writeFileSync(counter, String(invocation));
+process.exit(process.env.FAIL_TOOL === ${JSON.stringify(tool)} && invocation === Number(process.env.FAIL_AT || 0) ? 7 : 0);
 `);
       fs.chmodSync(path.join(dir, 'bin', tool), 0o755);
     }
@@ -194,24 +202,49 @@ process.exit(process.env.FAIL_TOOL === ${JSON.stringify(tool)} ? 7 : 0);
     assert.notEqual(run, -1, 'CI script test step missing');
     assert.ok(setup < run, 'Node setup must precede CI script tests');
     assert.match(block.slice(setup, run), /node-version: '22'/);
-    for (const failure of ['', 'node', 'python3']) {
+    const reset = () => {
       fs.writeFileSync(record, '');
-      const result = spawnSync('bash', ['-c', script(ci, 'Test CI scripts')], {cwd: dir, encoding: 'utf8', env: {...process.env,
-        PATH: path.join(dir, 'bin') + path.delimiter + process.env.PATH, RECORD: record, FAIL_TOOL: failure,
-        TMPDIR: temporary, DOCKER_CONFIG: '/unused-host-config'}});
-      assert.equal(result.status, failure ? 7 : 0, result.stderr);
-      const calls = fs.readFileSync(record, 'utf8').trim().split('\n').map(JSON.parse);
-      assert.deepEqual(calls[0].args, ['--test', 'scripts/tests/test_ci_scope.cjs']);
-      assert.equal(calls.length, failure === 'node' ? 1 : 3);
-      if (calls.length > 1) assert.deepEqual(calls[1].args, ['--test', ...globSuites.map(name => `scripts/tests/${name}`)]);
-      if (calls.length === 3) assert.deepEqual(calls[2].args, ['-m', 'unittest', 'discover', '-s', 'scripts/tests', '-p', 'test_*.py']);
-      for (const call of calls) {
+      for (const counter of counters) fs.rmSync(counter, {force: true});
+    };
+    const execute = (overrides = {}) => spawnSync('bash', ['-c', script(ci, 'Test CI scripts')], {cwd: dir, encoding: 'utf8', env: {...process.env,
+      PATH: path.join(dir, 'bin') + path.delimiter + process.env.PATH, RECORD: record, FAIL_TOOL: '', FAIL_AT: '',
+      TMPDIR: temporary, DOCKER_CONFIG: '/unused-host-config', ...overrides}});
+    const calls = () => fs.readFileSync(record, 'utf8').trim().split('\n').map(JSON.parse);
+    const verifyCalls = (recorded, expected) => {
+      assert.equal(recorded.length, expected);
+      assert.deepEqual(recorded[0].args, ['--test', 'scripts/tests/test_ci_scope.cjs']);
+      if (recorded.length > 1) assert.deepEqual(recorded[1].args, ['--test', ...globSuites.map(name => `scripts/tests/${name}`)]);
+      if (recorded.length === 3) assert.deepEqual(recorded[2].args, ['-m', 'unittest', 'discover', '-s', 'scripts/tests', '-p', 'test_*.py']);
+      for (const call of recorded) {
         assert.notEqual(call.config, '/unused-host-config');
         assert.equal(path.dirname(call.config), temporary);
         assert.match(path.basename(call.config), /^speedle-docker-config\.[A-Za-z0-9]+$/);
         assert.deepEqual(call.files, []);
         assert.equal(fs.existsSync(call.config), false, 'temporary Docker config must be cleaned on success and failure');
       }
+    };
+    const steps = [
+      {label: 'all invocations succeed', env: {}, status: 0, expected: 3},
+      {label: 'the inventory invocation fails', env: {FAIL_TOOL: 'node', FAIL_AT: '1'}, status: 7, expected: 1},
+      {label: 'the bulk invocation fails', env: {FAIL_TOOL: 'node', FAIL_AT: '2'}, status: 7, expected: 2},
+      {label: 'the python discovery invocation fails', env: {FAIL_TOOL: 'python3', FAIL_AT: '1'}, status: 7, expected: 3},
+    ];
+    for (const {label, env, status, expected} of steps) {
+      reset();
+      const result = execute(env);
+      assert.equal(result.status, status, `${label}\n${result.stderr}`);
+      verifyCalls(calls(), expected);
+    }
+    // An empty discovery glob must fail the step instead of running
+    // `node --test` with no paths, which falls back to Node's own discovery.
+    for (const leftover of [['test_ci_scope.cjs'], []]) {
+      for (const suite of [...suites, 'test_ci_scope.cjs']) fs.rmSync(path.join(dir, 'scripts/tests', suite), {force: true});
+      for (const suite of leftover) fs.writeFileSync(path.join(dir, 'scripts/tests', suite), '');
+      reset();
+      const result = execute();
+      assert.equal(result.status, 1, `${JSON.stringify(leftover)}\n${result.stderr}`);
+      assert.match(result.stderr, /no CI test suites discovered/);
+      verifyCalls(calls(), 1);
     }
   } finally {fs.rmSync(dir, {recursive: true, force: true});}
 });
