@@ -334,48 +334,134 @@ test('the classifier fallback and output contract cover every route the workflow
   assert.doesNotMatch(step, /cat "\$\{(?:routes|file)\}"/, 'the classifier output must not be forwarded wholesale');
   assert.doesNotMatch(step, /(?:go|website|docs|ci)=true/);
 });
-test('CI discovers every script suite, isolates Docker config and propagates failures', () => {
+test('CI discovers every script suite, isolates Docker config and propagates failures from every invocation', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-script-suites-'));
   try {
     fs.mkdirSync(path.join(dir, 'bin'));
     const temporary = path.join(dir, 'temp dir');
     fs.mkdirSync(temporary);
     fs.mkdirSync(path.join(dir, 'scripts/tests'), {recursive: true});
-    // Include new filenames to catch a return to an explicit subset of suites.
-    const suites = [...fs.readdirSync(path.join(root, 'scripts/tests')).filter(name => name.endsWith('.cjs')), 'test_future.cjs'].sort();
+    // This deletion canary is intentionally coupled to the current layout:
+    // update it in the same change as any suite rename, split or consolidation.
+    const requiredSuites = [
+      'test_ci_scope.cjs',
+      'test_go_ci_worker.cjs',
+      'test_pages_workflow.cjs',
+      'test_release_workflow.cjs',
+      'test_reviewbot_automerge.cjs',
+      'test_reviewbot_commands.cjs',
+      'test_reviewbot_handoff.cjs',
+      'test_runner_routing.cjs',
+    ];
+    for (const name of requiredSuites) {
+      assert.ok(fs.existsSync(path.join(root, 'scripts/tests', name)), `missing CI suite: ${name}`);
+    }
+    // Include new filenames to catch a return to an explicit subset of suites,
+    // including a name whose glob collation can differ from JavaScript sort().
+    const suites = [...fs.readdirSync(path.join(root, 'scripts/tests')).filter(name => name.endsWith('.cjs')), 'test_future.cjs', 'test_ReviewBot.cjs'].sort();
+    const globSuites = suites.filter(name => name !== 'test_ci_scope.cjs');
     for (const suite of suites) fs.writeFileSync(path.join(dir, 'scripts/tests', suite), '');
     fs.writeFileSync(path.join(dir, 'scripts/tests/test_future.py'), '');
     const record = path.join(dir, 'calls');
+    const counters = ['node', 'python3'].map(tool => `${record}.${tool}.count`);
     for (const tool of ['node', 'python3']) {
+      // FAIL_AT selects the one invocation that exits 7, so a failing bulk
+      // `node --test` run can be distinguished from a failing first run.
       fs.writeFileSync(path.join(dir, 'bin', tool), `#!${process.execPath}
 const fs = require('node:fs');
 const config = process.env.DOCKER_CONFIG;
 fs.appendFileSync(process.env.RECORD, JSON.stringify({tool: ${JSON.stringify(tool)}, args: process.argv.slice(2), config, files: fs.readdirSync(config)}) + '\\n');
-process.exit(process.env.FAIL_TOOL === ${JSON.stringify(tool)} ? 7 : 0);
+const counter = process.env.RECORD + '.${tool}.count';
+let invocation = 0;
+try { invocation = Number(fs.readFileSync(counter, 'utf8')); } catch {}
+invocation += 1;
+fs.writeFileSync(counter, String(invocation));
+process.exit(process.env.FAIL_TOOL === ${JSON.stringify(tool)} && invocation === Number(process.env.FAIL_AT || 0) ? 7 : 0);
 `);
       fs.chmodSync(path.join(dir, 'bin', tool), 0o755);
     }
     const block = job('changes');
     assert.match(block, /name: Test CI scripts\n        if: steps.scope.outputs.ci == 'true'/);
-    assert.ok(block.indexOf('Setup Node for CI script tests') < block.indexOf('Test CI scripts'));
-    for (const failure of ['', 'node', 'python3']) {
+    const setup = block.indexOf('Setup Node for CI script tests');
+    const run = block.indexOf('Test CI scripts');
+    assert.notEqual(setup, -1, 'Node setup step missing');
+    assert.notEqual(run, -1, 'CI script test step missing');
+    assert.ok(setup < run, 'Node setup must precede CI script tests');
+    assert.match(block.slice(setup, run), /node-version: '22'/);
+    const reset = () => {
       fs.writeFileSync(record, '');
-      const result = spawnSync('bash', ['-c', script(ci, 'Test CI scripts')], {cwd: dir, encoding: 'utf8', env: {...process.env,
-        PATH: path.join(dir, 'bin') + path.delimiter + process.env.PATH, RECORD: record, FAIL_TOOL: failure,
-        TMPDIR: temporary, DOCKER_CONFIG: '/unused-host-config'}});
-      assert.equal(result.status, failure ? 7 : 0, result.stderr);
-      const calls = fs.readFileSync(record, 'utf8').trim().split('\n').map(JSON.parse);
-      assert.deepEqual(calls[0].args, ['--test', ...suites.map(name => `scripts/tests/${name}`)]);
-      assert.equal(calls.length, failure === 'node' ? 1 : 2);
-      if (calls.length === 2) assert.deepEqual(calls[1].args, ['-m', 'unittest', 'discover', '-s', 'scripts/tests', '-p', 'test_*.py']);
-      for (const call of calls) {
+      for (const counter of counters) fs.rmSync(counter, {force: true});
+    };
+    const execute = (overrides = {}) => spawnSync('bash', ['-c', script(ci, 'Test CI scripts')], {cwd: dir, encoding: 'utf8', env: {...process.env,
+      PATH: path.join(dir, 'bin') + path.delimiter + process.env.PATH, RECORD: record, FAIL_TOOL: '', FAIL_AT: '',
+      TMPDIR: temporary, DOCKER_CONFIG: '/unused-host-config', ...overrides}});
+    const calls = () => {
+      const log = fs.readFileSync(record, 'utf8').trim();
+      return log ? log.split('\n').map(JSON.parse) : [];
+    };
+    const verifyCalls = (recorded, expected) => {
+      assert.equal(recorded.length, expected.length);
+      for (const [index, invocation] of expected.entries()) {
+        const call = recorded[index];
+        if (invocation === 'inventory') {
+          assert.equal(call.tool, 'node');
+          assert.deepEqual(call.args, ['--test', 'scripts/tests/test_ci_scope.cjs']);
+        } else if (invocation === 'bulk') {
+          assert.equal(call.tool, 'node');
+          assert.equal(call.args[0], '--test');
+          const expectedSuites = globSuites.map(name => `scripts/tests/${name}`);
+          assert.deepEqual([...call.args.slice(1)].sort(), [...expectedSuites].sort());
+        } else {
+          assert.equal(call.tool, 'python3');
+          assert.deepEqual(call.args, ['-m', 'unittest', 'discover', '-s', 'scripts/tests', '-p', 'test_*.py']);
+        }
+      }
+      for (const call of recorded) {
         assert.notEqual(call.config, '/unused-host-config');
         assert.equal(path.dirname(call.config), temporary);
         assert.match(path.basename(call.config), /^speedle-docker-config\.[A-Za-z0-9]+$/);
         assert.deepEqual(call.files, []);
         assert.equal(fs.existsSync(call.config), false, 'temporary Docker config must be cleaned on success and failure');
       }
+    };
+    const steps = [
+      {label: 'all invocations succeed', env: {}, status: 0, expected: ['inventory', 'bulk', 'python']},
+      {label: 'the inventory invocation fails', env: {FAIL_TOOL: 'node', FAIL_AT: '1'}, status: 7, expected: ['inventory']},
+      {label: 'the bulk invocation fails', env: {FAIL_TOOL: 'node', FAIL_AT: '2'}, status: 7, expected: ['inventory', 'bulk']},
+      {label: 'the python discovery invocation fails', env: {FAIL_TOOL: 'python3', FAIL_AT: '1'}, status: 7, expected: ['inventory', 'bulk', 'python']},
+    ];
+    for (const {label, env, status, expected} of steps) {
+      reset();
+      const result = execute(env);
+      assert.equal(result.status, status, `${label}\n${result.stderr}`);
+      verifyCalls(calls(), expected);
     }
+    for (const suite of suites) fs.rmSync(path.join(dir, 'scripts/tests', suite), {force: true});
+    // The inventory suite still runs when it is the only discovered suite;
+    // the empty bulk invocation is skipped rather than treated as no discovery.
+    fs.writeFileSync(path.join(dir, 'scripts/tests/test_ci_scope.cjs'), '');
+    reset();
+    const inventoryOnly = execute();
+    assert.equal(inventoryOnly.status, 0, inventoryOnly.stderr);
+    verifyCalls(calls(), ['inventory', 'python']);
+
+    // A completely empty glob must fail before either runner is invoked,
+    // rather than letting Node report a missing inventory file instead.
+    fs.rmSync(path.join(dir, 'scripts/tests/test_ci_scope.cjs'));
+    reset();
+    const empty = execute();
+    assert.equal(empty.status, 1, empty.stderr);
+    assert.match(empty.stderr, /no CI test suites discovered/);
+    verifyCalls(calls(), []);
+
+    // Another suite must not hide a missing inventory guard. Its dedicated
+    // diagnostic is emitted before either runner is invoked.
+    fs.writeFileSync(path.join(dir, 'scripts/tests/test_future.cjs'), '');
+    reset();
+    const missingInventory = execute();
+    assert.equal(missingInventory.status, 1, missingInventory.stderr);
+    assert.match(missingInventory.stderr, /CI scope guard suite scripts\/tests\/test_ci_scope\.cjs is missing/);
+    verifyCalls(calls(), []);
   } finally {fs.rmSync(dir, {recursive: true, force: true});}
 });
 test('actual summary blocks failed/cancelled/missing selected jobs and allows intentional skips', () => {
