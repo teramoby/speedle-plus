@@ -241,6 +241,28 @@ test('ignored label events and superseded runs do not replace an existing status
   assert.equal(supersededFixture.calls.filter(call => call.options.method === 'POST').length, 0);
 });
 
+test('workflow_run gate uses the default branch, Node 22 and minimal permissions', () => {
+  const workflow = fs.readFileSync(path.join(root, '.github/workflows/ci-route-gate.yml'), 'utf8');
+  assert.match(workflow, /^  workflow_run:\n    workflows: \[Speedle CI\]\n    types: \[completed\]$/m);
+  const permissions = workflow.match(/^permissions:\n((?:  [a-z-]+: (?:read|write)\n)+)/m)?.[1];
+  assert.equal(permissions, '  contents: read\n  statuses: write\n  actions: read\n');
+  assert.match(workflow, /^    if: github\.event\.workflow_run\.event == 'pull_request'$/m);
+  assert.match(workflow, /^  cancel-in-progress: false$/m);
+
+  const checkout = workflow.split('      - name: Checkout default branch\n')[1].split('      - name:')[0];
+  assert.match(checkout, /ref: \$\{\{ github\.event\.repository\.default_branch \}\}/);
+  assert.match(checkout, /persist-credentials: false/);
+  assert.doesNotMatch(checkout, /workflow_run\.head|pull_request/);
+  assert.match(workflow, /node-version: '22'/);
+  assert.match(workflow, /WORKFLOW_RUN_ID: \$\{\{ github\.event\.workflow_run\.id \}\}/);
+  assert.match(workflow, /run: node scripts\/ci\/ci-route-gate\.cjs --run-id "\$\{WORKFLOW_RUN_ID\}" --publish/);
+  assert.match(workflow, /GH_TOKEN: \$\{\{ github\.token \}\}/);
+  assert.doesNotMatch(workflow, /pull_request_target|secrets\.|actions\/upload-artifact/);
+  for (const match of workflow.matchAll(/^        uses: ([^\s]+)/gm)) {
+    assert.match(match[1], /^[^@]+@[0-9a-f]{40}$/);
+  }
+});
+
 test('command arguments require one explicit input and keep PR mode read-only', () => {
   assert.deepEqual(gate.parseArgs(['--run-id', '101', '--publish'], {GITHUB_REPOSITORY: repository}),
     {repository, runId: 101, publish: true});

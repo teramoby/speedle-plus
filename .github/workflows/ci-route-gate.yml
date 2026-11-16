@@ -1,0 +1,43 @@
+name: Speedle CI route gate
+
+on:
+  workflow_run:
+    workflows: [Speedle CI]
+    types: [completed]
+
+permissions:
+  contents: read
+  statuses: write
+  actions: read
+
+# Runs for one head are serialized. The script also ignores a run when a newer
+# run exists for the same head, so completion order cannot replace its result.
+concurrency:
+  group: ci-route-gate-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: CI route gate
+    if: github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout default branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+          package-manager-cache: false
+
+      - name: Verify completed CI routes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
+        run: node scripts/ci/ci-route-gate.cjs --run-id "${WORKFLOW_RUN_ID}" --publish
