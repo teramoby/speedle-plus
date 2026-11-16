@@ -21,7 +21,9 @@ if [[ -n "${base}" && "${base}" != 0000000000000000000000000000000000000000 ]] &
       website/*) website=true ;;
       .github/workflows/*|scripts/*) go=true ci=true ;;
       */*) go=true ;;
-      *.md) ;;
+      # Root Markdown includes README.md, whose toolchain requirement the CI
+      # script tests assert against go.mod; run those tests for it.
+      *.md) ci=true ;;
       *) go=true ;;
     esac
   done < "${changed}"

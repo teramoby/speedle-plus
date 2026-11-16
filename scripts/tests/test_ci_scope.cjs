@@ -121,7 +121,8 @@ test('change classification preserves raw Git paths and fails on diff errors', (
       ['pkg/a/文件.go', flags(true, false, false, false)],
       ['scripts/test with spaces.sh', flags(true, false, false, true)],
       ['.github/workflows/ci.yml', flags(true, false, false, true)],
-      ['README.md', flags(false, false, false, false)],
+      // Root Markdown runs the CI script tests, including the README/go.mod fixture.
+      ['README.md', flags(false, false, false, true)],
     ];
     let previous = base;
     for (const [file, expected] of cases) {

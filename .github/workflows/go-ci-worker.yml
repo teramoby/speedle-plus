@@ -78,7 +78,7 @@ jobs:
           cache: ${{ runner.environment != 'self-hosted' }}
 
       # Run the README/go.mod consistency check on the cheap PR paths; the
-      # repository-level regression in the changes job covers every change.
+      # repository-level regression in the changes job covers README changes.
       # CI exercises the exact minimum documented under README's Prerequisites
       # heading; user builds may use a newer release.
       - name: Verify documented Go toolchain
