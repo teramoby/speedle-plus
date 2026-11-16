@@ -11,12 +11,13 @@ the `teramoby` default group's access policy.
 the Linux runners also carry `speedle-linux`.
 
 The identity guard also accepts the retired `charming-speedle` name for tasks
-other than weekly. It is not a scheduling target and must not appear as a
-`runner_name`; weekly runs stay on `fiona-speedle`.
+other than weekly; no registered runner uses it. Weekly runs stay on
+`fiona-speedle`.
 
-ReviewBot selects `[self-hosted, speedle-runner]`, so `charming-speedle-2`,
-`donkey-speedle` and `fiona` may take it. Go lint, test, post-merge
-regression and the nightly use the same label. Go build
+ReviewBot selects `[self-hosted, speedle-runner]`, so `charming-speedle-2`
+and `fiona` may take it. Go lint, test, post-merge regression and the nightly
+use the same label, and the Go CI worker also accepts `donkey-speedle` for
+those tasks. Go build
 (it needs the Linux Hugo release and `sha256sum`) selects
 `[self-hosted, Linux, X64, speedle-linux]`. The weekly selects
 `[self-hosted, macOS, ARM64, fiona-speedle]` to reduce timing noise in its
