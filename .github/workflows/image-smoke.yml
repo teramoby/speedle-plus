@@ -44,7 +44,9 @@ jobs:
           ALWAYS_SMOKE: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'full-ci') || contains(github.event.pull_request.labels.*.name, 'merge-head') }}
           PR_BASE: ${{ github.event.pull_request.base.sha }}
         run: |
-          python3 - <<'PYTHON'
+          python3 -I - <<'PYTHON'
+          import sys; sys.flags.isolated or sys.exit("run with python3 -I"); sys.flags.optimize == 0 or sys.exit("python3 inline checks require optimization to be disabled")
+          import os; unsafe = any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p is not None); unsafe and sys.exit("python3 -I must exclude the checkout and working directory from sys.path")
           import os
           from pathlib import Path
           import subprocess
