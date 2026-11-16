@@ -398,7 +398,7 @@ test('identity check accepts the Speedle runners for the tasks each may run', ()
         encoding: 'utf8', env: {...process.env, RUNNER_NAME, RUNNER_OS, RUNNER_ARCH, CI_TASK},
       });
       const host = `${RUNNER_NAME}/${RUNNER_OS}/${RUNNER_ARCH}`;
-      const allowed = (['charming-speedle/Linux/X64', 'charming-speedle-2/Linux/X64', 'donkey-speedle/Linux/X64'].includes(host) && CI_TASK !== 'weekly') ||
+      const allowed = (['charming-speedle-2/Linux/X64', 'donkey-speedle/Linux/X64'].includes(host) && CI_TASK !== 'weekly') ||
         (host === 'fiona/macOS/ARM64' && CI_TASK !== 'build');
       assert.equal(result.status === 0, allowed, `${host}/${CI_TASK}: ${result.stderr}`);
     }
@@ -411,7 +411,7 @@ test('identity check accepts the Speedle runners for the tasks each may run', ()
     fs.chmodSync(git, 0o755);
     const result = spawnSync(realBash, ['-c', script('Verify self-hosted runner identity')], {
       encoding: 'utf8', env: {...process.env, PATH: directory,
-        RUNNER_NAME: 'charming-speedle', RUNNER_OS: 'Linux', RUNNER_ARCH: 'X64', CI_TASK: 'lint'},
+        RUNNER_NAME: 'charming-speedle-2', RUNNER_OS: 'Linux', RUNNER_ARCH: 'X64', CI_TASK: 'lint'},
     });
     assert.equal(result.status, 1, result.stderr);
     assert.match(result.stderr,

@@ -269,10 +269,6 @@ test('scheduled suites run through the worker and report from a hosted job', () 
   assert.doesNotMatch(sources.mongodb, /^  schedule:/m);
   assert.match(sources.mongodb, /^  workflow_dispatch:$/m);
 });
-// Registered runners and every label that can schedule work to them. Refresh
-// with the GitHub API when a runner is added, removed or relabelled:
-//   gh api orgs/teramoby/actions/runners --jq '.runners[] | {name, os, labels: [.labels[].name]}'
-//   gh api repos/teramoby/speedle-plus/actions/runners --jq '.runners[] | {name, os, labels: [.labels[].name]}'
 // Runners this repository can schedule and the labels its Go task routes
 // select. Only those scheduling labels are modelled; other labels on the same
 // registrations do not affect this check. Refresh from the runner API and its
@@ -283,9 +279,8 @@ test('scheduled suites run through the worker and report from a hosted job', () 
 //   gh api repos/teramoby/speedle-plus/actions/runners --jq '.runners[] | {name, os, labels: [.labels[].name]}'
 // A task routed to labels no registered runner carries would queue forever;
 // one routed to a runner the identity guard rejects fails before any test runs.
-// The guard also accepts the retired charming-speedle name, but that runner is
-// not registered, so it cannot be a scheduling candidate; test_go_ci_worker.cjs
-// pins the guard's full accepted-identity matrix.
+// The guard's accepted identities are compared with this inventory below, so a
+// registration change must update both.
 const runnerInventory = [
   {name: 'charming-speedle-2', os: 'Linux', arch: 'X64',
     labels: ['self-hosted', 'Linux', 'X64', 'speedle-linux', 'speedle-runner']},
@@ -307,7 +302,8 @@ function assertRoutedToAcceptedRunners(mode, event, routed) {
   assert.equal(routed[0], 'self-hosted', `${mode} on ${event} must select the self-hosted pool`);
   const candidates = runnerInventory.filter(runner => routed.every(label => runner.labels.includes(label)));
   assert.ok(candidates.length > 0,
-    `${mode} on ${event} selects ${routed.join(', ')}, which no registered runner carries`);
+    `${mode} on ${event} selects ${routed.join(', ')}, which no registered runner carries; `
+    + 'refresh runnerInventory from the API commands above');
   for (const runner of candidates) {
     const result = spawnSync('bash', ['-c', guard], {encoding: 'utf8',
       env: {...process.env, RUNNER_NAME: runner.name, RUNNER_OS: runner.os,
@@ -365,15 +361,12 @@ test('configured runner overrides can only land on runners the identity guard ac
   assert.deepEqual(route(job.worker.execute, {...github('push'), ref: 'refs/heads/master'}, overrides,
     {mode: 'regression'}), labels);
 });
-test('the identity guard accepts exactly the scheduling runners plus the retired alias', () => {
+test('the identity guard accepts exactly the registered scheduling runners', () => {
   const guard = script(job.worker.execute, 'Verify self-hosted runner identity');
   const accepted = [...guard.matchAll(/^ {2}((?:[\w.-]+\/[\w.-]+\/[\w.-]+)(?:\|[\w.-]+\/[\w.-]+\/[\w.-]+)*)\)$/gm)]
     .flatMap(match => match[1].split('|')).sort();
-  const expected = [
-    ...runnerInventory.filter(runner => runner.labels.includes('speedle-runner'))
-      .map(runner => `${runner.name}/${runner.os}/${runner.arch}`),
-    'charming-speedle/Linux/X64',
-  ].sort();
+  const expected = runnerInventory.filter(runner => runner.labels.includes('speedle-runner'))
+    .map(runner => `${runner.name}/${runner.os}/${runner.arch}`).sort();
   assert.deepEqual(accepted, expected);
 });
 test('the evaluator reads only own properties and opts into workflow inputs explicitly', () => {
@@ -413,7 +406,9 @@ test('fixture job installs pinned Node 22 before running Node regression suites'
   assert.match(setup, /node-version: '22'/);
   assert.ok(block.indexOf('Set up Node for regression tests') < block.indexOf('node --test'));
   const preflight = script(block, 'Verify runner identity and tools');
-  assert.match(preflight, /charming-speedle\/Linux\/X64\|charming-speedle-2\/Linux\/X64\|fiona\/macOS\/ARM64\) ;;/);
+  assert.match(preflight, /charming-speedle-2\/Linux\/X64\|fiona\/macOS\/ARM64\) ;;/);
+  assert.doesNotMatch(preflight, /charming-speedle\/Linux/,
+    'the retired charming-speedle identity must not pass the ReviewBot preflight');
   assert.doesNotMatch(preflight, /fiona-speedle\/macOS/, "the retired fiona-speedle runner name must not pass the identity check");
   assert.match(preflight, /\*\) echo 'Unexpected runner.' >&2; exit 1 ;;/);
   for (const tool of ['git', 'curl', 'jq', 'python3']) assert.ok(preflight.includes(tool));

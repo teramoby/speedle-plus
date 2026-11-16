@@ -6,18 +6,17 @@
 this public repository. It does not reuse or change `pavulabs` registrations or
 the `teramoby` default group's access policy.
 
-`fiona` (macOS ARM64) is registered to this repository and carries the
-`fiona-speedle` scheduling label. Every Speedle runner carries `speedle-runner`;
-the Linux runners also carry `speedle-linux`.
+`fiona` (macOS ARM64) carries the `fiona-speedle` scheduling label. Every
+Speedle runner carries `speedle-runner`; the Linux runners also carry
+`speedle-linux`.
 
-The identity guard also accepts the retired `charming-speedle` name for tasks
-other than weekly; no registered runner uses it. Weekly runs stay on
-`fiona-speedle`.
+Weekly runs stay on `fiona-speedle`.
 
-ReviewBot selects `[self-hosted, speedle-runner]`, so `charming-speedle-2`
-and `fiona` may take it. Go lint, test, post-merge regression and the nightly
-use the same label, and the Go CI worker also accepts `donkey-speedle` for
-those tasks. Go build
+ReviewBot selects `[self-hosted, speedle-runner]`, which `charming-speedle-2`,
+`donkey-speedle` and `fiona` carry; its regression fixture job accepts
+`charming-speedle-2` and `fiona`. Go lint, test, post-merge regression and the
+nightly use the same label, and the Go CI worker accepts `donkey-speedle` for
+those tasks as well. Go build
 (it needs the Linux Hugo release and `sha256sum`) selects
 `[self-hosted, Linux, X64, speedle-linux]`. The weekly selects
 `[self-hosted, macOS, ARM64, fiona-speedle]` to reduce timing noise in its
@@ -165,9 +164,9 @@ set from `validate-mongodb.sh`. Its results reach the nightly report.
 
 `mongodb-nightly-validation.yml` runs the MongoDB regression on demand through
 `workflow_dispatch`. It selects the `speedle-runner` label, which
-`charming-speedle-2`, `donkey-speedle` and `fiona` (macOS ARM64, the repository
-runner) carry, accepts macOS ARM64 or Linux x64, and shares the nightly's
-concurrency group, so the two never run at once on the etcd ports.
+`charming-speedle-2`, `donkey-speedle` and `fiona` (macOS ARM64) carry, accepts
+macOS ARM64 or Linux x64, and shares the nightly's concurrency group, so the two
+never run at once on the etcd ports.
 
 Shared integration fixtures select `file`, `etcd`, `mongodb` or `mysql` through
 `STORE_TYPE`. `SPEEDLE_TEST_STORE_PROPS` supplies backend connection properties;
