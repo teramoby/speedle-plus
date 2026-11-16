@@ -3,6 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "description": "Pinned browser dependencies for the Speedle site contrast gate",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "test:contrast": "node a11y-smoke.cjs"
   },
