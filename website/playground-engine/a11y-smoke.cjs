@@ -11,10 +11,11 @@
    affect rendering, such as pings or media). The check waits for the network
    to settle after load: no request in flight and one second with no request
    starting or ending (a page that keeps loading resources fails). It then
-   waits up to three seconds for the DOM to stop changing; a page that keeps
-   animating its DOM or its CSS, and any page script error, is only reported
-   in the PASS line; while the DOM or a CSS animation is still changing, axe
-   samples three moments 200 ms apart and a violation in any of them fails.
+   waits up to three seconds for the DOM and the stylesheets to stop
+   changing; a page that keeps animating its DOM, its CSS or its CSSOM, and
+   any page script error, is only reported in the PASS line; while the page
+   is still changing, axe samples three moments 200 ms apart and a violation
+   in any of them fails.
    From before axe is injected until the scan ends, the page must not
    request anything, and its styles (every stylesheet's rule text, media and
    disabled state) must not change.
@@ -132,38 +133,6 @@ const server = http.createServer((req,res)=>{
         } catch (error) {
           throw new Error(`the ${label} at ${width}px kept the network busy for 15s after load`,{cause:error});
         }
-        // networkidle only means 500 ms without requests. Require no request in flight and one
-        // second with no request starting or ending (bounded to 10 s: a page that keeps loading
-        // resources fails). Also wait up to 3 s for a quiet DOM: no DOM change and no running
-        // animation, since CSS animations and transitions change colours without a DOM mutation.
-        // The quiet gap must outlast the longest gap between changes seen so far, so a page that
-        // changes periodically is not mistaken for a still one. A page that keeps animating is
-        // only reported, and the scans below sample it three times.
-        const settleStart=Date.now();
-        const domState=()=>page.evaluate(()=>({mutations:window.__smokeMutations,runningAnimations:document.getAnimations().filter(animation=>animation.playState==='running').length}));
-        let state=await domState(), domQuietSince=Date.now(), longestChangeGap=0, domSettled=false;
-        for (;;) {
-          await page.waitForTimeout(250);
-          const now=await domState();
-          if (now.mutations!==state.mutations) {
-            const at=Date.now();
-            longestChangeGap=Math.max(longestChangeGap,at-domQuietSince);
-            domQuietSince=at;
-          }
-          state=now;
-          domSettled=Date.now()-domQuietSince>=Math.max(1000,longestChangeGap+250)&&state.runningAnimations===0;
-          const networkQuiet=pending===0&&Date.now()-lastRequestAt>=1000;
-          if (networkQuiet&&(domSettled||Date.now()-settleStart>=3000)) break;
-          assert.ok(Date.now()-settleStart<10000,`the ${label} at ${width}px kept loading resources for 10s after load`);
-        }
-        assert.ok(await page.$('main'),`the ${label} at ${width}px has no main element`);
-        assert.equal(await page.evaluate(()=>Boolean(navigator.serviceWorker&&navigator.serviceWorker.controller)),false,`the ${label} at ${width}px is controlled by a service worker`);
-        assertNoProblems('before the contrast check');
-        assert.equal(pending,0,`the ${label} at ${width}px still has requests in flight before the contrast check`);
-        // No request may start from here until the scan ends, including while axe is injected.
-        const requestsBefore=requests;
-        await page.addScriptTag({content:axeSource});
-        assert.equal(pending,0,`the ${label} at ${width}px started a request while axe was injected`);
         // The styles must not change while axe measures the page: each stylesheet (including
         // adopted ones), whether it is disabled, its media and a hash of all its rule text.
         const sheets=()=>page.evaluate(()=>{
@@ -182,28 +151,68 @@ const server = http.createServer((req,res)=>{
             return [name,sheet.disabled,sheet.media?sheet.media.mediaText:'',rules];
           }));
         });
+        // networkidle only means 500 ms without requests. Require no request in flight and one
+        // second with no request starting or ending (bounded to 10 s: a page that keeps loading
+        // resources fails). Also wait up to 3 s for a quiet DOM: no DOM change, no running
+        // animation and no change to the stylesheet fingerprint, since CSS animations and CSSOM
+        // edits change colours without a DOM mutation. The quiet gap must outlast the longest gap
+        // between changes seen so far, so a page that changes periodically is not mistaken for a
+        // still one. A page that keeps changing is only reported, and the scans below sample it
+        // three times.
+        const settleStart=Date.now();
+        const domState=async()=>({...await page.evaluate(()=>({mutations:window.__smokeMutations,runningAnimations:document.getAnimations().filter(animation=>animation.playState==='running').length})),sheets:await sheets()});
+        let state=await domState(), domQuietSince=Date.now(), longestChangeGap=0, domSettled=false;
+        for (;;) {
+          await page.waitForTimeout(250);
+          const now=await domState();
+          if (now.mutations!==state.mutations||now.sheets!==state.sheets) {
+            const at=Date.now();
+            longestChangeGap=Math.max(longestChangeGap,at-domQuietSince);
+            domQuietSince=at;
+          }
+          state=now;
+          domSettled=Date.now()-domQuietSince>=Math.max(1000,longestChangeGap+250)&&state.runningAnimations===0;
+          const networkQuiet=pending===0&&Date.now()-lastRequestAt>=1000;
+          if (networkQuiet&&(domSettled||Date.now()-settleStart>=3000)) break;
+          assert.ok(Date.now()-settleStart<10000,`the ${label} at ${width}px kept loading resources for 10s after load`);
+        }
+        assert.ok(await page.$('main'),`the ${label} at ${width}px has no main element`);
+        assert.equal(await page.evaluate(()=>Boolean(navigator.serviceWorker&&navigator.serviceWorker.controller)),false,`the ${label} at ${width}px is controlled by a service worker`);
+        assertNoProblems('before the contrast check');
+        assert.equal(pending,0,`the ${label} at ${width}px still has requests in flight before the contrast check`);
+        // No request may start from here until the scan ends, including while axe is injected.
+        const requestsBefore=requests;
+        await page.addScriptTag({content:axeSource});
+        assert.equal(pending,0,`the ${label} at ${width}px started a request while axe was injected`);
         const sheetsBefore=await sheets();
         // axe runs mostly synchronously, so it measures one moment of an animation. When the DOM
-        // has not settled, or any scan sees a DOM change or a running animation, sample three
-        // moments 200 ms apart: a violation in any scan fails the gate, so animation alone cannot
-        // fail it but cannot hide a contrast problem either. Once a change is seen the budget
-        // stays at three scans, even if a later scan happens to be still. Mutation counts carry
-        // over from the end of one scan to the next, so changes during the 200 ms gaps count too.
-        let mutationsAt=await page.evaluate(()=>window.__smokeMutations);
-        const scan=()=>page.evaluate(async before=>{
-          const runningAnimations=()=>document.getAnimations().filter(animation=>animation.playState==='running').length;
-          const animated=runningAnimations();
-          const result=await axe.run(document,{runOnly:{type:'rule',values:['color-contrast']}});
-          return {
-            violations:result.violations.flatMap(rule=>rule.nodes.map(node=>({target:node.target,summary:node.failureSummary}))),
-            unchecked:result.incomplete.flatMap(rule=>rule.nodes.map(node=>node.target)),
-            mutations:window.__smokeMutations-before,
-            reached:window.__smokeMutations,
-            animated:Boolean(animated||runningAnimations()),
-          };
-        },mutationsAt).then(result=>{mutationsAt=result.reached;return result;});
+        // has not settled, or any scan sees a DOM change, a running animation or a change to the
+        // stylesheet fingerprint, sample three moments 200 ms apart: a violation in any scan fails
+        // the gate, so animation alone cannot fail it but cannot hide a contrast problem either.
+        // Once a change is seen the budget stays at three scans, even if a later scan happens to be
+        // still. Mutation counts and the stylesheet fingerprint carry from the end of one scan into
+        // the next, so changes during the 200 ms gaps count too.
+        let mutationsAt=await page.evaluate(()=>window.__smokeMutations), sheetsAt=sheetsBefore;
+        const scan=async()=>{
+          const previousSheets=sheetsAt;
+          const result=await page.evaluate(async before=>{
+            const runningAnimations=()=>document.getAnimations().filter(animation=>animation.playState==='running').length;
+            const animated=runningAnimations();
+            const result=await axe.run(document,{runOnly:{type:'rule',values:['color-contrast']}});
+            return {
+              violations:result.violations.flatMap(rule=>rule.nodes.map(node=>({target:node.target,summary:node.failureSummary}))),
+              unchecked:result.incomplete.flatMap(rule=>rule.nodes.map(node=>node.target)),
+              mutations:window.__smokeMutations-before,
+              reached:window.__smokeMutations,
+              animated:Boolean(animated||runningAnimations()),
+            };
+          },mutationsAt);
+          mutationsAt=result.reached;
+          sheetsAt=await sheets();
+          return {...result,sheetsChanged:sheetsAt!==previousSheets};
+        };
         const scans=[await scan()];
-        while (scans.length<3&&(!domSettled||scans.some(result=>result.mutations>0||result.animated))) {
+        while (scans.length<3&&(!domSettled||scans.some(result=>result.mutations>0||result.animated||result.sheetsChanged))) {
           await page.waitForTimeout(200);
           scans.push(await scan());
         }
