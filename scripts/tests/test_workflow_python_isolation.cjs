@@ -113,7 +113,7 @@ test('the explicit workflow and CI-script inline-Python inventory is isolated an
   const files = sources();
   assert.ok(files.length > 0, 'no sources discovered');
   const invocations = files.flatMap(([file, absolute]) => inspectSource(file, fs.readFileSync(absolute, 'utf8')));
-  assert.equal(invocations.length, 21, 'discovered invocation count must match the reviewed inventory');
+  assert.equal(invocations.length, 22, 'discovered invocation count must match the reviewed inventory');
   assert.deepEqual(invocations.filter(invocation => !invocation.isolated), []);
   assert.deepEqual(invocations.filter(invocation => !invocation.guarded), []);
 
@@ -132,6 +132,7 @@ test('the explicit workflow and CI-script inline-Python inventory is isolated an
     ['.github/workflows/mongodb-nightly-validation.yml', 'command'],
     ['.github/workflows/mongodb-nightly-validation.yml', 'stdin'],
     ['scripts/ci/condition-conformance.sh', 'module'],
+    ['scripts/ci/run-go-tests.sh', 'command'],
     ['scripts/ci/run-go-tests.sh', 'command'],
     ['scripts/ci/run-go-tests.sh', 'command'],
     ['scripts/ci/run-go-tests.sh', 'stdin'],

@@ -334,24 +334,33 @@ if (args.length === 4 && args[0] === 'list' && args[1] === '-m' && args[2] === '
     const unsafeIsolation = path.join(directory, 'unsafe-isolation');
     fs.mkdirSync(unsafeIsolation);
     const unsafePython = path.join(unsafeIsolation, 'python3');
+    // Record the status Python exits with, so an interpreter path that fails
+    // before Python starts (127) cannot look like the guard rejecting a run.
     fs.writeFileSync(unsafePython, `#!/bin/sh
 if [ "$1" = "-I" ] && [ "$2" = "-c" ]; then
   code=$3
   shift 3
-  exec ${realPython} -I -c "import os,sys; sys.path.insert(0, os.environ['UNSAFE_PYTHON_PATH']); exec(sys.argv[1])" "$code" "$@"
+  "${realPython}" -I -c "import os,sys; sys.path.insert(0, os.environ['UNSAFE_PYTHON_PATH']); exec(sys.argv[1])" "$code" "$@"
+  status=$?
+  printf '%s\\n' "$status" >> "\${SHIM_MARKER}"
+  exit "$status"
 fi
-exit 0
+exit 1
 `);
     fs.chmodSync(unsafePython, 0o755);
     for (const unsafePath of ['', fs.realpathSync(directory), path.join(directory, 'checkout')]) {
+      const marker = path.join(directory, 'unsafe-marker');
+      fs.rmSync(marker, {force: true});
       const unsafe = spawnSync(realBash, ['-c', script('Verify documented Go toolchain')], {
         cwd: directory, encoding: 'utf8', env: {...process.env, PATH: unsafeIsolation,
-          GITHUB_WORKSPACE: path.join(directory, 'checkout'), UNSAFE_PYTHON_PATH: unsafePath},
+          GITHUB_WORKSPACE: path.join(directory, 'checkout'), UNSAFE_PYTHON_PATH: unsafePath,
+          SHIM_MARKER: marker},
       });
       assert.equal(unsafe.status, 1, unsafe.stderr);
       assert.match(unsafe.stderr,
         /python3 with safe -I support is required for isolated inline Python; install a Python 3 whose -I excludes the checkout and working directory from sys\.path\./);
       assert.doesNotMatch(unsafe.stderr, /Traceback/);
+      assert.equal(fs.readFileSync(marker, 'utf8').trim(), '1', 'the guard must run inside Python and exit 1');
     }
     // Optimization strips assert statements. Explicit sys.exit guards must
     // still reject an optimizing wrapper, whether or not it also drops -I.
@@ -360,18 +369,24 @@ exit 0
     const optimizingPython = path.join(optimizingIsolation, 'python3');
     fs.writeFileSync(optimizingPython, `#!/bin/sh
 if [ "\${DROP_I:-0}" = 1 ] && [ "$1" = "-I" ]; then shift; fi
-exec ${realPython} -O "$@"
+"${realPython}" -O "$@"
+status=$?
+printf '%s\\n' "$status" >> "\${SHIM_MARKER}"
+exit "$status"
 `);
     fs.chmodSync(optimizingPython, 0o755);
     for (const dropIsolation of [false, true]) {
+      const marker = path.join(directory, 'optimizing-marker');
+      fs.rmSync(marker, {force: true});
       const optimized = spawnSync(realBash, ['-c', script('Verify documented Go toolchain')], {
         cwd: directory, encoding: 'utf8', env: {...process.env, PATH: optimizingIsolation,
-          DROP_I: dropIsolation ? '1' : '0'},
+          DROP_I: dropIsolation ? '1' : '0', SHIM_MARKER: marker},
       });
       assert.equal(optimized.status, 1, optimized.stderr);
       assert.match(optimized.stderr,
         /python3 with safe -I support is required for isolated inline Python; install a Python 3 whose -I excludes the checkout and working directory from sys\.path\./);
       assert.doesNotMatch(optimized.stderr, /Traceback/);
+      assert.equal(fs.readFileSync(marker, 'utf8').trim(), '1', 'the guard must reject optimization inside Python');
     }
   } finally {fs.rmSync(directory, {recursive: true, force: true});}
 });
@@ -680,6 +695,28 @@ test('package discovery failure cannot turn a partial package list into a green 
     const {result, records} = runSuite(mode, {listExit: 17});
     assert.notEqual(result.status, 0, mode); assert.equal(goTests(records).length, 0, mode);
   }
+});
+test('nightly checks the isolated interpreter before interpreting trial inputs', () => {
+  // A guard failure inside the mysql_only/stores_only conditions would look
+  // like a false input and silently run the full nightly, so the standalone
+  // preflight must stop the run before any suite starts.
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-nightly-guard-'));
+  try {
+    const bin = path.join(directory, 'bin');
+    fs.mkdirSync(bin);
+    const python = path.join(bin, 'python3');
+    fs.writeFileSync(python, '#!/bin/sh\nexit 2\n');
+    fs.chmodSync(python, 0o755);
+    const result = spawnSync(realBash, [path.join(repoRoot, 'scripts/ci/run-go-tests.sh'), 'nightly'], {
+      encoding: 'utf8', env: {...process.env,
+        PATH: `${bin}${path.delimiter}${process.env.PATH}`,
+        DOCKER_CONFIG: path.join(directory, 'docker-config'),
+        RESULTS_DIR: path.join(directory, 'results')},
+    });
+    assert.equal(result.status, 1, result.stderr);
+    assert.match(result.stderr,
+      /python3 with safe -I support is required for isolated inline Python; install a Python 3 whose -I excludes the checkout and working directory from sys\.path\./);
+  } finally {fs.rmSync(directory, {recursive: true, force: true});}
 });
 test('nightly runs every suite even after a failure, records checks and fails at the end', () => {
   const {result, records, checks} = runSuite('nightly', {failMatching: 'go1.27.4'});
