@@ -66,6 +66,28 @@ jobs:
           route_keys="go website docs ci"
           # Enable every changed-path route; full CI still follows the full-ci label.
           route_all() { local key; for key in ${route_keys}; do echo "${key}=true" >> "${GITHUB_OUTPUT}"; done; }
+          # Forward one true/false value per route from a classifier's output file,
+          # for every event. A missing, repeated, empty or non-boolean value enables
+          # every route instead, and other lines are never forwarded.
+          forward_routes() {
+            local file="$1" key count value invalid=""
+            for key in ${route_keys}; do
+              count=$(grep -c "^${key}=" "${file}" || true)
+              value=$(sed -n "s/^${key}=//p" "${file}")
+              if [[ "${count}" != 1 || ( "${value}" != true && "${value}" != false ) ]]; then
+                invalid="${invalid} ${key}"
+              fi
+            done
+            if [[ -n "${invalid}" ]]; then
+              echo "::warning::The classifier did not set exactly one true/false value for:${invalid}; enabling every changed-path route."
+              route_all
+            else
+              for key in ${route_keys}; do
+                echo "${key}=$(sed -n "s/^${key}=//p" "${file}")" >> "${GITHUB_OUTPUT}"
+              done
+            fi
+          }
+          routes=$(mktemp "${RUNNER_TEMP}/classify-routes.XXXXXX")
           if [[ "${EVENT_NAME}" == pull_request ]]; then
             # Classify with the base revision's script, so that an edit to
             # scripts/ci cannot quietly change the route of its own pull
@@ -101,33 +123,16 @@ jobs:
                 exit 1
               else
                 classifier=$(mktemp "${RUNNER_TEMP}/classify-changes.XXXXXX")
-                routes=$(mktemp "${RUNNER_TEMP}/classify-routes.XXXXXX")
                 git show "${base}:scripts/ci/classify-changes.sh" > "${classifier}"
                 GITHUB_OUTPUT="${routes}" bash "${classifier}"
-                # Forward only one true/false value per route. A missing, repeated,
-                # empty or non-boolean value enables every route instead, and other
-                # lines in the classifier output are never forwarded.
-                invalid=""
-                for key in ${route_keys}; do
-                  count=$(grep -c "^${key}=" "${routes}" || true)
-                  value=$(sed -n "s/^${key}=//p" "${routes}")
-                  if [[ "${count}" != 1 || ( "${value}" != true && "${value}" != false ) ]]; then
-                    invalid="${invalid} ${key}"
-                  fi
-                done
-                if [[ -n "${invalid}" ]]; then
-                  echo "::warning::The base classifier did not set exactly one true/false value for:${invalid}; enabling every changed-path route."
-                  route_all
-                else
-                  for key in ${route_keys}; do
-                    echo "${key}=$(sed -n "s/^${key}=//p" "${routes}")" >> "${GITHUB_OUTPUT}"
-                  done
-                fi
+                forward_routes "${routes}"
               fi
             fi
           else
-            # Pushes to the default branch run the merged classifier.
-            bash scripts/ci/classify-changes.sh
+            # Pushes to the default branch run the merged classifier, under the same
+            # output contract.
+            GITHUB_OUTPUT="${routes}" bash scripts/ci/classify-changes.sh
+            forward_routes "${routes}"
           fi
 
       - name: Setup Node for CI script tests

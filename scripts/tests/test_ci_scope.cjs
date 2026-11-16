@@ -207,6 +207,11 @@ test('change classification preserves raw Git paths, uses the base classifier an
     assert.equal(partial.status, 0, partial.stderr);
     assert.equal(partial.output, flags(true, true, true, true), 'a missing route key must enable every route');
     assert.match(partial.stdout, /did not set exactly one true\/false value for: ci/);
+    // Pushes run the merged classifier under the same output contract.
+    const partialPush = classify(partialHead, {EVENT_NAME: 'push', PUSH_BEFORE: partialBase});
+    assert.equal(partialPush.status, 0, partialPush.stderr);
+    assert.equal(partialPush.output, flags(true, true, true, true), 'a push whose classifier omits a key must enable every route');
+    assert.match(partialPush.stdout, /did not set exactly one true\/false value for: ci/);
     // A change to any other CI script also runs every route, even when the
     // classifier itself is unchanged.
     fs.writeFileSync(path.join(dir, 'scripts/ci/helper.sh'), '#!/usr/bin/env bash\ntrue\n');
@@ -294,8 +299,11 @@ test('the classifier fallback and output contract cover every route the workflow
   assert.deepEqual(declared, read, 'route_keys must list exactly the routes that jobs read');
   // Both the fallback and the contract check iterate the list instead of keeping their own copies.
   assert.match(step, /^route_all\(\) \{ local key; for key in \$\{route_keys\}; do echo "\$\{key\}=true"/m);
-  assert.match(step, /for key in \$\{route_keys\}; do\n\s+count=\$\(grep -c "\^\$\{key\}=" "\$\{routes\}"/);
-  assert.doesNotMatch(step, /cat "\$\{routes\}"/, 'the classifier output must not be forwarded wholesale');
+  assert.match(step, /for key in \$\{route_keys\}; do\n\s+count=\$\(grep -c "\^\$\{key\}=" "\$\{file\}"/);
+  // Every event's classifier output goes through the contract, pushes included.
+  assert.equal([...step.matchAll(/^\s*GITHUB_OUTPUT="\$\{routes\}" bash [^\n]+\n\s*forward_routes "\$\{routes\}"$/gm)].length, 2);
+  assert.doesNotMatch(step, /^\s*bash scripts\/ci\/classify-changes\.sh\s*$/m, 'no classifier may write the step output directly');
+  assert.doesNotMatch(step, /cat "\$\{(?:routes|file)\}"/, 'the classifier output must not be forwarded wholesale');
   assert.doesNotMatch(step, /(?:go|website|docs|ci)=true/);
 });
 test('CI discovers every script suite, isolates Docker config and propagates failures', () => {
