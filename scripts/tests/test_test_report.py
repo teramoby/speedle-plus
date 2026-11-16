@@ -260,7 +260,7 @@ class EmailTest(unittest.TestCase):
         body = send.call_args[0][1]
         self.assertLessEqual(len(body), test_report.EMAIL_TEXT_LIMIT)
         self.assertIn("[report truncated", body)
-        self.assertIn("http://run", body)
+        self.assertIn("the workflow run (http://run)", body)
         full = summary.read_text()
         self.assertGreater(len(full), test_report.EMAIL_TEXT_LIMIT)
         self.assertIn("x" * 200, full)
@@ -321,6 +321,14 @@ class EmailTest(unittest.TestCase):
         self.assertIn("not configured", stderr.getvalue())
         self.assertNotIn("::error::", stderr.getvalue())
 
+    def test_a_configuration_problem_is_noted_on_the_run_summary(self):
+        summary = Path(tempfile.mkdtemp()) / "step-summary.md"
+        with mock.patch("urllib.request.urlopen") as urlopen, \
+                mock.patch("sys.stderr", new=io.StringIO()):
+            self.assertFalse(test_report.send_email("s", "b", {"GITHUB_STEP_SUMMARY": str(summary)}))
+        urlopen.assert_not_called()
+        self.assertIn("Report email not sent", summary.read_text())
+
     def test_missing_settings_still_track_the_failure(self):
         # No email is sent, but the run summary and the tracking issue still are.
         directory = Path(tempfile.mkdtemp())
@@ -334,6 +342,23 @@ class EmailTest(unittest.TestCase):
                                      "--summary-file", str(summary)], env=env)
         self.assertEqual(code, 0)
         self.assertNotIn("::error::", stderr.getvalue())
+        self.assertIn("TestZ", summary.read_text())
+        self.assertEqual([c[2]["title"] for c in github.calls], ["Test failure: p TestZ"])
+
+    def test_a_real_report_job_without_settings_fails_after_tracking(self):
+        # A scheduled or post-merge report job must not go green when its only
+        # notification channel is not configured; tests leave the marker unset.
+        directory = Path(tempfile.mkdtemp())
+        (directory / "go.json").write_text(events(("fail", "p", "TestZ", None)))
+        summary, github = directory / "report.txt", FakeGitHub()
+        env = {"GITHUB_TOKEN": "t", "GITHUB_REPOSITORY": "o/r", "REPORT_EMAIL_REQUIRED": "true"}
+        with mock.patch.object(test_report, "GitHub", return_value=github), \
+                mock.patch("sys.stdout", new=io.StringIO()), \
+                mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+            code = test_report.main(["--kind", "nightly", "--go-json", str(directory / "go.json"),
+                                     "--summary-file", str(summary)], env=env)
+        self.assertEqual(code, 1)
+        self.assertIn("::error::The report email is not configured", stderr.getvalue())
         self.assertIn("TestZ", summary.read_text())
         self.assertEqual([c[2]["title"] for c in github.calls], ["Test failure: p TestZ"])
 

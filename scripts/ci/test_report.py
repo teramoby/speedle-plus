@@ -283,15 +283,42 @@ def configured_addresses(value):
     return [address for _, address in entries]
 
 
+def note_in_summary(env, message):
+    """Add a plain notice to the run summary, where an operator sees it,
+    without a workflow-command annotation. Annotations are reserved for a
+    failed send."""
+    path = env.get("GITHUB_STEP_SUMMARY")
+    if not path:
+        return
+    try:
+        with open(path, "a", encoding="utf-8") as summary:
+            summary.write(f"\n**Report email not sent:** {message}\n")
+    except OSError:
+        pass
+
+
 def email_text(report, run_url=""):
     """The report as far as the email carries it, with a pointer when the full
-    report is longer. The summary file and the run summary keep every line."""
+    report is longer. The summary file keeps every line, and the run page
+    always exists."""
     if len(report) <= EMAIL_TEXT_LIMIT:
         return report
-    where = f"the run summary ({run_url})" if run_url else "the run summary"
+    where = f"the workflow run ({run_url})" if run_url else "the workflow run page"
     footer = (f"\n\n[report truncated at {EMAIL_TEXT_LIMIT} characters; "
               f"see {where} and the tracked issues]\n")
     return report[:EMAIL_TEXT_LIMIT - len(footer)] + footer
+
+
+def email_configured(env):
+    """True when the Cloudflare Email settings hold one sender, one valid
+    Reply-To and a usable recipient list."""
+    senders = configured_addresses(env.get("OPS_EMAIL_FROM"))
+    recipients = configured_addresses(env.get("OPS_EMAIL_TO"))
+    reply_to = configured_addresses(env.get("OPS_EMAIL_REPLY_TO"))
+    return bool(env.get("CF_ACCOUNT_ID") and env.get("CF_EMAIL_TOKEN")
+                and senders and len(senders) == 1 and recipients
+                and len(recipients) <= MAX_EMAIL_RECIPIENTS
+                and reply_to and len(reply_to) == 1)
 
 
 def send_email(subject, body, env, timeout=EMAIL_TIMEOUT):
@@ -313,18 +340,16 @@ def send_email(subject, body, env, timeout=EMAIL_TIMEOUT):
     send is an error annotation on the run, not a failed step: the report job
     still tracks failing tests, as it did when a Feishu post failed.
     """
-    account, token = env.get("CF_ACCOUNT_ID"), env.get("CF_EMAIL_TOKEN")
-    senders = configured_addresses(env.get("OPS_EMAIL_FROM"))
-    recipients = configured_addresses(env.get("OPS_EMAIL_TO"))
-    reply_to = configured_addresses(env.get("OPS_EMAIL_REPLY_TO"))
-    configured = bool(account and token and senders and len(senders) == 1 and recipients
-                      and len(recipients) <= MAX_EMAIL_RECIPIENTS
-                      and reply_to and len(reply_to) == 1)
-    if not configured:
+    if not email_configured(env):
         print("Cloudflare Email is not configured correctly (CF_ACCOUNT_ID, CF_EMAIL_TOKEN, "
               "OPS_EMAIL_FROM, OPS_EMAIL_TO, OPS_EMAIL_REPLY_TO); the report is not emailed.",
               file=sys.stderr)
+        note_in_summary(env, "Cloudflare Email is not configured correctly.")
         return False
+    account, token = env["CF_ACCOUNT_ID"], env["CF_EMAIL_TOKEN"]
+    senders = configured_addresses(env["OPS_EMAIL_FROM"])
+    recipients = configured_addresses(env["OPS_EMAIL_TO"])
+    reply_to = configured_addresses(env["OPS_EMAIL_REPLY_TO"])
     payload = {"to": recipients, "from": senders[0], "subject": subject, "text": body,
                "reply_to": reply_to[0]}
     request = urllib.request.Request(
@@ -501,8 +526,9 @@ def main(argv=None, env=os.environ):
         Path(args.summary_file).write_text(report)
 
     subject = f"[Speedle {policy['title']}] {'PASSED' if ok else 'FAILED'}"
+    email_failed = False
     try:
-        send_email(subject, email_text(report, run_url), env)
+        email_failed = not send_email(subject, email_text(report, run_url), env)
     except Exception as error:
         # A notification bug must not skip the summary and failure tracking.
         print(f"::error::Email delivery failed ({type(error).__name__}).", file=sys.stderr)
@@ -518,6 +544,11 @@ def main(argv=None, env=os.environ):
         except (urllib.error.URLError, OSError, ValueError) as error:
             print(f"::warning::Failure issues not updated ({type(error).__name__}).", file=sys.stderr)
     print(summary)
+    # A real report job must not go green when its only notification channel
+    # is not configured. Tests and local runs leave REPORT_EMAIL_REQUIRED unset.
+    if email_failed and not email_configured(env) and env.get("REPORT_EMAIL_REQUIRED") == "true":
+        print("::error::The report email is not configured; failing the report job.", file=sys.stderr)
+        return 1
     return 0
 
 
