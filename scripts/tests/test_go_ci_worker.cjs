@@ -109,7 +109,7 @@ if (args.length === 4 && args[0] === 'list' && args[1] === '-m' && args[2] === '
       {name: 'README and module mismatch', readme: '- Go 1.27.4 or a newer patch\n', module: '1.27.3', selected: 'go1.27.3', passes: false,
         message: 'go.mod GoVersion 1.27.3 != documented minimum 1.27.4'},
       {name: 'separate toolchain override', readme: '- Go 1.27.4 or a newer patch\n', module: '1.27.4', selected: 'go1.27.5', passes: false,
-        message: 'selected toolchain go1.27.5 != documented minimum go1.27.4'},
+        message: 'selected toolchain go1.27.5 != required CI minimum go1.27.4'},
       {name: 'missing README minimum', readme: '# Fixture without a toolchain requirement\n', module: '1.27.4', selected: 'go1.27.4', passes: false,
         message: 'README source-build Go minimum not found'},
     ];

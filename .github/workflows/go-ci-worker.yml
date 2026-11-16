@@ -73,6 +73,7 @@ jobs:
           # archive over read-only module files causes noisy extraction failures.
           cache: ${{ runner.environment != 'self-hosted' }}
 
+      # CI exercises the exact documented minimum; user builds may use a newer patch.
       - name: Verify documented Go toolchain
         run: |
           set -euo pipefail
@@ -96,7 +97,7 @@ jobs:
                   f'go.mod GoVersion {module} != documented minimum {documented}')
           if actual != f'go{module}':
               raise SystemExit(
-                  f'selected toolchain {actual} != documented minimum go{module}')
+                  f'selected toolchain {actual} != required CI minimum go{module}')
           print(f'Verified documented minimum Go toolchain: {actual}')
           PYTHON
 
