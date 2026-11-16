@@ -359,6 +359,23 @@ def email_configured(env):
                 and reply_to and len(reply_to) == 1)
 
 
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    """Refuse redirects: urlopen copies the Authorization header to the
+    target, so a 3xx would hand the API token to another host."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+def open_email(request, timeout):
+    """Open the send request without following redirects.
+
+    Returning None from the redirect handler leaves urllib raising the 3xx as
+    an HTTPError, which send_email treats as a failed send.
+    """
+    return urllib.request.build_opener(_NoRedirect).open(request, timeout=timeout)
+
+
 def send_email(subject, body, env, attachment=None, timeout=EMAIL_TIMEOUT):
     """Send the report through the Cloudflare Email Service REST API.
 
@@ -370,11 +387,12 @@ def send_email(subject, body, env, attachment=None, timeout=EMAIL_TIMEOUT):
     report_attachment, carries the full report as base64 text. A send
     succeeds when the response lists every recipient under queued or
     delivered. A non-2xx status, success: false, a permanent bounce or a
-    suppressed recipient is a failed send. OPS_EMAIL_REPLY_TO is required:
-    the sender is an outbound address that cannot receive mail, so without it
-    a reply is lost. A message the API's size limit would reject is a failed
-    send and sends nothing. Nothing from the settings or the response is
-    logged, because both may hold addresses.
+    suppressed recipient is a failed send, and a redirect is refused rather
+    than followed so the token is not forwarded. OPS_EMAIL_REPLY_TO is
+    required: the sender is an outbound address that cannot receive mail,
+    so without it a reply is lost. A message the API's size limit would
+    reject is a failed send and sends nothing. Nothing from the settings or
+    the response is logged, because both may hold addresses.
 
     A configuration problem is a plain notice and sends nothing. A failed
     send is an error annotation on the run, and it fails the step only when
@@ -414,7 +432,7 @@ def send_email(subject, body, env, attachment=None, timeout=EMAIL_TIMEOUT):
     for attempt in range(EMAIL_RETRIES + 1):
         retry = attempt < EMAIL_RETRIES
         try:
-            with urllib.request.urlopen(request, timeout=timeout) as response:
+            with open_email(request, timeout=timeout) as response:
                 reply = json.loads(response.read() or b"{}")
             break
         except urllib.error.HTTPError as error:

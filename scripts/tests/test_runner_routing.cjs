@@ -258,10 +258,13 @@ test('scheduled suites run through the worker and report from a hosted job', () 
     assert.match(report, new RegExp(`python3 -I scripts/ci/test_report.py --kind ${kind} `));
     assert.match(report, /report\.txt \|\| status=\$\?/);
     assert.match(report, /if \[\[ -f report\.txt \]\]/);
-    assert.match(report, /head -c 900000 report\.txt \| iconv -f UTF-8 -t UTF-8 -c \|\| :$/m);
+    assert.match(report, /copy="\$\(mktemp\)" \|\| copy=""/);
+    assert.match(report, /head -c 900000 report\.txt \| iconv -f UTF-8 -t UTF-8 -c > "\$\{copy\}" \|\| :$/m);
     assert.match(report, /wc -c < report\.txt\) -gt 900000/);
     assert.match(report, /\[report truncated at 900000 bytes in the step summary\]/);
     assert.match(report, /\} >> "\$\{GITHUB_STEP_SUMMARY:-\}" \|\| echo "::warning::The step summary could not be written\."/);
+    assert.match(report, /if \[\[ -s report\.txt && ! -s "\$\{copy\}" \]\]; then/);
+    assert.match(report, /::warning::The step summary copy failed\./);
     assert.match(report, /^          exit "\$status"$/m);
     for (const [id, block] of Object.entries(job[kind])) {
       if (id !== 'report') assert.doesNotMatch(block, /secrets\./, `${kind}.${id} must not receive secrets`);
@@ -301,10 +304,13 @@ test('every merge to master runs the file regression and reports failures from a
   assert.match(report, /python3 -I scripts\/ci\/test_report.py --kind regression /);
   assert.match(report, /report\.txt \|\| status=\$\?/);
   assert.match(report, /if \[\[ -f report\.txt \]\]/);
-  assert.match(report, /head -c 900000 report\.txt \| iconv -f UTF-8 -t UTF-8 -c \|\| :$/m);
+  assert.match(report, /copy="\$\(mktemp\)" \|\| copy=""/);
+  assert.match(report, /head -c 900000 report\.txt \| iconv -f UTF-8 -t UTF-8 -c > "\$\{copy\}" \|\| :$/m);
   assert.match(report, /wc -c < report\.txt\) -gt 900000/);
   assert.match(report, /\[report truncated at 900000 bytes in the step summary\]/);
   assert.match(report, /\} >> "\$\{GITHUB_STEP_SUMMARY:-\}" \|\| echo "::warning::The step summary could not be written\."/);
+  assert.match(report, /if \[\[ -s report\.txt && ! -s "\$\{copy\}" \]\]; then/);
+  assert.match(report, /::warning::The step summary copy failed\./);
   assert.match(report, /^          exit "\$status"$/m);
 });
 test('fixture job installs pinned Node 22 before running Node regression suites', () => {
