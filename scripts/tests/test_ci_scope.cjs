@@ -173,6 +173,7 @@ test('CI discovers every script suite, isolates Docker config and propagates fai
     }
     // Include new filenames to catch a return to an explicit subset of suites.
     const suites = [...fs.readdirSync(path.join(root, 'scripts/tests')).filter(name => name.endsWith('.cjs')), 'test_future.cjs'].sort();
+    const globSuites = suites.filter(name => name !== 'test_ci_scope.cjs');
     for (const suite of suites) fs.writeFileSync(path.join(dir, 'scripts/tests', suite), '');
     fs.writeFileSync(path.join(dir, 'scripts/tests/test_future.py'), '');
     const record = path.join(dir, 'calls');
@@ -202,7 +203,7 @@ process.exit(process.env.FAIL_TOOL === ${JSON.stringify(tool)} ? 7 : 0);
       const calls = fs.readFileSync(record, 'utf8').trim().split('\n').map(JSON.parse);
       assert.deepEqual(calls[0].args, ['--test', 'scripts/tests/test_ci_scope.cjs']);
       assert.equal(calls.length, failure === 'node' ? 1 : 3);
-      if (calls.length > 1) assert.deepEqual(calls[1].args, ['--test', ...suites.map(name => `scripts/tests/${name}`)]);
+      if (calls.length > 1) assert.deepEqual(calls[1].args, ['--test', ...globSuites.map(name => `scripts/tests/${name}`)]);
       if (calls.length === 3) assert.deepEqual(calls[2].args, ['-m', 'unittest', 'discover', '-s', 'scripts/tests', '-p', 'test_*.py']);
       for (const call of calls) {
         assert.notEqual(call.config, '/unused-host-config');
