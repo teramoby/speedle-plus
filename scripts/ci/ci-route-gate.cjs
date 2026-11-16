@@ -7,6 +7,10 @@ const path = require('node:path');
 const {spawnSync} = require('node:child_process');
 
 const CI_WORKFLOW_NAME = 'Speedle CI';
+// The workflow file whose jobs and steps this gate verifies by name. A
+// pull_request run executes it from the request's merge commit, so the names
+// are only trustworthy when the request does not change this file.
+const CI_WORKFLOW_PATH = '.github/workflows/ci.yml';
 const STATUS_CONTEXT = 'speedle/ci-route-gate';
 const ROUTE_KEYS = ['go', 'website', 'docs', 'ci'];
 // The compare API returns at most 300 file entries. An incomplete list enables
@@ -78,6 +82,7 @@ function ignoredRun(run, jobs) {
 // event has no active jobs and must not replace the status from an active run.
 function preflight(run, pr, jobs) {
   if (run?.name !== CI_WORKFLOW_NAME) return 'Unexpected CI workflow name';
+  if (run.path !== CI_WORKFLOW_PATH) return 'Unexpected CI workflow path';
   if (run.event !== 'pull_request') return 'CI run is not a pull request run';
   if (run.status !== 'completed') return 'CI run is not completed';
   if (run.head_sha !== pr?.head?.sha) return 'CI run does not match the pull request head';
@@ -212,6 +217,22 @@ function changedFiles(compare) {
   return {files, complete: files.length < COMPARE_FILE_LIMIT};
 }
 
+// A pull_request run executes the CI workflow from the request's merge commit,
+// so its job and step names are only trustworthy when the request does not
+// change the workflow file. The compare API reports the request's own side of
+// the change since the merge base, so a base-branch update does not count. The
+// reusable jobs this workflow calls are pinned to @master, so a change to that
+// pin is a change to this file.
+function workflowTrust(comparison, workflowPath) {
+  if (comparison.files.includes(workflowPath)) {
+    return 'The pull request changes the CI workflow; the route cannot be verified from its own run';
+  }
+  if (!comparison.complete) {
+    return 'The changed-file list is incomplete; the CI workflow cannot be verified';
+  }
+  return null;
+}
+
 function jobsFromPages(pages) {
   if (!Array.isArray(pages)) throw new Error('jobs response is not paginated');
   return pages.flatMap(page => {
@@ -236,6 +257,11 @@ function assessRun({api, runner, repository, run, pr}) {
   assertSha(pr?.base?.sha, 'pull request base');
   assertSha(run.head_sha, 'workflow run head');
   const comparison = changedFiles(api(`repos/${repository}/compare/${pr.base.sha}...${run.head_sha}`));
+  // Never read job or step names from a run whose workflow the request
+  // controls: it could report the names this gate requires without running
+  // the jobs they belong to.
+  const untrusted = workflowTrust(comparison, run.path);
+  if (untrusted) return outcome({run, pr, routes: allRoutes(), state: 'failure', message: untrusted});
   const routes = comparison.complete ? classifyWithBase({
     api, runner, repository, baseSha: pr.base.sha, headSha: run.head_sha, files: comparison.files,
   }) : allRoutes();
@@ -372,6 +398,7 @@ if (require.main === module) main(process.argv.slice(2));
 
 module.exports = {
   CI_WORKFLOW_NAME,
+  CI_WORKFLOW_PATH,
   STATUS_CONTEXT,
   allRoutes,
   changedFiles,

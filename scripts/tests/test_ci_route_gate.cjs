@@ -24,6 +24,7 @@ function run(overrides = {}) {
   return {
     id: 101,
     name: gate.CI_WORKFLOW_NAME,
+    path: gate.CI_WORKFLOW_PATH,
     event: 'pull_request',
     status: 'completed',
     conclusion: 'success',
@@ -162,10 +163,101 @@ test('a pull request based on another branch fails closed without reading a clas
   assert.equal(writes[0].options.input.state, 'failure');
 });
 
-test('the gate subscription matches the name of the CI workflow', () => {
+test('the gate subscription matches the name and path of the CI workflow', () => {
   const ci = fs.readFileSync(path.join(root, '.github/workflows/ci.yml'), 'utf8');
   const name = /^name: (.+)$/m.exec(ci)?.[1].trim();
   assert.equal(name, gate.CI_WORKFLOW_NAME, 'renaming the CI workflow stops the gate from running');
+  assert.equal(gate.CI_WORKFLOW_PATH, '.github/workflows/ci.yml');
+  assert.ok(fs.existsSync(path.join(root, gate.CI_WORKFLOW_PATH)), 'the gate must name the CI workflow file');
+});
+
+test('the gate job and step names match the CI workflow', () => {
+  const ci = fs.readFileSync(path.join(root, '.github/workflows/ci.yml'), 'utf8');
+  for (const name of ['changes', 'lint', 'test', 'build', 'quick']) {
+    assert.match(ci, new RegExp(`^  ${name}:\\n`, 'm'), `the ${name} job is missing from ci.yml`);
+  }
+  assert.match(ci, /^    name: changes$/m);
+  for (const name of ['Classify changed files', 'Test CI scripts']) {
+    assert.match(ci, new RegExp(`^      - name: ${name}$`, 'm'), `the ${name} step is missing from ci.yml`);
+  }
+  // Ignored label events are detected by this job name.
+  assert.match(ci, /format\('Ignored CI event \{0\}', github\.run_id\)/);
+  // Reusable jobs are matched as "<caller> / execute"; the called name is
+  // defined by the worker workflow pinned at @master.
+  const worker = fs.readFileSync(path.join(root, '.github/workflows/go-ci-worker.yml'), 'utf8');
+  assert.match(worker, /^  execute:\n    name: execute$/m);
+});
+
+test('a pull request that rewrites the CI workflow cannot be verified by its own run', () => {
+  // The rewritten workflow can report every job and step name the gate
+  // requires, all successful, without running the real jobs.
+  const rewritten = fixtureApi({
+    run: run(),
+    pr: pullRequest(['full-ci']),
+    files: ['pkg/eval/eval.go', '.github/workflows/ci.yml'],
+    jobs: jobs({full: true, ci: true, build: true}),
+  });
+  const result = gate.runGate({repository, runId: 101, publish: true}, rewritten.api);
+  assert.equal(result.error, undefined);
+  assert.equal(result.status.state, 'failure');
+  assert.equal(result.status.description,
+    'The pull request changes the CI workflow; the route cannot be verified from its own run');
+  assert.equal(rewritten.calls.some(call => call.endpoint.endsWith(`/classify-changes.sh?ref=${base}`)), false,
+    'an untrusted run must not reach classification');
+  const writes = rewritten.calls.filter(call => call.options.method === 'POST');
+  assert.equal(writes.length, 1);
+  assert.equal(writes[0].options.input.state, 'failure');
+
+  // The compare API returns at most 300 files. An incomplete list cannot prove
+  // the workflow file was untouched either.
+  const truncated = fixtureApi({
+    run: run(),
+    pr: pullRequest(),
+    files: Array.from({length: 300}, (_, index) => `pkg/f${index}.go`),
+    jobs: jobs(),
+  });
+  const incomplete = gate.runGate({repository, runId: 101, publish: true}, truncated.api);
+  assert.equal(incomplete.status.state, 'failure');
+  assert.equal(incomplete.status.description,
+    'The changed-file list is incomplete; the CI workflow cannot be verified');
+});
+
+test('a code-only pull request is still assessed from its base classification', () => {
+  const fixture = fixtureApi({
+    run: run(),
+    pr: pullRequest(['full-ci']),
+    files: ['pkg/eval/eval.go'],
+    jobs: jobs({full: true, build: true}),
+  });
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.status.state, 'success');
+  assert.equal(result.status.description, 'Full CI routes passed');
+  assert.ok(fixture.calls.some(call => call.endpoint.endsWith(`/classify-changes.sh?ref=${base}`)));
+});
+
+test('PR dry-run reports a rewritten CI workflow without publishing', () => {
+  const fixture = fixtureApi({
+    run: run(),
+    pr: pullRequest(),
+    files: ['.github/workflows/ci.yml'],
+    jobs: jobs({build: true}),
+  });
+  const result = gate.runGate({repository, prNumber: 590, dryRun: true}, fixture.api);
+  assert.equal(result.status.state, 'failure');
+  assert.match(result.status.description, /changes the CI workflow/);
+  assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 0);
+});
+
+test('a run from an unexpected workflow path fails closed', () => {
+  const fixture = fixtureApi({
+    run: run({path: '.github/workflows/other.yml'}),
+    pr: pullRequest(),
+    files: ['docs/guide.md'],
+    jobs: jobs({build: true}),
+  });
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.status.state, 'failure');
+  assert.equal(result.status.description, 'Unexpected CI workflow path');
 });
 
 test('a docs-only pull request requires quick and build but no Go lint or CI scripts', () => {
