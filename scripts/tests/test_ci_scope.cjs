@@ -126,6 +126,9 @@ test('change classification preserves raw Git paths and fails on diff errors', (
       // Module files also carry the toolchain contract those tests assert.
       ['go.mod', flags(true, false, false, true)],
       ['go.sum', flags(true, false, false, true)],
+      // Nested Markdown belongs to its Go package, not to the root-only arm.
+      ['pkg/a/README.md', flags(true, false, false, false)],
+      ['testutil/notes.md', flags(true, false, false, false)],
     ];
     let previous = base;
     for (const [file, expected] of cases) {

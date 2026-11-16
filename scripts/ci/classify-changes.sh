@@ -22,9 +22,11 @@ if [[ -n "${base}" && "${base}" != 0000000000000000000000000000000000000000 ]] &
       .github/workflows/*|scripts/*) go=true ci=true ;;
       # Module files and root Markdown carry the toolchain contract that the
       # CI script tests assert against README.md; run those tests for them.
+      # `*` in a case pattern matches `/`, so the nested-path arm must come
+      # before the root-only `*.md` arm.
       go.mod|go.sum) go=true ci=true ;;
-      *.md) ci=true ;;
       */*) go=true ;;
+      *.md) ci=true ;;
       *) go=true ;;
     esac
   done < "${changed}"
