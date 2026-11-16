@@ -106,6 +106,10 @@ test('documented Go toolchain guard runs after checkout and setup and rejects ve
     fs.writeFileSync(stub, `#!${process.execPath}
 const args = process.argv.slice(2);
 if (args.length === 4 && args[0] === 'list' && args[1] === '-m' && args[2] === '-f' && args[3] === '{{.GoVersion}}') {
+  if (process.env.FIXTURE_GO_LIST_ERROR) {
+    process.stderr.write(process.env.FIXTURE_GO_LIST_ERROR + '\\n');
+    process.exit(1);
+  }
   process.stdout.write(process.env.FIXTURE_MODULE + '\\n');
 } else if (args.length === 2 && args[0] === 'env' && args[1] === 'GOVERSION') {
   process.stdout.write(process.env.FIXTURE_GOVERSION + '\\n');
@@ -169,6 +173,9 @@ if (args.length === 4 && args[0] === 'list' && args[1] === '-m' && args[2] === '
         module: '1.27.4', selected: 'go1.27.4', passes: true, message: 'Verified documented minimum Go toolchain: go1.27.4'},
       {name: 'README and module mismatch', readme: prerequisites('-   Go 1.27.4 or a newer patch'), module: '1.27.3', selected: 'go1.27.3', passes: false,
         message: 'go.mod GoVersion 1.27.3 != documented minimum 1.27.4'},
+      {name: 'go.mod requires a newer toolchain', readme: prerequisites('-   Go 1.27.4 or a newer patch'), module: '1.27.5', selected: 'go1.27.4', passes: false,
+        listError: 'go: go.mod requires go >= 1.27.5 (running go 1.27.4; GOTOOLCHAIN=local)',
+        message: 'go list -m -f {{.GoVersion}} failed: go: go.mod requires go >= 1.27.5 (running go 1.27.4; GOTOOLCHAIN=local)'},
       {name: 'separate toolchain override', readme: prerequisites('-   Go 1.27.4 or a newer patch'), module: '1.27.4', selected: 'go1.27.5', passes: false,
         message: 'selected toolchain go1.27.5 != required CI minimum go1.27.4'},
       {name: 'missing Prerequisites section', readme: '# Fixture without a prerequisite section\n', module: '1.27.4', selected: 'go1.27.4', passes: false,
@@ -218,12 +225,23 @@ if (args.length === 4 && args[0] === 'list' && args[1] === '-m' && args[2] === '
         cwd: directory, encoding: 'utf8', env: {...process.env,
           PATH: bin + path.delimiter + process.env.PATH,
           FIXTURE_MODULE: fixture.module, FIXTURE_GOVERSION: fixture.selected,
-          FIXTURE_GOTOOLCHAIN: fixture.gotoolchain ?? 'local'},
+          FIXTURE_GOTOOLCHAIN: fixture.gotoolchain ?? 'local',
+          FIXTURE_GO_LIST_ERROR: fixture.listError ?? ''},
       });
       const output = result.stdout + result.stderr;
       assert.equal(result.status === 0, fixture.passes, `${fixture.name}: ${output}`);
       assert.ok(output.includes(fixture.message), `${fixture.name}: ${output}`);
+      if (fixture.listError) assert.doesNotMatch(output, /Traceback/, `${fixture.name}: ${output}`);
     }
+    const withoutPython = path.join(directory, 'without-python');
+    fs.mkdirSync(withoutPython);
+    const missingPython = spawnSync(realBash, ['-c', script('Verify documented Go toolchain')], {
+      cwd: directory, encoding: 'utf8', env: {...process.env, PATH: withoutPython},
+    });
+    assert.equal(missingPython.status, 1, missingPython.stderr);
+    assert.match(missingPython.stderr,
+      /python3 is required for the documented Go toolchain check; install Python 3 on the runner\./);
+    assert.doesNotMatch(missingPython.stderr, /command not found|Traceback/);
   } finally {fs.rmSync(directory, {recursive: true, force: true});}
 });
 test('workflow steps keep their keys and block scalars inside the sequence entry', () => {
@@ -315,6 +333,21 @@ test('identity check accepts the Speedle runners for the tasks each may run', ()
       assert.equal(result.status === 0, allowed, `${host}/${CI_TASK}: ${result.stderr}`);
     }
   }
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-runner-python-'));
+  try {
+    // Let the identity check reach its Python preflight without providing it.
+    const git = path.join(directory, 'git');
+    fs.writeFileSync(git, '#!/bin/sh\nexit 0\n');
+    fs.chmodSync(git, 0o755);
+    const result = spawnSync(realBash, ['-c', script('Verify self-hosted runner identity')], {
+      encoding: 'utf8', env: {...process.env, PATH: directory,
+        RUNNER_NAME: 'charming-speedle', RUNNER_OS: 'Linux', RUNNER_ARCH: 'X64', CI_TASK: 'lint'},
+    });
+    assert.equal(result.status, 1, result.stderr);
+    assert.match(result.stderr,
+      /python3 is required on self-hosted runners; install Python 3 before running this workflow\./);
+    assert.doesNotMatch(result.stderr, /command not found/);
+  } finally {fs.rmSync(directory, {recursive: true, force: true});}
 });
 test('task validation permits only exact enum values and treats shell metacharacters as data', () => {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-worker-input-'));
