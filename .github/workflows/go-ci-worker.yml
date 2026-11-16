@@ -112,11 +112,12 @@ jobs:
           def documented_minimum(text):
               # Scope the search to the Prerequisites section so a version
               # mentioned elsewhere in README cannot satisfy the guard. Only a
-              # prerequisite line that starts with Go or Golang declares the
-              # minimum, so an unrelated version inside the section is ignored
-              # rather than allowed to satisfy or poison the guard. README is
-              # pull-request content, so scan line by line and bound the digit
-              # runs to keep every regex linear on crafted input.
+              # prerequisite item or paragraph whose subject is Go or Golang
+              # declares the minimum, so an unrelated version inside the
+              # section is ignored rather than allowed to satisfy or poison the
+              # guard. README is pull-request content, so scan line by line and
+              # bound the digit runs to keep every regex linear on crafted
+              # input.
               headings = []
               fenced = False
               offset = 0
@@ -151,14 +152,20 @@ jobs:
                       fenced = not fenced
                   elif not fenced:
                       prose.append(line)
-              # Markdown permits up to three leading spaces; four spaces or
-              # a leading tab make an indented code block, not a declaration.
+              # Markdown permits up to three leading spaces, an ordered or
+              # unordered list marker, and emphasis around the tool name or the
+              # whole prerequisite; four spaces or a leading tab make an
+              # indented code block, not a declaration. The lookaheads reject
+              # other words that start with Go (Google, GoLand) while still
+              # accepting closing emphasis such as **Go** or __Go__.
               declaration = re.compile(
-                  r'^ {0,3}(?:[-*+][ \t]+)?(?:Go|Golang)(?![0-9A-Za-z_])', re.IGNORECASE)
+                  r'^ {0,3}(?:(?:[-*+]|\d{1,3}[.)])[ \t]+)?[*_]{0,3}'
+                  r'(?:Go|Golang)(?![0-9A-Za-z])(?![*_][A-Za-z0-9])',
+                  re.IGNORECASE)
               declared = [line for line in prose if declaration.match(line)]
               if not declared:
                   raise SystemExit('README Prerequisites must declare the Go minimum'
-                                   ' in a line starting with Go or Golang')
+                                   ' in a Go or Golang item')
               versions = set()
               for line in declared:
                   # Links and paths carry no version declaration; drop those
@@ -166,6 +173,7 @@ jobs:
                   line = ' '.join(word for word in line.split() if '/' not in word)
                   for token in re.findall(r'(\d{1,4}\.\d{1,4}\.\d{1,4}[0-9A-Za-z.+_-]*)', line):
                       release = token.rstrip('.')  # sentence period
+                      release = release.rstrip('_')  # closing underscore emphasis
                       if release.endswith('+'):  # "1.27.4+" means "or newer"
                           release = release[:-1]
                       if not re.fullmatch(r'\d{1,4}\.\d{1,4}\.\d{1,4}', release):
