@@ -141,6 +141,25 @@ test('change classification preserves raw Git paths, uses the base classifier an
       assert.equal(result.output, expected, JSON.stringify(file));
       previous = head;
     }
+    // A stale merge ref: the base tip has a scripts/ci commit that the pull
+    // request side does not contain. Only the pull request's own changes count,
+    // so a docs-only change keeps its narrow route.
+    const mainline = git('rev-parse', '--abbrev-ref', 'HEAD');
+    git('checkout', '-q', '--detach', previous);
+    fs.writeFileSync(path.join(dir, 'scripts/ci/base-only.sh'), '#!/usr/bin/env bash\ntrue\n');
+    git('add', '--', 'scripts/ci/base-only.sh');
+    git('commit', '-qm', 'base-only CI script');
+    const staleBase = git('rev-parse', 'HEAD');
+    git('checkout', '-q', '--detach', previous);
+    fs.mkdirSync(path.join(dir, 'docs'), {recursive: true});
+    fs.writeFileSync(path.join(dir, 'docs/stale-ref.md'), 'fixture\n');
+    git('add', '--', 'docs/stale-ref.md');
+    git('commit', '-qm', 'docs change on an older base');
+    const staleHead = git('rev-parse', 'HEAD');
+    git('checkout', '-q', mainline);
+    const stale = classify(staleHead, {PR_BASE: staleBase});
+    assert.equal(stale.status, 0, stale.stderr);
+    assert.equal(stale.output, flags(false, false, true, false), 'base-only commits must not widen the route of a pull request');
     assert.equal(classify(previous).output, flags(true, true, true, true), 'mixed paths');
     assert.equal(classify(previous, {PR_BASE: previous}).output, flags(false, false, false, false), 'empty diff');
     const push = classify(previous, {EVENT_NAME: 'push', PR_BASE: 'missing', PUSH_BEFORE: previous});

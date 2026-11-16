@@ -87,9 +87,10 @@ jobs:
               route_all
             else
               # A pull request that changes the classifier or any other CI script may
-              # change what the base copy decides, so it runs every route.
+              # change what the base copy decides, so it runs every route. Three dots
+              # compare from the merge base: only the pull request's own side counts.
               set +e
-              git diff --quiet "${base}" "${GITHUB_SHA}" -- scripts/ci/
+              git diff --quiet "${base}...${GITHUB_SHA}" -- scripts/ci/
               status=$?
               set -e
               if [[ "${status}" == 1 ]]; then
