@@ -70,6 +70,8 @@ const server = http.createServer((req,res)=>{
           // so roots added by page script join the watch. Root discovery also feeds sheets() below.
           window.__smokeMutations=0;
           const observedRoots=new WeakSet();
+          const rootIds=new WeakMap();
+          let nextRootId=1;
           const observer=new MutationObserver(records=>{window.__smokeMutations+=records.length;});
           const observation={subtree:true,childList:true,attributes:true,characterData:true};
           window.__smokeSyncRoots=()=>{
@@ -83,10 +85,12 @@ const server = http.createServer((req,res)=>{
               }
             }
             for(const root of roots) {
+              if(!rootIds.has(root)) rootIds.set(root,nextRootId++);
               if(!observedRoots.has(root)) {observer.observe(root,observation);observedRoots.add(root);}
             }
             return roots;
           };
+          window.__smokeRootId=root=>rootIds.get(root);
           window.__smokeSyncRoots();
         });
         // Record every request problem, one entry per URL (the first reason wins, for example
@@ -170,7 +174,10 @@ const server = http.createServer((req,res)=>{
           // full rule text is compared, not a digest: a hash lets two different rule lists
           // compare equal. The pages have a handful of stylesheets, so the size is no concern.
           return JSON.stringify(window.__smokeSyncRoots().map((root,rootIndex)=>{
-            const scope=root===document?'document':`open shadow root ${rootIndex} on ${root.host.nodeName}`;
+            // Position and host name alone cannot distinguish a same-tag replacement whose styles
+            // happen to be identical. A stable object ID makes that root replacement visible.
+            const kind=root===document?'document':`open shadow root at position ${rootIndex} on ${root.host.nodeName}`;
+            const scope=`root ${window.__smokeRootId(root)}: ${kind}`;
             const styles=Array.from(root.querySelectorAll('style'));
             // Explicitly include HTMLStyleElement.sheet as well as ShadowRoot.styleSheets: the
             // latter is not available in every Chromium version, but CSSOM edits must still count.
