@@ -340,7 +340,7 @@ if (args.length === 4 && args[0] === 'list' && args[1] === '-m' && args[2] === '
 if [ "$1" = "-I" ] && [ "$2" = "-c" ]; then
   code=$3
   shift 3
-  "${realPython}" -I -c "import os,sys; sys.path.insert(0, os.environ['UNSAFE_PYTHON_PATH']); exec(sys.argv[1])" "$code" "$@"
+  "${realPython}" -I -c "import os,sys; sys.path.insert(0, os.environ['UNSAFE_PYTHON_PATH']); exec(sys.argv[1])" "$code" "$@" 2>>"\${SHIM_ERRORS}"
   status=$?
   printf '%s\\n' "$status" >> "\${SHIM_MARKER}"
   exit "$status"
@@ -350,17 +350,21 @@ exit 1
     fs.chmodSync(unsafePython, 0o755);
     for (const unsafePath of ['', fs.realpathSync(directory), path.join(directory, 'checkout')]) {
       const marker = path.join(directory, 'unsafe-marker');
-      fs.rmSync(marker, {force: true});
+      const errors = path.join(directory, 'unsafe-errors');
+      fs.rmSync(marker, {force: true}); fs.rmSync(errors, {force: true});
       const unsafe = spawnSync(realBash, ['-c', script('Verify documented Go toolchain')], {
         cwd: directory, encoding: 'utf8', env: {...process.env, PATH: unsafeIsolation,
           GITHUB_WORKSPACE: path.join(directory, 'checkout'), UNSAFE_PYTHON_PATH: unsafePath,
-          SHIM_MARKER: marker},
+          SHIM_MARKER: marker, SHIM_ERRORS: errors},
       });
       assert.equal(unsafe.status, 1, unsafe.stderr);
       assert.match(unsafe.stderr,
         /python3 with safe -I support is required for isolated inline Python; install a Python 3 whose -I excludes the checkout and working directory from sys\.path\./);
       assert.doesNotMatch(unsafe.stderr, /Traceback/);
       assert.equal(fs.readFileSync(marker, 'utf8').trim(), '1', 'the guard must run inside Python and exit 1');
+      assert.match(fs.readFileSync(errors, 'utf8'),
+        /python3 -I must exclude the checkout and working directory from sys\.path/,
+        'the guard diagnostic must be the reason Python exits, not a syntax error');
     }
     // Optimization strips assert statements. Explicit sys.exit guards must
     // still reject an optimizing wrapper, whether or not it also drops -I.
@@ -369,7 +373,7 @@ exit 1
     const optimizingPython = path.join(optimizingIsolation, 'python3');
     fs.writeFileSync(optimizingPython, `#!/bin/sh
 if [ "\${DROP_I:-0}" = 1 ] && [ "$1" = "-I" ]; then shift; fi
-"${realPython}" -O "$@"
+"${realPython}" -O "$@" 2>>"\${SHIM_ERRORS}"
 status=$?
 printf '%s\\n' "$status" >> "\${SHIM_MARKER}"
 exit "$status"
@@ -377,16 +381,21 @@ exit "$status"
     fs.chmodSync(optimizingPython, 0o755);
     for (const dropIsolation of [false, true]) {
       const marker = path.join(directory, 'optimizing-marker');
-      fs.rmSync(marker, {force: true});
+      const errors = path.join(directory, 'optimizing-errors');
+      fs.rmSync(marker, {force: true}); fs.rmSync(errors, {force: true});
       const optimized = spawnSync(realBash, ['-c', script('Verify documented Go toolchain')], {
         cwd: directory, encoding: 'utf8', env: {...process.env, PATH: optimizingIsolation,
-          DROP_I: dropIsolation ? '1' : '0', SHIM_MARKER: marker},
+          DROP_I: dropIsolation ? '1' : '0', SHIM_MARKER: marker, SHIM_ERRORS: errors},
       });
       assert.equal(optimized.status, 1, optimized.stderr);
       assert.match(optimized.stderr,
         /python3 with safe -I support is required for isolated inline Python; install a Python 3 whose -I excludes the checkout and working directory from sys\.path\./);
       assert.doesNotMatch(optimized.stderr, /Traceback/);
       assert.equal(fs.readFileSync(marker, 'utf8').trim(), '1', 'the guard must reject optimization inside Python');
+      assert.match(fs.readFileSync(errors, 'utf8'), dropIsolation
+        ? /run with python3 -I/
+        : /python3 inline checks require optimization to be disabled/,
+      'the guard diagnostic must be the reason Python exits, not a syntax error');
     }
   } finally {fs.rmSync(directory, {recursive: true, force: true});}
 });
@@ -604,6 +613,7 @@ if(${JSON.stringify(tool)}==='docker')process.exit(process.env.FIXTURE_DOCKER===
 if(${JSON.stringify(tool)}==='id'){console.log(a[0]==='-un'?'runner':process.env.FIXTURE_DOCKER==='group'?'runner docker':'runner');process.exit(0)}
 if(${JSON.stringify(tool)}==='go'&&a[0]==='list'){console.log('example.invalid/pkg/a\\nexample.invalid/pkg/store/mongodb\\nexample.invalid/samples/x\\nexample.invalid/pkg/svcs/adsgrpc/pb');process.exit(Number(process.env.FIXTURE_LIST_EXIT))}
 fs.appendFileSync(process.env.FIXTURE_CALLS,JSON.stringify({tool:${JSON.stringify(tool)},args:a,env:Object.fromEntries(${JSON.stringify(recorded)}.map(k=>[k,process.env[k]]))})+'\\n');
+if(${JSON.stringify(tool)}==='python3'&&a.includes('-c')&&a.join(' ').includes('print("mysql_only=%d"')){const inputs=JSON.parse(process.env.FIXTURE_TRIAL_INPUTS||'{}');const t=v=>v===true||v==='true';console.log('mysql_only='+(t(inputs.mysql_only)?1:0));console.log('stores_only='+(t(inputs.stores_only)?1:0));process.exit(0)}
 const fail=process.env.FIXTURE_FAIL;process.exit(fail&&a.join(' ').includes(fail)?7:0);\n`;
     for (const tool of ['go', 'python3', 'node', 'flock', 'docker', 'id', 'sg', 'bash']) {
       fs.writeFileSync(path.join(directory, tool), stub(tool)); fs.chmodSync(path.join(directory, tool), 0o755);
@@ -618,6 +628,7 @@ const fail=process.env.FIXTURE_FAIL;process.exit(fail&&a.join(' ').includes(fail
       RESULTS_DIR: path.join(work, 'results'), DOCKER_CONFIG: path.join(directory, 'docker-config'),
       GITHUB_EVENT_NAME: mysqlOnly ? 'workflow_dispatch' : 'push', GITHUB_EVENT_PATH: event,
       PATH: `${directory}${path.delimiter}${process.env.PATH}`, FIXTURE_CALLS: calls,
+      FIXTURE_TRIAL_INPUTS: JSON.stringify({mysql_only: mysqlOnly}),
       FIXTURE_GOPATH: directory, FIXTURE_LIST_EXIT: String(listExit), FIXTURE_FAIL: failMatching, FIXTURE_DOCKER: docker, FIXTURE_REAL_BASH: realBash,
     }});
     const records = fs.existsSync(calls) ? fs.readFileSync(calls, 'utf8').trim().split('\n').map(line => JSON.parse(line)).filter(r => !(r.tool === 'python3' && r.args[0] === '-I' && r.args[1] === '-')) : [];

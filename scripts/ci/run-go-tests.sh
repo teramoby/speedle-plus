@@ -144,10 +144,21 @@ case "${mode}" in
       echo 'python3 with safe -I support is required for isolated inline Python; install a Python 3 whose -I excludes the checkout and working directory from sys.path.' >&2
       exit 1
     fi
+    mysql_only=false
+    stores_only=false
     # A branch can be tried immediately through the existing protected worker.
-    # Normal scheduled runs always include all backends.
-    if [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch && -f "${GITHUB_EVENT_PATH:-}" ]] &&
-       python3 -I -c 'import sys; sys.flags.isolated or sys.exit("run with python3 -I"); sys.flags.optimize == 0 or sys.exit("python3 inline checks require optimization to be disabled"); import os; unsafe = any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p is not None); unsafe and sys.exit("python3 -I must exclude the checkout and working directory from sys.path"); import json,sys; value=json.load(open(sys.argv[1])).get("inputs",{}).get("mysql_only",False); sys.exit(0 if value is True or value == "true" else 1)' "$GITHUB_EVENT_PATH"; then
+    # Normal scheduled runs always include all backends. Parse the dispatch
+    # inputs once so an unreadable or malformed payload fails the run instead
+    # of falling through to the full nightly.
+    if [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch && -f "${GITHUB_EVENT_PATH:-}" ]]; then
+      trial_inputs=$(python3 -I -c 'import sys; sys.flags.isolated or sys.exit("run with python3 -I"); sys.flags.optimize == 0 or sys.exit("python3 inline checks require optimization to be disabled"); import os; unsafe = any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p is not None); unsafe and sys.exit("python3 -I must exclude the checkout and working directory from sys.path"); import json, sys; value = json.load(open(sys.argv[1])).get("inputs", {}); print("mysql_only=%d" % (value.get("mysql_only") is True or value.get("mysql_only") == "true")); print("stores_only=%d" % (value.get("stores_only") is True or value.get("stores_only") == "true"))' "$GITHUB_EVENT_PATH") || {
+        echo 'the workflow_dispatch event payload could not be read; refusing to guess between a trial and the full nightly.' >&2
+        exit 1
+      }
+      case "${trial_inputs}" in *mysql_only=1*) mysql_only=true ;; esac
+      case "${trial_inputs}" in *stores_only=1*) stores_only=true ;; esac
+    fi
+    if [[ "${mysql_only}" == true ]]; then
       check mysql-full python3 scripts/ci/run-mysql-tests.py
       check ci-script-tests bash -c 'python3 -I -m unittest discover -s scripts/tests -p "test_*.py" && node --test scripts/tests/*.cjs'
       exit "${failed}"
@@ -165,8 +176,7 @@ case "${mode}" in
     check mysql-full python3 scripts/ci/run-mysql-tests.py
     check mongodb-full bash scripts/ci/validate-mongodb.sh
     # Manual candidate validation can omit notification/report side effects.
-    if [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch && -f "${GITHUB_EVENT_PATH:-}" ]] &&
-       python3 -I -c 'import sys; sys.flags.isolated or sys.exit("run with python3 -I"); sys.flags.optimize == 0 or sys.exit("python3 inline checks require optimization to be disabled"); import os; unsafe = any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p is not None); unsafe and sys.exit("python3 -I must exclude the checkout and working directory from sys.path"); import json,sys; value=json.load(open(sys.argv[1])).get("inputs",{}).get("stores_only",False); sys.exit(0 if value is True or value == "true" else 1)' "$GITHUB_EVENT_PATH"; then
+    if [[ "${stores_only}" == true ]]; then
       check ci-script-tests bash -c 'python3 -I -m unittest discover -s scripts/tests -p "test_*.py" && node --test scripts/tests/*.cjs'
       exit "${failed}"
     fi
