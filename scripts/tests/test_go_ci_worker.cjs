@@ -106,15 +106,26 @@ if (args.length === 4 && args[0] === 'list' && args[1] === '-m' && args[2] === '
 }
 `);
     fs.chmodSync(stub, 0o755);
+    const prerequisites = body => `### Prerequisites\n\n${body}\n`;
     const cases = [
-      {name: 'matching versions', readme: '- Go 1.27.4 or a newer patch\n', module: '1.27.4', selected: 'go1.27.4', passes: true,
+      {name: 'matching versions', readme: prerequisites('-   Go 1.27.4 or a newer patch'), module: '1.27.4', selected: 'go1.27.4', passes: true,
         message: 'Verified documented minimum Go toolchain: go1.27.4'},
-      {name: 'README and module mismatch', readme: '- Go 1.27.4 or a newer patch\n', module: '1.27.3', selected: 'go1.27.3', passes: false,
+      {name: 'reworded prerequisite', readme: prerequisites('- Go (1.27.4) or newer.'), module: '1.27.4', selected: 'go1.27.4', passes: true,
+        message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      // A version quoted outside the Prerequisites section must not satisfy the guard.
+      {name: 'version outside Prerequisites is ignored', readme: `# Fixture\n\n- Go 9.9.9 or a newer patch\n\n${prerequisites('-   Go 1.27.4 or a newer patch')}`,
+        module: '1.27.4', selected: 'go1.27.4', passes: true, message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      {name: 'README and module mismatch', readme: prerequisites('-   Go 1.27.4 or a newer patch'), module: '1.27.3', selected: 'go1.27.3', passes: false,
         message: 'go.mod GoVersion 1.27.3 != documented minimum 1.27.4'},
-      {name: 'separate toolchain override', readme: '- Go 1.27.4 or a newer patch\n', module: '1.27.4', selected: 'go1.27.5', passes: false,
+      {name: 'separate toolchain override', readme: prerequisites('-   Go 1.27.4 or a newer patch'), module: '1.27.4', selected: 'go1.27.5', passes: false,
         message: 'selected toolchain go1.27.5 != required CI minimum go1.27.4'},
-      {name: 'missing README minimum', readme: '# Fixture without a toolchain requirement\n', module: '1.27.4', selected: 'go1.27.4', passes: false,
-        message: 'README source-build Go minimum not found'},
+      {name: 'missing Prerequisites section', readme: '# Fixture without a prerequisite section\n', module: '1.27.4', selected: 'go1.27.4', passes: false,
+        message: 'README Prerequisites section not found'},
+      {name: 'Prerequisites without a version', readme: prerequisites('-   A recent Go release'), module: '1.27.4', selected: 'go1.27.4', passes: false,
+        message: 'README Prerequisites must name exactly one Go version, found none'},
+      {name: 'ambiguous prerequisite versions', readme: prerequisites('-   Go 1.27.4 or a newer patch\n-   Or Go 1.26.10 on older hosts'),
+        module: '1.27.4', selected: 'go1.27.4', passes: false,
+        message: "README Prerequisites must name exactly one Go version, found ['1.26.10', '1.27.4']"},
     ];
     const root = path.resolve(__dirname, '../..');
     const moduleSource = fs.readFileSync(path.join(root, 'go.mod'), 'utf8');

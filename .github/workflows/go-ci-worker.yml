@@ -73,7 +73,8 @@ jobs:
           # archive over read-only module files causes noisy extraction failures.
           cache: ${{ runner.environment != 'self-hosted' }}
 
-      # CI exercises the exact documented minimum; user builds may use a newer patch.
+      # CI exercises the exact minimum documented under README's Prerequisites
+      # heading; user builds may use a newer patch.
       - name: Verify documented Go toolchain
         run: |
           set -euo pipefail
@@ -85,13 +86,25 @@ jobs:
           def go(*args):
               return subprocess.check_output(['go', *args], text=True).strip()
 
+          def documented_minimum(text):
+              # Scope the search to the Prerequisites section so another Go
+              # version mentioned elsewhere in README cannot satisfy the guard,
+              # and accept any wording that names one Go x.y.z there.
+              headings = list(re.finditer(r'^#{2,6}[ \t]+(.+?)[ \t]*$', text, re.MULTILINE))
+              start = next((h for h in headings if h.group(1) == 'Prerequisites'), None)
+              if start is None:
+                  raise SystemExit('README Prerequisites section not found')
+              end = next((h.start() for h in headings if h.start() > start.end()), len(text))
+              versions = set(re.findall(r'\bGo\b[^0-9\n]{0,20}(\d+\.\d+\.\d+)',
+                                        text[start.end():end]))
+              if len(versions) != 1:
+                  raise SystemExit('README Prerequisites must name exactly one Go version,'
+                                   f' found {sorted(versions) or "none"}')
+              return versions.pop()
+
           module = go('list', '-m', '-f', '{{.GoVersion}}')
           actual = go('env', 'GOVERSION')
-          match = re.search(r'^-\s+Go (\d+\.\d+\.\d+) or a newer patch',
-                            Path('README.md').read_text(encoding='utf-8'), re.MULTILINE)
-          if match is None:
-              raise SystemExit('README source-build Go minimum not found')
-          documented = match.group(1)
+          documented = documented_minimum(Path('README.md').read_text(encoding='utf-8'))
           if module != documented:
               raise SystemExit(
                   f'go.mod GoVersion {module} != documented minimum {documented}')
