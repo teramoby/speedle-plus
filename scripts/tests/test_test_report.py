@@ -143,14 +143,14 @@ class ArkTest(unittest.TestCase):
         response = mock.MagicMock()
         response.__enter__.return_value.read.return_value = json.dumps(
             {"output": [{"type": "message", "content": [{"type": "output_text", "text": "ok"}]}]}).encode()
-        with mock.patch("urllib.request.urlopen", return_value=response) as urlopen:
+        with mock.patch("test_report.open_no_redirect", return_value=response) as urlopen:
             self.assertEqual(test_report.ark_analyze("summary", "k", "m"), "ok")
         request = urlopen.call_args[0][0]
         self.assertEqual(request.get_header("Authorization"), "Bearer k")
         self.assertEqual(json.loads(request.data)["model"], "m")
 
     def test_unreachable_ark_returns_none(self):
-        with mock.patch("urllib.request.urlopen", side_effect=OSError("down")):
+        with mock.patch("test_report.open_no_redirect", side_effect=OSError("down")):
             self.assertIsNone(test_report.ark_analyze("summary", "k", "m"))
 
 
@@ -165,7 +165,7 @@ class EmailTest(unittest.TestCase):
                                 {"queued": [self.env["OPS_EMAIL_TO"]]} if result is None else result}).encode()
         response = mock.MagicMock()
         response.__enter__.return_value.read.return_value = reply
-        with mock.patch("test_report.open_email", return_value=response, side_effect=error) as urlopen, \
+        with mock.patch("test_report.open_no_redirect", return_value=response, side_effect=error) as urlopen, \
                 mock.patch.object(test_report, "EMAIL_RETRY_DELAY", 0), \
                 mock.patch("sys.stderr", new=io.StringIO()) as stderr:
             ok = test_report.send_email("subject", "body", env or self.env, attachment=attachment)
@@ -192,7 +192,7 @@ class EmailTest(unittest.TestCase):
         self.assertIsNone(test_report._NoRedirect().redirect_request(
             mock.Mock(), None, 302, "Found", {}, "https://elsewhere.example/send"))
         with mock.patch("urllib.request.build_opener") as build:
-            test_report.open_email("request", timeout=5)
+            test_report.open_no_redirect("request", timeout=5)
         self.assertEqual(build.call_args[0], (test_report._NoRedirect,))
         build.return_value.open.assert_called_once_with("request", timeout=5)
 
@@ -233,7 +233,7 @@ class EmailTest(unittest.TestCase):
 
     def test_a_message_over_the_api_limit_is_not_sent(self):
         with mock.patch.object(test_report, "EMAIL_MAX_BYTES", 1024 * 1024), \
-                mock.patch("test_report.open_email") as urlopen, \
+                mock.patch("test_report.open_no_redirect") as urlopen, \
                 mock.patch("sys.stderr", new=io.StringIO()) as stderr:
             self.assertFalse(test_report.send_email("subject", "x" * (1024 * 1024 + 1), self.env))
         urlopen.assert_not_called()
@@ -254,7 +254,7 @@ class EmailTest(unittest.TestCase):
     def test_invalid_addresses_fail_without_a_request(self):
         for setting in ("OPS_EMAIL_FROM", "OPS_EMAIL_TO", "OPS_EMAIL_REPLY_TO"):
             with self.subTest(setting=setting):
-                with mock.patch("test_report.open_email") as urlopen, \
+                with mock.patch("test_report.open_no_redirect") as urlopen, \
                         mock.patch("sys.stderr", new=io.StringIO()) as stderr:
                     self.assertFalse(test_report.send_email("s", "b", dict(self.env, **{setting: "not an address"})))
                 urlopen.assert_not_called()
@@ -263,7 +263,7 @@ class EmailTest(unittest.TestCase):
 
     def test_a_configured_recipient_that_is_not_an_address_is_not_dropped(self):
         env = dict(self.env, OPS_EMAIL_TO="recipient@example.com, not an address")
-        with mock.patch("test_report.open_email") as urlopen, \
+        with mock.patch("test_report.open_no_redirect") as urlopen, \
                 mock.patch("sys.stderr", new=io.StringIO()) as stderr:
             self.assertFalse(test_report.send_email("s", "b", env))
         urlopen.assert_not_called()
@@ -271,7 +271,7 @@ class EmailTest(unittest.TestCase):
 
     def test_rejects_more_recipients_than_the_api_accepts(self):
         env = dict(self.env, OPS_EMAIL_TO=", ".join(f"r{i}@example.com" for i in range(51)))
-        with mock.patch("test_report.open_email") as urlopen, \
+        with mock.patch("test_report.open_no_redirect") as urlopen, \
                 mock.patch("sys.stderr", new=io.StringIO()) as stderr:
             self.assertFalse(test_report.send_email("s", "b", env))
         urlopen.assert_not_called()
@@ -280,7 +280,7 @@ class EmailTest(unittest.TestCase):
     def test_a_missing_reply_to_sends_nothing(self):
         # The sender is outbound-only, so an email without Reply-To loses replies.
         env = {key: value for key, value in self.env.items() if key != "OPS_EMAIL_REPLY_TO"}
-        with mock.patch("test_report.open_email") as urlopen, \
+        with mock.patch("test_report.open_no_redirect") as urlopen, \
                 mock.patch("sys.stderr", new=io.StringIO()) as stderr:
             self.assertFalse(test_report.send_email("s", "b", env))
         urlopen.assert_not_called()
@@ -299,7 +299,7 @@ class EmailTest(unittest.TestCase):
         response.__enter__.return_value.read.return_value = json.dumps(
             {"success": True, "result": {"queued": ["recipient@example.com"]}}).encode()
         with mock.patch.object(transient, "close") as close, \
-                mock.patch("test_report.open_email", side_effect=[transient, response]) as urlopen, \
+                mock.patch("test_report.open_no_redirect", side_effect=[transient, response]) as urlopen, \
                 mock.patch.object(test_report, "EMAIL_RETRY_DELAY", 0), \
                 mock.patch("sys.stderr", new=io.StringIO()):
             self.assertTrue(test_report.send_email("s", "b", self.env))
@@ -308,7 +308,7 @@ class EmailTest(unittest.TestCase):
 
     def test_a_persistent_failure_stops_after_the_retries(self):
         error = urllib.error.HTTPError("https://api.example/send", 500, "server error", None, io.BytesIO(b"{}"))
-        with mock.patch("test_report.open_email", side_effect=error) as urlopen, \
+        with mock.patch("test_report.open_no_redirect", side_effect=error) as urlopen, \
                 mock.patch.object(test_report, "EMAIL_RETRY_DELAY", 0), \
                 mock.patch("sys.stderr", new=io.StringIO()) as stderr:
             self.assertFalse(test_report.send_email("s", "b", self.env))
@@ -317,7 +317,7 @@ class EmailTest(unittest.TestCase):
 
     def test_a_rejected_request_is_not_retried(self):
         error = urllib.error.HTTPError("https://api.example/send", 403, "denied", None, io.BytesIO(b"{}"))
-        with mock.patch("test_report.open_email", side_effect=error) as urlopen, \
+        with mock.patch("test_report.open_no_redirect", side_effect=error) as urlopen, \
                 mock.patch.object(test_report, "EMAIL_RETRY_DELAY", 0), \
                 mock.patch("sys.stderr", new=io.StringIO()):
             self.assertFalse(test_report.send_email("s", "b", self.env))
@@ -356,7 +356,7 @@ class EmailTest(unittest.TestCase):
         with mock.patch.object(test_report, "send_email", return_value=True) as send, \
                 mock.patch("builtins.print"):
             test_report.main(["--kind", "weekly", "--go-json", str(stream),
-                              "--summary-file", str(summary)], env={"RUN_URL": "http://run"})
+                              "--summary-file", str(summary)], env=dict(self.env, RUN_URL="http://run"))
         body = send.call_args[0][1]
         self.assertLessEqual(len(body), test_report.EMAIL_TEXT_LIMIT)
         self.assertIn("[report truncated", body)
@@ -435,7 +435,7 @@ class EmailTest(unittest.TestCase):
         self.assertIn("IncompleteRead", warning)
 
     def test_missing_settings_send_nothing(self):
-        with mock.patch("test_report.open_email") as urlopen, \
+        with mock.patch("test_report.open_no_redirect") as urlopen, \
                 mock.patch("sys.stderr", new=io.StringIO()) as stderr:
             self.assertFalse(test_report.send_email("s", "b", {}))
         urlopen.assert_not_called()
@@ -444,7 +444,7 @@ class EmailTest(unittest.TestCase):
 
     def test_a_configuration_problem_is_noted_on_the_run_summary(self):
         summary = Path(tempfile.mkdtemp()) / "step-summary.md"
-        with mock.patch("test_report.open_email") as urlopen, \
+        with mock.patch("test_report.open_no_redirect") as urlopen, \
                 mock.patch("sys.stderr", new=io.StringIO()):
             self.assertFalse(test_report.send_email("s", "b", {"GITHUB_STEP_SUMMARY": str(summary)}))
         urlopen.assert_not_called()
@@ -505,9 +505,9 @@ class EmailTest(unittest.TestCase):
                 if "reply" in case:
                     response = mock.MagicMock()
                     response.__enter__.return_value.read.return_value = json.dumps(case["reply"]).encode()
-                    urlopen = mock.patch("test_report.open_email", return_value=response)
+                    urlopen = mock.patch("test_report.open_no_redirect", return_value=response)
                 else:
-                    urlopen = mock.patch("test_report.open_email", side_effect=case["error"])
+                    urlopen = mock.patch("test_report.open_no_redirect", side_effect=case["error"])
                 env = dict(self.env, GITHUB_TOKEN="t", GITHUB_REPOSITORY="o/r",
                            REPORT_EMAIL_REQUIRED="true")
                 with urlopen, mock.patch.object(test_report, "EMAIL_RETRY_DELAY", 0), \
@@ -552,7 +552,7 @@ class EmailTest(unittest.TestCase):
         (directory / "go.json").write_text(events(("pass", "p", "TestA", None)))
         env = dict(self.env, REPORT_EMAIL_REQUIRED="true")
         error = urllib.error.HTTPError("https://api.example/send", 403, "denied", None, io.BytesIO(b"{}"))
-        with mock.patch("test_report.open_email", side_effect=error), \
+        with mock.patch("test_report.open_no_redirect", side_effect=error), \
                 mock.patch.object(test_report, "EMAIL_RETRY_DELAY", 0), \
                 mock.patch("sys.stdout", new=io.StringIO()), \
                 mock.patch("sys.stderr", new=io.StringIO()) as stderr:
@@ -594,7 +594,7 @@ class EmailTest(unittest.TestCase):
         summary, github = directory / "report.txt", FakeGitHub()
         error = urllib.error.HTTPError("https://api.example/send", 500, "server error", None, io.BytesIO(b"{}"))
         env = dict(self.env, GITHUB_TOKEN="t", GITHUB_REPOSITORY="o/r")
-        with mock.patch("test_report.open_email", side_effect=error), \
+        with mock.patch("test_report.open_no_redirect", side_effect=error), \
                 mock.patch.object(test_report, "EMAIL_RETRY_DELAY", 0), \
                 mock.patch.object(test_report, "GitHub", return_value=github), \
                 mock.patch("sys.stdout", new=io.StringIO()), \
@@ -634,7 +634,7 @@ class EmailTest(unittest.TestCase):
         (directory / "go.json").write_text(events(("fail", "p", "TestZ", None)))
         with mock.patch.object(test_report, "send_email", return_value=True) as send, mock.patch("builtins.print"):
             test_report.main(["--kind", "weekly", "--go-json", str(directory / "go.json")],
-                             env={"GITHUB_REPOSITORY": "o/r", "RUN_URL": "http://run"})
+                             env=dict(self.env, GITHUB_REPOSITORY="o/r", RUN_URL="http://run"))
         subject, body = send.call_args[0][:2]
         self.assertEqual(subject, "[Speedle weekly] FAILED")
         self.assertIn("p TestZ", body)
@@ -643,13 +643,23 @@ class EmailTest(unittest.TestCase):
         self.assertEqual(attachment["filename"], "speedle-weekly-report.txt")
         self.assertEqual(base64.b64decode(attachment["content"]).decode("utf-8"), body)
 
+    def test_no_attachment_is_built_without_email_settings(self):
+        # A local or test run without the settings must not encode the report.
+        directory = Path(tempfile.mkdtemp())
+        (directory / "go.json").write_text(events(("fail", "p", "TestZ", None)))
+        with mock.patch.object(test_report, "report_attachment") as build, \
+                mock.patch.object(test_report, "send_email", return_value=False), \
+                mock.patch("builtins.print"):
+            test_report.main(["--kind", "weekly", "--go-json", str(directory / "go.json")], env={})
+        build.assert_not_called()
+
     def test_main_posts_the_configured_report(self):
         directory = Path(tempfile.mkdtemp())
         (directory / "go.json").write_text(events(("fail", "p", "TestZ", None)))
         response = mock.MagicMock()
         response.__enter__.return_value.read.return_value = json.dumps(
             {"success": True, "result": {"queued": [self.env["OPS_EMAIL_TO"]]}}).encode()
-        with mock.patch("test_report.open_email", return_value=response) as urlopen, mock.patch("builtins.print"):
+        with mock.patch("test_report.open_no_redirect", return_value=response) as urlopen, mock.patch("builtins.print"):
             code = test_report.main(["--kind", "nightly", "--go-json", str(directory / "go.json")],
                                     env=dict(self.env))
         self.assertEqual(code, 0)
@@ -662,6 +672,16 @@ class EmailTest(unittest.TestCase):
         [attachment] = payload["attachments"]
         self.assertEqual(attachment["filename"], "speedle-nightly-report.txt")
         self.assertEqual(base64.b64decode(attachment["content"]).decode("utf-8"), payload["text"])
+
+
+class GitHubTest(unittest.TestCase):
+    def test_call_uses_the_no_redirect_opener(self):
+        # The repository token must not follow a redirect to another host.
+        response = mock.MagicMock()
+        response.__enter__.return_value.read.return_value = b"[]"
+        with mock.patch("test_report.open_no_redirect", return_value=response) as opener:
+            self.assertEqual(test_report.GitHub("token", "o/r").call("GET", "/issues"), [])
+        self.assertEqual(opener.call_args.kwargs["timeout"], 60)
 
 
 class IssueTest(unittest.TestCase):
@@ -865,7 +885,7 @@ class RegressionTest(unittest.TestCase):
     def test_scheduled_runs_keep_chinese_analysis(self):
         response = mock.MagicMock()
         response.__enter__.return_value.read.return_value = b"{}"
-        with mock.patch("urllib.request.urlopen", return_value=response) as urlopen:
+        with mock.patch("test_report.open_no_redirect", return_value=response) as urlopen:
             test_report.ark_analyze("s", "k", "m")
             test_report.ark_analyze("s", "k", "m", language="English")
         prompts = [json.loads(c[0][0].data)["input"] for c in urlopen.call_args_list]

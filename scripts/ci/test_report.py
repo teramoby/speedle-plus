@@ -219,6 +219,23 @@ def summarize(kind, packages, failures, checks, run_url, commit_url="", performa
     return ok, "\n".join(lines) + "\n"
 
 
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    """Refuse redirects: urlopen copies the Authorization header to the
+    target, so a 3xx would hand a bearer token to another host."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+def open_no_redirect(request, timeout):
+    """Open a request without following redirects.
+
+    Returning None from the redirect handler leaves urllib raising the 3xx as
+    an HTTPError. Every call that carries a bearer token uses this opener.
+    """
+    return urllib.request.build_opener(_NoRedirect).open(request, timeout=timeout)
+
+
 def ark_analyze(summary, api_key, model, url=ARK_URL, timeout=300, language="Chinese"):
     """Return the model's analysis, or None when Ark is unavailable."""
     prompt = (
@@ -234,7 +251,7 @@ def ark_analyze(summary, api_key, model, url=ARK_URL, timeout=300, language="Chi
     request = urllib.request.Request(url, data=body, method="POST", headers={
         "Authorization": f"Bearer {api_key}", "Content-Type": "application/json"})
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
+        with open_no_redirect(request, timeout=timeout) as response:
             payload = json.loads(response.read())
     except (urllib.error.URLError, OSError, ValueError) as error:
         # Never echo the response or the key; the status class is enough.
@@ -334,15 +351,19 @@ def report_attachment(filename, report):
 
     The API limits the whole message to 25 MiB, so a report beyond
     ATTACHMENT_TEXT_LIMIT bytes is cut between characters and ends with a note
-    that says so.
+    that says so. Only the first ATTACHMENT_TEXT_LIMIT characters are encoded:
+    a character is at least one byte, so that prefix already covers the cap
+    and a huge report is never encoded whole.
     """
-    text = report
-    data = report.encode("utf-8")
-    if len(data) > ATTACHMENT_TEXT_LIMIT:
-        note = (f"\n\n[report truncated at {ATTACHMENT_TEXT_LIMIT} bytes in the attachment; "
-                f"see the workflow run]\n")
-        data = data[:ATTACHMENT_TEXT_LIMIT - len(note.encode("utf-8"))]
+    limit = ATTACHMENT_TEXT_LIMIT
+    note = (f"\n\n[report truncated at {limit} bytes in the attachment; "
+            f"see the workflow run]\n")
+    data = (report[:limit] if len(report) > limit else report).encode("utf-8")
+    if len(report) > limit or len(data) > limit:
+        data = data[:limit - len(note.encode("utf-8"))]
         text = data.decode("utf-8", "ignore") + note
+    else:
+        text = report
     return {"content": base64.b64encode(text.encode("utf-8")).decode("ascii"),
             "filename": filename, "type": "text/plain", "disposition": "attachment"}
 
@@ -357,23 +378,6 @@ def email_configured(env):
                 and senders and len(senders) == 1 and recipients
                 and len(recipients) <= MAX_EMAIL_RECIPIENTS
                 and reply_to and len(reply_to) == 1)
-
-
-class _NoRedirect(urllib.request.HTTPRedirectHandler):
-    """Refuse redirects: urlopen copies the Authorization header to the
-    target, so a 3xx would hand the API token to another host."""
-
-    def redirect_request(self, req, fp, code, msg, headers, newurl):
-        return None
-
-
-def open_email(request, timeout):
-    """Open the send request without following redirects.
-
-    Returning None from the redirect handler leaves urllib raising the 3xx as
-    an HTTPError, which send_email treats as a failed send.
-    """
-    return urllib.request.build_opener(_NoRedirect).open(request, timeout=timeout)
 
 
 def send_email(subject, body, env, attachment=None, timeout=EMAIL_TIMEOUT):
@@ -432,7 +436,7 @@ def send_email(subject, body, env, attachment=None, timeout=EMAIL_TIMEOUT):
     for attempt in range(EMAIL_RETRIES + 1):
         retry = attempt < EMAIL_RETRIES
         try:
-            with open_email(request, timeout=timeout) as response:
+            with open_no_redirect(request, timeout=timeout) as response:
                 reply = json.loads(response.read() or b"{}")
             break
         except urllib.error.HTTPError as error:
@@ -480,7 +484,7 @@ class GitHub:
             data=json.dumps(data).encode() if data is not None else None,
             headers={"Authorization": f"Bearer {self.token}", "Accept": "application/vnd.github+json",
                      "X-GitHub-Api-Version": "2022-11-28", "Content-Type": "application/json"})
-        with urllib.request.urlopen(request, timeout=60) as response:
+        with open_no_redirect(request, timeout=60) as response:
             return json.loads(response.read() or b"null")
 
     def open_issues(self):
@@ -614,9 +618,11 @@ def main(argv=None, env=os.environ):
     subject = f"[Speedle {policy['title']}] {'PASSED' if ok else 'FAILED'}"
     email_failed = False
     try:
-        email_failed = not send_email(subject, email_text(report, run_url), env,
-                                      attachment=report_attachment(
-                                          REPORT_FILENAME.format(kind=args.kind), report))
+        # Build the attachment only when a send can happen: a local or test run
+        # without the settings must not encode the report.
+        attachment = (report_attachment(REPORT_FILENAME.format(kind=args.kind), report)
+                      if email_configured(env) else None)
+        email_failed = not send_email(subject, email_text(report, run_url), env, attachment=attachment)
     except Exception as error:
         # A notification bug must not skip the summary and failure tracking.
         email_failed = True
