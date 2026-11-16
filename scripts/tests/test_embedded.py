@@ -2,6 +2,7 @@
 import contextlib
 import io
 import json
+import subprocess
 import sys
 from pathlib import Path
 import unittest
@@ -42,12 +43,13 @@ ALLOWED = "alice allowed=true\nbob allowed=false\n"
 class FakeRun:
     """Stand in for the checker's `run`, failing selected call numbers.
 
-    `failures` maps a command to the 1-based call numbers that fail, as a
-    transient network error would.
+    `failures` and `timeouts` map a command to the 1-based call numbers that
+    fail with a command error or a timeout, as a transient network error would.
     """
 
-    def __init__(self, failures=None, run_output=ALLOWED):
+    def __init__(self, failures=None, timeouts=None, run_output=ALLOWED):
         self.failures = failures or {}
+        self.timeouts = timeouts or {}
         self.run_output = run_output
         self.calls = []
 
@@ -56,8 +58,11 @@ class FakeRun:
 
     def __call__(self, command, cwd, env):
         self.calls.append(command)
-        if isinstance(command, str) and self.occurrences(command) in self.failures.get(command, ()):
-            raise RuntimeError(f"Command failed: {command}")
+        if isinstance(command, str):
+            if self.occurrences(command) in self.timeouts.get(command, ()):
+                raise subprocess.TimeoutExpired(cmd=command, timeout=600)
+            if self.occurrences(command) in self.failures.get(command, ()):
+                raise RuntimeError(f"Command failed: {command}")
         if command == STEPS["version"]:
             return VERSION
         if command == GO_LIST:
@@ -88,6 +93,13 @@ class EmbeddedRetryTest(unittest.TestCase):
         sleep = self.verify(fake)
         self.assertEqual(fake.occurrences(SETUP), 2)
         self.assertEqual(fake.occurrences(BUILD), 1)
+        self.assertEqual(fake.occurrences(RUN), 1)
+        self.assertEqual(sleep.call_args_list, [mock.call(5.0)])
+
+    def test_retries_a_setup_attempt_that_times_out(self):
+        fake = FakeRun(timeouts={SETUP: (1,)})
+        sleep = self.verify(fake)
+        self.assertEqual(fake.occurrences(SETUP), 2)
         self.assertEqual(fake.occurrences(RUN), 1)
         self.assertEqual(sleep.call_args_list, [mock.call(5.0)])
 
@@ -143,6 +155,24 @@ class EmbeddedRetryTest(unittest.TestCase):
         self.assertEqual(fake.occurrences(SETUP), 3)
         self.assertEqual(fake.occurrences(BUILD), 0)
         self.assertEqual(sleep.call_args_list, [mock.call(5.0), mock.call(10.0)])
+
+
+class CheckerImportTest(unittest.TestCase):
+    def test_checkers_load_without_the_caller_adding_their_directory(self):
+        # Isolated mode keeps the working directory and the site packages out
+        # of sys.path: the checkers must locate the shared helper themselves.
+        script = (
+            "import importlib.util, sys\n"
+            "directory = sys.argv[1]\n"
+            "for name in ('check_quick_start', 'check_embedded'):\n"
+            "    path = directory + '/' + name + '.py'\n"
+            "    spec = importlib.util.spec_from_file_location(name, path)\n"
+            "    spec.loader.exec_module(importlib.util.module_from_spec(spec))\n"
+        )
+        subprocess.run(
+            [sys.executable, "-I", "-c", script, str(ROOT / "website" / "tests")],
+            check=True, capture_output=True, text=True, timeout=120,
+        )
 
 
 if __name__ == "__main__":

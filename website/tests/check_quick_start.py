@@ -33,7 +33,9 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-from network_retry import run_with_retry
+# Resolve the shared helper from this directory, whatever the entry point.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from network_retry import run_with_retry  # noqa: E402  (needs the path above)
 
 ROOT = Path(__file__).resolve().parents[2]
 PATTERN = r"<!-- quick-start: ([a-z-]+) -->\s*```bash\n(.*?)\n```"
