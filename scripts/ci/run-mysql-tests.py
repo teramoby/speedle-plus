@@ -61,7 +61,8 @@ def ensure_docker_access():
             and os.environ.get("SPEEDLE_DOCKER_GROUP_REFRESHED") != "1"):
         print("Refreshing the runner account's existing docker group for this job.", flush=True)
         environment = dict(os.environ, SPEEDLE_DOCKER_GROUP_REFRESHED="1")
-        command = "exec " + shlex.join([sys.executable, str(Path(__file__).resolve()), *sys.argv[1:]])
+        isolated = ["-I"] if sys.flags.isolated else []
+        command = "exec " + shlex.join([sys.executable, *isolated, str(Path(__file__).resolve()), *sys.argv[1:]])
         os.execvpe("sg", ["sg", "docker", "-c", command], environment)
     raise RuntimeError("runner cannot access Docker; " + probe.stderr.strip())
 

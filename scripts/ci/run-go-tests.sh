@@ -150,8 +150,8 @@ case "${mode}" in
     # Normal scheduled runs always include all backends. Parse the dispatch
     # inputs once so an unreadable or malformed payload fails the run instead
     # of falling through to the full nightly.
-    if [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch && -f "${GITHUB_EVENT_PATH:-}" ]]; then
-      trial_inputs=$(python3 -I -c 'import sys; sys.flags.isolated or sys.exit("run with python3 -I"); sys.flags.optimize == 0 or sys.exit("python3 inline checks require optimization to be disabled"); import os; unsafe = any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p is not None); unsafe and sys.exit("python3 -I must exclude the checkout and working directory from sys.path"); import json, sys; value = json.load(open(sys.argv[1])).get("inputs", {}); print("mysql_only=%d" % (value.get("mysql_only") is True or value.get("mysql_only") == "true")); print("stores_only=%d" % (value.get("stores_only") is True or value.get("stores_only") == "true"))' "$GITHUB_EVENT_PATH") || {
+    if [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch ]]; then
+      trial_inputs=$(python3 -I -c 'import sys; sys.flags.isolated or sys.exit("run with python3 -I"); sys.flags.optimize == 0 or sys.exit("python3 inline checks require optimization to be disabled"); import os; unsafe = any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p is not None); unsafe and sys.exit("python3 -I must exclude the checkout and working directory from sys.path"); import json, sys; value = json.load(open(sys.argv[1])).get("inputs", {}); print("mysql_only=%d" % (value.get("mysql_only") is True or value.get("mysql_only") == "true")); print("stores_only=%d" % (value.get("stores_only") is True or value.get("stores_only") == "true"))' "${GITHUB_EVENT_PATH:-}") || {
         echo 'the workflow_dispatch event payload could not be read; refusing to guess between a trial and the full nightly.' >&2
         exit 1
       }

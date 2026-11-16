@@ -729,6 +729,20 @@ test('nightly checks the isolated interpreter before interpreting trial inputs',
       /python3 with safe -I support is required for isolated inline Python; install a Python 3 whose -I excludes the checkout and working directory from sys\.path\./);
   } finally {fs.rmSync(directory, {recursive: true, force: true});}
 });
+test('nightly refuses a dispatch whose event payload is missing', () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-nightly-event-'));
+  try {
+    const result = spawnSync(realBash, [path.join(repoRoot, 'scripts/ci/run-go-tests.sh'), 'nightly'], {
+      encoding: 'utf8', env: {...process.env,
+        GITHUB_EVENT_NAME: 'workflow_dispatch',
+        GITHUB_EVENT_PATH: path.join(directory, 'missing.json'),
+        DOCKER_CONFIG: path.join(directory, 'docker-config'),
+        RESULTS_DIR: path.join(directory, 'results')},
+    });
+    assert.equal(result.status, 1, result.stderr);
+    assert.match(result.stderr, /the workflow_dispatch event payload could not be read/);
+  } finally {fs.rmSync(directory, {recursive: true, force: true});}
+});
 test('nightly runs every suite even after a failure, records checks and fails at the end', () => {
   const {result, records, checks} = runSuite('nightly', {failMatching: 'go1.27.4'});
   assert.equal(result.status, 1);

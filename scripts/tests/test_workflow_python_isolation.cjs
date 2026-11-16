@@ -36,7 +36,7 @@ const interpreter = String.raw`\bpython(?:3(?:\.[0-9]+)?)?\b`;
 const commandPattern = new RegExp(String.raw`${interpreter}(?:\s+-[A-Za-z]+)*?\s+-[A-Za-z]*c(?=\s|['"]|$)`);
 const modulePattern = new RegExp(String.raw`${interpreter}(?:\s+-[A-Za-z]+)*?\s+-[A-Za-z]*m(?=\s|['"]|$)`);
 const stdinPattern = new RegExp(String.raw`${interpreter}(?:\s+-[A-Za-z]+)*(?:(?:\s+-)?\s*<<|\s+-(?=\s|$))`);
-const scriptPattern = new RegExp(String.raw`${interpreter}(?:\s+-[A-Za-z]+)*?\s+(?:"[^"]+"|'[^']+'|[^\s'";|&)<>][^\s'";|&)]*/[^\s'";|&)]*|[^\s'";|&)<>][^\s'";|&)]*\.py)(?=\s|$)`);
+const scriptPattern = new RegExp(String.raw`${interpreter}(?:\s+-[A-Za-z]+)*?\s+("[^"]+"|'[^']+'|[^\s'";|&)<>][^\s'";|&)]*/[^\s'";|&)]*|[^\s'";|&)<>][^\s'";|&)]*\.py)(?=\s|$)`);
 const isolatedPattern = new RegExp(String.raw`${interpreter}\s+-I(?=\s|$)`);
 const printedExample = /^(?:-\s*)?(?:run:\s*)?(?:echo|printf)\b/;
 const pipedPython = /\|\s*python(?:3(?:\.[0-9]+)?)?\b/;
@@ -73,6 +73,7 @@ function inspectSource(file, source) {
     if (!text || text.startsWith('#') || (printedExample.test(text) && !pipedPython.test(text))) continue;
     let kind;
     let payload = '';
+    let operand = '';
     const commandMatch = line.match(commandPattern);
     if (commandMatch) {
       kind = 'command';
@@ -80,11 +81,17 @@ function inspectSource(file, source) {
       payload = afterOption.match(/^\s+'([^']*)'/)?.[1] ?? '';
     } else if (modulePattern.test(line)) kind = 'module';
     else if (stdinPattern.test(line)) kind = 'stdin';
-    else if (scriptPattern.test(line)) kind = 'script';
+    else {
+      const scriptMatch = line.match(scriptPattern);
+      if (scriptMatch) {
+        kind = 'script';
+        operand = scriptMatch[1].replace(/^['"]|['"]$/g, '');
+      }
+    }
     if (kind) {
       const isolated = isolatedPattern.test(line);
       invocations.push({
-        file, line: start + 1, kind, isolated,
+        file, line: start + 1, kind, isolated, operand,
         // -m and script-file invocations have no inline payload to instrument,
         // so the only available check is that -I is present; -c and stdin
         // programs must also carry the runtime guard.
@@ -238,6 +245,64 @@ test('missing guards, unparseable -c payloads and unlisted invocations fail', ()
   ]);
   assert.throws(() => assertInventory(unsafe, []), /unexpected inline Python invocation/);
   assert.throws(() => assertInventory([], [['fixture.yml', 'command']]), /missing expected command invocation/);
+});
+
+test('every converted script imports under python3 -I', () => {
+  // -I removes the script's own directory from sys.path, so importing each
+  // helper without running __main__ proves its sibling loads work under the
+  // flag before a merge-blocking suite executes it for real.
+  const invocations = sources()
+    .flatMap(([file, absolute]) => inspectSource(file, fs.readFileSync(absolute, 'utf8')));
+  const scripts = new Set(invocations
+    .filter(invocation => invocation.kind === 'script' && invocation.operand.endsWith('.py') &&
+      !invocation.operand.includes('$'))
+    .map(invocation => invocation.operand));
+  // Helpers extracted from the trusted revision at run time still live here.
+  scripts.add('.github/codex/reviewbot_response.py');
+  scripts.add('.github/codex/reviewbot_handoff.py');
+  assert.ok(scripts.size > 10, 'the converted script set must not silently shrink');
+  for (const script of [...scripts].sort()) {
+    assert.ok(fs.existsSync(path.resolve(repo, script)), `missing converted script ${script}`);
+    const result = spawnSync('python3', ['-I', '-B', '-c',
+      'import importlib.util, sys; spec = importlib.util.spec_from_file_location("isolated_check", sys.argv[1]); module = importlib.util.module_from_spec(spec); sys.modules["isolated_check"] = module; spec.loader.exec_module(module)',
+      script], {cwd: repo, encoding: 'utf8'});
+    assert.equal(result.status, 0, `${script} must import under python3 -I: ${result.stderr}`);
+  }
+});
+
+function importedNames(source) {
+  const names = [];
+  for (const line of source.split('\n')) {
+    const match = line.match(/^\s*(?:from\s+([A-Za-z_][A-Za-z0-9_]*)\s+import|import\s+([A-Za-z_][A-Za-z0-9_]*))/);
+    if (match) names.push(match[1] || match[2]);
+  }
+  return names;
+}
+
+test('script-mode helpers do not import same-directory modules by bare name', () => {
+  // -I removes the script's own directory from sys.path, so a bare sibling
+  // import fails at run time. Helpers load siblings with _load_sibling; this
+  // check also inspects the sibling files they load.
+  const invocations = sources()
+    .flatMap(([file, absolute]) => inspectSource(file, fs.readFileSync(absolute, 'utf8')));
+  const pending = invocations
+    .filter(invocation => invocation.kind === 'script' && invocation.operand.endsWith('.py'))
+    .map(invocation => invocation.operand);
+  const checked = new Set();
+  while (pending.length > 0) {
+    const operand = pending.pop();
+    if (operand.includes('$') || checked.has(operand) || !fs.existsSync(path.resolve(repo, operand))) continue;
+    checked.add(operand);
+    const source = fs.readFileSync(path.resolve(repo, operand), 'utf8');
+    const directory = path.dirname(operand);
+    const siblings = new Set(fs.readdirSync(path.resolve(repo, directory))
+      .filter(name => name.endsWith('.py')).map(name => name.slice(0, -3)));
+    assert.deepEqual(importedNames(source).filter(name => siblings.has(name)), [],
+      `${operand} imports a same-directory module; -I removes the script directory from sys.path`);
+    for (const match of source.matchAll(/_load_sibling\("([A-Za-z_][A-Za-z0-9_]*)"\)/g)) {
+      pending.push(path.join(directory, `${match[1]}.py`));
+    }
+  }
 });
 
 test('the runtime guard exits non-zero on an optimizing interpreter', () => {
