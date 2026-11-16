@@ -7,7 +7,16 @@ case "${EVENT_NAME}" in
   *) base="" ;;
 esac
 go=true website=true docs=true ci=true
-if [[ -n "${base}" && "${base}" != 0000000000000000000000000000000000000000 ]] && git cat-file -e "${base}^{commit}" 2>/dev/null; then
+changed=""
+if [[ -n "${CI_CHANGED_FILES_FILE:-}" ]]; then
+  # The route gate supplies a NUL-delimited base...head diff obtained from the
+  # API. This path does not require a checkout or a local Git repository.
+  if [[ ! -f "${CI_CHANGED_FILES_FILE}" || ! -r "${CI_CHANGED_FILES_FILE}" ]]; then
+    echo "CI_CHANGED_FILES_FILE is not a readable regular file" >&2
+    exit 1
+  fi
+  changed="${CI_CHANGED_FILES_FILE}"
+elif [[ -n "${base}" && "${base}" != 0000000000000000000000000000000000000000 ]] && git cat-file -e "${base}^{commit}" 2>/dev/null; then
   changed=$(mktemp "${TMPDIR:-/tmp}/speedle-ci-paths.XXXXXX")
   trap 'rm -f "${changed}"' EXIT
   # Write the diff first so Git failures propagate instead of being hidden in
@@ -17,12 +26,17 @@ if [[ -n "${base}" && "${base}" != 0000000000000000000000000000000000000000 ]] &
   range=("${base}" "${GITHUB_SHA}")
   [[ "${EVENT_NAME}" == pull_request ]] && range=("${base}...${GITHUB_SHA}")
   git diff --name-only -z "${range[@]}" > "${changed}"
+fi
+if [[ -n "${changed}" ]]; then
   go=false website=false docs=false ci=false
   while IFS= read -r -d '' file; do
     case "${file}" in
       '') ;;
       docs/*) docs=true ;;
       website/*) website=true ;;
+      # The pull-request routing step already enables every route for this
+      # directory. Keep the same result when the API route gate calls us.
+      scripts/ci/*) go=true website=true docs=true ci=true ;;
       .github/workflows/*|scripts/*) go=true ci=true ;;
       # Module files and root Markdown carry the toolchain contract that the
       # CI script tests assert against README.md; run those tests for them.

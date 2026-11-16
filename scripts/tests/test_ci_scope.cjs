@@ -352,6 +352,7 @@ test('CI discovers every script suite, isolates Docker config and propagates fai
     // update it in the same change as any suite rename, split or consolidation.
     const requiredSuites = [
       'test_ci_scope.cjs',
+      'test_ci_route_gate.cjs',
       'test_go_ci_worker.cjs',
       'test_pages_workflow.cjs',
       'test_release_workflow.cjs',
