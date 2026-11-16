@@ -191,6 +191,19 @@ class EmailTest(unittest.TestCase):
         self.assertTrue(self.send(result={"queued": ["recipient@example.com"]})[0])
         self.assertTrue(self.send(result={"delivered": ["recipient@example.com"]})[0])
 
+    def test_matches_recipients_case_insensitively_and_through_address_objects(self):
+        self.assertTrue(self.send(result={"delivered": [
+            {"address": "RECIPIENT@example.com", "name": "Operators"}]})[0])
+
+    def test_every_configured_recipient_must_be_confirmed(self):
+        env = dict(self.env, OPS_EMAIL_TO="Recipient One <recipient@example.com>, second@example.com")
+        ok, _, message = self.send(result={"queued": ["recipient@example.com"]}, env=env)
+        self.assertFalse(ok)
+        self.assertIn("every recipient", message)
+        ok, _, _ = self.send(result={"queued": ["recipient@example.com"],
+                                     "delivered": ["SECOND@example.com"]}, env=env)
+        self.assertTrue(ok)
+
     def test_a_permanent_bounce_is_a_failure(self):
         ok, _, warning = self.send(result={"permanent_bounces": ["recipient@example.com"]})
         self.assertFalse(ok)
@@ -235,7 +248,31 @@ class EmailTest(unittest.TestCase):
                 mock.patch("sys.stderr", new=io.StringIO()) as stderr:
             self.assertFalse(test_report.send_email("s", "b", {}))
         urlopen.assert_not_called()
+        self.assertIn("::error::", stderr.getvalue())
         self.assertIn("not configured", stderr.getvalue())
+
+    def test_a_failed_send_is_an_error_annotation(self):
+        ok, _, message = self.send(error=OSError("down"))
+        self.assertFalse(ok)
+        self.assertIn("::error::", message)
+
+    def test_a_failed_send_still_reports_the_run(self):
+        # A send failure must not skip the summary or the failure tracking.
+        directory = Path(tempfile.mkdtemp())
+        (directory / "go.json").write_text(events(("fail", "p", "TestZ", None)))
+        summary, github = directory / "report.txt", FakeGitHub()
+        error = urllib.error.HTTPError("https://api.example/send", 500, "server error", None, io.BytesIO(b"{}"))
+        env = dict(self.env, GITHUB_TOKEN="t", GITHUB_REPOSITORY="o/r")
+        with mock.patch("urllib.request.urlopen", side_effect=error), \
+                mock.patch.object(test_report, "GitHub", return_value=github), \
+                mock.patch("sys.stdout", new=io.StringIO()), \
+                mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+            code = test_report.main(["--kind", "nightly", "--go-json", str(directory / "go.json"),
+                                     "--summary-file", str(summary)], env=env)
+        self.assertEqual(code, 0)
+        self.assertIn("::error::", stderr.getvalue())
+        self.assertIn("TestZ", summary.read_text())
+        self.assertEqual([c[2]["title"] for c in github.calls], ["Test failure: p TestZ"])
 
     def test_logs_never_echo_the_settings(self):
         error = urllib.error.HTTPError("https://api.example/send", 403, "denied", None, io.BytesIO(b"{}"))

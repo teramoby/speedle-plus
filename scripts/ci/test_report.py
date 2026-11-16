@@ -8,6 +8,7 @@ without Cloudflare Email settings nothing is emailed, and without a GitHub
 token no issues are touched. The script exits non-zero only on bad input.
 """
 import argparse
+import email.utils
 import http.client
 import json
 import os
@@ -245,26 +246,42 @@ def extract_text(payload):
 EMAIL_TIMEOUT = 30
 
 
-def listed_addresses(result, key):
-    """The addresses under one key of a send result; other shapes are empty."""
-    value = result.get(key)
-    return [address for address in value if isinstance(address, str)] if isinstance(value, list) else []
+def addresses(value):
+    """The bare, lowercased addresses of a configured recipient value or of one
+    key of the send result.
+
+    A value is a string that may list several recipients, or a list whose
+    entries are address strings or REST address objects ({"address", "name"}).
+    Comparing bare addresses keeps a configured display name, a comma-separated
+    list or a case difference from turning a delivered report into a failure.
+    """
+    if isinstance(value, str):
+        value = [value]
+    if not isinstance(value, list):
+        return []
+    entries = [item.get("address") if isinstance(item, dict) else item for item in value]
+    return [address.lower() for _, address in email.utils.getaddresses(
+        [entry for entry in entries if isinstance(entry, str)]) if address]
 
 
 def send_email(subject, body, env, timeout=EMAIL_TIMEOUT):
     """Send the report through the Cloudflare Email Service REST API.
 
-    Delivery is asynchronous, so the recipient is normally queued rather than
-    delivered at once: a queued recipient is a successful send. A non-2xx
-    status, success: false, a permanent bounce or a suppressed recipient is a
-    failed send. OPS_EMAIL_REPLY_TO, when set, is the reply_to address.
-    Nothing from the settings or the response is logged, because both may
-    hold addresses.
+    Delivery is asynchronous, so a recipient is normally queued rather than
+    delivered at once. A send succeeds when the response lists every
+    configured recipient under queued or delivered. A non-2xx status,
+    success: false, a permanent bounce or a suppressed recipient is a failed
+    send. OPS_EMAIL_REPLY_TO, when set, is the reply_to address. Nothing from
+    the settings or the response is logged, because both may hold addresses.
+
+    A failed send is an error annotation on the run, not a failed step: the
+    report job still tracks failing tests, as it did when a Feishu post failed.
     """
     account, token = env.get("CF_ACCOUNT_ID"), env.get("CF_EMAIL_TOKEN")
     sender, to = env.get("OPS_EMAIL_FROM"), env.get("OPS_EMAIL_TO")
-    if not (account and token and sender and to):
-        print("::warning::Cloudflare Email is not configured (CF_ACCOUNT_ID, CF_EMAIL_TOKEN, "
+    recipients = addresses(to)
+    if not (account and token and sender and recipients):
+        print("::error::Cloudflare Email is not configured (CF_ACCOUNT_ID, CF_EMAIL_TOKEN, "
               "OPS_EMAIL_FROM, OPS_EMAIL_TO); the report is not emailed.", file=sys.stderr)
         return False
     payload = {"to": to, "from": sender, "subject": subject, "text": body}
@@ -278,24 +295,25 @@ def send_email(subject, body, env, timeout=EMAIL_TIMEOUT):
             reply = json.loads(response.read() or b"{}")
     except urllib.error.HTTPError as error:
         # The response body and the URL are not logged: both may hold addresses.
-        print(f"::warning::Email delivery failed (HTTP {error.code}).", file=sys.stderr)
+        print(f"::error::Email delivery failed (HTTP {error.code}).", file=sys.stderr)
         return False
     except (urllib.error.URLError, OSError, ValueError, http.client.HTTPException) as error:
-        print(f"::warning::Email delivery failed ({type(error).__name__}).", file=sys.stderr)
+        print(f"::error::Email delivery failed ({type(error).__name__}).", file=sys.stderr)
         return False
     if not isinstance(reply, dict) or reply.get("success") is not True:
-        print("::warning::Email delivery failed (the API did not report success).", file=sys.stderr)
+        print("::error::Email delivery failed (the API did not report success).", file=sys.stderr)
         return False
     result = reply.get("result")
     if not isinstance(result, dict):
-        print("::warning::Email delivery failed (the API returned no result).", file=sys.stderr)
+        print("::error::Email delivery failed (the API returned no result).", file=sys.stderr)
         return False
     for key in ("permanent_bounces", "suppressed_recipients"):
-        if to in listed_addresses(result, key):
-            print(f"::warning::Email delivery failed (the recipient is listed in {key}).", file=sys.stderr)
+        if set(recipients) & set(addresses(result.get(key))):
+            print(f"::error::Email delivery failed (a recipient is listed in {key}).", file=sys.stderr)
             return False
-    if not any(to in listed_addresses(result, key) for key in ("queued", "delivered")):
-        print("::warning::Email delivery failed (the API did not confirm the recipient).", file=sys.stderr)
+    confirmed = set(addresses(result.get("queued"))) | set(addresses(result.get("delivered")))
+    if not set(recipients) <= confirmed:
+        print("::error::Email delivery failed (the API did not confirm every recipient).", file=sys.stderr)
         return False
     return True
 
