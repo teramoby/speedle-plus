@@ -8,20 +8,20 @@
    listed in QUIET_ORIGINS (origins that cannot affect styles, such as the
    analytics beacon and the loopback probe); so does any local HTTP error, any
    local request that fails (a cancellation by the page is only reported, and
-   only for types that cannot affect rendering, such as pings or media). The
-   check waits for the network to settle after load: no request in flight and
-   one second with no request starting or ending (a page that keeps loading
-   resources fails). It then waits up to three seconds for the DOM and the
-   stylesheets to stop changing and for CSS animations and transitions to
-   finish: a page that still has one running after that window fails, because
-   a few samples cannot cover an animation. A page that keeps changing its
-   DOM or its CSSOM is only reported in the PASS line, but never counts as
-   settled: axe samples three moments 200 ms apart and a violation in any of
-   them fails. Styles are stricter: from before axe is injected until the
-   sampling ends, every stylesheet's rule text, media and disabled state and
-   every inline style attribute must stay identical, or the gate fails. Open
-   shadow roots are included in the DOM observation and stylesheet
-   fingerprints, including their style/link elements, inline style attributes,
+   only for types that cannot affect rendering, such as pings or media).
+   axe measures one moment, so the check measures only a still page. After
+   load it waits until the network is quiet (no request in flight and one
+   second with no request starting or ending; a page that keeps loading
+   resources fails after 10 s) and the page is still: no DOM change of any
+   kind (elements, attributes including class and style, text), no change to
+   the stylesheet fingerprint and no running CSS animation or transition, for
+   longer than one second and longer than the longest gap between changes
+   seen so far. A page that keeps changing fails after 5 s. From before axe is
+   injected until its single scan ends, any request, DOM change, style change
+   or running animation fails the gate. The stylesheet fingerprint covers
+   every stylesheet's rule text, media and disabled state and every inline
+   style attribute. Open shadow roots are included in the DOM observation and
+   the fingerprint, with their style/link elements, inline style attributes,
    adopted sheets and recursively imported sheets.
    Any page script error fails the gate. WebSockets and web workers, which
    page.route cannot intercept, fail the gate. Serve a local copy of any
@@ -266,108 +266,82 @@ const server = http.createServer((req,res)=>{
             ];
           }));
         });
-        // networkidle only means 500 ms without requests. Require no request in flight and one
-        // second with no request starting or ending (bounded to 10 s: a page that keeps loading
-        // resources fails). Also wait up to 3 s for a quiet DOM: no DOM change, no running
-        // animation and no change to the stylesheet fingerprint, since CSS animations and CSSOM
-        // edits change colours without a DOM mutation. The quiet gap must outlast the longest gap
-        // between changes seen so far, so a page that changes periodically is not mistaken for a
-        // still one. A page that keeps changing is only reported, and the scans below sample it
-        // three times.
+        // axe measures one moment, so the smoke measures only a still page. Class or attribute
+        // churn, CSSOM edits and CSS animations all change colours without a request, and a few
+        // samples cannot cover them. Wait until the network is quiet (no request in flight and one
+        // second with no request starting or ending) and the page is still: no DOM change of any
+        // kind (elements, attributes including class and style, text), no change to the stylesheet
+        // fingerprint and no running animation or transition. The still period must last at least
+        // one second and longer than the longest gap between changes seen so far, so a page that
+        // changes periodically never counts as still. Both waits are bounded and fail: a page that
+        // keeps loading resources fails after 10 s, and a page that keeps changing fails after 5 s.
+        const pageState=async()=>({...await page.evaluate(()=>({mutations:window.__smokeMutations,runningAnimations:document.getAnimations().filter(animation=>animation.playState==='running').length})),sheets:await sheets()});
         const settleStart=Date.now();
-        const domState=async()=>({...await page.evaluate(()=>({mutations:window.__smokeMutations,runningAnimations:document.getAnimations().filter(animation=>animation.playState==='running').length})),sheets:await sheets()});
-        let state=await domState(), domQuietSince=Date.now(), longestChangeGap=0, domSettled=false;
+        let state=await pageState(), stillSince=Date.now(), longestChangeGap=0;
         for (;;) {
           await page.waitForTimeout(250);
-          const now=await domState();
-          if (now.mutations!==state.mutations||now.sheets!==state.sheets) {
+          const now=await pageState();
+          if (now.mutations!==state.mutations||now.sheets!==state.sheets||now.runningAnimations>0) {
             const at=Date.now();
-            longestChangeGap=Math.max(longestChangeGap,at-domQuietSince);
-            domQuietSince=at;
+            longestChangeGap=Math.max(longestChangeGap,at-stillSince);
+            stillSince=at;
           }
           state=now;
-          domSettled=Date.now()-domQuietSince>=Math.max(1000,longestChangeGap+250)&&state.runningAnimations===0;
           const networkQuiet=pending===0&&Date.now()-lastRequestAt>=1000;
-          if (networkQuiet&&(domSettled||Date.now()-settleStart>=3000)) break;
-          assert.ok(Date.now()-settleStart<10000,`the ${label} at ${width}px kept loading resources for 10s after load`);
+          const still=Date.now()-stillSince>=Math.max(1000,longestChangeGap+250);
+          if (networkQuiet&&still) break;
+          const elapsed=Date.now()-settleStart;
+          assert.ok(networkQuiet||elapsed<10000,`the ${label} at ${width}px kept loading resources for 10s after load`);
+          assert.ok(still||elapsed<5000,`the ${label} at ${width}px kept changing its DOM, styles or animations for 5s after load; the contrast check measures a still page only`);
         }
-        // The settle loop above waits for CSS animations and transitions, but stops after three
-        // seconds. Sampling cannot cover an animation, so one that is still running is a failure
-        // rather than a reason to take a few more snapshots.
-        const runningAnimations=await page.evaluate(()=>document.getAnimations().filter(animation=>animation.playState==='running').length);
-        assert.equal(runningAnimations,0,`the ${label} at ${width}px still has CSS animations or transitions running after the 3s settle window`);
         assert.ok(await page.$('main'),`the ${label} at ${width}px has no main element`);
         assert.equal(await page.evaluate(()=>Boolean(navigator.serviceWorker&&navigator.serviceWorker.controller)),false,`the ${label} at ${width}px is controlled by a service worker`);
         assertNoProblems('before the contrast check');
         assert.equal(pending,0,`the ${label} at ${width}px still has requests in flight before the contrast check`);
-        // No request may start from here until the scan ends, including while axe is injected.
-        const requestsBefore=requests, sheetsBefore=await sheets();
+        // From here until the scan ends nothing may change: no request, no DOM change, no style
+        // change and no running animation. One scan of a still page is the whole measurement.
+        // Injecting axe appends exactly one script element, which is one DOM change record; any
+        // other change while axe is injected fails like a change during the scan.
+        const requestsBefore=requests, before=await pageState();
         await page.addScriptTag({content:axeSource});
         assert.equal(pending,0,`the ${label} at ${width}px started a request while axe was injected`);
-        // CSS animations and transitions have already finished (an animation seen running is a
-        // failure above), so axe measures a still page. When the DOM has not settled, or any scan
-        // sees a DOM change or a change to the stylesheet fingerprint, sample three moments 200 ms
-        // apart: a violation in any scan fails the gate. A scan that sees an animation start is a
-        // failure too, for the same reason as above.
-        // Once a change is seen the budget stays at three scans, even if a later scan happens to be
-        // still. Mutation counts and the stylesheet fingerprint carry from the end of one scan into
-        // the next, so changes during the 200 ms gaps count too.
-        let mutationsAt=await page.evaluate(()=>window.__smokeMutations), sheetsAt=sheetsBefore;
-        const scan=async()=>{
-          const previousSheets=sheetsAt;
-          const result=await page.evaluate(async before=>{
-            // Discover roots added since the last fingerprint before measuring, so their later
-            // mutations are observed even when the new root has no stylesheet of its own.
-            window.__smokeSyncRoots();
-            const runningAnimations=()=>document.getAnimations().filter(animation=>animation.playState==='running').length;
-            const animated=runningAnimations();
-            const result=await axe.run(document,{runOnly:{type:'rule',values:['color-contrast']}});
-            return {
-              violations:result.violations.flatMap(rule=>rule.nodes.map(node=>({target:node.target,summary:node.failureSummary}))),
-              unchecked:result.incomplete.flatMap(rule=>rule.nodes.map(node=>node.target)),
-              mutations:window.__smokeMutations-before,
-              reached:window.__smokeMutations,
-              animated:Boolean(animated||runningAnimations()),
-            };
-          },mutationsAt);
-          mutationsAt=result.reached;
-          sheetsAt=await sheets();
-          return {...result,sheetsChanged:sheetsAt!==previousSheets};
-        };
-        const scans=[await scan()];
-        while (scans.length<3&&(!domSettled||scans.some(result=>result.mutations>0||result.sheetsChanged))) {
-          await page.waitForTimeout(200);
-          scans.push(await scan());
-        }
-        // A style change observed between consecutive sampling snapshots fails even if a later
-        // snapshot shows it reverted. Fingerprints carry across the 200 ms gaps between scans.
-        assert.ok(scans.every(result=>!result.sheetsChanged),`the ${label} at ${width}px changed its styles during the contrast check`);
-        // An animation that starts after the settle window would otherwise be measured at one or
-        // three instants only; failing is the only honest outcome for the documented invariant.
-        assert.ok(scans.every(result=>!result.animated),`the ${label} at ${width}px ran a CSS animation or transition during the contrast check`);
-        const uniqueTargets=(items,key,seen)=>items.filter(item=>{const id=JSON.stringify(key(item));if(seen.has(id))return false;seen.add(id);return true;});
-        const report={
-          violations:uniqueTargets(scans.flatMap(result=>result.violations),violation=>violation.target,new Set()),
-          unchecked:uniqueTargets(scans.flatMap(result=>result.unchecked),target=>target,new Set()),
-        };
-        const scanMutations=scans.reduce((sum,result)=>sum+result.mutations,0);
+        const injected=await page.evaluate(()=>window.__smokeMutations);
+        assert.equal(injected-before.mutations,1,`the ${label} at ${width}px changed its DOM while axe was injected`);
+        const result=await page.evaluate(async()=>{
+          // Discover shadow roots attached since the last fingerprint, so a change inside one
+          // during the scan is observed as well.
+          window.__smokeSyncRoots();
+          const result=await axe.run(document,{runOnly:{type:'rule',values:['color-contrast']}});
+          return {
+            violations:result.violations.flatMap(rule=>rule.nodes.map(node=>({target:node.target,summary:node.failureSummary}))),
+            unchecked:result.incomplete.flatMap(rule=>rule.nodes.map(node=>node.target)),
+          };
+        });
+        const after=await pageState();
         // The page must not have loaded anything while axe measured it; with no new request, no
         // request can still fail after the scan, so the problems are complete here.
         assert.equal(requests,requestsBefore,`the ${label} at ${width}px requested resources during the contrast check`);
         assert.equal(pending,0,`the ${label} at ${width}px still has requests in flight after the contrast check`);
+        assert.equal(after.mutations,injected,`the ${label} at ${width}px changed its DOM during the contrast check`);
         // Compared as a boolean: a failing assert.equal would print both whole fingerprints.
-        assert.ok((await sheets())===sheetsBefore,`the ${label} at ${width}px changed its styles during the contrast check`);
+        assert.ok(after.sheets===before.sheets,`the ${label} at ${width}px changed its styles during the contrast check`);
+        assert.equal(after.runningAnimations,0,`the ${label} at ${width}px ran a CSS animation or transition during the contrast check`);
         assertNoProblems('during the contrast check');
-        assert.deepEqual(report.violations,[],`axe color-contrast violations on the ${label} at ${width}px: ${JSON.stringify(report.violations,null,2)}`);
+        assert.deepEqual(result.violations,[],`axe color-contrast violations on the ${label} at ${width}px: ${JSON.stringify(result.violations,null,2)}`);
         checks++;
-        console.log(`PASS axe color-contrast: ${label} at ${width}px (${report.unchecked.length} gradient or pseudo-element nodes not machine-checkable${cancelled.length?`; ${cancelled.length} local request(s) cancelled by the page: ${cancelled.join(', ')}`:''}${domSettled?'':'; the DOM or CSSOM was still changing when measured'}${scans.length>1?`; measured ${scans.length} times (${scanMutations} DOM change(s) during the sampling)`:''})`);
+        console.log(`PASS axe color-contrast: ${label} at ${width}px (${result.unchecked.length} gradient or pseudo-element nodes not machine-checkable${cancelled.length?`; ${cancelled.length} local request(s) cancelled by the page: ${cancelled.join(', ')}`:''})`);
         await page.close();
       }
     }
     console.log(`PASS ${checks} home-page axe color-contrast checks, 0 violations; served only from ${origin}, ${blockedRequests} cross-origin request(s) blocked${blockedOrigins.size?`: ${[...blockedOrigins].join(', ')}`:''}`);
   } finally {
-    if(browser)await browser.close();
-    await new Promise(resolve=>server.close(resolve));
-    await new Promise(resolve=>probeServer.close(resolve));
+    // Shut both servers down even when closing the browser fails. Drop any connection the
+    // browser left open first, or server.close would wait for it and hang the job.
+    try {
+      if(browser) await browser.close();
+    } finally {
+      for (const listener of [server,probeServer]) listener.closeAllConnections();
+      await Promise.all([server,probeServer].map(listener=>new Promise(resolve=>listener.close(()=>resolve()))));
+    }
   }
 })().catch(error=>{console.error(error);process.exitCode=1;});
