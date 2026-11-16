@@ -223,7 +223,7 @@ jobs:
         env:
           RESULTS: ${{ toJSON(needs) }}
         run: |
-          python3 - <<'PYTHON'
+          python3 -I - <<'PYTHON'
           import json
           import os
           jobs = json.loads(os.environ['RESULTS'])

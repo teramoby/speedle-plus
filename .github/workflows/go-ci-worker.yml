@@ -80,7 +80,7 @@ jobs:
         env:
           PR_BASE: ${{ github.event.pull_request.base.sha }}
         run: |
-          python3 - <<'PYTHON'
+          python3 -I - <<'PYTHON'
           import os
           from pathlib import Path
           import subprocess
@@ -197,7 +197,7 @@ jobs:
           # port preflight and every service lifetime, never kill foreign jobs.
           exec 9>/tmp/speedle-plus-test-services.lock
           flock -w 7200 9
-          python3 - <<'PYTHON'
+          python3 -I - <<'PYTHON'
           import errno
           import socket
           for port in (2379, 2380, 27017, 6733, 6734):
@@ -270,7 +270,7 @@ jobs:
         env:
           PR_BASE: ${{ github.event.pull_request.base.sha }}
         run: |
-          python3 - <<'PYTHON'
+          python3 -I - <<'PYTHON'
           import os
           from pathlib import Path
           import subprocess
