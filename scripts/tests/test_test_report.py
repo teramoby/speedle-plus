@@ -362,6 +362,65 @@ class EmailTest(unittest.TestCase):
         self.assertIn("TestZ", summary.read_text())
         self.assertEqual([c[2]["title"] for c in github.calls], ["Test failure: p TestZ"])
 
+    def test_a_required_report_job_fails_for_every_failed_send(self):
+        # Email is the only notification channel, so a real report job must
+        # not go green on any failed send, after it still wrote the summary
+        # and tracked the failure.
+        cases = {
+            "API error": {"error": urllib.error.HTTPError(
+                "https://api.example/send", 500, "server error", None, io.BytesIO(b"{}"))},
+            "success false": {"reply": {"success": False, "result": {"queued": []}}},
+            "permanent bounce": {"reply": {"success": True, "result": {
+                "permanent_bounces": ["recipient@example.com"]}}},
+            "suppressed recipient": {"reply": {"success": True, "result": {
+                "queued": ["recipient@example.com"],
+                "suppressed_recipients": ["recipient@example.com"]}}},
+        }
+        for name, case in cases.items():
+            with self.subTest(name):
+                directory = Path(tempfile.mkdtemp())
+                (directory / "go.json").write_text(events(("fail", "p", "TestZ", None)))
+                summary, github = directory / "report.txt", FakeGitHub()
+                if "reply" in case:
+                    response = mock.MagicMock()
+                    response.__enter__.return_value.read.return_value = json.dumps(case["reply"]).encode()
+                    urlopen = mock.patch("urllib.request.urlopen", return_value=response)
+                else:
+                    urlopen = mock.patch("urllib.request.urlopen", side_effect=case["error"])
+                env = dict(self.env, GITHUB_TOKEN="t", GITHUB_REPOSITORY="o/r",
+                           REPORT_EMAIL_REQUIRED="true")
+                with urlopen, mock.patch.object(test_report, "GitHub", return_value=github), \
+                        mock.patch("sys.stdout", new=io.StringIO()), \
+                        mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+                    code = test_report.main(["--kind", "nightly", "--go-json", str(directory / "go.json"),
+                                             "--summary-file", str(summary)], env=env)
+                self.assertEqual(code, 1)
+                self.assertIn("::error::The report email could not be sent", stderr.getvalue())
+                self.assertIn("TestZ", summary.read_text())
+                self.assertEqual([c[2]["title"] for c in github.calls], ["Test failure: p TestZ"])
+
+    def test_an_unexpected_send_exception_fails_a_required_report_job(self):
+        # Any exception in the send path is a failed send, even when the
+        # settings themselves look valid.
+        directory = Path(tempfile.mkdtemp())
+        (directory / "go.json").write_text(events(("fail", "p", "TestZ", None)))
+        summary, github = directory / "report.txt", FakeGitHub()
+        step_summary = directory / "step-summary.md"
+        env = dict(self.env, GITHUB_TOKEN="t", GITHUB_REPOSITORY="o/r",
+                   REPORT_EMAIL_REQUIRED="true", GITHUB_STEP_SUMMARY=str(step_summary))
+        with mock.patch.object(test_report, "send_email", side_effect=RuntimeError("boom")), \
+                mock.patch.object(test_report, "GitHub", return_value=github), \
+                mock.patch("sys.stdout", new=io.StringIO()), \
+                mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+            code = test_report.main(["--kind", "nightly", "--go-json", str(directory / "go.json"),
+                                     "--summary-file", str(summary)], env=env)
+        self.assertEqual(code, 1)
+        self.assertIn("::error::The report email could not be sent", stderr.getvalue())
+        self.assertIn("**Report email not sent:** Email delivery failed (RuntimeError).",
+                      step_summary.read_text())
+        self.assertIn("TestZ", summary.read_text())
+        self.assertEqual([c[2]["title"] for c in github.calls], ["Test failure: p TestZ"])
+
     def test_a_failed_send_is_an_error_annotation(self):
         ok, _, message = self.send(error=OSError("down"))
         self.assertFalse(ok)

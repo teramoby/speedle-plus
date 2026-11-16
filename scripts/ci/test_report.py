@@ -2,10 +2,13 @@
 """Summarize scheduled and post-merge test results, analyze them with Ark,
 email the report and track failing tests in GitHub issues.
 
-Inputs are `go test -json` streams and plain check results. Every external
-step is optional and fails soft: without an Ark key the raw summary is sent,
-without Cloudflare Email settings nothing is emailed, and without a GitHub
-token no issues are touched. The script exits non-zero only on bad input.
+Inputs are `go test -json` streams and plain check results. Ark analysis and
+GitHub tracking are optional and fail soft: without an Ark key the raw
+summary is sent, and without a GitHub token no issues are touched. The email
+is the notification channel: a missing or malformed configuration and a
+failed send are annotated and fail the step only when it runs as a real
+report job, marked by REPORT_EMAIL_REQUIRED; tests and local runs stay
+green. The script exits non-zero on bad input and on such a failure.
 """
 import argparse
 import email.utils
@@ -531,6 +534,8 @@ def main(argv=None, env=os.environ):
         email_failed = not send_email(subject, email_text(report, run_url), env)
     except Exception as error:
         # A notification bug must not skip the summary and failure tracking.
+        email_failed = True
+        note_in_summary(env, f"Email delivery failed ({type(error).__name__}).")
         print(f"::error::Email delivery failed ({type(error).__name__}).", file=sys.stderr)
 
     tracked = failures + [{"package": "check", "test": c["name"], "output": c["output"]}
@@ -545,9 +550,11 @@ def main(argv=None, env=os.environ):
             print(f"::warning::Failure issues not updated ({type(error).__name__}).", file=sys.stderr)
     print(summary)
     # A real report job must not go green when its only notification channel
-    # is not configured. Tests and local runs leave REPORT_EMAIL_REQUIRED unset.
-    if email_failed and not email_configured(env) and env.get("REPORT_EMAIL_REQUIRED") == "true":
-        print("::error::The report email is not configured; failing the report job.", file=sys.stderr)
+    # did not deliver, whether it is misconfigured or the send failed. Tests
+    # and local runs leave REPORT_EMAIL_REQUIRED unset.
+    if email_failed and env.get("REPORT_EMAIL_REQUIRED") == "true":
+        reason = "is not configured" if not email_configured(env) else "could not be sent"
+        print(f"::error::The report email {reason}; failing the report job.", file=sys.stderr)
         return 1
     return 0
 
