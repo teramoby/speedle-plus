@@ -310,8 +310,93 @@ if (args.length === 4 && args[0] === 'list' && args[1] === '-m' && args[2] === '
     });
     assert.equal(missingPython.status, 1, missingPython.stderr);
     assert.match(missingPython.stderr,
-      /python3 is required for the documented Go toolchain check; install Python 3 on the runner\./);
+      /python3 is required for the documented Go toolchain check; install Python 3 on the runner./);
     assert.doesNotMatch(missingPython.stderr, /command not found|Traceback/);
+    // An interpreter that cannot run -I code fails before the guard reads files.
+    const withoutIsolation = path.join(directory, 'without-isolation');
+    fs.mkdirSync(withoutIsolation);
+    const python = path.join(withoutIsolation, 'python3');
+    fs.writeFileSync(python, '#!/bin/sh\necho "Unknown option: -I" >&2\nexit 2\n');
+    fs.chmodSync(python, 0o755);
+    const noIsolation = spawnSync(realBash, ['-c', script('Verify documented Go toolchain')], {
+      cwd: directory, encoding: 'utf8', env: {...process.env, PATH: withoutIsolation},
+    });
+    assert.equal(noIsolation.status, 1, noIsolation.stderr);
+    assert.match(noIsolation.stderr,
+      /python3 with safe -I support is required for isolated inline Python; install a Python 3 whose -I excludes the checkout and working directory from sys\.path\./);
+    assert.doesNotMatch(noIsolation.stderr, /Traceback/);
+    // Accepting -I and setting its flag is insufficient if the interpreter
+    // leaves either protected location importable. Exercise each independently.
+    const discoveredPython = spawnSync('python3', ['-I', '-c', 'import sys; print(sys.executable)'], {encoding: 'utf8'});
+    assert.equal(discoveredPython.status, 0, discoveredPython.stderr);
+    const realPython = discoveredPython.stdout.trim();
+    assert.ok(realPython, 'the test interpreter must report its executable path');
+    const unsafeIsolation = path.join(directory, 'unsafe-isolation');
+    fs.mkdirSync(unsafeIsolation);
+    const unsafePython = path.join(unsafeIsolation, 'python3');
+    // Record the status Python exits with, so an interpreter path that fails
+    // before Python starts (127) cannot look like the guard rejecting a run.
+    fs.writeFileSync(unsafePython, `#!/bin/sh
+if [ "$1" = "-I" ] && [ "$2" = "-c" ]; then
+  code=$3
+  shift 3
+  "${realPython}" -I -c "import os,sys; sys.path.insert(0, os.environ['UNSAFE_PYTHON_PATH']); exec(sys.argv[1])" "$code" "$@" 2>>"\${SHIM_ERRORS}"
+  status=$?
+  printf '%s\\n' "$status" >> "\${SHIM_MARKER}"
+  exit "$status"
+fi
+exit 1
+`);
+    fs.chmodSync(unsafePython, 0o755);
+    for (const unsafePath of ['', fs.realpathSync(directory), path.join(directory, 'checkout')]) {
+      const marker = path.join(directory, 'unsafe-marker');
+      const errors = path.join(directory, 'unsafe-errors');
+      fs.rmSync(marker, {force: true}); fs.rmSync(errors, {force: true});
+      const unsafe = spawnSync(realBash, ['-c', script('Verify documented Go toolchain')], {
+        cwd: directory, encoding: 'utf8', env: {...process.env, PATH: unsafeIsolation,
+          GITHUB_WORKSPACE: path.join(directory, 'checkout'), UNSAFE_PYTHON_PATH: unsafePath,
+          SHIM_MARKER: marker, SHIM_ERRORS: errors},
+      });
+      assert.equal(unsafe.status, 1, unsafe.stderr);
+      assert.match(unsafe.stderr,
+        /python3 with safe -I support is required for isolated inline Python; install a Python 3 whose -I excludes the checkout and working directory from sys\.path\./);
+      assert.doesNotMatch(unsafe.stderr, /Traceback/);
+      assert.equal(fs.readFileSync(marker, 'utf8').trim(), '1', 'the guard must run inside Python and exit 1');
+      assert.match(fs.readFileSync(errors, 'utf8'),
+        /python3 -I must exclude the checkout and working directory from sys\.path/,
+        'the guard diagnostic must be the reason Python exits, not a syntax error');
+    }
+    // Optimization strips assert statements. Explicit sys.exit guards must
+    // still reject an optimizing wrapper, whether or not it also drops -I.
+    const optimizingIsolation = path.join(directory, 'optimizing-isolation');
+    fs.mkdirSync(optimizingIsolation);
+    const optimizingPython = path.join(optimizingIsolation, 'python3');
+    fs.writeFileSync(optimizingPython, `#!/bin/sh
+if [ "\${DROP_I:-0}" = 1 ] && [ "$1" = "-I" ]; then shift; fi
+"${realPython}" -O "$@" 2>>"\${SHIM_ERRORS}"
+status=$?
+printf '%s\\n' "$status" >> "\${SHIM_MARKER}"
+exit "$status"
+`);
+    fs.chmodSync(optimizingPython, 0o755);
+    for (const dropIsolation of [false, true]) {
+      const marker = path.join(directory, 'optimizing-marker');
+      const errors = path.join(directory, 'optimizing-errors');
+      fs.rmSync(marker, {force: true}); fs.rmSync(errors, {force: true});
+      const optimized = spawnSync(realBash, ['-c', script('Verify documented Go toolchain')], {
+        cwd: directory, encoding: 'utf8', env: {...process.env, PATH: optimizingIsolation,
+          DROP_I: dropIsolation ? '1' : '0', SHIM_MARKER: marker, SHIM_ERRORS: errors},
+      });
+      assert.equal(optimized.status, 1, optimized.stderr);
+      assert.match(optimized.stderr,
+        /python3 with safe -I support is required for isolated inline Python; install a Python 3 whose -I excludes the checkout and working directory from sys\.path\./);
+      assert.doesNotMatch(optimized.stderr, /Traceback/);
+      assert.equal(fs.readFileSync(marker, 'utf8').trim(), '1', 'the guard must reject optimization inside Python');
+      assert.match(fs.readFileSync(errors, 'utf8'), dropIsolation
+        ? /run with python3 -I/
+        : /python3 inline checks require optimization to be disabled/,
+      'the guard diagnostic must be the reason Python exits, not a syntax error');
+    }
   } finally {fs.rmSync(directory, {recursive: true, force: true});}
 });
 test('workflow steps keep their keys and block scalars inside the sequence entry', () => {
@@ -409,14 +494,22 @@ test('identity check accepts the Speedle runners for the tasks each may run', ()
     const git = path.join(directory, 'git');
     fs.writeFileSync(git, '#!/bin/sh\nexit 0\n');
     fs.chmodSync(git, 0o755);
-    const result = spawnSync(realBash, ['-c', script('Verify self-hosted runner identity')], {
-      encoding: 'utf8', env: {...process.env, PATH: directory,
-        RUNNER_NAME: 'charming-speedle', RUNNER_OS: 'Linux', RUNNER_ARCH: 'X64', CI_TASK: 'lint'},
-    });
+    const environment = {...process.env, PATH: directory,
+      RUNNER_NAME: 'charming-speedle', RUNNER_OS: 'Linux', RUNNER_ARCH: 'X64', CI_TASK: 'lint'};
+    const result = spawnSync(realBash, ['-c', script('Verify self-hosted runner identity')], {encoding: 'utf8', env: environment});
     assert.equal(result.status, 1, result.stderr);
     assert.match(result.stderr,
-      /python3 is required on self-hosted runners; install Python 3 before running this workflow\./);
+      /python3 is required on self-hosted runners; install Python 3 before running this workflow./);
     assert.doesNotMatch(result.stderr, /command not found/);
+    // An interpreter that rejects -I fails closed with the preflight message.
+    const python = path.join(directory, 'python3');
+    fs.writeFileSync(python, '#!/bin/sh\necho "Unknown option: -I" >&2\nexit 2\n');
+    fs.chmodSync(python, 0o755);
+    const oldPython = spawnSync(realBash, ['-c', script('Verify self-hosted runner identity')], {encoding: 'utf8', env: environment});
+    assert.equal(oldPython.status, 1, oldPython.stderr);
+    assert.match(oldPython.stderr,
+      /python3 with safe -I support is required for isolated inline Python; install a Python 3 whose -I excludes the checkout and working directory from sys\.path\./);
+    assert.doesNotMatch(oldPython.stderr, /command not found|Traceback/);
   } finally {fs.rmSync(directory, {recursive: true, force: true});}
 });
 test('task validation permits only exact enum values and treats shell metacharacters as data', () => {
@@ -520,6 +613,7 @@ if(${JSON.stringify(tool)}==='docker')process.exit(process.env.FIXTURE_DOCKER===
 if(${JSON.stringify(tool)}==='id'){console.log(a[0]==='-un'?'runner':process.env.FIXTURE_DOCKER==='group'?'runner docker':'runner');process.exit(0)}
 if(${JSON.stringify(tool)}==='go'&&a[0]==='list'){console.log('example.invalid/pkg/a\\nexample.invalid/pkg/store/mongodb\\nexample.invalid/samples/x\\nexample.invalid/pkg/svcs/adsgrpc/pb');process.exit(Number(process.env.FIXTURE_LIST_EXIT))}
 fs.appendFileSync(process.env.FIXTURE_CALLS,JSON.stringify({tool:${JSON.stringify(tool)},args:a,env:Object.fromEntries(${JSON.stringify(recorded)}.map(k=>[k,process.env[k]]))})+'\\n');
+if(${JSON.stringify(tool)}==='python3'&&a.includes('-c')&&a.join(' ').includes('print("mysql_only=%d"')){const inputs=JSON.parse(process.env.FIXTURE_TRIAL_INPUTS||'{}');const t=v=>v===true||v==='true';console.log('mysql_only='+(t(inputs.mysql_only)?1:0));console.log('stores_only='+(t(inputs.stores_only)?1:0));process.exit(0)}
 const fail=process.env.FIXTURE_FAIL;process.exit(fail&&a.join(' ').includes(fail)?7:0);\n`;
     for (const tool of ['go', 'python3', 'node', 'flock', 'docker', 'id', 'sg', 'bash']) {
       fs.writeFileSync(path.join(directory, tool), stub(tool)); fs.chmodSync(path.join(directory, tool), 0o755);
@@ -534,9 +628,10 @@ const fail=process.env.FIXTURE_FAIL;process.exit(fail&&a.join(' ').includes(fail
       RESULTS_DIR: path.join(work, 'results'), DOCKER_CONFIG: path.join(directory, 'docker-config'),
       GITHUB_EVENT_NAME: mysqlOnly ? 'workflow_dispatch' : 'push', GITHUB_EVENT_PATH: event,
       PATH: `${directory}${path.delimiter}${process.env.PATH}`, FIXTURE_CALLS: calls,
+      FIXTURE_TRIAL_INPUTS: JSON.stringify({mysql_only: mysqlOnly}),
       FIXTURE_GOPATH: directory, FIXTURE_LIST_EXIT: String(listExit), FIXTURE_FAIL: failMatching, FIXTURE_DOCKER: docker, FIXTURE_REAL_BASH: realBash,
     }});
-    const records = fs.existsSync(calls) ? fs.readFileSync(calls, 'utf8').trim().split('\n').map(line => JSON.parse(line)).filter(r => !(r.tool === 'python3' && r.args[0] === '-')) : [];
+    const records = fs.existsSync(calls) ? fs.readFileSync(calls, 'utf8').trim().split('\n').map(line => JSON.parse(line)).filter(r => !(r.tool === 'python3' && r.args[0] === '-I' && r.args[1] === '-')) : [];
     const checks = fs.existsSync(path.join(work, 'results', 'checks.txt')) ? fs.readFileSync(path.join(work, 'results', 'checks.txt'), 'utf8') : '';
     return {result, records, checks, directory};
   } finally {fs.rmSync(directory, {recursive: true, force: true}); fs.rmSync(path.join(repoRoot, 'coverage.out'), {force: true});}
@@ -545,7 +640,7 @@ const goTests = records => records.filter(r => r.tool === 'go' && r.args[0] === 
 test('gate runs every package once, only store-dependent packages again with etcd, then the coverage gate', () => {
   const {result, records: allRecords} = runSuite('test'); assert.equal(result.status, 0, result.stderr);
   const conditionReports = allRecords.filter(r => r.tool === 'python3' &&
-    (r.args[0] === 'scripts/ci/condition-conformance-report.py' || r.args.includes('test_condition_conformance_report.py')));
+    ((r.args[0] === '-I' && r.args[1] === 'scripts/ci/condition-conformance-report.py') || r.args.includes('test_condition_conformance_report.py')));
   // Check condition auditing separately from the existing documentation calls.
   const records = allRecords.filter(r => !conditionReports.includes(r));
   const [file, etcd] = goTests(records);
@@ -568,16 +663,16 @@ test('gate runs every package once, only store-dependent packages again with etc
   assert.deepEqual(matrix.args.slice(-3), ['./pkg/eval', '-run', '^TestConditionConformanceMatrix$']);
   assert.deepEqual(docs.args, ['test', '-count=1', './website/tests/docscheck']);
   assert.deepEqual(conditionReports.map(r => r.args), [
-    ['scripts/ci/condition-conformance-report.py', '--go-version', 'go1.27.4', profile, profile.replace(/coverage\.out$/, 'matrix.log')],
-    ['-m', 'unittest', 'discover', '-s', 'scripts/tests', '-p', 'test_condition_conformance_report.py'],
+    ['-I', 'scripts/ci/condition-conformance-report.py', '--go-version', 'go1.27.4', profile, profile.replace(/coverage\.out$/, 'matrix.log')],
+    ['-I', '-m', 'unittest', 'discover', '-s', 'scripts/tests', '-p', 'test_condition_conformance_report.py'],
   ]);
   const gate = records.find(r => r.tool === 'python3');
-  assert.deepEqual(gate.args.slice(0, 6),
-    ['scripts/ci/coverage.py', 'coverage.out', '--merge', 'coverage-cli.out', '--min-file', 'scripts/ci/coverage-min.txt']);
+  assert.deepEqual(gate.args.slice(0, 7),
+    ['-I', 'scripts/ci/coverage.py', 'coverage.out', '--merge', 'coverage-cli.out', '--min-file', 'scripts/ci/coverage-min.txt']);
   assert.deepEqual(records.filter(r => r.tool === 'python3').slice(1).map(r => r.args), [
-    ['website/tests/check_quick_start.py', '--toolchain', 'go1.27.4'],
-    ['website/tests/check_embedded.py', '--toolchain', 'go1.27.4', '--candidate'],
-    ['website/tests/check_docs.py'],
+    ['-I', 'website/tests/check_quick_start.py', '--toolchain', 'go1.27.4'],
+    ['-I', 'website/tests/check_embedded.py', '--toolchain', 'go1.27.4', '--candidate'],
+    ['-I', 'website/tests/check_docs.py'],
   ]);
   for (const record of allRecords) {
     for (const key of cleanKeys) assert.equal(record.env[key], '', key);
@@ -612,11 +707,70 @@ test('package discovery failure cannot turn a partial package list into a green 
     assert.notEqual(result.status, 0, mode); assert.equal(goTests(records).length, 0, mode);
   }
 });
+test('nightly checks the isolated interpreter before interpreting trial inputs', () => {
+  // A guard failure inside the mysql_only/stores_only conditions would look
+  // like a false input and silently run the full nightly, so the standalone
+  // preflight must stop the run before any suite starts.
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-nightly-guard-'));
+  try {
+    const bin = path.join(directory, 'bin');
+    fs.mkdirSync(bin);
+    const python = path.join(bin, 'python3');
+    fs.writeFileSync(python, '#!/bin/sh\nexit 2\n');
+    fs.chmodSync(python, 0o755);
+    const result = spawnSync(realBash, [path.join(repoRoot, 'scripts/ci/run-go-tests.sh'), 'nightly'], {
+      encoding: 'utf8', env: {...process.env,
+        PATH: `${bin}${path.delimiter}${process.env.PATH}`,
+        DOCKER_CONFIG: path.join(directory, 'docker-config'),
+        RESULTS_DIR: path.join(directory, 'results')},
+    });
+    assert.equal(result.status, 1, result.stderr);
+    assert.match(result.stderr,
+      /python3 with safe -I support is required for isolated inline Python; install a Python 3 whose -I excludes the checkout and working directory from sys\.path\./);
+  } finally {fs.rmSync(directory, {recursive: true, force: true});}
+});
+test('nightly distinguishes a missing interpreter from unsafe -I support', () => {
+  // A runner without python3 must say so, not send the operator looking for a
+  // different -I problem.
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-nightly-python-'));
+  try {
+    const bin = path.join(directory, 'bin');
+    fs.mkdirSync(bin);
+    for (const tool of ['dirname', 'mkdir', 'uname']) {
+      const found = spawnSync('sh', ['-c', `command -v ${tool}`], {encoding: 'utf8'}).stdout.trim();
+      fs.symlinkSync(fs.realpathSync(found), path.join(bin, tool));
+    }
+    const result = spawnSync(realBash, [path.join(repoRoot, 'scripts/ci/run-go-tests.sh'), 'nightly'], {
+      encoding: 'utf8', env: {...process.env,
+        PATH: bin,
+        DOCKER_CONFIG: path.join(directory, 'docker-config'),
+        RESULTS_DIR: path.join(directory, 'results')},
+    });
+    assert.equal(result.status, 1, result.stderr);
+    assert.match(result.stderr,
+      /python3 is required on self-hosted runners; install Python 3 before running this workflow\./);
+    assert.doesNotMatch(result.stderr, /safe -I support/);
+  } finally {fs.rmSync(directory, {recursive: true, force: true});}
+});
+test('nightly refuses a dispatch whose event payload is missing', () => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-nightly-event-'));
+  try {
+    const result = spawnSync(realBash, [path.join(repoRoot, 'scripts/ci/run-go-tests.sh'), 'nightly'], {
+      encoding: 'utf8', env: {...process.env,
+        GITHUB_EVENT_NAME: 'workflow_dispatch',
+        GITHUB_EVENT_PATH: path.join(directory, 'missing.json'),
+        DOCKER_CONFIG: path.join(directory, 'docker-config'),
+        RESULTS_DIR: path.join(directory, 'results')},
+    });
+    assert.equal(result.status, 1, result.stderr);
+    assert.match(result.stderr, /the workflow_dispatch event payload could not be read/);
+  } finally {fs.rmSync(directory, {recursive: true, force: true});}
+});
 test('nightly runs every suite even after a failure, records checks and fails at the end', () => {
   const {result, records, checks} = runSuite('nightly', {failMatching: 'go1.27.4'});
   assert.equal(result.status, 1);
   assert.equal(goTests(records).length, 0, 'every backend runs through the shared regression engine');
-  const file = records.find(r => r.tool === 'python3' && r.args[0] === 'scripts/ci/run-store-tests.py');
+  const file = records.find(r => r.tool === 'python3' && r.args[0] === '-I' && r.args[1] === 'scripts/ci/run-store-tests.py');
   assert.equal(file.env.STORE_TYPE, 'file'); assert.ok(file.env.RESULTS_DIR.endsWith('results'));
   for (const launcher of ['scripts/ci/validate-etcd.sh', 'scripts/ci/validate-mongodb.sh']) {
     assert.ok(records.some(r => r.tool === 'bash' && r.args[0] === launcher), launcher);
@@ -658,13 +812,13 @@ test('Docker guide checks use the account docker group the runner process lacks'
   const guides = ['website/tests/check_etcd.py', 'website/tests/check_mongodb.py'];
   const direct = runSuite('nightly');
   assert.equal(direct.result.status, 0, direct.result.stderr);
-  for (const guide of guides) assert.ok(direct.records.some(r => r.tool === 'python3' && r.args[0] === guide), guide);
+  for (const guide of guides) assert.ok(direct.records.some(r => r.tool === 'python3' && r.args[0] === '-I' && r.args[1] === guide), guide);
   assert.ok(!direct.records.some(r => r.tool === 'sg'));
   const {result, records, checks} = runSuite('nightly', {docker: 'group'});
   assert.equal(result.status, 0, result.stderr);
   for (const guide of guides) {
-    assert.ok(records.some(r => r.tool === 'sg' && r.args[0] === 'docker' && r.args[1] === '-c' && r.args[2] === `python3 ${guide} `), guide);
-    assert.ok(!records.some(r => r.tool === 'python3' && r.args[0] === guide), guide);
+    assert.ok(records.some(r => r.tool === 'sg' && r.args[0] === 'docker' && r.args[1] === '-c' && r.args[2] === `python3 -I ${guide} `), guide);
+    assert.ok(!records.some(r => r.tool === 'python3' && r.args[0] === '-I' && r.args[1] === guide), guide);
   }
   assert.match(checks, /^etcd-docs=0:etcd-docs\.log$/m); assert.match(checks, /^mongodb-docs=0:mongodb-docs\.log$/m);
   const none = runSuite('nightly', {docker: 'none'});
@@ -674,9 +828,9 @@ test('weekly tests the current supported Go release, compares benchmarks with th
   const {result, records, checks} = runSuite('weekly'); assert.equal(result.status, 0, result.stderr);
   assert.equal(goTests(records)[0].env.GOTOOLCHAIN, 'go1.27.4');
   assert.ok(goTests(records).some(r => r.args.includes('feature_stress') && r.args.includes('^TestFeatureLargePolicyRoleSets$')));
-  const bench = records.find(r => r.tool === 'python3' && r.args[0] === 'scripts/ci/benchmark.py');
+  const bench = records.find(r => r.tool === 'python3' && r.args[0] === '-I' && r.args[1] === 'scripts/ci/benchmark.py');
   assert.ok(bench, 'the benchmark comparison runs');
-  assert.equal(bench.args[1], '--results');
+  assert.equal(bench.args[2], '--results');
   assert.match(checks, /^performance=0:performance\.log$/m);
   assert.match(checks, /^staticcheck=0:staticcheck\.log$/m);
   // A performance regression fails the weekly run but not the checks after it.
@@ -704,12 +858,12 @@ async function freePorts(excluded = []) {
 function guard(ports) {
   const selected = step('Run Go tests');
   assert.match(selected, /flock -w 7200 9/);
-  const body = script('Run Go tests').match(/python3 - <<'PYTHON'\n([\s\S]+?)\nPYTHON/)?.[1];
+  const body = script('Run Go tests').match(/python3 -I - <<'PYTHON'\n([\s\S]+?)\nPYTHON/)?.[1];
   assert.ok(body); assert.equal((body.match(/for port in \(2379, 2380, 27017, 6733, 6734\):/g) || []).length, 1);
   assert.equal(new Set(ports).size, 5);
   for (const port of ports) assert.ok(![2379, 2380, 27017, 6733, 6734].includes(port));
   const remapped = body.replace('for port in (2379, 2380, 27017, 6733, 6734):', `for port in (${ports.join(', ')}):`);
-  return spawnSync('python3', ['-c', remapped], {encoding: 'utf8'});
+  return spawnSync('python3', ['-I', '-c', remapped], {encoding: 'utf8'});
 }
 test('actual service guard accepts five free test-owned ephemeral ports', async () => {
   const result = guard(await freePorts()); assert.equal(result.status, 0, result.stderr);
@@ -818,8 +972,8 @@ test('unlabeled content build selects documentation checks and propagates walkth
       assert.equal(calls.length, failure ? commands.indexOf(failure) + 2 : 5);
       if (!failure) {
         assert.deepEqual(calls.slice(1), [
-          [commands[0], '--toolchain', 'go1.26.11'], [commands[1], '--toolchain', 'go1.26.11', '--candidate'],
-          ['test', '-count=1', commands[2]], [commands[3]],
+          ['-I', commands[0], '--toolchain', 'go1.26.11'], ['-I', commands[1], '--toolchain', 'go1.26.11', '--candidate'],
+          ['test', '-count=1', commands[2]], ['-I', commands[3]],
         ]);
       }
     }

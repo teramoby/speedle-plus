@@ -80,6 +80,6 @@ jobs:
           set -euo pipefail
           # A job that did not succeed is reported as failed even when its
           # results are partial or show no failure.
-          python3 scripts/ci/test_report.py --kind nightly \
+          python3 -I scripts/ci/test_report.py --kind nightly \
             --source "run:${RUN_RESULT}:test-results" --summary-file report.txt
           cat report.txt >> "${GITHUB_STEP_SUMMARY}"

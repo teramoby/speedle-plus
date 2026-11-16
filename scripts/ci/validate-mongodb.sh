@@ -34,7 +34,9 @@ expected=$(awk 'NR == 1 {print $1}' "${validation_dir}/checksum")
 [[ "${expected}" =~ ^[a-fA-F0-9]{64}$ ]]
 printf '%s  %s\n' "${expected}" "${validation_dir}/${archive}" | shasum -a 256 --check -
 tar -xzf "${validation_dir}/${archive}" -C "${validation_dir}" --strip-components=1
-mongo_port=$(python3 - <<'PY'
+mongo_port=$(python3 -I - <<'PY'
+import sys; sys.flags.isolated or sys.exit("run with python3 -I"); sys.flags.optimize == 0 or sys.exit("python3 inline checks require optimization to be disabled")
+import os; unsafe = any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p is not None); unsafe and sys.exit("python3 -I must exclude the checkout and working directory from sys.path")
 import socket
 with socket.socket() as s:
     s.bind(('127.0.0.1', 0))
@@ -97,4 +99,4 @@ export STORE_TYPE=mongodb
 export SPEEDLE_REQUIRE_MYSQL=0
 export RESULTS_DIR="${RESULTS_DIR:-mongodb-results}"
 unset SPEEDLE_TEST_STORE_PROPS
-python3 scripts/ci/run-store-tests.py
+python3 -I scripts/ci/run-store-tests.py

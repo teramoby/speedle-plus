@@ -5,6 +5,7 @@ macOS remaps fixture listen ports; no existing service or user config is changed
 """
 import argparse
 import contextlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -18,6 +19,27 @@ import tempfile
 import time
 import urllib.error
 import urllib.request
+
+
+def _load_sibling(name):
+    """Load a sibling script by path; -I keeps this directory off sys.path."""
+    if name in sys.modules:
+        return sys.modules[name]
+    path = Path(__file__).resolve().with_name(f"{name}.py")
+    if not path.is_file():
+        raise ImportError(f"missing sibling module {path}")
+    spec = importlib.util.spec_from_file_location(name, path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"cannot load sibling module {path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    try:
+        spec.loader.exec_module(module)
+    except BaseException:
+        sys.modules.pop(name, None)
+        raise
+    return module
+
 
 ROOT=Path(__file__).resolve().parents[2]
 DOCS=ROOT/'docs/hugo/content/docs'
@@ -61,12 +83,9 @@ def check_proto_contracts():
         assert (ROOT / f'docs/protobuf/{kind}.proto').read_text() == published, (kind, 'published protobuf copy drift')
 
 def static_checks():
-    from check_etcd import static_checks as etcd_static_checks
-    etcd_static_checks()
-    from check_mysql import static_checks as mysql_static_checks
-    mysql_static_checks()
-    from check_mongodb import static_checks as mongodb_static_checks
-    mongodb_static_checks()
+    _load_sibling("check_etcd").static_checks()
+    _load_sibling("check_mysql").static_checks()
+    _load_sibling("check_mongodb").static_checks()
     for page in PAGES:
         assert steps(page,'en')==steps(page,'zh'), (page,'English/Chinese command drift')
     for path in DOCS.rglob('*.md'):

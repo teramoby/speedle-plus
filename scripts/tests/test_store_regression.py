@@ -4,6 +4,7 @@ import importlib.util
 import io
 import json
 from pathlib import Path
+import sys
 import tempfile
 from types import SimpleNamespace
 import unittest
@@ -138,6 +139,20 @@ class StoreRegressionTests(unittest.TestCase):
         properties = run.call_args[0][1]['storeConfig']['storeProps']
         self.assertEqual(properties['EtcdEndpoint'], '127.0.0.1:23790')
         self.assertRegex(properties['EtcdKeyPrefix'], r'^/speedle_test_runtime_[0-9a-f]{16}/$')
+
+    def test_sibling_loader_reports_missing_modules_and_does_not_cache_failures(self):
+        spec = importlib.util.spec_from_file_location('run_store_tests', Path(__file__).parents[1] / 'ci' / 'run-store-tests.py')
+        launcher = importlib.util.module_from_spec(spec)
+        with patch.dict('sys.modules', {'store_regression': REGRESSION}):
+            spec.loader.exec_module(launcher)
+        with self.assertRaisesRegex(ImportError, 'missing sibling module'):
+            launcher._load_sibling('missing_sibling')
+        with tempfile.TemporaryDirectory() as directory:
+            (Path(directory) / 'broken_sibling.py').write_text('raise RuntimeError("boom")\n')
+            with patch.object(launcher, '__file__', str(Path(directory) / 'launcher.py')):
+                with self.assertRaisesRegex(RuntimeError, 'boom'):
+                    launcher._load_sibling('broken_sibling')
+        self.assertNotIn('broken_sibling', sys.modules)
 
     def test_unknown_backend_cannot_fall_back_to_file(self):
         with self.assertRaises(ValueError):

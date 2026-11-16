@@ -34,11 +34,15 @@ if [[ "$(uname -s)" == Darwin && -f "${user_docker_config}/config.json" ]] &&
    grep -qE '"(credsStore|credHelpers)"' "${user_docker_config}/config.json"; then
   DOCKER_CONFIG=$(mktemp -d "${TMPDIR:-/tmp}/speedle-docker-config.XXXXXX")
   trap 'rm -rf "${DOCKER_CONFIG}"' EXIT
-  python3 -c 'import json, sys
+  python3 -I - "${user_docker_config}/config.json" "${DOCKER_CONFIG}/config.json" <<'PY'
+import sys; sys.flags.isolated or sys.exit("run with python3 -I"); sys.flags.optimize == 0 or sys.exit("python3 inline checks require optimization to be disabled")
+import os; unsafe = any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p is not None); unsafe and sys.exit("python3 -I must exclude the checkout and working directory from sys.path")
+import json, sys
 config = json.load(open(sys.argv[1]))
 for key in ("credsStore", "credHelpers", "auths"):
     config.pop(key, None)
-json.dump(config, open(sys.argv[2], "w"))' "${user_docker_config}/config.json" "${DOCKER_CONFIG}/config.json"
+json.dump(config, open(sys.argv[2], "w"))
+PY
   if [[ -d "${user_docker_config}/contexts" ]]; then
     ln -s "${user_docker_config}/contexts" "${DOCKER_CONFIG}/contexts"
   fi
@@ -118,7 +122,7 @@ case "${mode}" in
     SPEEDLE_CLI_COVERPROFILE="${PWD}/coverage-cli.out" STORE_TYPE=file \
       go test -p 1 -count=1 -timeout 300s -coverprofile=coverage.out "${pkgs[@]}"
     STORE_TYPE=etcd go test -p 1 -count=1 -timeout 300s "${store_dependent[@]}"
-    python3 scripts/ci/coverage.py coverage.out --merge coverage-cli.out \
+    python3 -I scripts/ci/coverage.py coverage.out --merge coverage-cli.out \
       --min-file scripts/ci/coverage-min.txt "${pkgs[@]}"
     # The fork's tests are outside packages()'s product-package list. Run the
     # condition suite and its statement audit explicitly, retaining the global
@@ -127,19 +131,42 @@ case "${mode}" in
     # Read the candidate's documentation on every run. These execute the actual
     # fenced commands/program/policy blocks; failures block the same test job.
     toolchain=$(go env GOVERSION)
-    python3 website/tests/check_quick_start.py --toolchain "${toolchain}"
-    python3 website/tests/check_embedded.py --toolchain "${toolchain}" --candidate
+    python3 -I website/tests/check_quick_start.py --toolchain "${toolchain}"
+    python3 -I website/tests/check_embedded.py --toolchain "${toolchain}" --candidate
     go test -count=1 ./website/tests/docscheck
-    python3 website/tests/check_docs.py
+    python3 -I website/tests/check_docs.py
     ;;
   nightly)
     mkdir -p "${results}"; : > "${results}/checks.txt"
+    # A missing interpreter and an interpreter without safe -I support need
+    # different fixes, so report them separately.
+    if ! command -v python3 >/dev/null 2>&1; then
+      echo 'python3 is required on self-hosted runners; install Python 3 before running this workflow.' >&2
+      exit 1
+    fi
+    # A failing guard inside the trial conditions below would look like a false
+    # input and silently run the full nightly, so check it separately first.
+    if ! python3 -I -c 'import sys; sys.flags.isolated or sys.exit("run with python3 -I"); sys.flags.optimize == 0 or sys.exit("python3 inline checks require optimization to be disabled"); import os; unsafe = any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p is not None); unsafe and sys.exit("python3 -I must exclude the checkout and working directory from sys.path")' >/dev/null 2>&1; then
+      echo 'python3 with safe -I support is required for isolated inline Python; install a Python 3 whose -I excludes the checkout and working directory from sys.path.' >&2
+      exit 1
+    fi
+    mysql_only=false
+    stores_only=false
     # A branch can be tried immediately through the existing protected worker.
-    # Normal scheduled runs always include all backends.
-    if [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch && -f "${GITHUB_EVENT_PATH:-}" ]] &&
-       python3 -c 'import json,sys; value=json.load(open(sys.argv[1])).get("inputs",{}).get("mysql_only",False); sys.exit(0 if value is True or value == "true" else 1)' "$GITHUB_EVENT_PATH"; then
-      check mysql-full python3 scripts/ci/run-mysql-tests.py
-      check ci-script-tests bash -c 'python3 -m unittest discover -s scripts/tests -p "test_*.py" && node --test scripts/tests/*.cjs'
+    # Normal scheduled runs always include all backends. Parse the dispatch
+    # inputs once so an unreadable or malformed payload fails the run instead
+    # of falling through to the full nightly.
+    if [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch ]]; then
+      trial_inputs=$(python3 -I -c 'import sys; sys.flags.isolated or sys.exit("run with python3 -I"); sys.flags.optimize == 0 or sys.exit("python3 inline checks require optimization to be disabled"); import os; unsafe = any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p is not None); unsafe and sys.exit("python3 -I must exclude the checkout and working directory from sys.path"); import json, sys; value = json.load(open(sys.argv[1])).get("inputs", {}); print("mysql_only=%d" % (value.get("mysql_only") is True or value.get("mysql_only") == "true")); print("stores_only=%d" % (value.get("stores_only") is True or value.get("stores_only") == "true"))' "${GITHUB_EVENT_PATH:-}") || {
+        echo 'the workflow_dispatch event payload could not be read; refusing to guess between a trial and the full nightly.' >&2
+        exit 1
+      }
+      case "${trial_inputs}" in *mysql_only=1*) mysql_only=true ;; esac
+      case "${trial_inputs}" in *stores_only=1*) stores_only=true ;; esac
+    fi
+    if [[ "${mysql_only}" == true ]]; then
+      check mysql-full python3 -I scripts/ci/run-mysql-tests.py
+      check ci-script-tests bash -c 'python3 -I -m unittest discover -s scripts/tests -p "test_*.py" && node --test scripts/tests/*.cjs'
       exit "${failed}"
     fi
     if ! CGO_ENABLED=1 go env CC >/dev/null 2>&1 || ! command -v "$(go env CC)" >/dev/null 2>&1; then
@@ -150,23 +177,22 @@ case "${mode}" in
     # Every backend runs the identical regression; the launchers only provision
     # the store, and the engine writes <backend>-*.json into RESULTS_DIR.
     export RESULTS_DIR="${results}"
-    check file-full env STORE_TYPE=file python3 scripts/ci/run-store-tests.py
+    check file-full env STORE_TYPE=file python3 -I scripts/ci/run-store-tests.py
     check etcd-full bash scripts/ci/validate-etcd.sh
-    check mysql-full python3 scripts/ci/run-mysql-tests.py
+    check mysql-full python3 -I scripts/ci/run-mysql-tests.py
     check mongodb-full bash scripts/ci/validate-mongodb.sh
     # Manual candidate validation can omit notification/report side effects.
-    if [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch && -f "${GITHUB_EVENT_PATH:-}" ]] &&
-       python3 -c 'import json,sys; value=json.load(open(sys.argv[1])).get("inputs",{}).get("stores_only",False); sys.exit(0 if value is True or value == "true" else 1)' "$GITHUB_EVENT_PATH"; then
-      check ci-script-tests bash -c 'python3 -m unittest discover -s scripts/tests -p "test_*.py" && node --test scripts/tests/*.cjs'
+    if [[ "${stores_only}" == true ]]; then
+      check ci-script-tests bash -c 'python3 -I -m unittest discover -s scripts/tests -p "test_*.py" && node --test scripts/tests/*.cjs'
       exit "${failed}"
     fi
-    check etcd-docs with_docker python3 website/tests/check_etcd.py
-    check mongodb-docs with_docker python3 website/tests/check_mongodb.py
+    check etcd-docs with_docker python3 -I website/tests/check_etcd.py
+    check mongodb-docs with_docker python3 -I website/tests/check_mongodb.py
     for toolchain in "${all_toolchains[@]}"; do
-      check "quick-start-${toolchain}" python3 website/tests/check_quick_start.py --toolchain "${toolchain}"
+      check "quick-start-${toolchain}" python3 -I website/tests/check_quick_start.py --toolchain "${toolchain}"
     done
     check govulncheck go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./pkg/... ./cmd/... ./api/...
-    check ci-script-tests bash -c 'python3 -m unittest discover -s scripts/tests -p "test_*.py" && node --test scripts/tests/*.cjs'
+    check ci-script-tests bash -c 'python3 -I -m unittest discover -s scripts/tests -p "test_*.py" && node --test scripts/tests/*.cjs'
     exit "${failed}"
     ;;
   regression)
@@ -175,10 +201,10 @@ case "${mode}" in
     set_race
     gotest_json go-file STORE_TYPE=file -- -p 1 -count=1 -timeout 600s "${race[@]}" "${pkgs[@]}"
     toolchain=$(go env GOVERSION)
-    check quick-start python3 website/tests/check_quick_start.py --toolchain "${toolchain}"
-    check embedded python3 website/tests/check_embedded.py --toolchain "${toolchain}" --candidate
+    check quick-start python3 -I website/tests/check_quick_start.py --toolchain "${toolchain}"
+    check embedded python3 -I website/tests/check_embedded.py --toolchain "${toolchain}" --candidate
     check docs-contract go test -count=1 ./website/tests/docscheck
-    check docs python3 website/tests/check_docs.py
+    check docs python3 -I website/tests/check_docs.py
     exit "${failed}"
     ;;
   weekly)
@@ -190,7 +216,7 @@ case "${mode}" in
     gotest_json feature-large STORE_TYPE=file SPEEDLE_STRESS_POLICIES=100000 -- -race -count=1 -timeout 1200s -tags feature_stress ./pkg/eval -run '^TestFeatureLargePolicyRoleSets$'
     # Evaluation speed against master as it stood in May 2026, measured on
     # this runner in this run (scripts/ci/benchmark.py).
-    check performance python3 scripts/ci/benchmark.py --results "${results}"
+    check performance python3 -I scripts/ci/benchmark.py --results "${results}"
     check staticcheck go run honnef.co/go/tools/cmd/staticcheck@v0.8.2 ./pkg/... ./cmd/... ./api/...
     exit "${failed}"
     ;;

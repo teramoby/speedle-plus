@@ -60,6 +60,6 @@ jobs:
           set -euo pipefail
           # A job that did not succeed is reported as failed even when its
           # results are partial or show no failure.
-          python3 scripts/ci/test_report.py --kind regression \
+          python3 -I scripts/ci/test_report.py --kind regression \
             --source "run:${RUN_RESULT}:test-results" --summary-file report.txt
           cat report.txt >> "${GITHUB_STEP_SUMMARY}"
