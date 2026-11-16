@@ -11,7 +11,8 @@ the `teramoby` default group's access policy.
 the Linux runners also carry `speedle-linux`.
 
 The identity guard also accepts the retired `charming-speedle` name for tasks
-other than weekly. Weekly runs stay on `fiona-speedle`.
+other than weekly. It is not a scheduling target and must not appear as a
+`runner_name`; weekly runs stay on `fiona-speedle`.
 
 ReviewBot selects `[self-hosted, speedle-runner]`, so `charming-speedle-2`,
 `donkey-speedle` and `fiona` may take it. Go lint, test, post-merge
@@ -25,14 +26,15 @@ the current code alternately in the same run; each report names the runner that
 measured it.
 A runner administrator must keep `speedle-runner` and `speedle-linux` exclusive
 to these named instances; adding another host would also admit it to
-credential-bearing jobs. A runner name alone is not a scheduling label. The two
-charming registrations share a physical host, so fixed-port tests there take
-the host test lock (`/tmp/speedle-plus-test-services.lock`) and never overlap.
-Each registration must use its own runner installation and work directory.
+credential-bearing jobs. A runner name alone is not a scheduling label.
+Fixed-port tests take the host test lock
+(`/tmp/speedle-plus-test-services.lock`), so registrations on the same physical
+host never overlap. Each registration must use its own runner installation and
+work directory.
 
 The `speedle-control` label belongs only to `charming-speedle-2`. ReviewBot's
 dependency merge waiter uses it so waiting for CI never occupies the only
-fixed-port test runner. Keep this label off the first runner.
+fixed-port test runner. Do not add this label to any other runner.
 
 The group also restricts access to these exact default-branch workflows:
 
@@ -130,9 +132,9 @@ gh workflow run ci.yml --ref master
 ```
 
 Inspect each run's jobs and confirm `runner_name` is an accepted Speedle
-runner for `speedle-runner` jobs (including the nightly): `charming-speedle`,
-`charming-speedle-2`, `donkey-speedle` or `fiona-speedle`. The weekly runs on
-`fiona-speedle` and build runs on a charming runner.
+runner for `speedle-runner` jobs (including the nightly): `charming-speedle-2`,
+`donkey-speedle` or `fiona`. The weekly runs on `fiona` and build runs on a
+Linux runner.
 The regression job prints its workspace and temp paths; verify both registrations
 have distinct paths. An online/idle runner listing alone does not prove checkout,
 tool setup, tests or model connectivity work. The dedicated routing regression
