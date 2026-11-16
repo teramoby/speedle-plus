@@ -1,6 +1,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const os = require('node:os');
 const {spawnSync} = require('node:child_process');
 const test = require('node:test');
 
@@ -239,6 +240,30 @@ test('ignored label events and superseded runs do not replace an existing status
   assert.equal(superseded.ignored, true);
   assert.equal(superseded.status.description, 'Superseded by a newer CI run');
   assert.equal(supersededFixture.calls.filter(call => call.options.method === 'POST').length, 0);
+});
+
+test('dry-run wrapper forwards exactly one PR number and never enables publishing', () => {
+  const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-route-gate-dry-run-'));
+  try {
+    const record = path.join(temporary, 'arguments.json');
+    const node = path.join(temporary, 'node');
+    fs.writeFileSync(node, `#!${process.execPath}\nrequire('node:fs').writeFileSync(process.env.RECORD, JSON.stringify(process.argv.slice(2)));\n`, {mode: 0o755});
+    const wrapper = path.join(root, 'scripts/ci/ci-route-gate-dry-run.sh');
+    assert.ok(fs.statSync(wrapper).mode & 0o111, 'dry-run wrapper must be executable');
+    const result = spawnSync('bash', [wrapper, '590'], {
+      encoding: 'utf8',
+      env: {...process.env, PATH: temporary + path.delimiter + process.env.PATH, RECORD: record},
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.deepEqual(JSON.parse(fs.readFileSync(record, 'utf8')), [
+      path.join(root, 'scripts/ci/ci-route-gate.cjs'), '--pr', '590', '--dry-run',
+    ]);
+    const usage = spawnSync('bash', [wrapper], {encoding: 'utf8'});
+    assert.equal(usage.status, 2);
+    assert.match(usage.stderr, /Usage: .*PR_NUMBER/);
+  } finally {
+    fs.rmSync(temporary, {recursive: true, force: true});
+  }
 });
 
 test('workflow_run gate uses the default branch, Node 22 and minimal permissions', () => {
