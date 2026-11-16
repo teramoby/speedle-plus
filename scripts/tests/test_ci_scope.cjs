@@ -313,9 +313,17 @@ test('the classifier fallback and output contract cover every route the workflow
   const gated = jobs.filter(block => /needs\.changes\.outputs/.test(condition(block)))
     .map(block => block.match(/^  ([a-z][a-z0-9_-]*):/)[1]);
   assert.ok(gated.length > 0, 'expected route-gated jobs');
+  // The summary's required list: its initial assignment (both branches of the
+  // conditional) and every required.append(...).
+  const assignment = summary.match(/^required = ([^\n]+)$/m);
+  assert.ok(assignment, 'the summary must build a required list');
+  const required = new Set([
+    ...[...assignment[1].matchAll(/['"]([A-Za-z_][\w-]*)['"]/g)].map(match => match[1]),
+    ...[...summary.matchAll(/\brequired\.append\(\s*['"]([A-Za-z_][\w-]*)['"]\s*\)/g)].map(match => match[1]),
+  ]);
   for (const job of gated) {
     assert.ok(needs.includes(job), `summary must wait for ${job}`);
-    assert.match(summary, new RegExp(`['"]${job}['"]`), `the summary's required list must name ${job}`);
+    assert.ok(required.has(job), `the summary's required list must include ${job}`);
   }
   // Both the fallback and the contract check iterate the list instead of keeping their own copies.
   assert.match(step, /^route_all\(\) \{ local key; for key in \$\{route_keys\}; do echo "\$\{key\}=true"/m);
