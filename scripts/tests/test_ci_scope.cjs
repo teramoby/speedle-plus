@@ -127,7 +127,14 @@ test('change classification preserves raw Git paths, uses the base classifier an
       ['pkg/a/文件.go', flags(true, false, false, false)],
       ['scripts/test with spaces.sh', flags(true, false, false, true)],
       ['.github/workflows/ci.yml', flags(true, false, false, true)],
-      ['README.md', flags(false, false, false, false)],
+      // Root Markdown runs the CI script tests, including the README/go.mod fixture.
+      ['README.md', flags(false, false, false, true)],
+      // Module files also carry the toolchain contract those tests assert.
+      ['go.mod', flags(true, false, false, true)],
+      ['go.sum', flags(true, false, false, true)],
+      // Nested Markdown belongs to its Go package, not to the root-only arm.
+      ['pkg/a/README.md', flags(true, false, false, false)],
+      ['testutil/notes.md', flags(true, false, false, false)],
     ];
     let previous = base;
     for (const [file, expected] of cases) {
