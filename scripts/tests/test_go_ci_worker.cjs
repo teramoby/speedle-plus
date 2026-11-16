@@ -112,6 +112,11 @@ if (args.length === 4 && args[0] === 'list' && args[1] === '-m' && args[2] === '
         message: 'Verified documented minimum Go toolchain: go1.27.4'},
       {name: 'reworded prerequisite', readme: prerequisites('- Go (1.27.4) or newer.'), module: '1.27.4', selected: 'go1.27.4', passes: true,
         message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      {name: 'Golang alias', readme: prerequisites('-   Golang 1.27.4 or a newer patch'), module: '1.27.4', selected: 'go1.27.4', passes: true,
+        message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      // A comment inside a fenced block is not a section boundary.
+      {name: 'fenced comment inside Prerequisites', readme: '### Prerequisites\n\n```sh\n# install Go 1.27.4\n```\n\n-   Go 1.27.4 or a newer patch\n',
+        module: '1.27.4', selected: 'go1.27.4', passes: true, message: 'Verified documented minimum Go toolchain: go1.27.4'},
       // A version quoted outside the Prerequisites section must not satisfy the guard.
       {name: 'version outside Prerequisites is ignored', readme: `# Fixture\n\n- Go 9.9.9 or a newer patch\n\n${prerequisites('-   Go 1.27.4 or a newer patch')}`,
         module: '1.27.4', selected: 'go1.27.4', passes: true, message: 'Verified documented minimum Go toolchain: go1.27.4'},
