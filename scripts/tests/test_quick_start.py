@@ -2,6 +2,7 @@
 import importlib.util
 import os
 import re
+import subprocess
 import tempfile
 from pathlib import Path
 import unittest
@@ -103,6 +104,32 @@ class NetworkRetryTest(unittest.TestCase):
                     delay=0,
                 )
             self.assertEqual(attempts.read_text(), "xxx")
+
+    def test_does_not_retry_a_timeout(self):
+        # A hung command must not multiply the per-command timeout.
+        action = mock.Mock(side_effect=subprocess.TimeoutExpired(cmd="git clone", timeout=180))
+        with mock.patch.object(QUICK_START.time, "sleep") as sleep, \
+                self.assertRaises(subprocess.TimeoutExpired):
+            QUICK_START.run_with_retry(action)
+        action.assert_called_once_with()
+        sleep.assert_not_called()
+
+    def test_runs_the_reset_before_the_retried_attempt(self):
+        action = mock.Mock(side_effect=[RuntimeError("Command failed (128): git clone"), "ok"])
+        reset = mock.Mock()
+        with mock.patch.object(QUICK_START.time, "sleep"):
+            self.assertEqual(QUICK_START.run_with_retry(action, reset=reset), "ok")
+        reset.assert_called_once_with()
+
+    def test_reports_a_cleanup_failure_chained_to_the_command_failure(self):
+        action = mock.Mock(side_effect=RuntimeError("Command failed (128): git clone"))
+        reset = mock.Mock(side_effect=OSError("permission denied"))
+        with mock.patch.object(QUICK_START.time, "sleep") as sleep, \
+                self.assertRaises(OSError) as raised:
+            QUICK_START.run_with_retry(action, reset=reset)
+        self.assertIsInstance(raised.exception.__cause__, RuntimeError)
+        action.assert_called_once_with()
+        sleep.assert_not_called()
 
 
 if __name__ == "__main__":

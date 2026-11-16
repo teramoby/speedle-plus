@@ -43,7 +43,8 @@ class FakeRun:
     """Stand in for the checker's `run`, failing selected call numbers.
 
     `failures` and `timeouts` map a command to the 1-based call numbers that
-    fail with a command error or a timeout, as a transient network error would.
+    fail with a command error or a timeout, as a transient network error or a
+    hung command would.
     """
 
     def __init__(self, failures=None, timeouts=None, run_output=ALLOWED):
@@ -95,12 +96,29 @@ class EmbeddedRetryTest(unittest.TestCase):
         self.assertEqual(fake.occurrences(RUN), 1)
         self.assertEqual(sleep.call_args_list, [mock.call(5.0)])
 
-    def test_retries_a_setup_attempt_that_times_out(self):
+    def test_does_not_retry_a_setup_attempt_that_times_out(self):
+        # A hung download must not triple the 600 s limit and hide the error.
         fake = FakeRun(timeouts={SETUP: (1,)})
-        sleep = self.verify(fake)
-        self.assertEqual(fake.occurrences(SETUP), 2)
-        self.assertEqual(fake.occurrences(RUN), 1)
-        self.assertEqual(sleep.call_args_list, [mock.call(5.0)])
+        with mock.patch.object(check_embedded, "run", fake), \
+                mock.patch.object(check_embedded.time, "sleep") as sleep, \
+                contextlib.redirect_stdout(io.StringIO()), \
+                self.assertRaises(subprocess.TimeoutExpired):
+            check_embedded.verify("en", STEPS, None)
+        self.assertEqual(fake.occurrences(SETUP), 1)
+        self.assertEqual(fake.occurrences(BUILD), 0)
+        self.assertEqual(fake.occurrences(RUN), 0)
+        sleep.assert_not_called()
+
+    def test_does_not_retry_a_build_that_times_out(self):
+        fake = FakeRun(timeouts={BUILD: (1,)})
+        with mock.patch.object(check_embedded, "run", fake), \
+                mock.patch.object(check_embedded.time, "sleep") as sleep, \
+                contextlib.redirect_stdout(io.StringIO()), \
+                self.assertRaises(subprocess.TimeoutExpired):
+            check_embedded.verify("en", STEPS, None)
+        self.assertEqual(fake.occurrences(SETUP), 1)
+        self.assertEqual(fake.occurrences(BUILD), 1)
+        sleep.assert_not_called()
 
     def test_clears_the_partial_module_before_retrying_setup(self):
         fake = FakeRun(failures={SETUP: (1,)})
@@ -121,6 +139,28 @@ class EmbeddedRetryTest(unittest.TestCase):
                 contextlib.redirect_stdout(io.StringIO()):
             check_embedded.verify("en", STEPS, None)
         self.assertEqual(partial_present, [False])
+
+    def test_reports_a_cleanup_failure_chained_to_the_command_failure(self):
+        # A swallowed cleanup error would turn into a misleading "File exists"
+        # on the retry; the report must show both failures instead.
+        fake = FakeRun(failures={SETUP: (1,)})
+        real_rmtree = check_embedded.shutil.rmtree
+
+        def rmtree(path, *args, **kwargs):
+            if Path(path).name == "speedle-embedded-demo":
+                raise OSError("read-only file system")
+            return real_rmtree(path, *args, **kwargs)
+
+        with mock.patch.object(check_embedded.shutil, "rmtree", side_effect=rmtree), \
+                mock.patch.object(check_embedded, "run", fake), \
+                mock.patch.object(check_embedded.time, "sleep") as sleep, \
+                contextlib.redirect_stdout(io.StringIO()), \
+                self.assertRaises(OSError) as raised:
+            check_embedded.verify("en", STEPS, None)
+        self.assertIsInstance(raised.exception.__cause__, RuntimeError)
+        self.assertEqual(fake.occurrences(SETUP), 1)
+        self.assertEqual(fake.occurrences(BUILD), 0)
+        sleep.assert_not_called()
 
     def test_retries_a_transient_download_during_the_build(self):
         fake = FakeRun(failures={BUILD: (1,)})

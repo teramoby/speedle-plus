@@ -5,8 +5,9 @@ Execute the documented shell commands and compile the actual Go/SPDL blocks
 against the public release and, in the merge gate, the candidate library too.
 The module download steps (`go get` and `go mod tidy`/`go build`) retry up to
 three times with exponential backoff, because a transient network failure must
-not fail the walkthrough; the documented commands stay byte for byte unchanged
-and the module-version and allow/deny checks are never retried.
+not fail the walkthrough; a step that hits its timeout fails at once instead of
+multiplying the 600 s limit. The documented commands stay byte for byte
+unchanged and the module-version and allow/deny checks are never retried.
 """
 import argparse
 import json
@@ -41,12 +42,18 @@ def run(command, cwd, env):
     return result.stdout
 
 
-def run_with_retry(action, attempts=3, delay=5.0):
+def run_with_retry(action, reset=None, attempts=3, delay=5.0):
     """Retry a network action up to `attempts` times with exponential backoff.
 
-    Only command failures and timeouts are retried: they cover the transient
-    TLS and connection resets of the module download and build steps.
-    Assertions about the result are never retried.
+    Only command failures are retried: they cover the transient TLS and
+    connection resets of the module download and build steps. A timeout is not
+    retried, because a hung command would multiply the 600 s limit across
+    attempts and hide the underlying error. Assertions about the result are
+    never retried.
+
+    `reset` runs after a failed attempt, before the next one. If it fails, the
+    cleanup error is raised chained to the command failure that triggered the
+    retry, so it cannot surface later as a misleading "File exists".
 
     This is a private copy rather than a shared module: the walkthrough checks
     run under python3 -I, which keeps the script directory off sys.path, so a
@@ -56,9 +63,14 @@ def run_with_retry(action, attempts=3, delay=5.0):
     for attempt in range(1, attempts + 1):
         try:
             return action()
-        except (RuntimeError, subprocess.TimeoutExpired) as error:
+        except RuntimeError as error:
             if attempt == attempts:
                 raise
+            if reset is not None:
+                try:
+                    reset()
+                except OSError as cleanup:
+                    raise cleanup from error
             detail = str(error).splitlines()[0]
             print(f"Transient failure (attempt {attempt}/{attempts}); retrying in {delay:.0f}s: {detail}", flush=True)
             time.sleep(delay)
@@ -80,13 +92,17 @@ def verify(locale, steps, toolchain, candidate=False):
         print(f"{locale}: {version}; runner={env.get('RUNNER_NAME', 'local')}", flush=True)
         app = work / "speedle-embedded-demo"
 
-        def setup():
+        def reset_app():
             # A failed attempt can leave the module directory behind, which
             # would make every retry fail with "File exists"; start clean.
-            shutil.rmtree(app, ignore_errors=True)
-            return run(steps["setup"], work, env)
+            # Only absence is expected: any other cleanup error is raised
+            # (chained to the failed attempt) rather than hidden.
+            try:
+                shutil.rmtree(app)
+            except FileNotFoundError:
+                pass
 
-        run_with_retry(setup)
+        run_with_retry(lambda: run(steps["setup"], work, env), reset=reset_app)
         (app / "policies.spdl").write_text(steps["policies"] + "\n")
         (app / "main.go").write_text(steps["program"] + "\n")
         run_with_retry(lambda: run(steps["build"], app, env))

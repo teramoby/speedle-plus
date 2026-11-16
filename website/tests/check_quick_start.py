@@ -7,7 +7,8 @@ must match the highest full semantic tag on the public remote. The installed
 binaries must accept the flags used by the guide, and one documented walkthrough
 runs with those installed binaries. Network steps (the public clone, Go module
 downloads and the install) retry up to three times with exponential backoff,
-because a transient TLS or connection reset must not fail the walkthrough; the
+because a transient TLS or connection reset must not fail the walkthrough; a
+step that hits its timeout fails at once instead of multiplying the limit. The
 documented commands themselves stay byte for byte unchanged. A public shallow
 clone verifies the download step; CI then checks out the captured candidate
 revision before compiling. Linux
@@ -70,12 +71,18 @@ def run(command, cwd, env, timeout=60):
     return result.stdout
 
 
-def run_with_retry(action, attempts=3, delay=5.0):
+def run_with_retry(action, reset=None, attempts=3, delay=5.0):
     """Retry a network action up to `attempts` times with exponential backoff.
 
-    Only command failures and timeouts are retried: they cover the transient
-    TLS and connection resets of the clone, module download and install steps.
+    Only command failures are retried: they cover the transient TLS and
+    connection resets of the clone, module download and install steps. A
+    timeout is not retried, because a hung command would multiply the
+    per-command limit across attempts and hide the underlying error.
     Assertions about the result are never retried.
+
+    `reset` runs after a failed attempt, before the next one. If it fails, the
+    cleanup error is raised chained to the command failure that triggered the
+    retry, so it cannot surface later as a misleading "already exists".
 
     This is a private copy rather than a shared module: the walkthrough checks
     run under python3 -I, which keeps the script directory off sys.path, so a
@@ -85,9 +92,14 @@ def run_with_retry(action, attempts=3, delay=5.0):
     for attempt in range(1, attempts + 1):
         try:
             return action()
-        except (RuntimeError, subprocess.TimeoutExpired) as error:
+        except RuntimeError as error:
             if attempt == attempts:
                 raise
+            if reset is not None:
+                try:
+                    reset()
+                except OSError as cleanup:
+                    raise cleanup from error
             detail = str(error).splitlines()[0]
             print(f"Transient failure (attempt {attempt}/{attempts}); retrying in {delay:.0f}s: {detail}", flush=True)
             time.sleep(delay)
@@ -228,13 +240,17 @@ def verify(locale, toolchain, env):
         assert build[:2] == ["git clone --depth 1 https://github.com/teramoby/speedle-plus.git", "cd speedle-plus"], source
         checkout = work / "speedle-plus"
 
-        def clone():
+        def reset_checkout():
             # A failed attempt can leave a partial checkout behind, which would
-            # make every retry fail with "already exists"; start clean.
-            shutil.rmtree(checkout, ignore_errors=True)
-            return run("\n".join(build[:2]), work, env, timeout=180)
+            # make every retry fail with "already exists"; start clean. Only
+            # absence is expected: any other cleanup error is raised (chained
+            # to the failed attempt) rather than hidden.
+            try:
+                shutil.rmtree(checkout)
+            except FileNotFoundError:
+                pass
 
-        run_with_retry(clone)
+        run_with_retry(lambda: run("\n".join(build[:2]), work, env, timeout=180), reset=reset_checkout)
         revision = run(["git", "rev-parse", "HEAD"], ROOT, env).strip()
         # Keep the real clone step, then test this captured candidate rather than
         # a potentially older/newer master. No credentials or shared config changes.
