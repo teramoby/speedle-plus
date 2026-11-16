@@ -84,7 +84,6 @@
     .integration { min-height: 220px; display: grid; place-items: center; padding: 40px; border-radius: 18px; border: 1px solid var(--line); background: #fff; }
     .integration:hover { box-shadow: var(--shadow); }
     .integration img { width: 150px; height: 105px; object-fit: contain; }
-    .contribute { padding-top: 20px; }
     .contribute-card { position: relative; overflow: hidden; display: grid; grid-template-columns: .8fr 1.2fr; align-items: center; gap: 50px; padding: 62px; color: #fff; border-radius: 28px; background: linear-gradient(125deg, var(--purple-dark), var(--purple)); }
     .contribute-card::after { content: ""; position: absolute; width: 300px; height: 300px; border: 70px solid rgba(1,231,203,.14); border-radius: 50%; right: -120px; top: -170px; }
     .contribute-card img { width: 230px; margin: auto; }
