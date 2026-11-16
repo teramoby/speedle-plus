@@ -60,10 +60,11 @@ Unlabeled pull requests run quick checks: formatting, vet, module tidiness,
 build (including the container dispatcher without Docker), and tests for changed
 Go packages under `pkg`, `cmd`, `api` and `deployment`. Quick checks use the file store,
 compile service-backed store packages without starting services, and do not
-apply the coverage gate. Changes under `docs/` or `website/` also run the
-existing site build, browser/a11y checks and documentation walkthroughs in the
-Linux build worker. Container, command and release paths retain image smoke
-without a label: `deployment/container/**`, `cmd/**`,
+apply the coverage gate. The existing site build, browser/a11y checks and
+documentation walkthroughs for `docs/` and `website/` changes run on the full
+route only; an unlabeled pull request runs quick checks without them.
+Container, command and release paths retain image smoke without a label:
+`deployment/container/**`, `cmd/**`,
 `.github/workflows/release.yml`, `.github/workflows/image-smoke.yml` and
 `scripts/release-smoke.sh`. Either full-CI label always runs image smoke.
 DCO and automated review retain their own workflows.

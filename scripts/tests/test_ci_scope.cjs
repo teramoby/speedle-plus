@@ -474,23 +474,28 @@ process.exit(process.env.FAIL_TOOL === ${JSON.stringify(tool)} && invocation ===
 });
 test('actual summary blocks failed/cancelled/missing selected jobs and allows intentional skips', () => {
   for (const full of [false, true]) {
-    for (const content of [false, true]) {
-      const jobs = Object.fromEntries(['changes', 'quick', 'lint', 'test', 'build'].map(name => [name, {result: 'skipped'}]));
-      jobs.changes = {result: 'success', outputs: {full: String(full), go: 'true', docs: String(content), website: 'false'}};
-      const selected = full ? ['lint', 'test', 'build'] : ['quick'];
-      if (!full && content) selected.push('build');
-      for (const name of selected) jobs[name].result = 'success';
-      const run = () => spawnSync('bash', ['-c', script(ci, 'Verify the selected CI path')], {encoding: 'utf8', env: {...process.env, RESULTS: JSON.stringify(jobs)}});
-      assert.equal(run().status, 0);
-      for (const name of selected) {
-        for (const result of ['failure', 'cancelled', 'skipped']) {
-          jobs[name].result = result;
-          assert.notEqual(run().status, 0, `${name}/${result}`);
+    for (const go of [false, true]) {
+      for (const docs of [false, true]) {
+        for (const website of [false, true]) {
+          const jobs = Object.fromEntries(['changes', 'quick', 'lint', 'test', 'build'].map(name => [name, {result: 'skipped'}]));
+          jobs.changes = {result: 'success', outputs: {full: String(full), go: String(go), docs: String(docs), website: String(website)}};
+          const selected = full ? ['test'] : ['quick'];
+          if (full && go) selected.push('lint');
+          if (full && (go || docs || website)) selected.push('build');
+          for (const name of selected) jobs[name].result = 'success';
+          const run = () => spawnSync('bash', ['-c', script(ci, 'Verify the selected CI path')], {encoding: 'utf8', env: {...process.env, RESULTS: JSON.stringify(jobs)}});
+          assert.equal(run().status, 0, JSON.stringify(jobs));
+          for (const name of selected) {
+            for (const result of ['failure', 'cancelled', 'skipped']) {
+              jobs[name].result = result;
+              assert.notEqual(run().status, 0, `${name}/${result}`);
+            }
+            jobs[name].result = 'success';
+          }
+          jobs.changes.result = 'failure';
+          assert.notEqual(run().status, 0);
         }
-        jobs[name].result = 'success';
       }
-      jobs.changes.result = 'failure';
-      assert.notEqual(run().status, 0);
     }
   }
 });
@@ -610,14 +615,14 @@ test('image smoke unions original paths with full labels and isolates ignored ev
   } finally { fs.rmSync(dir, {recursive: true, force: true}); }
 });
 
-test('content changes retain the build worker on quick and full routes', () => {
+test('build runs only on the full route, for a route that changes content or Go code', () => {
   for (const full of [false, true]) {
     for (const go of [false, true]) {
       for (const docs of [false, true]) {
         for (const website of [false, true]) {
           const c = context();
           c.needs.changes.outputs = Object.fromEntries(Object.entries({full, go, docs, website}).map(([k,v]) => [k, String(v)]));
-          assert.equal(evaluate(condition('build'), c), (full && go) || docs || website);
+          assert.equal(evaluate(condition('build'), c), full && (go || docs || website));
           assert.equal(evaluate(condition('quick'), c), !full);
           assert.equal(evaluate(condition('test'), c), full);
         }

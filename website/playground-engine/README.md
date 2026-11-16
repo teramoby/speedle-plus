@@ -71,8 +71,9 @@ GOOS=js GOARCH=wasm go test -mod=readonly \
 ```
 
 The protected Go CI build worker runs `website/playground-engine/verify.sh` on
-pushes and pull requests. It restores an OS/architecture-specific Chromium cache
-keyed by `package-lock.json`, then installs the locked Playwright/axe-core
+pushes and on pull requests carrying a full-CI label. It restores an
+OS/architecture-specific Chromium cache keyed by `package-lock.json`, then
+installs the locked Playwright/axe-core
 packages and any missing browser revision. A cache miss downloads the exact
 browser required by the pinned Playwright version; a cache hit needs no browser
 download or preinstalled host browser. The axe contrast check is therefore a
