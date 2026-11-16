@@ -90,7 +90,8 @@ test('documented Go toolchain guard runs after checkout and setup and rejects ve
     'toolchain guard must follow checkout and Setup Go and precede package selection');
   // Only the job-level env may set GOTOOLCHAIN: a step-level override would
   // let a later go command switch away from the verified toolchain.
-  assert.deepEqual([...source.matchAll(/^(\s*)GOTOOLCHAIN: (.*)$/gm)].map(match => [match[1], match[2]]),
+  // Capture same-line indentation only: `\s` would also match a newline.
+  assert.deepEqual([...source.matchAll(/^([ \t]*)GOTOOLCHAIN: (.*)$/gm)].map(match => [match[1], match[2]]),
     [['      ', 'local']], 'only the job-level env may pin GOTOOLCHAIN');
 
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-go-toolchain-'));
@@ -151,6 +152,9 @@ if (args.length === 4 && args[0] === 'list' && args[1] === '-m' && args[2] === '
         module: '1.27.4', selected: 'go1.27.4', passes: true, message: 'Verified documented minimum Go toolchain: go1.27.4'},
       // An ATX closing sequence renders as the same heading text.
       {name: 'ATX closing sequence', readme: '### Prerequisites ###\n\n-   Go 1.27.4 or a newer patch\n', module: '1.27.4', selected: 'go1.27.4', passes: true,
+        message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      // The guard reads the README in text mode, which normalizes CRLF.
+      {name: 'CRLF line endings', readme: '### Prerequisites\r\n\r\n-   Go 1.27.4 or a newer patch\r\n', module: '1.27.4', selected: 'go1.27.4', passes: true,
         message: 'Verified documented minimum Go toolchain: go1.27.4'},
       {name: 'automatic toolchain switching', readme: prerequisites('-   Go 1.27.4 or a newer patch'), module: '1.27.4', selected: 'go1.27.4',
         gotoolchain: 'auto', passes: false, message: 'go env GOTOOLCHAIN auto != local; CI must not switch toolchains'},
