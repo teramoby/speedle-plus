@@ -20,10 +20,12 @@ jobs:
     # Every other task but build and weekly goes to any Speedle runner
     # (speedle-runner: both charming instances and fiona). Build needs the
     # Linux Hugo release, so its default is the Linux pool. Weekly stays on
-    # fiona to reduce timing noise in its benchmark comparison. The identity
-    # check also accepts donkey-speedle (Linux x64) for every task but weekly.
-    # The fiona host is registered once, as the repository runner fiona, and
-    # carries the fiona-speedle scheduling label used by weekly and MongoDB runs.
+    # fiona to reduce timing noise in its benchmark comparison; its label list
+    # also names the macOS ARM64 platform, so a mislabelled Linux runner can
+    # never take it. The identity check also accepts donkey-speedle (Linux x64)
+    # for every task but weekly. The fiona host is registered once, as the
+    # repository runner fiona, and carries the fiona-speedle scheduling label
+    # used by weekly and MongoDB runs.
     # merge-head may reserve HEAD_RUNS_ON (a JSON string or labels array)
     # for full jobs, including build. That pool must supply an approved Linux
     # runner; identity checks still reject build on macOS. Scheduled weekly
@@ -32,7 +34,7 @@ jobs:
     # the trusted-event predicate and runner identity checks still apply.
     # The host lock below keeps fixed-port tests from overlapping on the charming host.
     runs-on: >-
-      ${{ github.repository == 'teramoby/speedle-plus' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && github.ref == 'refs/heads/master') || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.event.sender.type == 'User' || github.event.sender.type == 'Bot')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.user.type == 'User' || github.event.pull_request.user.type == 'Bot'))) && fromJSON(inputs.mode == 'quick' && (vars.QUICK_RUNS_ON || '"ubuntu-latest"') || github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'merge-head') && vars.HEAD_RUNS_ON || inputs.mode == 'build' && '["self-hosted","Linux","X64","speedle-linux"]' || inputs.mode == 'weekly' && '["self-hosted","fiona-speedle"]' || '["self-hosted","speedle-runner"]') || 'ubuntu-latest' }}
+      ${{ github.repository == 'teramoby/speedle-plus' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && github.ref == 'refs/heads/master') || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.event.sender.type == 'User' || github.event.sender.type == 'Bot')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.user.type == 'User' || github.event.pull_request.user.type == 'Bot'))) && fromJSON(inputs.mode == 'quick' && (vars.QUICK_RUNS_ON || '"ubuntu-latest"') || github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'merge-head') && vars.HEAD_RUNS_ON || inputs.mode == 'build' && '["self-hosted","Linux","X64","speedle-linux"]' || inputs.mode == 'weekly' && '["self-hosted","macOS","ARM64","fiona-speedle"]' || '["self-hosted","speedle-runner"]') || 'ubuntu-latest' }}
     # test can wait on the host lock behind a nightly on the other charming runner.
     timeout-minutes: ${{ (inputs.mode == 'nightly' || inputs.mode == 'weekly' || inputs.mode == 'regression' || inputs.mode == 'test') && 150 || 30 }}
     # Never let a later go command pick another toolchain than the installed

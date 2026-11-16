@@ -19,7 +19,8 @@ regression and the nightly use the same label, and the Go CI worker also
 accepts `donkey-speedle` for those tasks. Go build
 (it needs the Linux Hugo release and `sha256sum`) selects
 `[self-hosted, Linux, X64, speedle-linux]`. The weekly selects
-`[self-hosted, fiona-speedle]` to reduce timing noise in its benchmark check.
+`[self-hosted, macOS, ARM64, fiona-speedle]` to reduce timing noise in its
+benchmark check and to keep a mislabelled Linux runner from taking it.
 The benchmarks (`scripts/ci/benchmark.py`) measure master as of May 2026 and
 the current code alternately in the same run; each report names the runner that
 measured it.

@@ -11,7 +11,7 @@ const vm = require('node:vm');
 const source = fs.readFileSync(path.resolve(__dirname, '../../.github/workflows/go-ci-worker.yml'), 'utf8');
 const pool = ['self-hosted', 'Linux', 'X64', 'speedle-linux'];
 const anyRunner = ['self-hosted', 'speedle-runner'];
-const fiona = ['self-hosted', 'fiona-speedle'];
+const fiona = ['self-hosted', 'macOS', 'ARM64', 'fiona-speedle'];
 // Build needs the Linux pool and weekly uses fiona to reduce benchmark noise.
 const routeFor = mode => mode === 'quick' ? 'ubuntu-latest' : mode === 'build' ? pool : mode === 'weekly' ? fiona : anyRunner;
 const repository = 'teramoby/speedle-plus';

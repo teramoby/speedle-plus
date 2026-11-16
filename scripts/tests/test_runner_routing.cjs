@@ -2,6 +2,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const {spawnSync} = require('node:child_process');
 const test = require('node:test');
 const vm = require('node:vm');
 
@@ -15,6 +16,7 @@ const sources = {
   commands: read('reviewbot-command.yml'), inline: read('reviewbot-inline.yml'),
   nightly: read('nightly.yml'), weekly: read('weekly.yml'), postMerge: read('post-merge.yml'),
   mongodb: read('mongodb-nightly-validation.yml'),
+  worker: read('go-ci-worker.yml'),
 };
 function jobs(source) {
   const section = source.split(/^jobs:\s*$/m)[1];
@@ -44,20 +46,22 @@ function github(eventName, headRepo = canonical, overrides = {}) {
     ...overrides,
   };
 }
-function evaluate(expression, context, vars = {}) {
+function evaluate(expression, context, vars = {}, inputs = {}) {
   // Evaluate the actual workflow predicate, not a duplicate routing function.
   // This intentionally accepts only its current string/boolean comparison,
-  // boolean operator and fromJSON subset; other expression syntax fails closed.
+  // boolean operator, contains, array wildcard and fromJSON subset; other
+  // expression syntax fails closed.
   const lookup = name => {
+    const walk = (item, parts) => {
+      if (!parts.length) return item ?? '';
+      const [part, ...rest] = parts;
+      if (part === '*') return (Array.isArray(item) ? item : []).map(entry => walk(entry, rest));
+      return walk(item == null ? undefined : item[part], rest);
+    };
     const parts = name.split('.');
-    let item = parts[0] === 'vars' ? vars : context;
-    for (const part of parts.slice(1)) {
-      if (item == null || typeof item !== 'object' || !Object.hasOwn(item, part)) return '';
-      item = item[part];
-    }
-    return item ?? '';
+    return walk(parts[0] === 'vars' ? vars : parts[0] === 'inputs' ? inputs : context, parts.slice(1));
   };
-  const tokens = /\s+|'(?:[^']|'')*'|(?:github|vars)(?:\.[A-Za-z_][\w-]*)+|fromJSON|true|false|null|==|!=|&&|\|\||[(),!]/gy;
+  const tokens = /\s+|'(?:[^']|'')*'|(?:github|vars|inputs)(?:\.(?:[A-Za-z_][\w-]*|\*))+|fromJSON|contains|true|false|null|==|!=|&&|\|\||[(),!]/gy;
   let translated = '', position = 0;
   while (position < expression.length) {
     tokens.lastIndex = position;
@@ -66,15 +70,16 @@ function evaluate(expression, context, vars = {}) {
     const token = found[0]; position = tokens.lastIndex;
     if (/^\s+$/.test(token)) translated += token;
     else if (token.startsWith("'")) translated += JSON.stringify(token.slice(1, -1).replaceAll("''", "'"));
-    else if (token.startsWith('github.') || token.startsWith('vars.')) translated += `lookup(${JSON.stringify(token)})`;
+    else if (token.startsWith('github.') || token.startsWith('vars.') || token.startsWith('inputs.')) translated += `lookup(${JSON.stringify(token)})`;
     else translated += token;
   }
-  const output = vm.runInNewContext(translated, {lookup, fromJSON: JSON.parse}, {timeout: 100});
+  const output = vm.runInNewContext(translated,
+    {lookup, fromJSON: JSON.parse, contains: (values, value) => values.includes(value)}, {timeout: 100});
   return JSON.parse(JSON.stringify(output));
 }
-function route(block, context = github('workflow_dispatch'), vars = {}) {
+function route(block, context = github('workflow_dispatch'), vars = {}, inputs = {}) {
   const raw = value(block, 'runs-on');
-  if (raw.startsWith('${{') && raw.endsWith('}}')) return evaluate(raw.slice(3, -2).trim(), context, vars);
+  if (raw.startsWith('${{') && raw.endsWith('}}')) return evaluate(raw.slice(3, -2).trim(), context, vars, inputs);
   if (raw.startsWith('[')) return JSON.parse(raw);
   return raw.replace(/^['"]|['"]$/g, '');
 }
@@ -260,6 +265,57 @@ test('scheduled suites run through the worker and report from a hosted job', () 
   // The nightly runs MongoDB with the other backends; this workflow is manual.
   assert.doesNotMatch(sources.mongodb, /^  schedule:/m);
   assert.match(sources.mongodb, /^  workflow_dispatch:$/m);
+});
+// Registered runners and every label that can schedule work to them. Refresh
+// with the GitHub API when a runner is added, removed or relabelled:
+//   gh api orgs/teramoby/actions/runners --jq '.runners[] | {name, os, labels: [.labels[].name]}'
+//   gh api repos/teramoby/speedle-plus/actions/runners --jq '.runners[] | {name, os, labels: [.labels[].name]}'
+// A task routed to labels no registered runner carries would queue forever;
+// one routed to a runner the identity guard rejects fails before any test runs.
+const runnerInventory = [
+  {name: 'charming-speedle-2', os: 'Linux', arch: 'X64',
+    labels: ['self-hosted', 'Linux', 'X64', 'speedle-linux', 'speedle-control', 'speedle-runner', 'reviewbot']},
+  {name: 'donkey-speedle', os: 'Linux', arch: 'X64',
+    labels: ['self-hosted', 'Linux', 'X64', 'speedle-linux', 'speedle-control', 'speedle-runner', 'reviewbot']},
+  {name: 'ecs-light-teramoby', os: 'Linux', arch: 'X64',
+    labels: ['self-hosted', 'Linux', 'X64', 'aliyun-ecs', 'reviewbot']},
+  {name: 'fiona', os: 'macOS', arch: 'ARM64',
+    labels: ['self-hosted', 'macOS', 'ARM64', 'speedle-runner', 'speedle-macos', 'fiona-speedle']},
+];
+test('every self-hosted Go task can only land on runners the identity guard accepts', () => {
+  const guard = script(job.worker.execute, 'Verify self-hosted runner identity');
+  const trusted = [
+    ['workflow_dispatch', github('workflow_dispatch')],
+    ['schedule', {...github('schedule'), ref: 'refs/heads/master'}],
+    ['push', {...github('push'), ref: 'refs/heads/master'}],
+    ['pull_request', github('pull_request')],
+  ];
+  for (const mode of ['quick', 'lint', 'test', 'build', 'nightly', 'weekly', 'regression']) {
+    for (const [event, context] of trusted) {
+      const routed = route(job.worker.execute, context, {}, {mode});
+      if (routed === 'ubuntu-latest') {
+        // Only quick defaults to a hosted runner, where the guard is skipped.
+        assert.equal(mode, 'quick', `${mode} on ${event} must select a Speedle runner`);
+        continue;
+      }
+      assert.ok(Array.isArray(routed), `${mode} on ${event}: ${JSON.stringify(routed)}`);
+      assert.equal(routed[0], 'self-hosted', `${mode} on ${event} must select the self-hosted pool`);
+      const candidates = runnerInventory.filter(runner => routed.every(label => runner.labels.includes(label)));
+      assert.ok(candidates.length > 0,
+        `${mode} on ${event} selects ${routed.join(', ')}, which no registered runner carries`);
+      for (const runner of candidates) {
+        const result = spawnSync('bash', ['-c', guard], {encoding: 'utf8',
+          env: {...process.env, RUNNER_NAME: runner.name, RUNNER_OS: runner.os,
+            RUNNER_ARCH: runner.arch, CI_TASK: mode}});
+        assert.equal(result.status, 0,
+          `${mode} on ${event} can land on ${runner.name}, which the identity guard rejects:\n${result.stderr}`);
+      }
+      if (mode === 'weekly') {
+        assert.deepEqual(candidates.map(runner => runner.name), ['fiona'],
+          'weekly must schedule only on the macOS runner');
+      }
+    }
+  }
 });
 test('every merge to master runs the file regression and reports failures from a hosted job', () => {
   const source = sources.postMerge;
