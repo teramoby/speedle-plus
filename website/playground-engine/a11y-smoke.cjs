@@ -17,9 +17,11 @@
    three moments 200 ms apart and a violation in any of them fails. Styles
    are stricter: from before axe is injected until the sampling ends, every
    stylesheet's rule text, media and disabled state must stay identical, or
-   the gate fails. Any page script error is only reported in the PASS line.
-   WebSockets and web workers, which page.route cannot intercept, fail the
-   gate. Serve a local copy of any resource the page needs.
+   the gate fails. Open shadow roots are included in the DOM observation and
+   stylesheet fingerprints, including their style elements and adopted sheets.
+   Any page script error fails the gate. WebSockets and web workers, which
+   page.route cannot intercept, fail the gate. Serve a local copy of any
+   resource the page needs.
    Run from the repository root: node website/playground-engine/a11y-smoke.cjs
    Optional CHROMIUM_PATH selects a Chrome/Chromium binary. */
 const {chromium} = require('playwright');
@@ -63,8 +65,29 @@ const server = http.createServer((req,res)=>{
         await page.addInitScript(()=>{
           if (window.ServiceWorkerContainer) ServiceWorkerContainer.prototype.register=()=>Promise.reject(new DOMException('service workers are disabled in the a11y smoke','SecurityError'));
           // Count DOM changes (elements, attributes, text) so the check can wait until the page is still.
+          // Mutations inside a shadow root do not bubble to an observer on document. Walk open
+          // shadow roots recursively, observe each one, and repeat the walk whenever state is read
+          // so roots added by page script join the watch. Root discovery also feeds sheets() below.
           window.__smokeMutations=0;
-          new MutationObserver(records=>{window.__smokeMutations+=records.length;}).observe(document,{subtree:true,childList:true,attributes:true,characterData:true});
+          const observedRoots=new WeakSet();
+          const observer=new MutationObserver(records=>{window.__smokeMutations+=records.length;});
+          const observation={subtree:true,childList:true,attributes:true,characterData:true};
+          window.__smokeSyncRoots=()=>{
+            const roots=[document], known=new Set(roots);
+            for(let index=0;index<roots.length;index++) {
+              for(const element of roots[index].querySelectorAll('*')) {
+                if(element.shadowRoot&&!known.has(element.shadowRoot)) {
+                  known.add(element.shadowRoot);
+                  roots.push(element.shadowRoot);
+                }
+              }
+            }
+            for(const root of roots) {
+              if(!observedRoots.has(root)) {observer.observe(root,observation);observedRoots.add(root);}
+            }
+            return roots;
+          };
+          window.__smokeSyncRoots();
         });
         // Record every request problem, one entry per URL (the first reason wins, for example
         // an HTTP error before the aborted body). Chromium gives a stylesheet that failed to
@@ -86,7 +109,8 @@ const server = http.createServer((req,res)=>{
         page.on('requestfailed',settled);
         // Requests from web workers can bypass page.route, so a page that starts one fails.
         page.on('worker',worker=>problems.set(worker.url(),'web worker: its requests may bypass the route below'));
-        // Page script errors are diagnostics, listed in the PASS line: they do not decide contrast.
+        // An uncaught page script error can leave only part of the page initialized, so it fails
+        // the gate rather than letting axe measure that reduced DOM as though it were complete.
         const pageErrors=[];
         page.on('pageerror',error=>pageErrors.push(error.message));
         page.on('response',response=>{
@@ -107,6 +131,7 @@ const server = http.createServer((req,res)=>{
         const assertNoProblems=when=>{
           const list=[...problems].map(([url,reason])=>`${url} (${reason})`);
           assert.deepEqual(list,[],`the ${label} at ${width}px had problems ${when}: ${list.join(', ')}`);
+          assert.deepEqual(pageErrors,[],`the ${label} at ${width}px had page script errors ${when}: ${pageErrors.join(' | ')}`);
         };
         // WebSockets do not pass through page.route: refuse every one (it never reaches a server)
         // and fail the gate.
@@ -132,8 +157,10 @@ const server = http.createServer((req,res)=>{
         } catch (error) {
           throw new Error(`the ${label} at ${width}px kept the network busy for 15s after load`,{cause:error});
         }
-        // The styles must not change while axe measures the page: each stylesheet (including
-        // adopted ones), whether it is disabled, its media and a hash of all its rule text.
+        // The styles must not change while axe measures the page: in the document and every open
+        // shadow root, fingerprint every stylesheet (including adopted ones and style elements),
+        // whether it is disabled, its media and the full text of every rule. Include each root even
+        // when it has no sheets, so attaching or removing a shadow root is also a visible change.
         const sheets=()=>page.evaluate(()=>{
           // StyleSheetList and CSSRuleList are array-like (length plus an indexed getter) with
           // no specified iterator: Array.from does not rely on the engine exposing one. Every
@@ -142,13 +169,24 @@ const server = http.createServer((req,res)=>{
           // instead of falling back to a comparison that no longer covers the rule text. The
           // full rule text is compared, not a digest: a hash lets two different rule lists
           // compare equal. The pages have a handful of stylesheets, so the size is no concern.
-          const list=Array.from(document.styleSheets).concat(Array.from(document.adoptedStyleSheets||[]));
-          return JSON.stringify(list.map(sheet=>{
-            const name=sheet.href||(sheet.ownerNode&&sheet.ownerNode.nodeName)||'adopted';
-            let rules;
-            try {rules=Array.from(sheet.cssRules).map(rule=>rule.cssText);}
-            catch (error) {throw new Error(`the a11y smoke cannot read the rules of stylesheet ${name}: ${error.message}`);}
-            return [name,sheet.disabled,sheet.media?sheet.media.mediaText:'',rules];
+          return JSON.stringify(window.__smokeSyncRoots().map((root,rootIndex)=>{
+            const scope=root===document?'document':`open shadow root ${rootIndex} on ${root.host.nodeName}`;
+            const styles=Array.from(root.querySelectorAll('style'));
+            // Explicitly include HTMLStyleElement.sheet as well as ShadowRoot.styleSheets: the
+            // latter is not available in every Chromium version, but CSSOM edits must still count.
+            const list=Array.from(new Set(Array.from(root.styleSheets||[]).concat(
+              Array.from(root.adoptedStyleSheets||[]),styles.map(style=>style.sheet).filter(Boolean))));
+            return [
+              scope,
+              styles.map(style=>[style.textContent,style.media,style.disabled]),
+              list.map(sheet=>{
+                const name=sheet.href||(sheet.ownerNode&&sheet.ownerNode.nodeName)||'adopted';
+                let rules;
+                try {rules=Array.from(sheet.cssRules).map(rule=>rule.cssText);}
+                catch (error) {throw new Error(`the a11y smoke cannot read the rules of stylesheet ${name} in ${scope}: ${error.message}`);}
+                return [name,sheet.disabled,sheet.media?sheet.media.mediaText:'',rules];
+              }),
+            ];
           }));
         });
         // networkidle only means 500 ms without requests. Require no request in flight and one
@@ -195,6 +233,9 @@ const server = http.createServer((req,res)=>{
         const scan=async()=>{
           const previousSheets=sheetsAt;
           const result=await page.evaluate(async before=>{
+            // Discover roots added since the last fingerprint before measuring, so their later
+            // mutations are observed even when the new root has no stylesheet of its own.
+            window.__smokeSyncRoots();
             const runningAnimations=()=>document.getAnimations().filter(animation=>animation.playState==='running').length;
             const animated=runningAnimations();
             const result=await axe.run(document,{runOnly:{type:'rule',values:['color-contrast']}});
@@ -233,7 +274,7 @@ const server = http.createServer((req,res)=>{
         assertNoProblems('during the contrast check');
         assert.deepEqual(report.violations,[],`axe color-contrast violations on the ${label} at ${width}px: ${JSON.stringify(report.violations,null,2)}`);
         checks++;
-        console.log(`PASS axe color-contrast: ${label} at ${width}px (${report.unchecked.length} gradient or pseudo-element nodes not machine-checkable${cancelled.length?`; ${cancelled.length} local request(s) cancelled by the page: ${cancelled.join(', ')}`:''}${domSettled?'':'; the DOM was still changing or animating when measured'}${scans.length>1?`; measured ${scans.length} times (${scanMutations} DOM change(s) during the sampling)`:''}${pageErrors.length?`; ${pageErrors.length} page script error(s): ${pageErrors.join(' | ')}`:''})`);
+        console.log(`PASS axe color-contrast: ${label} at ${width}px (${report.unchecked.length} gradient or pseudo-element nodes not machine-checkable${cancelled.length?`; ${cancelled.length} local request(s) cancelled by the page: ${cancelled.join(', ')}`:''}${domSettled?'':'; the DOM was still changing or animating when measured'}${scans.length>1?`; measured ${scans.length} times (${scanMutations} DOM change(s) during the sampling)`:''})`);
         await page.close();
       }
     }
