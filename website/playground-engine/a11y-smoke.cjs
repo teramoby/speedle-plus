@@ -56,6 +56,9 @@ const server = http.createServer((req,res)=>{
         // option alone is not enough in every Chromium build, so registration is also refused
         // before any page script runs, and a controlled page fails the gate.
         const page=await browser.newPage({viewport:{width,height:1100},serviceWorkers:'block'});
+        // package.json pins Playwright 1.65.0, which has every API below. Fail with a readable
+        // message rather than a TypeError if an older Playwright is installed anyway.
+        assert.equal(typeof page.routeWebSocket,'function',`the a11y smoke needs Playwright 1.48 or newer for page.routeWebSocket; the playground-engine package pins 1.65.0 - reinstall website/playground-engine dependencies`);
         await page.addInitScript(()=>{
           if (window.ServiceWorkerContainer) ServiceWorkerContainer.prototype.register=()=>Promise.reject(new DOMException('service workers are disabled in the a11y smoke','SecurityError'));
           // Count DOM changes (elements, attributes, text) so the check can wait until the page is still.
@@ -155,17 +158,26 @@ const server = http.createServer((req,res)=>{
         // adopted ones), whether it is disabled, its media and a hash of all its rule text.
         const sheets=()=>page.evaluate(()=>{
           const hash=text=>{let h=0x811c9dc5;for(let i=0;i<text.length;i++){h^=text.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0;}return h.toString(16);};
-          return JSON.stringify([...document.styleSheets,...(document.adoptedStyleSheets||[])].map(sheet=>{
-            let rules='unreadable';
-            try {rules=hash([...sheet.cssRules].map(rule=>rule.cssText).join('\n'));} catch {}
-            return [sheet.href||(sheet.ownerNode&&sheet.ownerNode.nodeName)||'adopted',sheet.disabled,sheet.media?sheet.media.mediaText:'',rules];
+          // StyleSheetList and CSSRuleList are array-like (length plus an indexed getter) with
+          // no specified iterator: Array.from does not rely on the engine exposing one. Every
+          // stylesheet is served from the local origin (anything else is aborted), so a
+          // stylesheet whose rules cannot be read makes the fingerprint untrustworthy: fail
+          // instead of falling back to a comparison that no longer covers the rule text.
+          const list=Array.from(document.styleSheets).concat(Array.from(document.adoptedStyleSheets||[]));
+          return JSON.stringify(list.map(sheet=>{
+            const name=sheet.href||(sheet.ownerNode&&sheet.ownerNode.nodeName)||'adopted';
+            let rules;
+            try {rules=hash(Array.from(sheet.cssRules).map(rule=>rule.cssText).join('\n'));}
+            catch (error) {throw new Error(`the a11y smoke cannot read the rules of stylesheet ${name}: ${error.message}`);}
+            return [name,sheet.disabled,sheet.media?sheet.media.mediaText:'',rules];
           }));
         });
         const sheetsBefore=await sheets();
         // axe runs mostly synchronously, so it measures one moment of an animation. When the DOM
-        // has not settled, or changed during a scan, sample three moments 200 ms apart: a
+        // has not settled, or any scan sees it change, sample three moments 200 ms apart: a
         // violation in any scan fails the gate, so animation alone cannot fail it but cannot hide
-        // a contrast problem either.
+        // a contrast problem either. Once a change is seen the budget stays at three scans, even
+        // if a later scan happens to see no change, so no animated state is sampled only twice.
         const scan=()=>page.evaluate(async()=>{
           const before=window.__smokeMutations;
           const result=await axe.run(document,{runOnly:{type:'rule',values:['color-contrast']}});
@@ -176,7 +188,7 @@ const server = http.createServer((req,res)=>{
           };
         });
         const scans=[await scan()];
-        while (scans.length<3&&(!domSettled||scans.at(-1).mutations>0)) {
+        while (scans.length<3&&(!domSettled||scans.some(result=>result.mutations>0))) {
           await page.waitForTimeout(200);
           scans.push(await scan());
         }
