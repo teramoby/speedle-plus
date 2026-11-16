@@ -289,7 +289,8 @@ test('fixture job installs pinned Node 22 before running Node regression suites'
   assert.match(setup, /node-version: '22'/);
   assert.ok(block.indexOf('Set up Node for regression tests') < block.indexOf('node --test'));
   const preflight = script(block, 'Verify runner identity and tools');
-  assert.match(preflight, /charming-speedle\/Linux\/X64\|charming-speedle-2\/Linux\/X64\|fiona-speedle\/macOS\/ARM64\) ;;/);
+  assert.match(preflight, /charming-speedle\/Linux\/X64\|charming-speedle-2\/Linux\/X64\|fiona\/macOS\/ARM64\) ;;/);
+  assert.doesNotMatch(preflight, /fiona-speedle\/macOS/, "the retired fiona-speedle runner name must not pass the identity check");
   assert.match(preflight, /\*\) echo 'Unexpected runner.' >&2; exit 1 ;;/);
   for (const tool of ['git', 'curl', 'jq', 'python3']) assert.ok(preflight.includes(tool));
   assert.ok(preflight.includes('https://ark.cn-beijing.volces.com/api/plan/v3/responses'));
@@ -300,7 +301,8 @@ test('fixture job installs pinned Node 22 before running Node regression suites'
 test('Fiona trial runs the complete nightly script with host isolation and separate artifacts', () => {
   const full = job.mongodb.mongodb.split('      - name: Full nightly trial on Fiona\n')[1].split('      - name:', 1)[0];
   assert.match(full, /inventory_only != 'true'/);
-  assert.match(full, /test "\$\{RUNNER_NAME\}\/\$\{RUNNER_OS\}\/\$\{RUNNER_ARCH\}" = fiona-speedle\/macOS\/ARM64/);
+  assert.match(full, /test "\$\{RUNNER_NAME\}\/\$\{RUNNER_OS\}\/\$\{RUNNER_ARCH\}" = fiona\/macOS\/ARM64/);
+  assert.doesNotMatch(full, /fiona-speedle\/macOS/, "the retired fiona-speedle runner name must not pass the identity check");
   assert.match(full, /flock -w 7200 9/);
   assert.match(full, /for port in \(2379, 2380, 27017, 6733, 6734\):/);
   assert.match(full, /bash scripts\/ci\/run-go-tests.sh nightly/);
@@ -314,7 +316,8 @@ test('Fiona CI trial runs the worker and ReviewBot commands without touching CI 
   assert.match(sources.mongodb, /options: \[none, lint, test, regression, weekly, reviewbot\]/);
   const trial = job.mongodb.mongodb.split('      - name: CI trial on Fiona\n')[1].split('      - name:', 1)[0];
   assert.match(trial, /nightly_trial != 'true' && github.event.inputs.inventory_only != 'true'/);
-  assert.match(trial, /test "\$\{RUNNER_NAME\}\/\$\{RUNNER_OS\}\/\$\{RUNNER_ARCH\}" = fiona-speedle\/macOS\/ARM64/);
+  assert.match(trial, /test "\$\{RUNNER_NAME\}\/\$\{RUNNER_OS\}\/\$\{RUNNER_ARCH\}" = fiona\/macOS\/ARM64/);
+  assert.doesNotMatch(trial, /fiona-speedle\/macOS/, "the retired fiona-speedle runner name must not pass the identity check");
   assert.match(trial, /go vet -composites=false .\/pkg\/\.\.\. .\/cmd\/\.\.\. .\/api\/\.\.\./);
   assert.match(trial, /flock -w 7200 9/);
   assert.match(trial, /test\) bash scripts\/ci\/run-go-tests.sh gate ;;/);
