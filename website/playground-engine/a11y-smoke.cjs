@@ -13,7 +13,8 @@
    starting or ending (a page that keeps loading resources fails). It then
    waits up to three seconds for the DOM to stop changing; a page that keeps
    animating its DOM, and any page script error, is only reported in the PASS
-   line. From before axe is injected until the scan ends, the page must not
+   line; while the DOM is still changing, axe samples three moments 200 ms
+   apart and a violation in any of them fails. From before axe is injected until the scan ends, the page must not
    request anything, and its styles (every stylesheet's rule text, media and
    disabled state) must not change.
    WebSockets and web workers, which page.route cannot intercept, fail the
@@ -67,9 +68,11 @@ const server = http.createServer((req,res)=>{
         const problems=new Map();
         // A request the page cancels itself (net::ERR_ABORTED) is exempt only for types that
         // cannot affect rendering; it is listed in the PASS line rather than ignored. Every
-        // other cancellation fails, including fetch/XHR, which may carry CSS.
+        // other cancellation fails, including fetch/XHR, which may carry CSS. These are the
+        // resource types Playwright reports; Chromium reports pings, beacons, prefetches and
+        // CSP reports as `other`.
         const cancelled=[];
-        const renderIrrelevant=new Set(['ping','manifest','eventsource','websocket','media','texttrack','cspreport','prefetch']);
+        const renderIrrelevant=new Set(['media','texttrack','eventsource','websocket','manifest','other']);
         const parse=value=>{try {return new URL(value);} catch {return null;}};
         // Every request, with the time it started, and page script failures.
         let requests=0, pending=0, lastRequestAt=Date.now();
@@ -159,24 +162,39 @@ const server = http.createServer((req,res)=>{
           }));
         });
         const sheetsBefore=await sheets();
-        const mutationsBefore=await page.evaluate(()=>window.__smokeMutations);
-        const report=await page.evaluate(async()=>{
+        // axe runs mostly synchronously, so it measures one moment of an animation. When the DOM
+        // has not settled, or changed during a scan, sample three moments 200 ms apart: a
+        // violation in any scan fails the gate, so animation alone cannot fail it but cannot hide
+        // a contrast problem either.
+        const scan=()=>page.evaluate(async()=>{
+          const before=window.__smokeMutations;
           const result=await axe.run(document,{runOnly:{type:'rule',values:['color-contrast']}});
           return {
             violations:result.violations.flatMap(rule=>rule.nodes.map(node=>({target:node.target,summary:node.failureSummary}))),
             unchecked:result.incomplete.flatMap(rule=>rule.nodes.map(node=>node.target)),
+            mutations:window.__smokeMutations-before,
           };
         });
+        const scans=[await scan()];
+        while (scans.length<3&&(!domSettled||scans.at(-1).mutations>0)) {
+          await page.waitForTimeout(200);
+          scans.push(await scan());
+        }
+        const seen=new Set();
+        const report={
+          violations:scans.flatMap(result=>result.violations).filter(violation=>{const key=JSON.stringify(violation.target);if(seen.has(key))return false;seen.add(key);return true;}),
+          unchecked:scans[0].unchecked,
+        };
+        const scanMutations=scans.reduce((sum,result)=>sum+result.mutations,0);
         // The page must not have loaded anything while axe measured it; with no new request, no
         // request can still fail after the scan, so the problems are complete here.
         assert.equal(requests,requestsBefore,`the ${label} at ${width}px requested resources during the contrast check`);
         assert.equal(pending,0,`the ${label} at ${width}px still has requests in flight after the contrast check`);
         assert.equal(await sheets(),sheetsBefore,`the ${label} at ${width}px changed its styles during the contrast check`);
-        const scanMutations=(await page.evaluate(()=>window.__smokeMutations))-mutationsBefore;
         assertNoProblems('during the contrast check');
         assert.deepEqual(report.violations,[],`axe color-contrast violations on the ${label} at ${width}px: ${JSON.stringify(report.violations,null,2)}`);
         checks++;
-        console.log(`PASS axe color-contrast: ${label} at ${width}px (${report.unchecked.length} gradient or pseudo-element nodes not machine-checkable${cancelled.length?`; ${cancelled.length} local request(s) cancelled by the page: ${cancelled.join(', ')}`:''}${domSettled?'':'; DOM still changing when measured'}${scanMutations>0?`; ${scanMutations} DOM change(s) during the scan`:''}${pageErrors.length?`; ${pageErrors.length} page script error(s): ${pageErrors.join(' | ')}`:''})`);
+        console.log(`PASS axe color-contrast: ${label} at ${width}px (${report.unchecked.length} gradient or pseudo-element nodes not machine-checkable${cancelled.length?`; ${cancelled.length} local request(s) cancelled by the page: ${cancelled.join(', ')}`:''}${domSettled?'':'; DOM still changing when measured'}${scans.length>1?`; measured ${scans.length} times (${scanMutations} DOM change(s) during the scans)`:''}${pageErrors.length?`; ${pageErrors.length} page script error(s): ${pageErrors.join(' | ')}`:''})`);
         await page.close();
       }
     }
