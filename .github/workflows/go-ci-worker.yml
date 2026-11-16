@@ -22,6 +22,8 @@ jobs:
     # Linux Hugo release, so its default is the Linux pool. Weekly stays on
     # fiona to reduce timing noise in its benchmark comparison. The identity
     # check also accepts donkey-speedle (Linux x64) for every task but weekly.
+    # The fiona host is registered once, as the repository runner fiona, and
+    # carries the fiona-speedle scheduling label used by weekly and MongoDB runs.
     # merge-head may reserve HEAD_RUNS_ON (a JSON string or labels array)
     # for full jobs, including build. That pool must supply an approved Linux
     # runner; identity checks still reject build on macOS. Scheduled weekly
@@ -49,8 +51,8 @@ jobs:
           set -euo pipefail
           case "${RUNNER_NAME}/${RUNNER_OS}/${RUNNER_ARCH}" in
             charming-speedle/Linux/X64|charming-speedle-2/Linux/X64|donkey-speedle/Linux/X64)
-              case "${CI_TASK}" in weekly) echo "Task ${CI_TASK} runs only on fiona-speedle." >&2; exit 1 ;; esac ;;
-            fiona-speedle/macOS/ARM64)
+              case "${CI_TASK}" in weekly) echo "Task ${CI_TASK} runs only on fiona." >&2; exit 1 ;; esac ;;
+            fiona/macOS/ARM64)
               case "${CI_TASK}" in build) echo "Task ${CI_TASK} needs a Linux runner." >&2; exit 1 ;; esac ;;
             *) echo 'Unexpected runner.' >&2; exit 1 ;;
           esac
