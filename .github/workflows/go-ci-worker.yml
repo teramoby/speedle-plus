@@ -106,6 +106,7 @@ jobs:
           fi
           python3 -I - <<'PYTHON'
           import sys; assert sys.flags.isolated, 'run with python3 -I'
+          import os; assert not any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p), 'python3 -I must exclude the checkout and working directory from sys.path'
           import re
           import stat
           import subprocess
@@ -225,6 +226,7 @@ jobs:
         run: |
           python3 -I - <<'PYTHON'
           import sys; assert sys.flags.isolated, 'run with python3 -I'
+          import os; assert not any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p), 'python3 -I must exclude the checkout and working directory from sys.path'
           import os
           from pathlib import Path
           import subprocess
@@ -343,6 +345,7 @@ jobs:
           flock -w 7200 9
           python3 -I - <<'PYTHON'
           import sys; assert sys.flags.isolated, 'run with python3 -I'
+          import os; assert not any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p), 'python3 -I must exclude the checkout and working directory from sys.path'
           import errno
           import socket
           for port in (2379, 2380, 27017, 6733, 6734):
@@ -417,6 +420,7 @@ jobs:
         run: |
           python3 -I - <<'PYTHON'
           import sys; assert sys.flags.isolated, 'run with python3 -I'
+          import os; assert not any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p), 'python3 -I must exclude the checkout and working directory from sys.path'
           import os
           from pathlib import Path
           import subprocess

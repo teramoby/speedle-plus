@@ -225,6 +225,7 @@ jobs:
         run: |
           python3 -I - <<'PYTHON'
           import sys; assert sys.flags.isolated, 'run with python3 -I'
+          import os; assert not any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p), 'python3 -I must exclude the checkout and working directory from sys.path'
           import json
           import os
           jobs = json.loads(os.environ['RESULTS'])

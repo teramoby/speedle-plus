@@ -34,7 +34,9 @@ expected=$(awk 'NR == 1 {print $1}' "${validation_dir}/checksum")
 [[ "${expected}" =~ ^[a-fA-F0-9]{64}$ ]]
 printf '%s  %s\n' "${expected}" "${validation_dir}/${archive}" | shasum -a 256 --check -
 tar -xzf "${validation_dir}/${archive}" -C "${validation_dir}" --strip-components=1
-mongo_port=$(python3 - <<'PY'
+mongo_port=$(python3 -I - <<'PY'
+import sys; assert sys.flags.isolated, 'run with python3 -I'
+import os; assert not any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p), 'python3 -I must exclude the checkout and working directory from sys.path'
 import socket
 with socket.socket() as s:
     s.bind(('127.0.0.1', 0))
