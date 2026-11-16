@@ -57,9 +57,10 @@ function requiredJobs(routes, full) {
 }
 
 function uniqueEntry(entries, name, kind) {
-  const matches = entries.filter(entry => entry?.name === name);
-  if (matches.length === 0) return {error: `Missing required ${kind}: ${name}`};
-  if (matches.length > 1) return {error: `Duplicate required ${kind}: ${name}`};
+  const names = Array.isArray(name) ? name : [name];
+  const matches = entries.filter(entry => names.includes(entry?.name));
+  if (matches.length === 0) return {error: `Missing required ${kind}: ${names[0]}`};
+  if (matches.length > 1) return {error: `Duplicate required ${kind}: ${names[0]}`};
   return {entry: matches[0]};
 }
 
@@ -115,7 +116,9 @@ function evaluate({run, pr, jobs, routes}) {
 
   const full = labelsOf(pr).has('full-ci') || labelsOf(pr).has('merge-head');
   for (const name of requiredJobs(routes, full)) {
-    const job = uniqueEntry(jobs, name, 'route');
+    // A completed reusable workflow appears as "<caller> / <called job>";
+    // a skipped reusable workflow retains only the caller's name.
+    const job = uniqueEntry(jobs, [name, `${name} / execute`], 'route');
     if (job.error) return outcome({run, pr, routes, state: 'failure', message: job.error});
     if (!passed(job.entry)) {
       return outcome({run, pr, routes, state: 'failure', message: `Required route did not pass: ${name}`});

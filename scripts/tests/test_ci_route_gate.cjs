@@ -51,10 +51,10 @@ function jobs({full = false, ci = false, build = false, lint = full, test: testR
       step('Classify changed files'),
       step('Test CI scripts', ci ? 'success' : 'skipped'),
     ]),
-    job('lint', lint ? 'success' : 'skipped'),
-    job('test', testRoute ? 'success' : 'skipped'),
-    job('build', build ? 'success' : 'skipped'),
-    job('quick', full ? 'skipped' : 'success'),
+    job(lint ? 'lint / execute' : 'lint', lint ? 'success' : 'skipped'),
+    job(testRoute ? 'test / execute' : 'test', testRoute ? 'success' : 'skipped'),
+    job(build ? 'build / execute' : 'build', build ? 'success' : 'skipped'),
+    job(full ? 'quick' : 'quick / execute', full ? 'skipped' : 'success'),
     job('CI'),
   ];
 }
@@ -127,7 +127,7 @@ test('a ci.yml edit that skips the full Go lint route fails the gate', () => {
   assert.equal(skipped.status.state, 'failure');
   assert.equal(skipped.status.description, 'Required route did not pass: lint');
 
-  const missingJobs = jobs({full: true, ci: true, build: true}).filter(job => job.name !== 'lint');
+  const missingJobs = jobs({full: true, ci: true, build: true}).filter(job => !['lint', 'lint / execute'].includes(job.name));
   const missing = gate.evaluate({run: run(), pr, jobs: missingJobs, routes});
   assert.equal(missing.status.state, 'failure');
   assert.equal(missing.status.description, 'Missing required route: lint');
