@@ -13,9 +13,10 @@
  * Every interpreter token on an executable line (python, python3, python3.N,
  * with or without a directory prefix) is classified as -c, -m, stdin (heredoc
  * or `-`), script-file or a version/help probe, and each invocation on a line
- * is checked individually. An interpreter token in command position that
- * matches none of those forms fails the inventory instead of being skipped,
- * so a new form cannot pass unreviewed. Every invocation in
+ * is checked individually. An interpreter token that matches none of those
+ * forms fails the inventory instead of being skipped, unless it is a literal
+ * command name in a `for ... in` word list or an argument of `command -v`,
+ * `which` or `type`, so a new form cannot pass unreviewed. Every invocation in
  * .github/workflows/*.yml and scripts/ci/*.sh is listed below; a new one fails
  * the inventory assertion so a reviewer must add it explicitly. Backslash
  * continuations are folded, and only the text after a shell separator on an
@@ -48,11 +49,29 @@ const kinds = [
 ];
 const probePattern = new RegExp(String.raw`^${interpreter}(?:\s+-[A-Za-z]+)*\s+(?:--version|--help|-V|-h)(?=[\s;|&)]|$)`);
 const isolatedPattern = new RegExp(String.raw`^${interpreter}(?:\s+-[A-Za-z]+)*?\s+-I(?=\s|$)`);
-const commandPosition = /(?:^|[;&|(]|\b(?:if|then|elif|else|while|until|do|!))\s*$/;
+// Contexts where an interpreter word names a command but does not run it.
+const dataWord = /(?:\bfor\s+[A-Za-z_][A-Za-z0-9_]*\s+in\s+[^;&|]*|\b(?:command\s+-[vV]|which|type)\s+[^;&|]*)$/;
 const printedExample = /^(?:-\s*)?(?:run:\s*)?(?:echo|printf)\b/;
 
 function commandGuarded(payload) {
   return payload === guard || payload.startsWith(`${guard}; `);
+}
+
+// Drop a shell comment: a `#` at the start of a word and outside quotes.
+function stripComment(text) {
+  let quote = null;
+  for (let index = 0; index < text.length; index++) {
+    const character = text[index];
+    if (quote) {
+      if (character === '\\' && quote === '"') index++;
+      else if (character === quote) quote = null;
+    } else if (character === "'" || character === '"') {
+      quote = character;
+    } else if (character === '#' && (index === 0 || /\s/.test(text[index - 1]))) {
+      return text.slice(0, index);
+    }
+  }
+  return text;
 }
 
 // An echo or printf line only executes the text after its first unquoted shell
@@ -127,7 +146,7 @@ function inspectSource(file, source) {
       line = line.slice(0, -1) + lines[++index];
     }
     const trimmed = line.trim();
-    const text = afterPrintedExample(trimmed);
+    const text = afterPrintedExample(stripComment(trimmed));
     if (trimmed && !trimmed.startsWith('#')) {
       let cursor = 0;
       for (const token of text.matchAll(tokenPattern)) {
@@ -135,10 +154,10 @@ function inspectSource(file, source) {
         const rest = text.slice(token.index);
         const found = classify(rest);
         if (!found) {
-          // Fail closed: a command-shaped interpreter token in a form this
-          // inventory does not know must be reviewed, not silently skipped.
-          if (commandPosition.test(text.slice(0, token.index))) {
-            throw new Error(`${file}:${start + 1}: unrecognized python invocation ${JSON.stringify(rest.slice(0, 40))}; add it to the explicit inventory`);
+          // Fail closed: an interpreter token in a form this inventory does
+          // not know must be reviewed, not silently skipped.
+          if (!dataWord.test(text.slice(0, token.index))) {
+            throw new Error(`${file}:${start + 1}: unrecognized python invocation ${JSON.stringify(rest.slice(0, 40))}; rewrite it in a recognized form or extend this inventory`);
           }
           cursor = token.index + token[0].length;
           continue;
@@ -289,16 +308,21 @@ test('the inventory recognizes every invocation on a line and ignores printed ex
   ]);
 });
 
-test('unrecognized command-shaped Python invocations fail closed instead of being skipped', () => {
-  assert.throws(() => inspectSource('fixture.yml', 'python3 -X surprise'),
-    /unrecognized python invocation/);
-  assert.throws(() => inspectSource('fixture.yml', 'echo warming && python3 -X surprise'),
-    /unrecognized python invocation/);
-  assert.throws(() => inspectSource('fixture.yml', 'if python3 -X surprise; then :; fi'),
-    /unrecognized python invocation/);
-  // A bare interpreter word in an argument list is not an invocation.
+test('unrecognized Python tokens fail closed except literal command names', () => {
+  for (const line of [
+    'python3 -X surprise',
+    'echo warming && python3 -X surprise',
+    'if python3 -X surprise; then :; fi',
+    'FOO=1 python3 -X surprise',
+    'timeout 60 python3 -X surprise',
+  ]) {
+    assert.throws(() => inspectSource('fixture.yml', line), /unrecognized python invocation/, line);
+  }
+  // A literal command name in a for-list or a command-presence probe is data.
   assert.deepEqual(inspectSource('fixture.yml',
     'for tool in python3 node; do command -v "${tool}"; done'), []);
+  assert.deepEqual(inspectSource('fixture.yml',
+    'if ! command -v python3 >/dev/null 2>&1; then exit 1; fi'), []);
 });
 
 test('missing guards, unparseable -c payloads and unlisted invocations fail', () => {
