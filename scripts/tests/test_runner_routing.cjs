@@ -46,17 +46,20 @@ function github(eventName, headRepo = canonical, overrides = {}) {
     ...overrides,
   };
 }
-function evaluate(expression, context, vars = {}, inputs = {}) {
+function evaluate(expression, context, vars = {}, inputs = null) {
   // Evaluate the actual workflow predicate, not a duplicate routing function.
   // This intentionally accepts only its current string/boolean comparison,
   // boolean operator, contains, array wildcard and fromJSON subset; other
-  // expression syntax fails closed.
+  // expression syntax fails closed. Workflow inputs are opt-in so every other
+  // gate still rejects an `inputs.*` lookup instead of trusting it.
   const lookup = name => {
+    assert.ok(!name.startsWith('inputs.') || inputs !== null, `Unsupported inputs lookup: ${name}`);
     const walk = (item, parts) => {
       if (!parts.length) return item ?? '';
       const [part, ...rest] = parts;
       if (part === '*') return (Array.isArray(item) ? item : []).map(entry => walk(entry, rest));
-      return walk(item == null ? undefined : item[part], rest);
+      if (item == null || typeof item !== 'object' || !Object.hasOwn(item, part)) return '';
+      return walk(item[part], rest);
     };
     const parts = name.split('.');
     return walk(parts[0] === 'vars' ? vars : parts[0] === 'inputs' ? inputs : context, parts.slice(1));
@@ -77,7 +80,7 @@ function evaluate(expression, context, vars = {}, inputs = {}) {
     {lookup, fromJSON: JSON.parse, contains: (values, value) => values.includes(value)}, {timeout: 100});
   return JSON.parse(JSON.stringify(output));
 }
-function route(block, context = github('workflow_dispatch'), vars = {}, inputs = {}) {
+function route(block, context = github('workflow_dispatch'), vars = {}, inputs = null) {
   const raw = value(block, 'runs-on');
   if (raw.startsWith('${{') && raw.endsWith('}}')) return evaluate(raw.slice(3, -2).trim(), context, vars, inputs);
   if (raw.startsWith('[')) return JSON.parse(raw);
@@ -270,19 +273,30 @@ test('scheduled suites run through the worker and report from a hosted job', () 
 // with the GitHub API when a runner is added, removed or relabelled:
 //   gh api orgs/teramoby/actions/runners --jq '.runners[] | {name, os, labels: [.labels[].name]}'
 //   gh api repos/teramoby/speedle-plus/actions/runners --jq '.runners[] | {name, os, labels: [.labels[].name]}'
+// Runners this repository can schedule and the labels its Go task routes
+// select. Only those scheduling labels are modelled; other labels on the same
+// registrations do not affect this check. Refresh from the runner API and its
+// groups when a registration changes:
+//   gh api orgs/teramoby/actions/runners --jq '.runners[] | {name, os, labels: [.labels[].name]}'
+//   gh api orgs/teramoby/actions/runner-groups/3/runners --jq '.runners[] | {name, labels: [.labels[].name]}'
+//   gh api orgs/teramoby/actions/runner-groups/5/runners --jq '.runners[] | {name, labels: [.labels[].name]}'
+//   gh api repos/teramoby/speedle-plus/actions/runners --jq '.runners[] | {name, os, labels: [.labels[].name]}'
 // A task routed to labels no registered runner carries would queue forever;
 // one routed to a runner the identity guard rejects fails before any test runs.
-// The guard's accepted identities, including ones that are not registered now,
-// are pinned separately by test_go_ci_worker.cjs.
+// The guard also accepts the retired charming-speedle name, but that runner is
+// not registered, so it cannot be a scheduling candidate; test_go_ci_worker.cjs
+// pins the guard's full accepted-identity matrix.
 const runnerInventory = [
   {name: 'charming-speedle-2', os: 'Linux', arch: 'X64',
-    labels: ['self-hosted', 'Linux', 'X64', 'speedle-linux', 'speedle-control', 'speedle-runner', 'reviewbot']},
+    labels: ['self-hosted', 'Linux', 'X64', 'speedle-linux', 'speedle-runner']},
   {name: 'donkey-speedle', os: 'Linux', arch: 'X64',
-    labels: ['self-hosted', 'Linux', 'X64', 'speedle-linux', 'speedle-control', 'speedle-runner', 'reviewbot']},
+    labels: ['self-hosted', 'Linux', 'X64', 'speedle-linux', 'speedle-runner']},
+  // The all-repositories aliyun-reviewbot group. No Go task selects it, so a
+  // broad Linux route that reaches it correctly fails this check.
   {name: 'ecs-light-teramoby', os: 'Linux', arch: 'X64',
-    labels: ['self-hosted', 'Linux', 'X64', 'aliyun-ecs', 'reviewbot']},
+    labels: ['self-hosted', 'Linux', 'X64']},
   {name: 'fiona', os: 'macOS', arch: 'ARM64',
-    labels: ['self-hosted', 'macOS', 'ARM64', 'speedle-runner', 'speedle-macos', 'fiona-speedle']},
+    labels: ['self-hosted', 'macOS', 'ARM64', 'speedle-runner', 'fiona-speedle']},
 ];
 function assertRoutedToAcceptedRunners(mode, event, routed) {
   const guard = script(job.worker.execute, 'Verify self-hosted runner identity');
@@ -346,6 +360,15 @@ test('configured runner overrides can only land on runners the identity guard ac
   assert.deepEqual(route(job.worker.execute, scheduled, overrides, {mode: 'nightly'}), labels);
   assert.deepEqual(route(job.worker.execute, {...github('push'), ref: 'refs/heads/master'}, overrides,
     {mode: 'regression'}), labels);
+});
+test('the evaluator reads only own properties and opts into workflow inputs explicitly', () => {
+  const context = github('workflow_dispatch');
+  // Inherited properties must stay invisible to every workflow gate.
+  assert.equal(evaluate('github.constructor', context), '');
+  assert.equal(evaluate('github.__proto__', context), '');
+  // inputs.* is available only to the worker task routes that pass it.
+  assert.throws(() => evaluate("inputs.mode == 'weekly'", context), /Unsupported inputs lookup: inputs\.mode/);
+  assert.equal(evaluate("inputs.mode == 'weekly'", context, {}, {mode: 'weekly'}), true);
 });
 test('every merge to master runs the file regression and reports failures from a hosted job', () => {
   const source = sources.postMerge;

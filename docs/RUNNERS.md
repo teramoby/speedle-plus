@@ -1,22 +1,21 @@
 # Speedle self-hosted runners
 
-`charming-speedle` and `charming-speedle-2` are Linux x64 runners registered to the
+`charming-speedle-2` and `donkey-speedle` are Linux x64 runners registered to the
 `teramoby` organization. Their dedicated `Speedle` runner group allows only
 `teramoby/speedle-plus`, including
 this public repository. It does not reuse or change `pavulabs` registrations or
 the `teramoby` default group's access policy.
 
-`fiona-speedle` (macOS ARM64) is a third runner in the same group. All three
-carry `speedle-runner`; only the two charming instances carry `speedle-linux`.
+`fiona` (macOS ARM64) is registered to this repository and carries the
+`fiona-speedle` scheduling label. Every Speedle runner carries `speedle-runner`;
+the Linux runners also carry `speedle-linux`.
 
-`donkey-speedle` (Linux x64) is an additional Linux runner. The Go CI worker
-accepts it for the same tasks as `charming-speedle` and `charming-speedle-2`.
-Weekly runs stay on `fiona-speedle`.
+The identity guard also accepts the retired `charming-speedle` name for tasks
+other than weekly. Weekly runs stay on `fiona-speedle`.
 
-ReviewBot selects `[self-hosted, speedle-runner]`, so `charming-speedle`,
-`charming-speedle-2` and `fiona-speedle` may take it. Go lint, test, post-merge
-regression and the nightly use the same label, and the Go CI worker also
-accepts `donkey-speedle` for those tasks. Go build
+ReviewBot selects `[self-hosted, speedle-runner]`, so `charming-speedle-2`,
+`donkey-speedle` and `fiona` may take it. Go lint, test, post-merge
+regression and the nightly use the same label. Go build
 (it needs the Linux Hugo release and `sha256sum`) selects
 `[self-hosted, Linux, X64, speedle-linux]`. The weekly selects
 `[self-hosted, macOS, ARM64, fiona-speedle]` to reduce timing noise in its
@@ -51,7 +50,7 @@ directly select this runner or change the trusted worker's routing policy.
 | Workload | Runner |
 | --- | --- |
 | Go lint for repository human/bot pushes, manual dispatch and human/bot same-repository PRs | Any runner via `speedle-runner` |
-| Go build (including the site checks in `verify.sh`) for those trusted events | Either charming runner via `speedle-linux` |
+| Go build (including the site checks in `verify.sh`) for those trusted events | Either Linux runner via `speedle-linux` |
 | Go tests for those trusted events, both file/etcd modes | Any runner via `speedle-runner`, serialized by the host test lock |
 | Go CI fork PRs, unknown actors or other events | GitHub-hosted |
 | Post-merge file-store regression (`post-merge.yml`, every push to master) | Any runner via `speedle-runner`, serialized by the host test lock; its report job is GitHub-hosted |
