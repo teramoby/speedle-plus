@@ -15,10 +15,19 @@ def _load_sibling(name):
     """Load a sibling script by path; -I keeps this directory off sys.path."""
     if name in sys.modules:
         return sys.modules[name]
-    spec = importlib.util.spec_from_file_location(name, Path(__file__).resolve().with_name(f"{name}.py"))
+    path = Path(__file__).resolve().with_name(f"{name}.py")
+    if not path.is_file():
+        raise ImportError(f"missing sibling module {path}")
+    spec = importlib.util.spec_from_file_location(name, path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"cannot load sibling module {path}")
     module = importlib.util.module_from_spec(spec)
     sys.modules[name] = module
-    spec.loader.exec_module(module)
+    try:
+        spec.loader.exec_module(module)
+    except BaseException:
+        sys.modules.pop(name, None)
+        raise
     return module
 
 
