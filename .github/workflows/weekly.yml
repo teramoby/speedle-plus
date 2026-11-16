@@ -66,6 +66,6 @@ jobs:
           # results are partial or show no failure.
           python3 -I scripts/ci/test_report.py --kind weekly \
             --source "run:${RUN_RESULT}:test-results" --summary-file report.txt
-          # The step summary rejects more than 1 MiB; the email points here,
-          # so keep the copy below that limit.
-          head -c 900000 report.txt >> "${GITHUB_STEP_SUMMARY}"
+          # The step summary rejects more than 1 MiB; keep this copy below
+          # that limit and cut the UTF-8 report on a character boundary.
+          head -c 900000 report.txt | iconv -f UTF-8 -t UTF-8 -c >> "${GITHUB_STEP_SUMMARY}"

@@ -256,7 +256,7 @@ test('scheduled suites run through the worker and report from a hosted job', () 
     assert.doesNotMatch(report, /FEISHU_|SMTP_/, `${kind}.report must not read the retired transports`);
     assert.doesNotMatch(report, /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/, `${kind}.report must not hardcode an address`);
     assert.match(report, new RegExp(`python3 -I scripts/ci/test_report.py --kind ${kind} `));
-    assert.match(report, /head -c 900000 report\.txt >> "\$\{GITHUB_STEP_SUMMARY\}"$/m);
+    assert.match(report, /head -c 900000 report\.txt \| iconv -f UTF-8 -t UTF-8 -c >> "\$\{GITHUB_STEP_SUMMARY\}"$/m);
     for (const [id, block] of Object.entries(job[kind])) {
       if (id !== 'report') assert.doesNotMatch(block, /secrets\./, `${kind}.${id} must not receive secrets`);
     }
@@ -293,7 +293,7 @@ test('every merge to master runs the file regression and reports failures from a
   assert.doesNotMatch(report, /FEISHU_|SMTP_/);
   assert.doesNotMatch(report, /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/, 'no hardcoded address');
   assert.match(report, /python3 -I scripts\/ci\/test_report.py --kind regression /);
-  assert.match(report, /head -c 900000 report\.txt >> "\$\{GITHUB_STEP_SUMMARY\}"$/m);
+  assert.match(report, /head -c 900000 report\.txt \| iconv -f UTF-8 -t UTF-8 -c >> "\$\{GITHUB_STEP_SUMMARY\}"$/m);
 });
 test('fixture job installs pinned Node 22 before running Node regression suites', () => {
   const block = job.review['diff-regression'];
