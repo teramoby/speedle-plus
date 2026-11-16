@@ -65,6 +65,11 @@ jobs:
             echo 'python3 is required on self-hosted runners; install Python 3 before running this workflow.' >&2
             exit 1
           fi
+          # Fail closed if this python3 cannot run inline code with -I.
+          if ! python3 -I -c 'import sys; sys.flags.isolated or sys.exit("run with python3 -I"); sys.flags.optimize == 0 or sys.exit("python3 inline checks require optimization to be disabled"); import os; unsafe = any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p is not None); unsafe and sys.exit("python3 -I must exclude the checkout and working directory from sys.path")' >/dev/null 2>&1; then
+            echo 'python3 with safe -I support is required for isolated inline Python; install a Python 3 whose -I excludes the checkout and working directory from sys.path.' >&2
+            exit 1
+          fi
           echo "Using runner ${RUNNER_NAME} (${RUNNER_OS}/${RUNNER_ARCH})."
 
       - name: Checkout code
@@ -94,7 +99,14 @@ jobs:
             echo 'python3 is required for the documented Go toolchain check; install Python 3 on the runner.' >&2
             exit 1
           fi
+          # Fail closed if this python3 cannot run inline code with -I.
+          if ! python3 -I -c 'import sys; sys.flags.isolated or sys.exit("run with python3 -I"); sys.flags.optimize == 0 or sys.exit("python3 inline checks require optimization to be disabled"); import os; unsafe = any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p is not None); unsafe and sys.exit("python3 -I must exclude the checkout and working directory from sys.path")' >/dev/null 2>&1; then
+            echo 'python3 with safe -I support is required for isolated inline Python; install a Python 3 whose -I excludes the checkout and working directory from sys.path.' >&2
+            exit 1
+          fi
           python3 -I - <<'PYTHON'
+          import sys; sys.flags.isolated or sys.exit("run with python3 -I"); sys.flags.optimize == 0 or sys.exit("python3 inline checks require optimization to be disabled")
+          import os; unsafe = any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p is not None); unsafe and sys.exit("python3 -I must exclude the checkout and working directory from sys.path")
           import re
           import stat
           import subprocess
@@ -212,7 +224,9 @@ jobs:
         env:
           PR_BASE: ${{ github.event.pull_request.base.sha }}
         run: |
-          python3 - <<'PYTHON'
+          python3 -I - <<'PYTHON'
+          import sys; sys.flags.isolated or sys.exit("run with python3 -I"); sys.flags.optimize == 0 or sys.exit("python3 inline checks require optimization to be disabled")
+          import os; unsafe = any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p is not None); unsafe and sys.exit("python3 -I must exclude the checkout and working directory from sys.path")
           import os
           from pathlib import Path
           import subprocess
@@ -329,7 +343,9 @@ jobs:
           # port preflight and every service lifetime, never kill foreign jobs.
           exec 9>/tmp/speedle-plus-test-services.lock
           flock -w 7200 9
-          python3 - <<'PYTHON'
+          python3 -I - <<'PYTHON'
+          import sys; sys.flags.isolated or sys.exit("run with python3 -I"); sys.flags.optimize == 0 or sys.exit("python3 inline checks require optimization to be disabled")
+          import os; unsafe = any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p is not None); unsafe and sys.exit("python3 -I must exclude the checkout and working directory from sys.path")
           import errno
           import socket
           for port in (2379, 2380, 27017, 6733, 6734):
@@ -371,7 +387,7 @@ jobs:
       - name: Clean owned MySQL containers
         if: always() && inputs.mode == 'nightly'
         run: |
-          python3 scripts/ci/run-mysql-tests.py --cleanup
+          python3 -I scripts/ci/run-mysql-tests.py --cleanup
 
       - name: Upload coverage
         if: always() && inputs.mode == 'test'
@@ -402,7 +418,9 @@ jobs:
         env:
           PR_BASE: ${{ github.event.pull_request.base.sha }}
         run: |
-          python3 - <<'PYTHON'
+          python3 -I - <<'PYTHON'
+          import sys; sys.flags.isolated or sys.exit("run with python3 -I"); sys.flags.optimize == 0 or sys.exit("python3 inline checks require optimization to be disabled")
+          import os; unsafe = any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p is not None); unsafe and sys.exit("python3 -I must exclude the checkout and working directory from sys.path")
           import os
           from pathlib import Path
           import subprocess
@@ -417,10 +435,10 @@ jobs:
         run: |
           set -euo pipefail
           toolchain=$(go env GOVERSION)
-          python3 website/tests/check_quick_start.py --toolchain "${toolchain}"
-          python3 website/tests/check_embedded.py --toolchain "${toolchain}" --candidate
+          python3 -I website/tests/check_quick_start.py --toolchain "${toolchain}"
+          python3 -I website/tests/check_embedded.py --toolchain "${toolchain}" --candidate
           go test -count=1 ./website/tests/docscheck
-          python3 website/tests/check_docs.py
+          python3 -I website/tests/check_docs.py
 
       # The default-branch worker keeps scheduling policy outside PR control.
       - name: Setup pinned Playground Go

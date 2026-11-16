@@ -1,6 +1,7 @@
 # Adapted for Speedle. The guard must not log review text or secret values.
 """Exercise the network-free handoff guard with synthetic credentials only."""
 
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -8,6 +9,26 @@ import subprocess
 import sys
 import tempfile
 import unittest
+
+
+def _load_sibling(name):
+    """Load a sibling script by path; -I keeps this directory off sys.path."""
+    if name in sys.modules:
+        return sys.modules[name]
+    path = Path(__file__).resolve().with_name(f"{name}.py")
+    if not path.is_file():
+        raise ImportError(f"missing sibling module {path}")
+    spec = importlib.util.spec_from_file_location(name, path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"cannot load sibling module {path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    try:
+        spec.loader.exec_module(module)
+    except BaseException:
+        sys.modules.pop(name, None)
+        raise
+    return module
 
 
 HELPER = Path(__file__).resolve().parents[2] / ".github/codex/reviewbot_handoff.py"
@@ -232,7 +253,7 @@ class HandoffTests(unittest.TestCase):
         self.assertNotIn("synthetic-new-credential", process.stdout + process.stderr)
 
     def test_seal_step_loads_the_trusted_guard_not_the_worktree_copy(self):
-        from test_reviewbot_diff import workflow_script
+        workflow_script = _load_sibling("test_reviewbot_diff").workflow_script
 
         for workflow, result_name in (
             ("reviewbot.yml", "reviewbot-result.json"),
