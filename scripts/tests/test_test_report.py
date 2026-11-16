@@ -480,6 +480,56 @@ class EmailTest(unittest.TestCase):
         self.assertIn("TestZ", summary.read_text())
         self.assertEqual([c[2]["title"] for c in github.calls], ["Test failure: p TestZ"])
 
+    def test_the_annotation_names_the_setting_to_fix(self):
+        # An operator must be able to tell which setting is wrong from the
+        # failing run alone. Every setting is required, so each is named when
+        # it is the one that is missing or malformed, and the others are not.
+        directory = Path(tempfile.mkdtemp())
+        (directory / "go.json").write_text(events(("fail", "p", "TestZ", None)))
+        cases = {
+            "CF_ACCOUNT_ID": dict(self.env, CF_ACCOUNT_ID=""),
+            "CF_EMAIL_TOKEN": dict(self.env, CF_EMAIL_TOKEN=""),
+            "OPS_EMAIL_FROM": dict(self.env, OPS_EMAIL_FROM="sender@example.com, second@example.com"),
+            "OPS_EMAIL_TO": dict(self.env, OPS_EMAIL_TO="not an address"),
+            "OPS_EMAIL_REPLY_TO": dict(self.env, OPS_EMAIL_REPLY_TO=""),
+        }
+        for name, env in cases.items():
+            with self.subTest(setting=name):
+                with mock.patch("test_report.open_no_redirect") as urlopen, \
+                        mock.patch("sys.stdout", new=io.StringIO()), \
+                        mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+                    code = test_report.main(
+                        ["--kind", "nightly", "--go-json", str(directory / "go.json")],
+                        env=dict(env, REPORT_EMAIL_REQUIRED="true"))
+                urlopen.assert_not_called()
+                self.assertEqual(code, 1)
+                annotations = stderr.getvalue()
+                self.assertIn(f"::error::The report email is not configured correctly ({name} ", annotations)
+                for other in set(cases) - {name}:
+                    self.assertNotIn(other, annotations)
+
+    def test_a_missing_email_setting_still_keeps_the_full_report(self):
+        # The step summary copy is the run's only copy when no email can be
+        # sent, so the summary file must hold the whole report, not the
+        # truncated message body.
+        directory = Path(tempfile.mkdtemp())
+        marker = "end-of-the-report"
+        (directory / "go.json").write_text(events(
+            ("output", "p", "TestZ", "x" * test_report.EMAIL_TEXT_LIMIT + marker + "\n"),
+            ("fail", "p", "TestZ", None)))
+        summary = directory / "report.txt"
+        with mock.patch("test_report.open_no_redirect") as urlopen, \
+                mock.patch("sys.stdout", new=io.StringIO()), \
+                mock.patch("sys.stderr", new=io.StringIO()):
+            code = test_report.main(["--kind", "nightly", "--go-json", str(directory / "go.json"),
+                                     "--summary-file", str(summary)],
+                                    env={"REPORT_EMAIL_REQUIRED": "true"})
+        urlopen.assert_not_called()
+        self.assertEqual(code, 1)
+        kept = summary.read_text(encoding="utf-8")
+        self.assertIn(marker, kept)
+        self.assertGreater(len(kept), test_report.EMAIL_TEXT_LIMIT)
+
     def test_a_real_report_job_without_settings_fails_after_tracking(self):
         # A scheduled or post-merge report job must not go green when its only
         # notification channel is not configured; tests leave the marker unset.

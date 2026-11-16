@@ -7,9 +7,10 @@ Inputs are `go test -json` streams and plain check results. Ark analysis and
 GitHub tracking are optional and fail soft: without an Ark key the raw
 summary is sent, and without a GitHub token no issues are touched. The email
 is the notification channel: a missing or malformed configuration and a
-failed send are annotated and fail the step only when it runs as a real
-report job, marked by REPORT_EMAIL_REQUIRED; tests and local runs stay
-green. The script exits non-zero on bad input and on such a failure.
+failed send are annotated (a configuration annotation names the setting) and
+fail the step only when it runs as a real report job, marked by
+REPORT_EMAIL_REQUIRED; tests and local runs stay green. The script exits
+non-zero on bad input and on such a failure.
 """
 import argparse
 import base64
@@ -370,16 +371,43 @@ def report_attachment(filename, report):
             "filename": filename, "type": "text/plain", "disposition": "attachment"}
 
 
+def email_config_problems(env):
+    """The email settings that are missing or malformed, with the reason.
+
+    Every setting is required. The sender is an outbound-only address that
+    cannot receive mail, so a report sent without a Reply-To loses any reply,
+    and the API takes exactly one sender. A recipient entry that is not an
+    address rejects the whole list rather than dropping an operator silently.
+    Only setting names and generic reasons are returned, never values, because
+    the values hold addresses.
+    """
+    problems = []
+    if not env.get("CF_ACCOUNT_ID"):
+        problems.append("CF_ACCOUNT_ID is not set")
+    if not env.get("CF_EMAIL_TOKEN"):
+        problems.append("CF_EMAIL_TOKEN is not set")
+    senders = configured_addresses(env.get("OPS_EMAIL_FROM"))
+    if not senders:
+        problems.append("OPS_EMAIL_FROM is not set or is not an address")
+    elif len(senders) != 1:
+        problems.append("OPS_EMAIL_FROM must hold exactly one address")
+    recipients = configured_addresses(env.get("OPS_EMAIL_TO"))
+    if not recipients:
+        problems.append("OPS_EMAIL_TO is not set or is not an address list")
+    elif len(recipients) > MAX_EMAIL_RECIPIENTS:
+        problems.append(f"OPS_EMAIL_TO holds more than {MAX_EMAIL_RECIPIENTS} addresses")
+    reply_to = configured_addresses(env.get("OPS_EMAIL_REPLY_TO"))
+    if not reply_to:
+        problems.append("OPS_EMAIL_REPLY_TO is not set or is not an address")
+    elif len(reply_to) != 1:
+        problems.append("OPS_EMAIL_REPLY_TO must hold exactly one address")
+    return problems
+
+
 def email_configured(env):
     """True when the Cloudflare Email settings hold one sender, one valid
     Reply-To and a usable recipient list."""
-    senders = configured_addresses(env.get("OPS_EMAIL_FROM"))
-    recipients = configured_addresses(env.get("OPS_EMAIL_TO"))
-    reply_to = configured_addresses(env.get("OPS_EMAIL_REPLY_TO"))
-    return bool(env.get("CF_ACCOUNT_ID") and env.get("CF_EMAIL_TOKEN")
-                and senders and len(senders) == 1 and recipients
-                and len(recipients) <= MAX_EMAIL_RECIPIENTS
-                and reply_to and len(reply_to) == 1)
+    return not email_config_problems(env)
 
 
 def send_email(subject, body, env, attachment=None, timeout=EMAIL_TIMEOUT):
@@ -400,20 +428,22 @@ def send_email(subject, body, env, attachment=None, timeout=EMAIL_TIMEOUT):
     reject is a failed send and sends nothing. Nothing from the settings or
     the response is logged, because both may hold addresses.
 
-    A configuration problem is a plain notice and sends nothing. A failed
-    send is an error annotation on the run, and it fails the step only when
-    the run is a real report job (REPORT_EMAIL_REQUIRED), after the summary
-    and the failure tracking have run. A 429, a 5xx status or a network
+    A configuration problem is a plain notice that names the setting and
+    sends nothing. A failed send is an error annotation on the run, and it
+    fails the step only when the run is a real report job
+    (REPORT_EMAIL_REQUIRED), after the summary and the failure tracking have
+    run. A 429, a 5xx status or a network
     error is retried once with a short backoff, so a single transient blip
     does not turn a passing run red; the retry may duplicate a report whose
     first response was lost. The account id is percent-encoded into the
     path.
     """
-    if not email_configured(env):
-        print("Cloudflare Email is not configured correctly (CF_ACCOUNT_ID, CF_EMAIL_TOKEN, "
-              "OPS_EMAIL_FROM, OPS_EMAIL_TO, OPS_EMAIL_REPLY_TO); the report is not emailed.",
-              file=sys.stderr)
-        note_in_summary(env, "Cloudflare Email is not configured correctly.")
+    problems = email_config_problems(env)
+    if problems:
+        problem = "; ".join(problems)
+        print(f"Cloudflare Email is not configured correctly ({problem}); "
+              "the report is not emailed.", file=sys.stderr)
+        note_in_summary(env, f"Cloudflare Email is not configured correctly ({problem}).")
         return False
     account, token = env["CF_ACCOUNT_ID"], env["CF_EMAIL_TOKEN"]
     senders = configured_addresses(env["OPS_EMAIL_FROM"])
@@ -649,7 +679,9 @@ def main(argv=None, env=os.environ):
     marker = env.get("REPORT_EMAIL_REQUIRED", "").strip().lower()
     required = bool(marker) and marker not in ("0", "false", "no")
     if email_failed and required:
-        reason = "is not configured" if not email_configured(env) else "could not be sent"
+        problems = email_config_problems(env)
+        reason = (f"is not configured correctly ({'; '.join(problems)})" if problems
+                  else "could not be sent")
         print(f"::error::The report email {reason}; failing the report job.", file=sys.stderr)
         return 1
     return 0
