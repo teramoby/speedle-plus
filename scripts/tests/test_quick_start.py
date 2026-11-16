@@ -2,12 +2,14 @@
 import importlib.util
 import os
 import re
+import sys
 import tempfile
 from pathlib import Path
 import unittest
 from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "website" / "tests"))
 SPEC = importlib.util.spec_from_file_location(
     "check_quick_start", ROOT / "website" / "tests" / "check_quick_start.py"
 )

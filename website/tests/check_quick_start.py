@@ -33,6 +33,8 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+from network_retry import run_with_retry
+
 ROOT = Path(__file__).resolve().parents[2]
 PATTERN = r"<!-- quick-start: ([a-z-]+) -->\s*```bash\n(.*?)\n```"
 REQUIRED = {"version", "install", "build", "pms", "service", "policies", "list", "ads", "allow-direct", "deny"}
@@ -68,25 +70,6 @@ def run(command, cwd, env, timeout=60):
     if result.returncode:
         raise RuntimeError(f"Command failed ({result.returncode}): {command}\n{result.stdout}\n{result.stderr}")
     return result.stdout
-
-
-def run_with_retry(action, attempts=3, delay=5.0):
-    """Retry a network action up to `attempts` times with exponential backoff.
-
-    Only command failures and timeouts are retried: they cover the transient
-    TLS and connection resets of the clone, module download and install steps.
-    Assertions about the result are never retried.
-    """
-    for attempt in range(1, attempts + 1):
-        try:
-            return action()
-        except (RuntimeError, subprocess.TimeoutExpired) as error:
-            if attempt == attempts:
-                raise
-            detail = str(error).splitlines()[0]
-            print(f"Transient failure (attempt {attempt}/{attempts}); retrying in {delay:.0f}s: {detail}", flush=True)
-            time.sleep(delay)
-            delay *= 2
 
 
 def help_text(path, cwd, env):
