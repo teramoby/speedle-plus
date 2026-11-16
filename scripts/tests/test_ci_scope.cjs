@@ -210,7 +210,10 @@ process.exit(process.env.FAIL_TOOL === ${JSON.stringify(tool)} && invocation ===
     const execute = (overrides = {}) => spawnSync('bash', ['-c', script(ci, 'Test CI scripts')], {cwd: dir, encoding: 'utf8', env: {...process.env,
       PATH: path.join(dir, 'bin') + path.delimiter + process.env.PATH, RECORD: record, FAIL_TOOL: '', FAIL_AT: '',
       TMPDIR: temporary, DOCKER_CONFIG: '/unused-host-config', ...overrides}});
-    const calls = () => fs.readFileSync(record, 'utf8').trim().split('\n').map(JSON.parse);
+    const calls = () => {
+      const log = fs.readFileSync(record, 'utf8').trim();
+      return log ? log.split('\n').map(JSON.parse) : [];
+    };
     const verifyCalls = (recorded, expected) => {
       assert.equal(recorded.length, expected.length);
       for (const [index, invocation] of expected.entries()) {
@@ -257,14 +260,14 @@ process.exit(process.env.FAIL_TOOL === ${JSON.stringify(tool)} && invocation ===
     assert.equal(inventoryOnly.status, 0, inventoryOnly.stderr);
     verifyCalls(calls(), ['inventory', 'python']);
 
-    // A completely empty glob must fail instead of letting `node --test`
-    // without paths fall back to Node's own discovery.
+    // A completely empty glob must fail before either runner is invoked,
+    // rather than letting Node report a missing inventory file instead.
     fs.rmSync(path.join(dir, 'scripts/tests/test_ci_scope.cjs'));
     reset();
     const empty = execute();
     assert.equal(empty.status, 1, empty.stderr);
     assert.match(empty.stderr, /no CI test suites discovered/);
-    verifyCalls(calls(), ['inventory']);
+    verifyCalls(calls(), []);
   } finally {fs.rmSync(dir, {recursive: true, force: true});}
 });
 test('actual summary blocks failed/cancelled/missing selected jobs and allows intentional skips', () => {
