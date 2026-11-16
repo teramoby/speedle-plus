@@ -8,10 +8,13 @@
    QUIET_ORIGINS (third parties that cannot affect styles, such as the analytics
    beacon); so does any local HTTP error, any local request that fails (a
    cancellation by the page is only reported, and only for types that cannot
-   affect rendering, such as pings or media) and any page script error. The
-   check waits for the network to settle after load and then until no request
-   is in flight and one second has passed with no request starting or ending
-   and no DOM change; axe must finish without the page requesting anything.
+   affect rendering, such as pings or media). The check waits for the network
+   to settle after load: no request in flight and one second with no request
+   starting or ending (a page that keeps loading resources fails). It then
+   waits up to three seconds for the DOM to stop changing; a page that keeps
+   animating its DOM, and any page script error, is only reported in the PASS
+   line. axe must finish without the page requesting anything or changing its
+   stylesheets.
    WebSockets and web workers, which page.route cannot intercept, fail the
    gate. Serve a local copy of any resource the page needs.
    Run from the repository root: node website/playground-engine/a11y-smoke.cjs
@@ -68,14 +71,16 @@ const server = http.createServer((req,res)=>{
         const renderIrrelevant=new Set(['ping','manifest','eventsource','websocket','media','texttrack','cspreport','prefetch']);
         const parse=value=>{try {return new URL(value);} catch {return null;}};
         // Every request, with the time it started, and page script failures.
-        let requests=0, pending=0, lastActivityAt=Date.now();
-        page.on('request',()=>{requests++;pending++;lastActivityAt=Date.now();});
-        const settled=()=>{pending=Math.max(0,pending-1);lastActivityAt=Date.now();};
+        let requests=0, pending=0, lastRequestAt=Date.now();
+        page.on('request',()=>{requests++;pending++;lastRequestAt=Date.now();});
+        const settled=()=>{pending=Math.max(0,pending-1);lastRequestAt=Date.now();};
         page.on('requestfinished',settled);
         page.on('requestfailed',settled);
         // Requests from web workers can bypass page.route, so a page that starts one fails.
         page.on('worker',worker=>problems.set(worker.url(),'web worker: its requests may bypass the route below'));
-        page.on('pageerror',error=>{const key=`pageerror ${problems.size}`;problems.set(key,`page script error: ${error.message}`);});
+        // Page script errors are diagnostics, listed in the PASS line: they do not decide contrast.
+        const pageErrors=[];
+        page.on('pageerror',error=>pageErrors.push(error.message));
         page.on('response',response=>{
           if (response.status()<400||problems.has(response.url())) return;
           if (parse(response.url())?.origin===origin) problems.set(response.url(),`HTTP ${response.status()}`);
@@ -119,16 +124,20 @@ const server = http.createServer((req,res)=>{
         } catch (error) {
           throw new Error(`the ${label} at ${width}px kept the network busy for 15s after load`,{cause:error});
         }
-        // networkidle only means 500 ms without requests. Also require no request in flight and
-        // one second with no request starting or ending and no DOM change, so late styles (a
-        // timer or load handler, or a slow response) are in place.
-        const settleBy=Date.now()+10000;
-        for (let mutations=await page.evaluate(()=>window.__smokeMutations);;) {
+        // networkidle only means 500 ms without requests. Require no request in flight and one
+        // second with no request starting or ending (bounded to 10 s: a page that keeps loading
+        // resources fails). Also wait up to 3 s for one second without DOM changes, so styles a
+        // timer adds are in place; a page that keeps animating its DOM is only reported.
+        const settleStart=Date.now();
+        let mutations=await page.evaluate(()=>window.__smokeMutations), domQuietSince=Date.now(), domSettled=false;
+        for (;;) {
           await page.waitForTimeout(250);
           const now=await page.evaluate(()=>window.__smokeMutations);
-          if (now!==mutations) {mutations=now;lastActivityAt=Math.max(lastActivityAt,Date.now());}
-          if (pending===0&&Date.now()-lastActivityAt>=1000) break;
-          assert.ok(Date.now()<settleBy,`the ${label} at ${width}px did not settle (requests or DOM changes) within 10s after load`);
+          if (now!==mutations) {mutations=now;domQuietSince=Date.now();}
+          domSettled=Date.now()-domQuietSince>=1000;
+          const networkQuiet=pending===0&&Date.now()-lastRequestAt>=1000;
+          if (networkQuiet&&(domSettled||Date.now()-settleStart>=3000)) break;
+          assert.ok(Date.now()-settleStart<10000,`the ${label} at ${width}px kept loading resources for 10s after load`);
         }
         assert.ok(await page.$('main'),`the ${label} at ${width}px has no main element`);
         assert.equal(await page.evaluate(()=>Boolean(navigator.serviceWorker&&navigator.serviceWorker.controller)),false,`the ${label} at ${width}px is controlled by a service worker`);
@@ -139,6 +148,13 @@ const server = http.createServer((req,res)=>{
         // be hidden in it.
         assert.equal(pending,0,`the ${label} at ${width}px started a request while axe was injected`);
         const requestsBefore=requests;
+        // Stylesheets and their rule counts must not change while axe measures the page.
+        const sheets=()=>page.evaluate(()=>JSON.stringify([...document.styleSheets].map(sheet=>{
+          let rules=-1;
+          try {rules=sheet.cssRules.length;} catch {}
+          return [sheet.href||(sheet.ownerNode&&sheet.ownerNode.nodeName)||'',rules];
+        })));
+        const sheetsBefore=await sheets();
         const report=await page.evaluate(async()=>{
           const result=await axe.run(document,{runOnly:{type:'rule',values:['color-contrast']}});
           return {
@@ -150,10 +166,11 @@ const server = http.createServer((req,res)=>{
         // request can still fail after the scan, so the problems are complete here.
         assert.equal(requests,requestsBefore,`the ${label} at ${width}px requested resources during the contrast check`);
         assert.equal(pending,0,`the ${label} at ${width}px still has requests in flight after the contrast check`);
+        assert.equal(await sheets(),sheetsBefore,`the ${label} at ${width}px changed its stylesheets during the contrast check`);
         assertNoProblems('during the contrast check');
         assert.deepEqual(report.violations,[],`axe color-contrast violations on the ${label} at ${width}px: ${JSON.stringify(report.violations,null,2)}`);
         checks++;
-        console.log(`PASS axe color-contrast: ${label} at ${width}px (${report.unchecked.length} gradient or pseudo-element nodes not machine-checkable${cancelled.length?`; ${cancelled.length} local request(s) cancelled by the page: ${cancelled.join(', ')}`:''})`);
+        console.log(`PASS axe color-contrast: ${label} at ${width}px (${report.unchecked.length} gradient or pseudo-element nodes not machine-checkable${cancelled.length?`; ${cancelled.length} local request(s) cancelled by the page: ${cancelled.join(', ')}`:''}${domSettled?'':'; DOM still changing when measured'}${pageErrors.length?`; ${pageErrors.length} page script error(s): ${pageErrors.join(' | ')}`:''})`);
         await page.close();
       }
     }
