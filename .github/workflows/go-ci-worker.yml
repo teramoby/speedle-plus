@@ -33,6 +33,10 @@ jobs:
       ${{ github.repository == 'teramoby/speedle-plus' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && github.ref == 'refs/heads/master') || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.event.sender.type == 'User' || github.event.sender.type == 'Bot')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.user.type == 'User' || github.event.pull_request.user.type == 'Bot'))) && fromJSON(inputs.mode == 'quick' && (vars.QUICK_RUNS_ON || '"ubuntu-latest"') || github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'merge-head') && vars.HEAD_RUNS_ON || inputs.mode == 'build' && '["self-hosted","Linux","X64","speedle-linux"]' || inputs.mode == 'weekly' && '["self-hosted","fiona-speedle"]' || '["self-hosted","speedle-runner"]') || 'ubuntu-latest' }}
     # test can wait on the host lock behind a nightly on the other charming runner.
     timeout-minutes: ${{ (inputs.mode == 'nightly' || inputs.mode == 'weekly' || inputs.mode == 'regression' || inputs.mode == 'test') && 150 || 30 }}
+    # Never let a later go command pick another toolchain than the installed
+    # and verified one; a go.mod requirement for a newer release must fail.
+    env:
+      GOTOOLCHAIN: local
     steps:
       - name: Validate CI task
         env:
@@ -102,16 +106,25 @@ jobs:
                   elif not fenced:
                       heading = re.match(r'^#{1,6}[ \t]+(.*)$', bare)
                       if heading:
-                          headings.append((offset, heading.group(1).strip()))
+                          # Accept an optional ATX closing sequence.
+                          title = heading.group(1).strip().rstrip('#').strip()
+                          headings.append((offset, title))
                   offset += len(line)
               start = next((entry for entry in headings if entry[1] == 'Prerequisites'), None)
               if start is None:
                   raise SystemExit('README Prerequisites section not found')
               end = next((entry[0] for entry in headings if entry[0] > start[0]), len(text))
+              prose = []
+              fenced = False
+              for line in text[start[0]:end].splitlines():
+                  if line.lstrip().startswith(('```', '~~~')):
+                      fenced = not fenced
+                  elif not fenced:
+                      prose.append(line)
               versions = set()
               for token in re.findall(r'\b(?:Go|Golang)\b[^0-9\n]{0,20}'
                                       r'(\d{1,4}\.\d{1,4}\.\d{1,4}[0-9A-Za-z.+_-]*)',
-                                      text[start[0]:end]):
+                                      '\n'.join(prose)):
                   release = token.rstrip('.')  # sentence period
                   if release.endswith('+'):  # "1.27.4+" means "or newer"
                       release = release[:-1]
@@ -126,6 +139,10 @@ jobs:
 
           module = go('list', '-m', '-f', '{{.GoVersion}}')
           actual = go('env', 'GOVERSION')
+          toolchain_mode = go('env', 'GOTOOLCHAIN')
+          if toolchain_mode != 'local':
+              raise SystemExit(
+                  f'go env GOTOOLCHAIN {toolchain_mode} != local; CI must not switch toolchains')
           documented = documented_minimum(Path('README.md').read_text(encoding='utf-8'))
           if module != documented:
               raise SystemExit(

@@ -88,6 +88,8 @@ test('documented Go toolchain guard runs after checkout and setup and rejects ve
   assert.notEqual(select, -1, 'Select changed packages step missing');
   assert.ok(checkout < setup && setup < verify && verify < select,
     'toolchain guard must follow checkout and Setup Go and precede package selection');
+  assert.match(source, /^    env:\n      GOTOOLCHAIN: local$/m,
+    'the worker must pin GOTOOLCHAIN so later steps cannot switch toolchains');
 
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-go-toolchain-'));
   try {
@@ -100,6 +102,8 @@ if (args.length === 4 && args[0] === 'list' && args[1] === '-m' && args[2] === '
   process.stdout.write(process.env.FIXTURE_MODULE + '\\n');
 } else if (args.length === 2 && args[0] === 'env' && args[1] === 'GOVERSION') {
   process.stdout.write(process.env.FIXTURE_GOVERSION + '\\n');
+} else if (args.length === 2 && args[0] === 'env' && args[1] === 'GOTOOLCHAIN') {
+  process.stdout.write(process.env.FIXTURE_GOTOOLCHAIN + '\\n');
 } else {
   process.stderr.write('unexpected go invocation: ' + args.join(' ') + '\\n');
   process.exit(2);
@@ -117,6 +121,17 @@ if (args.length === 4 && args[0] === 'list' && args[1] === '-m' && args[2] === '
       // A comment inside a fenced block is not a section boundary.
       {name: 'fenced comment inside Prerequisites', readme: '### Prerequisites\n\n```sh\n# install Go 1.27.4\n```\n\n-   Go 1.27.4 or a newer patch\n',
         module: '1.27.4', selected: 'go1.27.4', passes: true, message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      // Only prose declares the minimum; fenced examples are ignored.
+      {name: 'fenced example version is ignored', readme: '### Prerequisites\n\n-   Go 1.27.4 or a newer patch\n\n```sh\n# tested with Go 1.26.10\n```\n',
+        module: '1.27.4', selected: 'go1.27.4', passes: true, message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      {name: 'version only in a fenced example', readme: '### Prerequisites\n\n-   Install a recent Go release.\n\n```sh\n$ go version go1.27.4\n```\n',
+        module: '1.27.4', selected: 'go1.27.4', passes: false,
+        message: 'README Prerequisites must name exactly one Go version, found none'},
+      // An ATX closing sequence renders as the same heading text.
+      {name: 'ATX closing sequence', readme: '### Prerequisites ###\n\n-   Go 1.27.4 or a newer patch\n', module: '1.27.4', selected: 'go1.27.4', passes: true,
+        message: 'Verified documented minimum Go toolchain: go1.27.4'},
+      {name: 'automatic toolchain switching', readme: prerequisites('-   Go 1.27.4 or a newer patch'), module: '1.27.4', selected: 'go1.27.4',
+        gotoolchain: 'auto', passes: false, message: 'go env GOTOOLCHAIN auto != local; CI must not switch toolchains'},
       // A version quoted outside the Prerequisites section must not satisfy the guard.
       {name: 'version outside Prerequisites is ignored', readme: `# Fixture\n\n- Go 9.9.9 or a newer patch\n\n${prerequisites('-   Go 1.27.4 or a newer patch')}`,
         module: '1.27.4', selected: 'go1.27.4', passes: true, message: 'Verified documented minimum Go toolchain: go1.27.4'},
@@ -158,7 +173,8 @@ if (args.length === 4 && args[0] === 'list' && args[1] === '-m' && args[2] === '
       const result = spawnSync('bash', ['-c', script('Verify documented Go toolchain')], {
         cwd: directory, encoding: 'utf8', env: {...process.env,
           PATH: bin + path.delimiter + process.env.PATH,
-          FIXTURE_MODULE: fixture.module, FIXTURE_GOVERSION: fixture.selected},
+          FIXTURE_MODULE: fixture.module, FIXTURE_GOVERSION: fixture.selected,
+          FIXTURE_GOTOOLCHAIN: fixture.gotoolchain ?? 'local'},
       });
       const output = result.stdout + result.stderr;
       assert.equal(result.status === 0, fixture.passes, `${fixture.name}: ${output}`);
