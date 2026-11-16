@@ -181,10 +181,9 @@ const server = http.createServer((req,res)=>{
         assertNoProblems('before the contrast check');
         assert.equal(pending,0,`the ${label} at ${width}px still has requests in flight before the contrast check`);
         // No request may start from here until the scan ends, including while axe is injected.
-        const requestsBefore=requests;
+        const requestsBefore=requests, sheetsBefore=await sheets();
         await page.addScriptTag({content:axeSource});
         assert.equal(pending,0,`the ${label} at ${width}px started a request while axe was injected`);
-        const sheetsBefore=await sheets();
         // axe runs mostly synchronously, so it measures one moment of an animation. When the DOM
         // has not settled, or any scan sees a DOM change, a running animation or a change to the
         // stylesheet fingerprint, sample three moments 200 ms apart: a violation in any scan fails
@@ -216,6 +215,9 @@ const server = http.createServer((req,res)=>{
           await page.waitForTimeout(200);
           scans.push(await scan());
         }
+        // A style change inside the sampling window fails even if the page reverts it before the
+        // final comparison, so axe is never measuring a state the fingerprint no longer shows.
+        assert.ok(scans.every(result=>!result.sheetsChanged),`the ${label} at ${width}px changed its styles during the contrast check`);
         const uniqueTargets=(items,key,seen)=>items.filter(item=>{const id=JSON.stringify(key(item));if(seen.has(id))return false;seen.add(id);return true;});
         const report={
           violations:uniqueTargets(scans.flatMap(result=>result.violations),violation=>violation.target,new Set()),
