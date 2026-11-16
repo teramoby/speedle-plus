@@ -1,4 +1,9 @@
-/* Inline workflow Python must not import from the checkout or runner-local paths. */
+/* Inline workflow Python must not import from the checkout or runner-local paths.
+ *
+ * Every inline invocation must pass -I. On Python 3.11+ -I also implies -P,
+ * which keeps the working directory off sys.path for -c and stdin code; on
+ * 3.9/3.10 it does not, so these steps assume a runner python3 >= 3.11
+ * (ubuntu-latest ships 3.12+). */
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -8,37 +13,105 @@ const workflows = path.resolve(__dirname, '../../.github/workflows');
 const controls = new Set(['\n', ';', ';;', ';&', ';;&', '&&', '||', '|', '|&', '&', '(', ')']);
 const redirects = new Set(['<', '<<', '<<-', '<<<', '>', '>>', '<>', '<&', '>&', '>|', '&>', '&>>']);
 const operators = [...new Set([...controls, ...redirects])].sort((a, b) => b.length - a.length);
-const stdinRedirects = new Set(['<', '<<', '<<-', '<<<']);
+const blockScalars = /^([|>])((?:[1-9][+-]?|[+-][1-9]?))?[ \t]*(?:#.*)?$/;
+
+function indentOf(line) {
+  return line.match(/^ */)[0].length;
+}
+
+function blank(line) {
+  const text = line.trim();
+  return !text || text.startsWith('#');
+}
+
+function isItem(line) {
+  return /^ *-(?:[ \t]|$)/.test(line);
+}
+
+// The column where the keys of a `steps:` sequence item start, or null when
+// the item is not a mapping (for example a bare nested sequence).
+function itemKeyIndent(lines, start, dashIndent) {
+  const dash = lines[start].match(/^ *-[ \t]*/)[0];
+  if (lines[start].slice(dash.length).trim()) return dash.length;
+  for (let index = start + 1; index < lines.length; index++) {
+    if (blank(lines[index])) continue;
+    const indent = indentOf(lines[index]);
+    if (indent <= dashIndent) return null;
+    return isItem(lines[index]) ? null : indent;
+  }
+  return null;
+}
+
+// Locate the items of every block-style `steps:` sequence, so a `run:` key in
+// unrelated YAML (top-level data, job keys, a step's `with:`/`env:` mapping)
+// is never mistaken for shell.
+function stepItems(lines) {
+  const items = [];
+  for (let index = 0; index < lines.length; index++) {
+    if (!/^ *steps:[ \t]*(?:#.*)?$/.test(lines[index])) continue;
+    const stepsIndent = indentOf(lines[index]);
+    let cursor = index + 1;
+    while (cursor < lines.length && blank(lines[cursor])) cursor++;
+    if (!isItem(lines[cursor] ?? '')) continue;
+    const dashIndent = indentOf(lines[cursor]);
+    if (dashIndent < stepsIndent) continue;
+    while (cursor < lines.length) {
+      const line = lines[cursor];
+      if (blank(line)) {cursor++; continue;}
+      const indent = indentOf(line);
+      if (indent !== dashIndent || !isItem(line)) {
+        if (indent <= dashIndent) break;
+        cursor++;
+        continue;
+      }
+      let end = cursor + 1;
+      while (end < lines.length && (blank(lines[end]) || indentOf(lines[end]) > dashIndent)) end++;
+      items.push({start: cursor, end: end - 1, keyIndent: itemKeyIndent(lines, cursor, dashIndent)});
+      cursor = end;
+    }
+  }
+  return items;
+}
 
 function runScripts(source) {
   const lines = source.split('\n');
   const scripts = [];
-  for (let index = 0; index < lines.length; index++) {
-    const match = lines[index].match(/^( *)(?:- )?run:[ \t]*(.*)$/);
-    if (!match || !match[2]) continue;
-    const keyIndent = match[1].length;
-    const value = match[2];
-    const block = value.match(/^([|>][+-]?)[ \t]*(?:#.*)?$/);
-    if (!block) {
-      let script = value;
-      if (script.startsWith("'") && script.endsWith("'")) script = script.slice(1, -1).replaceAll("''", "'");
-      else if (script.startsWith('"') && script.endsWith('"')) script = JSON.parse(script);
-      scripts.push({line: index + 1, source: script});
-      continue;
+  for (const item of stepItems(lines)) {
+    if (item.keyIndent === null) continue;
+    for (let index = item.start; index <= item.end; index++) {
+      let column = indentOf(lines[index]);
+      let text = lines[index].slice(column);
+      if (index === item.start) {
+        const dash = text.match(/^-[ \t]+/);
+        if (dash) {text = text.slice(dash[0].length); column += dash[0].length;}
+      }
+      if (column !== item.keyIndent) continue;
+      const match = text.match(/^run:[ \t]*(.*)$/);
+      if (!match) continue;
+      const value = match[1];
+      const block = value.match(blockScalars);
+      if (!block) {
+        let script = value;
+        if (script.startsWith("'") && script.endsWith("'")) script = script.slice(1, -1).replaceAll("''", "'");
+        else if (script.startsWith('"') && script.endsWith('"')) script = JSON.parse(script);
+        scripts.push({line: index + 1, source: script});
+        continue;
+      }
+      const body = [];
+      let end = index + 1;
+      for (; end < lines.length; end++) {
+        const line = lines[end];
+        if (!line.trim()) {body.push(''); continue;}
+        if (indentOf(line) <= item.keyIndent) break;
+        body.push(line);
+      }
+      const digit = (block[2] || '').match(/[1-9]/);
+      const first = body.find(line => line.trim());
+      const indent = digit ? item.keyIndent + Number(digit[0]) : first ? indentOf(first) : item.keyIndent + 2;
+      const content = body.map(line => line.trim() ? line.slice(indent) : '');
+      scripts.push({line: index + 2, source: content.join(block[1] === '|' ? '\n' : ' ')});
+      index = end - 1;
     }
-    const body = [];
-    let end = index + 1;
-    for (; end < lines.length; end++) {
-      const line = lines[end];
-      if (!line.trim()) {body.push(''); continue;}
-      if (line.match(/^ */)[0].length <= keyIndent) break;
-      body.push(line);
-    }
-    const first = body.find(line => line.trim());
-    const indent = first ? first.match(/^ */)[0].length : keyIndent + 2;
-    const content = body.map(line => line.trim() ? line.slice(indent) : '');
-    scripts.push({line: index + 2, source: content.join(block[1][0] === '|' ? '\n' : ' ')});
-    index = end - 1;
   }
   return scripts;
 }
@@ -151,16 +224,10 @@ function inspectPython(tokens, index, findings) {
   let isolated = false;
   const interpreter = tokens[index];
   for (let current = index + 1; current < tokens.length;) {
+    // Redirections never decide what Python executes; skip them and their
+    // operand so a script file with redirected input stays a file execution.
     const length = redirectLength(tokens, current);
-    if (length) {
-      const operator = tokens[current].type === 'operator' ? tokens[current] : tokens[current + 1];
-      if (stdinRedirects.has(operator.value)) {
-        findings.push({line: interpreter.line, kind: 'stdin', isolated});
-        return;
-      }
-      current += length;
-      continue;
-    }
+    if (length) {current += length; continue;}
     const token = tokens[current];
     if (token.type !== 'word') {current++; continue;}
     const value = token.value;
@@ -168,8 +235,13 @@ function inspectPython(tokens, index, findings) {
       findings.push({line: interpreter.line, kind: 'stdin', isolated});
       return;
     }
-    if (value.startsWith('-c') || /^-[BbEhiIOoPqRsStuUvVx]*c/.test(value)) {
-      if (!value.startsWith('-c') && value.slice(1).includes('I')) isolated = true;
+    if (value.startsWith('-c')) {
+      findings.push({line: interpreter.line, kind: 'command', isolated});
+      return;
+    }
+    const clustered = value.match(/^-([BbEhiIOoPqRsStuUvVx]*)(c)$/);
+    if (clustered) {
+      if (clustered[1].includes('I')) isolated = true;
       findings.push({line: interpreter.line, kind: 'command', isolated});
       return;
     }
@@ -181,8 +253,11 @@ function inspectPython(tokens, index, findings) {
     if (value === '-X' || value === '-W' || value === '--check-hash-based-pycs') {current += 2; continue;}
     if (value === '-m' || value === '--version' || value === '--help') return;
     if (value.startsWith('-')) {current++; continue;}
+    // A script file legitimately imports from its own directory.
     return;
   }
+  // No script argument: Python executes its standard input.
+  findings.push({line: interpreter.line, kind: 'stdin', isolated});
 }
 
 function inspectSource(source, findings, depth = 0) {
@@ -228,7 +303,7 @@ function inspectCommand(command, findings, depth) {
     if (wrapper && (value === '-v' || value === '-V') && wrapper === 'command') return;
     if (wrapper && /^[A-Za-z_][A-Za-z0-9_]*=/.test(value)) {index++; continue;}
     if (wrapper && value.startsWith('-')) {index += optionArguments[wrapper]?.has(value) ? 2 : 1; continue;}
-    if (name === 'python3') {inspectPython(command, index, findings); return;}
+    if (/^python(?:3(?:\.[0-9]+)?)?$/.test(name)) {inspectPython(command, index, findings); return;}
     if (name === 'bash' || name === 'sh') {inspectShell(command, index, findings, depth); return;}
     if (['env', 'sudo', 'nohup', 'command', 'time'].includes(name)) {wrapper = name; index++; continue;}
     return;
@@ -252,7 +327,6 @@ test('every inline Python invocation in every workflow uses isolated mode', () =
     .map(invocation => ({file, ...invocation})));
   assert.deepEqual(invocations.filter(invocation => !invocation.isolated), []);
 
-  const remaining = [...invocations];
   const expected = [
     ['ci.yml', 'stdin'],
     ['go-ci-worker.yml', 'stdin'],
@@ -262,44 +336,67 @@ test('every inline Python invocation in every workflow uses isolated mode', () =
     ['mongodb-nightly-validation.yml', 'command'],
     ['mongodb-nightly-validation.yml', 'stdin'],
   ];
+  const remaining = [...invocations];
   for (const [file, kind] of expected) {
     const index = remaining.findIndex(invocation => invocation.file === file && invocation.kind === kind);
     assert.notEqual(index, -1, `missing expected ${kind} invocation in ${file}`);
     remaining.splice(index, 1);
   }
+  assert.deepEqual(remaining, [], 'unexpected inline Python invocation; update the expected list');
 });
 
-function workflowWithRuns(scripts) {
-  return `description: python3 -c 'not a run step'\n${scripts.map(script =>
-    `      - run: |\n${script.split('\n').map(line => `          ${line}`).join('\n')}`).join('\n')}\n`;
+function workflowWithSteps(steps) {
+  return `name: fixture\non: push\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n${steps
+    .map(step => step.split('\n').map(line => `      ${line}`).join('\n')).join('\n')}\n`;
 }
 
-test('the guard covers inline forms, paths, wrappers and quoted assignments', () => {
-  const source = workflowWithRuns([
-    "python3 - <<'PY'\nprint('stdin')\nPY",
-    "python3 -I - <<'PY'\nprint('stdin')\nPY",
-    "python3 <<'PY'\nprint('stdin')\nPY",
-    "python3 -c'print(1)'",
-    "/usr/bin/python3 -I -c 'print(1)'",
-    "env python3 -c 'print(1)'",
-    "sudo python3 -I -c 'print(1)'",
-    "bash -c \"python3 -c 'print(1)'\"",
-    "FOO=\"a b\" python3 -I -c 'print(1)'",
-    "python3 -I<<'PY'\nprint('stdin')\nPY",
-    "python3 -c 'print(1)' 2>/dev/null",
-  ]) + "      - run: python3 -c 'print(1)'\n";
+function blockStep(script, header = '|') {
+  return `- run: ${header}\n${script.split('\n').map(line => `    ${line}`).join('\n')}`;
+}
+
+function workflowWithRuns(scripts) {
+  return workflowWithSteps(scripts.map(script => blockStep(script)));
+}
+
+test('the guard covers interpreter spellings, paths, wrappers and heredoc forms', () => {
+  const source = workflowWithSteps([
+    blockStep("python3 - <<'PY'\nprint('stdin')\nPY"),
+    blockStep("python3 -I - <<'PY'\nprint('stdin')\nPY"),
+    blockStep("python3 <<'PY'\nprint('stdin')\nPY"),
+    blockStep("python3 -I <<'PY'\nprint('stdin')\nPY"),
+    blockStep("python3 -I<<'PY'\nprint('stdin')\nPY"),
+    blockStep("python <<'PY'\nprint('stdin')\nPY"),
+    "- run: python3 -c'print(1)'",
+    "- run: /usr/bin/python3 -I -c 'print(1)'",
+    "- run: env python3 -c 'print(1)'",
+    "- run: /usr/bin/env python3 -I -c 'print(1)'",
+    "- run: sudo python3 -I -c 'print(1)'",
+    "- run: bash -c \"python3 -c 'print(1)'\"",
+    "- run: FOO=\"a b\" python3 -I -c 'print(1)'",
+    "- run: python3 -c 'print(1)' 2>/dev/null",
+    "- run: python3 -I < input.txt",
+    "- run: python -c 'print(1)'",
+    "- run: python -I -c 'print(1)'",
+    "- run: python3.12 -c 'print(1)'",
+  ]);
   assert.deepEqual(inlinePythonInvocations(source).map(({kind, isolated}) => ({kind, isolated})), [
     {kind: 'stdin', isolated: false},
     {kind: 'stdin', isolated: true},
     {kind: 'stdin', isolated: false},
+    {kind: 'stdin', isolated: true},
+    {kind: 'stdin', isolated: true},
+    {kind: 'stdin', isolated: false},
     {kind: 'command', isolated: false},
     {kind: 'command', isolated: true},
     {kind: 'command', isolated: false},
     {kind: 'command', isolated: true},
+    {kind: 'command', isolated: true},
     {kind: 'command', isolated: false},
     {kind: 'command', isolated: true},
+    {kind: 'command', isolated: false},
     {kind: 'stdin', isolated: true},
     {kind: 'command', isolated: false},
+    {kind: 'command', isolated: true},
     {kind: 'command', isolated: false},
   ]);
 });
@@ -310,6 +407,8 @@ test('the guard ignores non-run YAML, quoted data, comments, heredoc bodies and 
     '# (python3 -c "comment only")',
     "python3 <<'PY'\npython3 -c 'heredoc body, not a shell command'\nPY",
     'python3 scripts/ci/test_report.py -c',
+    'python3 scripts/ci/run.py < input.txt',
+    'python3 < input.txt scripts/ci/run.py',
     'command -v python3 >/dev/null',
     'bash --version; python3 --version',
     'for tool in bash python3; do command -v "$tool"; done',
@@ -317,5 +416,46 @@ test('the guard ignores non-run YAML, quoted data, comments, heredoc bodies and 
   ]);
   assert.deepEqual(inlinePythonInvocations(source).map(({kind, isolated}) => ({kind, isolated})), [
     {kind: 'stdin', isolated: false},
+  ]);
+});
+
+test('the guard reads only run keys that belong to workflow steps', () => {
+  const source = `name: fixture
+on: push
+env:
+  run: python3 -c 'top-level data'
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    run: python3 -c 'job-level data'
+    steps:
+      - name: step data
+        with:
+          run: python3 -c 'step input, not a command'
+        env:
+          run: python3 -c 'step environment, not a command'
+        run: |
+          python3 -I -c 'real command'
+      -
+        run: python3 -I -c 'bare dash step'
+    run: python3 -c 'job data after the step list'
+`;
+  assert.deepEqual(inlinePythonInvocations(source).map(({kind, isolated}) => ({kind, isolated})), [
+    {kind: 'command', isolated: true},
+    {kind: 'command', isolated: true},
+  ]);
+});
+
+test('the guard reads standard block scalar headers', () => {
+  const source = workflowWithSteps([
+    blockStep("python3 -c 'strip'", '|-'),
+    blockStep("python3 -c 'keep'", '|+'),
+    blockStep("python3 -c 'folded'", '>-'),
+    blockStep("python3 -c 'explicit indent'", '|2'),
+    blockStep("python3 -c 'explicit strip'", '|-2'),
+    blockStep("python3 -c 'comment'", '| # comment'),
+  ]);
+  assert.deepEqual(inlinePythonInvocations(source).map(({kind}) => kind), [
+    'command', 'command', 'command', 'command', 'command', 'command',
   ]);
 });
