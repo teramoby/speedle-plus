@@ -8,8 +8,10 @@
  *
  * Every known -c, -m and heredoc invocation is listed below. A new inline-shaped
  * Python invocation fails the inventory assertion so a reviewer must add it
- * explicitly. Comments, printed examples and other commands' heredoc bodies are
- * ignored; this test does not attempt to classify arbitrary shell grammar. */
+ * explicitly. Backslash continuations are folded, and -c assertions are read
+ * only from the single-quoted payload shape used by the reviewed invocations.
+ * Comments, printed examples and other commands' heredoc bodies are ignored;
+ * this test does not attempt to classify arbitrary shell grammar. */
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -17,7 +19,7 @@ const test = require('node:test');
 
 const workflows = path.resolve(__dirname, '../../.github/workflows');
 const isolationAssertion = 'import sys; assert sys.flags.isolated';
-const pathAssertion = 'import os; assert not any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p)';
+const pathAssertion = 'import os; assert not any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p is not None)';
 const interpreter = String.raw`\bpython(?:3(?:\.[0-9]+)?)?\b`;
 const commandPattern = new RegExp(String.raw`${interpreter}(?:\s+-[A-Za-z]+)*?\s+-[A-Za-z]*c(?=\s|['"]|$)`);
 const modulePattern = new RegExp(String.raw`${interpreter}(?:\s+-[A-Za-z]+)*?\s+-[A-Za-z]*m(?=\s|['"]|$)`);
@@ -26,31 +28,49 @@ const isolatedPattern = new RegExp(String.raw`${interpreter}\s+-I(?=\s|$)`);
 const printedExample = /^(?:-\s*)?(?:run:\s*)?(?:echo|printf)\b/;
 const pipedPython = /\|\s*python(?:3(?:\.[0-9]+)?)?\b/;
 
+function commandAssertsSafePath(payload) {
+  if (!payload.startsWith(isolationAssertion)) return false;
+  const rest = payload.slice(isolationAssertion.length);
+  return rest.startsWith(`; ${pathAssertion}`) ||
+    rest.startsWith(`, "run with python3 -I"; ${pathAssertion}`) ||
+    rest.startsWith(`, 'run with python3 -I'; ${pathAssertion}`);
+}
+
 function inspectWorkflow(file, source) {
   const lines = source.split('\n');
   const invocations = [];
   let heredoc = null;
   for (let index = 0; index < lines.length; index++) {
-    const line = lines[index];
-    const text = line.trim();
+    let line = lines[index];
+    let text = line.trim();
     if (heredoc) {
       if (text === heredoc) heredoc = null;
       continue;
     }
+    const start = index;
+    while (line.endsWith('\\') && index + 1 < lines.length) {
+      line = line.slice(0, -1) + lines[++index];
+    }
+    text = line.trim();
     if (!text || text.startsWith('#') || (printedExample.test(text) && !pipedPython.test(text))) continue;
     let kind;
-    if (commandPattern.test(line)) kind = 'command';
-    else if (modulePattern.test(line)) kind = 'module';
+    let payload = '';
+    const commandMatch = line.match(commandPattern);
+    if (commandMatch) {
+      kind = 'command';
+      const afterOption = line.slice(commandMatch.index + commandMatch[0].length);
+      payload = afterOption.match(/^\s+'([^']*)'/)?.[1] ?? '';
+    } else if (modulePattern.test(line)) kind = 'module';
     else if (stdinPattern.test(line)) kind = 'stdin';
     if (kind) {
       invocations.push({
-        file, line: index + 1, kind,
+        file, line: start + 1, kind,
         isolated: isolatedPattern.test(line),
         asserted: kind === 'module' || (kind === 'command'
-          ? line.includes(isolationAssertion)
+          ? payload.startsWith(isolationAssertion)
           : lines[index + 1]?.trim().startsWith(isolationAssertion) ?? false),
         pathSafe: kind === 'module' || (kind === 'command'
-          ? line.includes(pathAssertion)
+          ? commandAssertsSafePath(payload)
           : lines[index + 2]?.trim().startsWith(pathAssertion) ?? false),
       });
     }
@@ -101,6 +121,8 @@ test('the explicit workflow inline-Python inventory is isolated and path-safe', 
 test('the inventory recognizes inline forms and ignores files, examples and data heredocs', () => {
   const source = [
     `python3 -I -c '${isolationAssertion}; ${pathAssertion}; print(1)'`,
+    'python3 -I \\',
+    `-c '${isolationAssertion}; ${pathAssertion}; print(2)'`,
     'python3.12 -I -m unittest discover',
     "python -I - <<'PY'",
     isolationAssertion,
@@ -118,6 +140,7 @@ test('the inventory recognizes inline forms and ignores files, examples and data
   assert.deepEqual(inspectWorkflow('fixture.yml', source).map(({kind, isolated, asserted, pathSafe}) =>
     ({kind, isolated, asserted, pathSafe})), [
     {kind: 'command', isolated: true, asserted: true, pathSafe: true},
+    {kind: 'command', isolated: true, asserted: true, pathSafe: true},
     {kind: 'module', isolated: true, asserted: true, pathSafe: true},
     {kind: 'stdin', isolated: true, asserted: true, pathSafe: true},
   ]);
@@ -127,6 +150,7 @@ test('missing runtime assertions and unlisted invocations fail', () => {
   const unsafe = inspectWorkflow('fixture.yml', [
     "python3 -c 'print(1)'",
     `python3 -I -c '${isolationAssertion}; print(1)'`,
+    `python3 -I -c 'print(1)' # ${isolationAssertion}; ${pathAssertion}`,
     "python3 -I - <<'PY'",
     isolationAssertion,
     "print('stdin')",
@@ -136,6 +160,7 @@ test('missing runtime assertions and unlisted invocations fail', () => {
   assert.deepEqual(unsafe.map(({kind, isolated, asserted, pathSafe}) => ({kind, isolated, asserted, pathSafe})), [
     {kind: 'command', isolated: false, asserted: false, pathSafe: false},
     {kind: 'command', isolated: true, asserted: true, pathSafe: false},
+    {kind: 'command', isolated: true, asserted: false, pathSafe: false},
     {kind: 'stdin', isolated: true, asserted: true, pathSafe: false},
     {kind: 'stdin', isolated: true, asserted: false, pathSafe: false},
   ]);

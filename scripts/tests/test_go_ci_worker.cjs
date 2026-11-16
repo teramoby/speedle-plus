@@ -343,7 +343,7 @@ fi
 exit 0
 `);
     fs.chmodSync(unsafePython, 0o755);
-    for (const unsafePath of [fs.realpathSync(directory), path.join(directory, 'checkout')]) {
+    for (const unsafePath of ['', fs.realpathSync(directory), path.join(directory, 'checkout')]) {
       const unsafe = spawnSync(realBash, ['-c', script('Verify documented Go toolchain')], {
         cwd: directory, encoding: 'utf8', env: {...process.env, PATH: unsafeIsolation,
           GITHUB_WORKSPACE: path.join(directory, 'checkout'), UNSAFE_PYTHON_PATH: unsafePath},

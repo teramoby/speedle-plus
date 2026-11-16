@@ -34,7 +34,7 @@ if [[ "$(uname -s)" == Darwin && -f "${user_docker_config}/config.json" ]] &&
    grep -qE '"(credsStore|credHelpers)"' "${user_docker_config}/config.json"; then
   DOCKER_CONFIG=$(mktemp -d "${TMPDIR:-/tmp}/speedle-docker-config.XXXXXX")
   trap 'rm -rf "${DOCKER_CONFIG}"' EXIT
-  python3 -I -c 'import sys; assert sys.flags.isolated, "run with python3 -I"; import os; assert not any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p), "python3 -I must exclude the checkout and working directory from sys.path"; import json, sys
+  python3 -I -c 'import sys; assert sys.flags.isolated, "run with python3 -I"; import os; assert not any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p is not None), "python3 -I must exclude the checkout and working directory from sys.path"; import json, sys
 config = json.load(open(sys.argv[1]))
 for key in ("credsStore", "credHelpers", "auths"):
     config.pop(key, None)
@@ -137,7 +137,7 @@ case "${mode}" in
     # A branch can be tried immediately through the existing protected worker.
     # Normal scheduled runs always include all backends.
     if [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch && -f "${GITHUB_EVENT_PATH:-}" ]] &&
-       python3 -I -c 'import sys; assert sys.flags.isolated, "run with python3 -I"; import os; assert not any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p), "python3 -I must exclude the checkout and working directory from sys.path"; import json,sys; value=json.load(open(sys.argv[1])).get("inputs",{}).get("mysql_only",False); sys.exit(0 if value is True or value == "true" else 1)' "$GITHUB_EVENT_PATH"; then
+       python3 -I -c 'import sys; assert sys.flags.isolated, "run with python3 -I"; import os; assert not any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p is not None), "python3 -I must exclude the checkout and working directory from sys.path"; import json,sys; value=json.load(open(sys.argv[1])).get("inputs",{}).get("mysql_only",False); sys.exit(0 if value is True or value == "true" else 1)' "$GITHUB_EVENT_PATH"; then
       check mysql-full python3 scripts/ci/run-mysql-tests.py
       check ci-script-tests bash -c 'python3 -I -m unittest discover -s scripts/tests -p "test_*.py" && node --test scripts/tests/*.cjs'
       exit "${failed}"
@@ -156,7 +156,7 @@ case "${mode}" in
     check mongodb-full bash scripts/ci/validate-mongodb.sh
     # Manual candidate validation can omit notification/report side effects.
     if [[ "${GITHUB_EVENT_NAME:-}" == workflow_dispatch && -f "${GITHUB_EVENT_PATH:-}" ]] &&
-       python3 -I -c 'import sys; assert sys.flags.isolated, "run with python3 -I"; import os; assert not any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p), "python3 -I must exclude the checkout and working directory from sys.path"; import json,sys; value=json.load(open(sys.argv[1])).get("inputs",{}).get("stores_only",False); sys.exit(0 if value is True or value == "true" else 1)' "$GITHUB_EVENT_PATH"; then
+       python3 -I -c 'import sys; assert sys.flags.isolated, "run with python3 -I"; import os; assert not any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p is not None), "python3 -I must exclude the checkout and working directory from sys.path"; import json,sys; value=json.load(open(sys.argv[1])).get("inputs",{}).get("stores_only",False); sys.exit(0 if value is True or value == "true" else 1)' "$GITHUB_EVENT_PATH"; then
       check ci-script-tests bash -c 'python3 -I -m unittest discover -s scripts/tests -p "test_*.py" && node --test scripts/tests/*.cjs'
       exit "${failed}"
     fi

@@ -66,7 +66,7 @@ jobs:
             exit 1
           fi
           # Fail closed if this python3 cannot run inline code with -I.
-          if ! python3 -I -c 'import sys; assert sys.flags.isolated, "run with python3 -I"; import os; assert not any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p), "python3 -I must exclude the checkout and working directory from sys.path"' >/dev/null 2>&1; then
+          if ! python3 -I -c 'import sys; assert sys.flags.isolated, "run with python3 -I"; import os; assert not any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p is not None), "python3 -I must exclude the checkout and working directory from sys.path"' >/dev/null 2>&1; then
             echo 'python3 with safe -I support is required for isolated inline Python; install a Python 3 whose -I excludes the checkout and working directory from sys.path.' >&2
             exit 1
           fi
@@ -100,13 +100,13 @@ jobs:
             exit 1
           fi
           # Fail closed if this python3 cannot run inline code with -I.
-          if ! python3 -I -c 'import sys; assert sys.flags.isolated, "run with python3 -I"; import os; assert not any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p), "python3 -I must exclude the checkout and working directory from sys.path"' >/dev/null 2>&1; then
+          if ! python3 -I -c 'import sys; assert sys.flags.isolated, "run with python3 -I"; import os; assert not any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p is not None), "python3 -I must exclude the checkout and working directory from sys.path"' >/dev/null 2>&1; then
             echo 'python3 with safe -I support is required for isolated inline Python; install a Python 3 whose -I excludes the checkout and working directory from sys.path.' >&2
             exit 1
           fi
           python3 -I - <<'PYTHON'
           import sys; assert sys.flags.isolated, 'run with python3 -I'
-          import os; assert not any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p), 'python3 -I must exclude the checkout and working directory from sys.path'
+          import os; assert not any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p is not None), 'python3 -I must exclude the checkout and working directory from sys.path'
           import re
           import stat
           import subprocess
@@ -226,7 +226,7 @@ jobs:
         run: |
           python3 -I - <<'PYTHON'
           import sys; assert sys.flags.isolated, 'run with python3 -I'
-          import os; assert not any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p), 'python3 -I must exclude the checkout and working directory from sys.path'
+          import os; assert not any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p is not None), 'python3 -I must exclude the checkout and working directory from sys.path'
           import os
           from pathlib import Path
           import subprocess
@@ -345,7 +345,7 @@ jobs:
           flock -w 7200 9
           python3 -I - <<'PYTHON'
           import sys; assert sys.flags.isolated, 'run with python3 -I'
-          import os; assert not any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p), 'python3 -I must exclude the checkout and working directory from sys.path'
+          import os; assert not any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p is not None), 'python3 -I must exclude the checkout and working directory from sys.path'
           import errno
           import socket
           for port in (2379, 2380, 27017, 6733, 6734):
@@ -420,7 +420,7 @@ jobs:
         run: |
           python3 -I - <<'PYTHON'
           import sys; assert sys.flags.isolated, 'run with python3 -I'
-          import os; assert not any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p), 'python3 -I must exclude the checkout and working directory from sys.path'
+          import os; assert not any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p is not None), 'python3 -I must exclude the checkout and working directory from sys.path'
           import os
           from pathlib import Path
           import subprocess
