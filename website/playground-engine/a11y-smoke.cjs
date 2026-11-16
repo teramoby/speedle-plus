@@ -16,9 +16,10 @@
    only reported in the PASS line, but never counts as settled: axe samples
    three moments 200 ms apart and a violation in any of them fails. Styles
    are stricter: from before axe is injected until the sampling ends, every
-   stylesheet's rule text, media and disabled state must stay identical, or
-   the gate fails. Open shadow roots are included in the DOM observation and
-   stylesheet fingerprints, including their style elements, adopted sheets and
+   stylesheet's rule text, media and disabled state and every inline style
+   attribute must stay identical, or the gate fails. Open shadow roots are
+   included in the DOM observation and stylesheet fingerprints, including
+   their style/link elements, inline style attributes, adopted sheets and
    recursively imported sheets.
    Any page script error fails the gate. WebSockets and web workers, which
    page.route cannot intercept, fail the gate. Serve a local copy of any
@@ -36,6 +37,9 @@ const root = path.resolve(__dirname, '../../docs');
 // their script requests are blocked and counted without failing the gate. Any other
 // request to them (a stylesheet, fetch, image, ...) fails like any other origin.
 const QUIET_ORIGINS = new Set(['https://static.cloudflareinsights.com']);
+// A unique quiet-origin script URL proves on every page that page.route really intercepts
+// requests: it is aborted like any other third-party request, so it can never run.
+const ROUTE_PROBE = `${[...QUIET_ORIGINS][0]}/a11y-smoke-route-probe.js`;
 const server = http.createServer((req,res)=>{
   let url;
   try {url=decodeURIComponent(new URL(req.url,'http://localhost').pathname)} catch {res.writeHead(400).end();return;}
@@ -98,6 +102,8 @@ const server = http.createServer((req,res)=>{
         // an HTTP error before the aborted body). Chromium gives a stylesheet that failed to
         // load an empty sheet, so the page itself cannot tell.
         const problems=new Map();
+        // Per-page proof that the exact positive-control URL reached the route below.
+        let routeProbeBlocks=0;
         // A request the page cancels itself (net::ERR_ABORTED) is exempt only for types that
         // cannot affect rendering; it is listed in the PASS line rather than ignored. Every
         // other cancellation fails, including fetch/XHR, which may carry CSS. These are the
@@ -119,8 +125,13 @@ const server = http.createServer((req,res)=>{
         const pageErrors=[];
         page.on('pageerror',error=>pageErrors.push(error.message));
         page.on('response',response=>{
-          if (response.status()<400||problems.has(response.url())) return;
-          if (parse(response.url())?.origin===origin) problems.set(response.url(),`HTTP ${response.status()}`);
+          if(problems.has(response.url())) return;
+          const url=parse(response.url());
+          // A response from any other origin means the request escaped page.route. This fails even
+          // for a quiet-origin script: quiet requests are tolerated only when the route aborts them.
+          if(url&&url.origin!==origin) {problems.set(response.url(),`outside ${origin}: response escaped request interception`);return;}
+          if(response.status()<400) return;
+          if(url?.origin===origin) problems.set(response.url(),`HTTP ${response.status()}`);
         });
         page.on('requestfailed',request=>{
           const url=parse(request.url());
@@ -153,20 +164,27 @@ const server = http.createServer((req,res)=>{
           }
           blockedOrigins.add(url.origin);
           blockedRequests++;
+          if(url.href===ROUTE_PROBE) routeProbeBlocks++;
           await route.abort().catch(()=>{});
         });
         // Every other origin is aborted at once, so nothing outside the local server can delay load.
         await page.goto(origin+route,{waitUntil:'load',timeout:30000});
+        // Do not infer that routing works merely because no third-party request was observed. This
+        // quiet-origin script is allowed only when aborted, and its per-page count must increase.
+        // If it loads instead, the response handler above fails the gate by URL as well.
+        await page.addScriptTag({url:ROUTE_PROBE}).catch(()=>{});
+        assertNoProblems('while checking request interception');
+        assert.ok(routeProbeBlocks>0,`the ${label} at ${width}px did not intercept the route positive control; request interception may not be active`);
         try {
           await page.waitForLoadState('networkidle',{timeout:15000});
         } catch (error) {
           throw new Error(`the ${label} at ${width}px kept the network busy for 15s after load`,{cause:error});
         }
         // The styles must not change while axe measures the page: in the document and every open
-        // shadow root, fingerprint every stylesheet (including adopted ones, style elements and
-        // recursively imported sheets), whether it is disabled, its media and the full text of
-        // every rule. Include each root even when it has no sheets, so attaching or removing a
-        // shadow root is also a visible change.
+        // shadow root, fingerprint every stylesheet (including adopted ones, style/link elements
+        // and recursively imported sheets), every inline style attribute, whether each sheet is
+        // disabled, its media and the full text of every rule. Include each root even when it has
+        // no sheets, so attaching or removing a shadow root is also a visible change.
         const sheets=()=>page.evaluate(()=>{
           // StyleSheetList and CSSRuleList are array-like (length plus an indexed getter) with
           // no specified iterator: Array.from does not rely on the engine exposing one. Every
@@ -181,10 +199,12 @@ const server = http.createServer((req,res)=>{
             const kind=root===document?'document':`open shadow root at position ${rootIndex} on ${root.host.nodeName}`;
             const scope=`root ${window.__smokeRootId(root)}: ${kind}`;
             const styles=Array.from(root.querySelectorAll('style'));
-            // Explicitly include HTMLStyleElement.sheet as well as ShadowRoot.styleSheets: the
+            const inline=Array.from(root.querySelectorAll('[style]')).map(element=>element.getAttribute('style'));
+            const linked=Array.from(root.querySelectorAll('link[rel~="stylesheet" i]')).map(link=>link.sheet).filter(Boolean);
+            // Explicitly include style/link element sheets as well as ShadowRoot.styleSheets: the
             // latter is not available in every Chromium version, but CSSOM edits must still count.
             const list=Array.from(new Set(Array.from(root.styleSheets||[]).concat(
-              Array.from(root.adoptedStyleSheets||[]),styles.map(style=>style.sheet).filter(Boolean))));
+              Array.from(root.adoptedStyleSheets||[]),styles.map(style=>style.sheet).filter(Boolean),linked)));
             const visited=new WeakSet();
             const fingerprint=sheet=>{
               const name=sheet.href||(sheet.ownerNode&&sheet.ownerNode.nodeName)||'adopted';
@@ -206,6 +226,7 @@ const server = http.createServer((req,res)=>{
             return [
               scope,
               styles.map(style=>[style.textContent,style.media,style.disabled]),
+              inline,
               list.map(fingerprint),
             ];
           }));
