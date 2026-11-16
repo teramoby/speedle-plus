@@ -10,7 +10,7 @@ tocsidebar = false
 tags = ["v0.1.0", "core", "policy", "spdl"]
 categories = ["docs"]
 bref = "SPDL の基礎"
-lastmod = 2026-11-16T06:18:30+08:00
+lastmod = 2026-11-16T11:22:05+08:00
 +++
 
 SPDL は Speedle ポリシーおよびロールポリシーを記述するための言語です。このページでは構文、命名規則、およびサンプルを説明します。
@@ -29,14 +29,14 @@ SPDL は Speedle ポリシーおよびロールポリシーを記述するため
 
 ### キーワード
 
-`grant`、`deny`、`user`、`group`、`entity`、`role`、`from`、`on`、`if`、`in` は予約キーワードです。大文字・小文字の違いや引用符の有無にかかわらず、プリンシパル名、ID ドメイン、サービス名、ロール、アクション、リソース、および条件内の属性名・関数名として使用できません。パーサーはこのようなステートメントを拒否し、キーワードとその位置を示します。条件内では `in` と `IN` がメンバーシップ演算子で、関数名は大文字と小文字を区別します。プリンシパル、アクション、およびリソース名も大文字と小文字を区別します。
+`grant`、`deny`、`user`、`group`、`entity`、`role`、`from`、`on`、`if`、`in` は予約キーワードです。大文字・小文字の違いや引用符の有無にかかわらず、プリンシパル名、ID ドメイン、ロール、アクション、リソース、および条件内の属性名・関数名として使用できません。パーサーはこのようなステートメントを拒否し、キーワードとその位置を示します。条件内では `in` と `IN` がメンバーシップ演算子で、関数名は大文字と小文字を区別します。プリンシパル、アクション、およびリソース名も大文字と小文字を区別します。
 
-たとえば、入力フラグメント `in Role` では、キーワード `in` がサービス名の開始を示すため、パーサーは後続のトークン `Role` をサービス名として読み取ります。`Role` 自体も予約キーワードであるため、解析は次のエラーで失敗します。
+たとえば、ポリシー文 `grant user alice read Role` では、`Role` がリソース名です。`Role` は予約キーワードであるため、解析は次のエラーで失敗します。
 
 ```console
-"Role" is a reserved SPDL keyword and cannot be used as a service name
-in Role
-   ^
+"Role" is a reserved SPDL keyword and cannot be used as a resource
+grant user alice read Role
+                      ^
 ```
 
 ### 命名規則
