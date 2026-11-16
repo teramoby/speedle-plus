@@ -228,22 +228,25 @@ if (args.length === 4 && args[0] === 'list' && args[1] === '-m' && args[2] === '
     assert.ok(!toolchain || toolchain === `go${moduleVersion}`,
       `go.mod toolchain ${toolchain} must keep CI on the documented minimum go${moduleVersion}`);
     const selected = toolchain ?? `go${moduleVersion}`;
-    cases.push({name: 'repository README and go.mod', readme: fs.readFileSync(path.join(root, 'README.md'), 'utf8'),
+    cases.push({name: 'repository README and go.mod', repository: true,
       module: moduleVersion, selected, passes: true,
       message: `Verified documented minimum Go toolchain: ${selected}`});
     for (const fixture of cases) {
-      const readmePath = path.join(directory, 'README.md');
-      fs.rmSync(readmePath, {force: true});
-      if (fixture.symlink) {
-        const target = path.join(directory, 'README-target.md');
-        fs.writeFileSync(target, prerequisites('-   Go 1.27.4 or a newer patch'));
-        fs.symlinkSync(target, readmePath);
-      } else {
-        fs.writeFileSync(readmePath, fixture.readme);
-        if (fixture.oversize) fs.truncateSync(readmePath, 1024 * 1024 + 1);
+      const cwd = fixture.repository ? root : directory;
+      if (!fixture.repository) {
+        const readmePath = path.join(directory, 'README.md');
+        fs.rmSync(readmePath, {force: true});
+        if (fixture.symlink) {
+          const target = path.join(directory, 'README-target.md');
+          fs.writeFileSync(target, prerequisites('-   Go 1.27.4 or a newer patch'));
+          fs.symlinkSync(target, readmePath);
+        } else {
+          fs.writeFileSync(readmePath, fixture.readme);
+          if (fixture.oversize) fs.truncateSync(readmePath, 1024 * 1024 + 1);
+        }
       }
       const result = spawnSync('bash', ['-c', script('Verify documented Go toolchain')], {
-        cwd: directory, encoding: 'utf8', env: {...process.env,
+        cwd, encoding: 'utf8', env: {...process.env,
           PATH: bin + path.delimiter + process.env.PATH,
           FIXTURE_MODULE: fixture.module, FIXTURE_GOVERSION: fixture.selected,
           FIXTURE_GOTOOLCHAIN: fixture.gotoolchain ?? 'local',
