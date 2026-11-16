@@ -14,13 +14,14 @@
    waits up to three seconds for the DOM and the stylesheets to stop
    changing. A page that keeps animating its DOM, its CSS or its CSSOM is
    only reported in the PASS line, but never counts as settled: axe samples
-   three moments 200 ms apart and a violation in any of them fails. Styles
-   are stricter: from before axe is injected until the sampling ends, every
-   stylesheet's rule text, media and disabled state and every inline style
-   attribute must stay identical, or the gate fails. Open shadow roots are
-   included in the DOM observation and stylesheet fingerprints, including
-   their style/link elements, inline style attributes, adopted sheets and
-   recursively imported sheets.
+   three moments 200 ms apart and a violation in any of them fails. Those
+   three samples are a spot check of an animation, not a proof that every
+   frame is compliant. Styles are stricter: from before axe is injected
+   until the sampling ends, every stylesheet's rule text, media and disabled
+   state and every inline style attribute must stay identical, or the gate
+   fails. Open shadow roots are included in the DOM observation and
+   stylesheet fingerprints, including their style/link elements, inline
+   style attributes, adopted sheets and recursively imported sheets.
    Any page script error fails the gate. WebSockets and web workers, which
    page.route cannot intercept, fail the gate. Serve a local copy of any
    resource the page needs.
@@ -37,9 +38,15 @@ const root = path.resolve(__dirname, '../../docs');
 // their script requests are blocked and counted without failing the gate. Any other
 // request to them (a stylesheet, fetch, image, ...) fails like any other origin.
 const QUIET_ORIGINS = new Set(['https://static.cloudflareinsights.com']);
-// A unique quiet-origin script URL proves on every page that page.route really intercepts
-// requests: it is aborted like any other third-party request, so it can never run.
-const ROUTE_PROBE = `${[...QUIET_ORIGINS][0]}/a11y-smoke-route-probe.js`;
+// A second loopback server, on its own port and therefore its own origin, serves a script
+// that only sets a flag. Every page must have its request for it aborted by the route and
+// must not run it, which proves that cross-origin blocking really works. If interception is
+// ever disabled, the probe loads from this server instead of reaching a real third party.
+const probeServer = http.createServer((req,res)=>{
+  if(req.url!=='/a11y-smoke-route-probe.js'){res.writeHead(404).end();return;}
+  res.setHeader('content-type','text/javascript; charset=utf-8');
+  res.end('window.__a11yRouteProbeExecuted=true;');
+});
 const server = http.createServer((req,res)=>{
   let url;
   try {url=decodeURIComponent(new URL(req.url,'http://localhost').pathname)} catch {res.writeHead(400).end();return;}
@@ -51,7 +58,14 @@ const server = http.createServer((req,res)=>{
 });
 (async()=>{
   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  await new Promise(resolve=>probeServer.listen(0,'127.0.0.1',resolve));
   const origin=`http://127.0.0.1:${server.address().port}`;
+  // A different port on the loopback interface is a different origin, so the route must
+  // abort the probe. Its aborted script is as harmless as the analytics beacon: treat its
+  // origin as quiet, or every page would fail on the deliberate probe request.
+  const probeOrigin=`http://127.0.0.1:${probeServer.address().port}`;
+  const ROUTE_PROBE=`${probeOrigin}/a11y-smoke-route-probe.js`;
+  QUIET_ORIGINS.add(probeOrigin);
   const blockedOrigins=new Set();
   let blockedRequests=0;
   let browser;
@@ -96,6 +110,11 @@ const server = http.createServer((req,res)=>{
             return roots;
           };
           window.__smokeRootId=root=>rootIds.get(root);
+          // Inline style values alone cannot tell "the same value moved to another element"
+          // from "nothing changed", so each element gets a stable object ID as well.
+          const elementIds=new WeakMap();
+          let nextElementId=1;
+          window.__smokeElementId=element=>{if(!elementIds.has(element))elementIds.set(element,nextElementId++);return elementIds.get(element);};
           window.__smokeSyncRoots();
         });
         // Record every request problem, one entry per URL (the first reason wins, for example
@@ -164,17 +183,21 @@ const server = http.createServer((req,res)=>{
           }
           blockedOrigins.add(url.origin);
           blockedRequests++;
-          if(url.href===ROUTE_PROBE) routeProbeBlocks++;
+          // Count the probe only when Chromium acknowledged the abort: a callback that ran
+          // but whose abort failed may have let the request through.
+          if(url.href===ROUTE_PROBE) {if(await route.abort().then(()=>true,()=>false)) routeProbeBlocks++;return;}
           await route.abort().catch(()=>{});
         });
         // Every other origin is aborted at once, so nothing outside the local server can delay load.
         await page.goto(origin+route,{waitUntil:'load',timeout:30000});
-        // Do not infer that routing works merely because no third-party request was observed. This
-        // quiet-origin script is allowed only when aborted, and its per-page count must increase.
-        // If it loads instead, the response handler above fails the gate by URL as well.
+        // Do not infer that routing works merely because no third-party request was observed.
+        // The probe script sets a flag in the page if it ever runs, and its aborted request must
+        // be counted: either a loaded probe or an uncounted abort fails the gate. A response from
+        // a foreign origin is caught by the response handler as well.
         await page.addScriptTag({url:ROUTE_PROBE}).catch(()=>{});
+        assert.equal(await page.evaluate(()=>Boolean(window.__a11yRouteProbeExecuted)),false,`the ${label} at ${width}px ran the route positive control, so page.route did not abort it`);
         assertNoProblems('while checking request interception');
-        assert.ok(routeProbeBlocks>0,`the ${label} at ${width}px did not intercept the route positive control; request interception may not be active`);
+        assert.ok(routeProbeBlocks>0,`the ${label} at ${width}px did not intercept and abort the route positive control; request interception may not be active`);
         try {
           await page.waitForLoadState('networkidle',{timeout:15000});
         } catch (error) {
@@ -199,7 +222,7 @@ const server = http.createServer((req,res)=>{
             const kind=root===document?'document':`open shadow root at position ${rootIndex} on ${root.host.nodeName}`;
             const scope=`root ${window.__smokeRootId(root)}: ${kind}`;
             const styles=Array.from(root.querySelectorAll('style'));
-            const inline=Array.from(root.querySelectorAll('[style]')).map(element=>element.getAttribute('style'));
+            const inline=Array.from(root.querySelectorAll('[style]')).map(element=>[window.__smokeElementId(element),element.getAttribute('style')]);
             const linked=Array.from(root.querySelectorAll('link[rel~="stylesheet" i]')).map(link=>link.sheet).filter(Boolean);
             // Explicitly include style/link element sheets as well as ShadowRoot.styleSheets: the
             // latter is not available in every Chromium version, but CSSOM edits must still count.
@@ -267,7 +290,8 @@ const server = http.createServer((req,res)=>{
         // axe runs mostly synchronously, so it measures one moment of an animation. When the DOM
         // has not settled, or any scan sees a DOM change, a running animation or a change to the
         // stylesheet fingerprint, sample three moments 200 ms apart: a violation in any scan fails
-        // the gate, so animation alone cannot fail it but cannot hide a contrast problem either.
+        // the gate, so animation alone cannot fail it. The three samples are a spot check of a
+        // longer animation, not a proof that every frame is compliant.
         // Once a change is seen the budget stays at three scans, even if a later scan happens to be
         // still. Mutation counts and the stylesheet fingerprint carry from the end of one scan into
         // the next, so changes during the 200 ms gaps count too.
@@ -321,5 +345,9 @@ const server = http.createServer((req,res)=>{
       }
     }
     console.log(`PASS ${checks} home-page axe color-contrast checks, 0 violations; served only from ${origin}, ${blockedRequests} cross-origin request(s) blocked${blockedOrigins.size?`: ${[...blockedOrigins].join(', ')}`:''}`);
-  } finally {if(browser)await browser.close();await new Promise(resolve=>server.close(resolve));}
+  } finally {
+    if(browser)await browser.close();
+    await new Promise(resolve=>server.close(resolve));
+    await new Promise(resolve=>probeServer.close(resolve));
+  }
 })().catch(error=>{console.error(error);process.exitCode=1;});
