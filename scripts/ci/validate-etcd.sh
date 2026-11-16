@@ -31,4 +31,4 @@ printf 'etcd fixture: %s\n' "${SPEEDLE_ETCD_ENDPOINT}"
 export SPEEDLE_ETCD_ENDPOINT
 export STORE_TYPE=etcd
 unset SPEEDLE_TEST_STORE_PROPS
-python3 scripts/ci/run-store-tests.py
+python3 -I scripts/ci/run-store-tests.py

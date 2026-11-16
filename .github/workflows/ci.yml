@@ -172,7 +172,7 @@ jobs:
           if ((${#suites[@]} > 0)); then
             node --test "${suites[@]}"
           fi
-          python3 -m unittest discover -s scripts/tests -p 'test_*.py'
+          python3 -I -m unittest discover -s scripts/tests -p 'test_*.py'
 
   lint:
     name: lint
@@ -223,7 +223,9 @@ jobs:
         env:
           RESULTS: ${{ toJSON(needs) }}
         run: |
-          python3 - <<'PYTHON'
+          python3 -I - <<'PYTHON'
+          import sys; sys.flags.isolated or sys.exit("run with python3 -I"); sys.flags.optimize == 0 or sys.exit("python3 inline checks require optimization to be disabled")
+          import os; unsafe = any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p is not None); unsafe and sys.exit("python3 -I must exclude the checkout and working directory from sys.path")
           import json
           import os
           jobs = json.loads(os.environ['RESULTS'])
