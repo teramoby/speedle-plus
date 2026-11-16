@@ -34,7 +34,11 @@ function isItem(line) {
 // the item is not a mapping (for example a bare nested sequence).
 function itemKeyIndent(lines, start, dashIndent) {
   const dash = lines[start].match(/^ *-[ \t]*/)[0];
-  if (lines[start].slice(dash.length).trim()) return dash.length;
+  const rest = lines[start].slice(dash.length).trim();
+  if (rest.startsWith('{') || rest.startsWith('[')) {
+    throw new Error(`unsupported flow-style step at line ${start + 1}`);
+  }
+  if (rest && !rest.startsWith('#')) return dash.length;
   for (let index = start + 1; index < lines.length; index++) {
     if (blank(lines[index])) continue;
     const indent = indentOf(lines[index]);
@@ -286,6 +290,13 @@ function inspectPython(tokens, index, findings) {
     if (value === '-X' || value === '-W' || value === '--check-hash-based-pycs') {current += 2; continue;}
     if (value === '--version' || value === '--help') return;
     if (value.startsWith('-')) {current++; continue;}
+    // An expansion followed by command-string, module or stdin arguments could
+    // be flags supplied through a variable; fail closed instead of assuming a
+    // script file.
+    if (/[$`]/.test(value)) {
+      if (hasInlinePythonArguments(tokens, current)) report('indirect', false);
+      return;
+    }
     // A script file legitimately imports from its own directory.
     return;
   }
@@ -452,6 +463,7 @@ test('the guard covers interpreter spellings, paths, wrappers and heredoc forms'
     '- run: python3 -I -m unittest discover -s scripts/tests',
     '- run: python3 -Im unittest discover -s scripts/tests',
     '- run: "$PY" -m unittest discover -s scripts/tests',
+    `- run: python3 $FLAGS -c '${assertLine}'`,
   ]);
   assert.deepEqual(inlinePythonInvocations(source).map(({kind, isolated, asserted}) => ({kind, isolated, asserted})), [
     {kind: 'stdin', isolated: false, asserted: false},
@@ -479,6 +491,7 @@ test('the guard covers interpreter spellings, paths, wrappers and heredoc forms'
     {kind: 'module', isolated: false, asserted: false},
     {kind: 'module', isolated: true, asserted: false},
     {kind: 'module', isolated: true, asserted: false},
+    {kind: 'indirect', isolated: false, asserted: false},
     {kind: 'indirect', isolated: false, asserted: false},
   ]);
 });
@@ -548,4 +561,6 @@ test('the guard fails closed on unsupported step layouts', () => {
     /unsupported steps layout/);
   assert.throws(() => inlinePythonInvocations('name: fixture\njobs:\n  test:\n    steps: &steps\n      - run: echo hi\n'),
     /unsupported steps layout/);
+  assert.throws(() => inlinePythonInvocations('name: fixture\njobs:\n  test:\n    steps:\n      - {run: "python3 -c \'print(1)\'"}\n'),
+    /unsupported flow-style step/);
 });

@@ -312,6 +312,19 @@ if (args.length === 4 && args[0] === 'list' && args[1] === '-m' && args[2] === '
     assert.match(missingPython.stderr,
       /python3 is required for the documented Go toolchain check; install Python 3 on the runner./);
     assert.doesNotMatch(missingPython.stderr, /command not found|Traceback/);
+    // An interpreter that cannot run -I code fails before the guard reads files.
+    const withoutIsolation = path.join(directory, 'without-isolation');
+    fs.mkdirSync(withoutIsolation);
+    const python = path.join(withoutIsolation, 'python3');
+    fs.writeFileSync(python, '#!/bin/sh\necho "Unknown option: -I" >&2\nexit 2\n');
+    fs.chmodSync(python, 0o755);
+    const noIsolation = spawnSync(realBash, ['-c', script('Verify documented Go toolchain')], {
+      cwd: directory, encoding: 'utf8', env: {...process.env, PATH: withoutIsolation},
+    });
+    assert.equal(noIsolation.status, 1, noIsolation.stderr);
+    assert.match(noIsolation.stderr,
+      /python3 with -I support is required for isolated inline Python; install Python 3\.4 or newer on the runner\./);
+    assert.doesNotMatch(noIsolation.stderr, /Traceback/);
   } finally {fs.rmSync(directory, {recursive: true, force: true});}
 });
 test('workflow steps keep their keys and block scalars inside the sequence entry', () => {
