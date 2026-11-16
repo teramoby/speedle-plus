@@ -23,7 +23,7 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/spdl/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/spdl/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-11-16T11:22:05&#43;08:00">
+<meta property="article:modified_time" content="2026-11-16T11:43:31&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="SPDL: Lenguaje de definición de políticas Speedle · Speedle Engine">
 <meta property="og:description" content="SPDL es Speedle Policy Definition Language, el lenguaje para escribir políticas y políticas de roles de Speedle.">
@@ -39,7 +39,7 @@
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/spdl/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-16T11:22:05+08:00","description":"SPDL es Speedle Policy Definition Language, el lenguaje para escribir políticas y políticas de roles de Speedle.","headline":"SPDL: Lenguaje de definición de políticas Speedle","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"es","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/es/docs/spdl/","@type":"WebPage"},"name":"SPDL: Lenguaje de definición de políticas Speedle","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/es/docs/spdl/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/spdl/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-16T11:43:31+08:00","description":"SPDL es Speedle Policy Definition Language, el lenguaje para escribir políticas y políticas de roles de Speedle.","headline":"SPDL: Lenguaje de definición de políticas Speedle","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"es","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/es/docs/spdl/","@type":"WebPage"},"name":"SPDL: Lenguaje de definición de políticas Speedle","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/es/docs/spdl/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/spdl/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/es/","name":"Inicio","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/","name":"Documentación","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/spdl/","name":"SPDL: Lenguaje de definición de políticas Speedle","position":3}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -212,8 +212,9 @@
 
 <p><code>grant</code>, <code>deny</code>, <code>user</code>, <code>group</code>, <code>entity</code>, <code>role</code>, <code>from</code>, <code>on</code>, <code>if</code> e <code>in</code> son palabras clave reservadas. Ninguna puede usarse como nombre de principal, dominio de identidad, rol, acción, recurso, ni como nombre de atributo o función en una condición, sin importar mayúsculas o minúsculas ni si va entre comillas; el analizador rechaza la sentencia e indica la palabra clave y su posición. En las condiciones, <code>in</code> e <code>IN</code> son el operador de pertenencia; los nombres de función distinguen mayúsculas. Los nombres de principal, acción y recurso también distinguen mayúsculas.</p>
 
-<p>Por ejemplo, en la sentencia de política <code>grant user alice read Role</code>, <code>Role</code> es el nombre del recurso. Como <code>Role</code> es una palabra clave reservada, el análisis falla con este error:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-console" data-lang="console">&#34;Role&#34; is a reserved SPDL keyword and cannot be used as a resource
+<p>Por ejemplo, en la sentencia de política <code>grant user alice read Role</code>, <code>Role</code> es el nombre del recurso. Como <code>Role</code> es una palabra clave reservada, al comprobarla con <code>spctl check policy</code> se produce este error:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-console" data-lang="console">$ spctl check policy &#39;grant user alice read Role&#39;
+&#34;Role&#34; is a reserved SPDL keyword and cannot be used as a resource
 grant user alice read Role
                       ^</code></pre></div>
 <h3 id="convención-de-nombres">Convención de nombres</h3>

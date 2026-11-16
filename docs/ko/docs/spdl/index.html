@@ -23,7 +23,7 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/spdl/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/spdl/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-11-16T11:22:05&#43;08:00">
+<meta property="article:modified_time" content="2026-11-16T11:43:31&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="SPDL: Speedle 정책 정의 언어 · Speedle Engine">
 <meta property="og:description" content="SPDL은 Speedle Policy Definition Language의 약자로, Speedle 정책 및 역할 정책을 작성하기 위한 언어입니다.">
@@ -39,7 +39,7 @@
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ko/docs/spdl/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-16T11:22:05+08:00","description":"SPDL은 Speedle Policy Definition Language의 약자로, Speedle 정책 및 역할 정책을 작성하기 위한 언어입니다.","headline":"SPDL: Speedle 정책 정의 언어","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ko","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ko/docs/spdl/","@type":"WebPage"},"name":"SPDL: Speedle 정책 정의 언어","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ko/docs/spdl/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ko/docs/spdl/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-16T11:43:31+08:00","description":"SPDL은 Speedle Policy Definition Language의 약자로, Speedle 정책 및 역할 정책을 작성하기 위한 언어입니다.","headline":"SPDL: Speedle 정책 정의 언어","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ko","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ko/docs/spdl/","@type":"WebPage"},"name":"SPDL: Speedle 정책 정의 언어","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ko/docs/spdl/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ko/docs/spdl/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/ko/","name":"홈","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/ko/docs/","name":"문서","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/ko/docs/spdl/","name":"SPDL: Speedle 정책 정의 언어","position":3}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -212,8 +212,9 @@
 
 <p><code>grant</code>, <code>deny</code>, <code>user</code>, <code>group</code>, <code>entity</code>, <code>role</code>, <code>from</code>, <code>on</code>, <code>if</code>, <code>in</code>은 예약 키워드입니다. 대소문자나 따옴표 사용 여부와 관계없이 주체 이름, ID 도메인, 역할, 작업, 리소스, 조건의 속성 이름이나 함수 이름으로 사용할 수 없습니다. 파서는 이러한 문을 거부하고 해당 키워드와 위치를 알려 줍니다. 조건에서 <code>in</code>과 <code>IN</code>은 포함 연산자이며 함수 이름은 대소문자를 구분합니다. 주체, 작업 및 리소스 이름도 대소문자를 구분합니다.</p>
 
-<p>예를 들어 정책 문 <code>grant user alice read Role</code>에서 <code>Role</code>은 리소스 이름입니다. <code>Role</code>도 예약 키워드이므로 파싱은 다음 오류와 함께 실패합니다.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-console" data-lang="console">&#34;Role&#34; is a reserved SPDL keyword and cannot be used as a resource
+<p>예를 들어 정책 문 <code>grant user alice read Role</code>에서 <code>Role</code>은 리소스 이름입니다. <code>Role</code>도 예약 키워드이므로 <code>spctl check policy</code>로 확인하면 다음 오류와 함께 실패합니다.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-console" data-lang="console">$ spctl check policy &#39;grant user alice read Role&#39;
+&#34;Role&#34; is a reserved SPDL keyword and cannot be used as a resource
 grant user alice read Role
                       ^</code></pre></div>
 <h3 id="명명-규칙">명명 규칙</h3>
