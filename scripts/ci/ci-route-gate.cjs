@@ -17,6 +17,7 @@ const STATUS_CONTEXT = 'speedle/ci-route-gate';
 // The newest runs for one head that the supersession check inspects. A newer
 // run that never publishes a status must not suppress one that does.
 const RUN_SAMPLE_LIMIT = 100;
+const UNRESOLVED_RUN_ORDER = Symbol('unresolved run order');
 const ROUTE_KEYS = ['go', 'website', 'docs', 'ci'];
 // The compare API returns at most 300 file entries. An incomplete list enables
 // every route rather than making a decision from only part of the diff.
@@ -88,21 +89,30 @@ function ignoredRun(run, jobs) {
     && jobs.some(job => job?.name === `Ignored CI event ${run.id}`);
 }
 
-// Validate the run before spending API requests on its diff. An ignored label
-// event has no active jobs and must not replace the status from an active run.
+// Validate the run before using its job set. An ignored label event has no
+// active jobs and must not replace the status from an active run; its shape is
+// checked against the guarded workflow files before it is honored.
 function preflight(run, pr, jobs) {
   if (run?.name !== CI_WORKFLOW_NAME) return 'Unexpected CI workflow name';
   if (run.path !== CI_WORKFLOW_PATH) return 'Unexpected CI workflow path';
   if (run.event !== 'pull_request') return 'CI run is not a pull request run';
   if (run.status !== 'completed') return 'CI run is not completed';
-  if (run.head_sha !== pr?.head?.sha) return 'CI run does not match the pull request head';
+  // A run for another commit, or for a pull request based on another branch,
+  // has no verdict for this pull request. Statuses are keyed by SHA, so
+  // publishing one could overwrite the result of a different pull request
+  // that shares the commit.
+  if (run.head_sha !== pr?.head?.sha) return {ignored: true, message: 'CI run does not match the pull request head'};
   // A pull request to another branch would let that branch's copy of the
   // classifier decide the routes, so only the default branch is a trusted
   // classification source.
   if (!pr?.base?.ref || pr.base.ref !== pr?.base?.repo?.default_branch) {
-    return 'Pull request base is not the default branch';
+    return {ignored: true, message: 'Pull request base is not the default branch'};
   }
-  if (ignoredRun(run, jobs)) return {ignored: true, message: 'Ignored CI label event'};
+  if (ignoredRun(run, jobs)) {
+    // The ignored shape is reported by the run itself, which the pull
+    // request controls when it changes a workflow file. Check that first.
+    return {ignored: true, checkWorkflow: true, message: 'Ignored CI label event'};
+  }
   return null;
 }
 
@@ -274,25 +284,28 @@ function supersedingRun(api, repository, run) {
     if (candidate.name === CI_WORKFLOW_NAME && ignoredRun(candidate, jobs)) continue;
     return candidate;
   }
-  // A complete sample always contains this run. If the sample is full and none
-  // of it published, this run is the newest one that can.
-  if (runs.length < RUN_SAMPLE_LIMIT) throw new Error('cannot find this run among the runs for its head');
-  return null;
+  // Without this run in the sample, newer runs between the sample and this one
+  // may exist, so its place in the order cannot be established.
+  return UNRESOLVED_RUN_ORDER;
 }
 
 function assessRun({api, runner, repository, run, pr}) {
   const jobs = jobsFromPages(api(`repos/${repository}/actions/runs/${run.id}/jobs?per_page=100&filter=latest`, {paginate: true}));
   const early = preflight(run, pr, jobs);
-  if (early) return evaluate({run, pr, jobs, routes: allRoutes()});
+  if (early && !early.ignored) return evaluate({run, pr, jobs, routes: allRoutes()});
+  if (early && !early.checkWorkflow) return evaluate({run, pr, jobs, routes: allRoutes()});
 
   assertSha(pr?.base?.sha, 'pull request base');
   assertSha(run.head_sha, 'workflow run head');
   const comparison = changedFiles(api(`repos/${repository}/compare/${pr.base.sha}...${run.head_sha}`));
   // Never read job or step names from a run whose workflow the request
   // controls: it could report the names this gate requires without running
-  // the jobs they belong to.
+  // the jobs they belong to. An ignored label event reports its shape the
+  // same way, so it is checked before the event is ignored.
   const untrusted = workflowTrust(comparison, GUARDED_WORKFLOW_PATHS);
   if (untrusted) return outcome({run, pr, routes: allRoutes(), state: 'failure', message: untrusted});
+  if (early) return evaluate({run, pr, jobs, routes: allRoutes()});
+
   const routes = comparison.complete ? classifyWithBase({
     api, runner, repository, baseSha: pr.base.sha, headSha: run.head_sha, files: comparison.files,
   }) : allRoutes();
@@ -315,6 +328,9 @@ function execute(options, api, runner = spawnSync) {
       if (!Number.isInteger(number) || number < 1) throw new Error('workflow run has no pull request number');
       pr = api(`repos/${options.repository}/pulls/${number}`);
       const superseding = supersedingRun(api, options.repository, run);
+      if (superseding === UNRESOLVED_RUN_ORDER) {
+        return outcome({run, pr, state: null, ignored: true, message: 'Run order for this head is unresolved'});
+      }
       if (superseding) {
         return outcome({
           run, pr, state: null, ignored: true,

@@ -90,7 +90,8 @@ function fixtureApi({run: completedRun, pr, files, jobs: runJobs, newerJobs, lat
     if (endpoint.startsWith(jobsPrefix) && endpoint.endsWith(jobsSuffix)) {
       assert.equal(options.paginate, true);
       const id = endpoint.slice(jobsPrefix.length, -jobsSuffix.length);
-      return [{jobs: id === String(completedRun.id) ? runJobs : (newerJobs === undefined ? runJobs : newerJobs)}];
+      const other = newerJobs === undefined ? runJobs : newerJobs;
+      return [{jobs: id === String(completedRun.id) ? runJobs : (typeof other === 'function' ? other(id) : other)}];
     }
     if (endpoint === `repos/${repository}/compare/${base}...${head}`) {
       return {files: files.map(filename => ({filename}))};
@@ -164,17 +165,27 @@ test('a renamed workflow is rejected instead of publishing a route success', () 
   assert.equal(result.status.description, 'Unexpected CI workflow name');
 });
 
-test('a pull request based on another branch fails closed without reading a classifier', () => {
+test('a pull request based on another branch publishes no status for its commit', () => {
   const pr = pullRequest([], {base: {sha: base, ref: 'release', repo: {default_branch: 'master'}}});
   const fixture = fixtureApi({run: run(), pr, files: ['docs/guide.md'], jobs: jobs({build: true})});
   const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
-  assert.equal(result.status.state, 'failure');
+  assert.equal(result.ignored, true);
+  assert.equal(result.status.state, null);
   assert.equal(result.status.description, 'Pull request base is not the default branch');
   assert.equal(fixture.calls.some(call => call.endpoint.includes('/compare/')), false);
   assert.equal(fixture.calls.some(call => call.endpoint.includes('/contents/')), false);
-  const writes = fixture.calls.filter(call => call.options.method === 'POST');
-  assert.equal(writes.length, 1);
-  assert.equal(writes[0].options.input.state, 'failure');
+  assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 0);
+});
+
+test('a run for another commit publishes no status', () => {
+  const pr = pullRequest([], {head: {sha: '3'.repeat(40)}});
+  const fixture = fixtureApi({run: run(), pr, files: ['docs/guide.md'], jobs: jobs({build: true})});
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.ignored, true);
+  assert.equal(result.status.state, null);
+  assert.equal(result.status.description, 'CI run does not match the pull request head');
+  assert.equal(fixture.calls.some(call => call.endpoint.includes('/compare/')), false);
+  assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 0);
 });
 
 test('the gate subscription matches the name and path of the CI workflow', () => {
@@ -394,13 +405,41 @@ test('ignored label events and superseded runs do not replace an existing status
   assert.equal(ignored.ignored, true);
   assert.equal(ignored.status.state, null);
   assert.equal(ignoredFixture.calls.filter(call => call.options.method === 'POST').length, 0);
-  assert.equal(ignoredFixture.calls.some(call => call.endpoint.includes('/compare/')), false);
+  // The ignored shape is reported by the run, so the guarded workflow files
+  // are checked even when the event is ignored.
+  assert.equal(ignoredFixture.calls.some(call => call.endpoint.includes('/compare/')), true);
 
   const supersededFixture = fixtureApi({run: run(), pr, files: [], jobs: jobs(), latest: [run({id: 102}), run()]});
   const superseded = gate.runGate({repository, runId: 101, publish: true}, supersededFixture.api);
   assert.equal(superseded.ignored, true);
   assert.equal(superseded.status.description, 'Superseded by a newer CI run');
   assert.equal(supersededFixture.calls.filter(call => call.options.method === 'POST').length, 0);
+});
+
+test('an ignored-looking run cannot skip the guarded workflow check', () => {
+  const fixture = fixtureApi({
+    run: run(), pr: pullRequest(), files: ['.github/workflows/ci.yml'], jobs: ignoredJobs(101),
+  });
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.ignored, false);
+  assert.equal(result.status.state, 'failure');
+  assert.equal(result.status.description,
+    'The pull request changes the CI workflow; the route cannot be verified from its own run');
+  assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 1);
+});
+
+test('a run missing from the newest runs sample is not published', () => {
+  const pr = pullRequest();
+  const newer = Array.from({length: 100}, (_, index) => run({id: 200 + index}));
+  const fixture = fixtureApi({
+    run: run(), pr, files: ['docs/guide.md'], jobs: jobs({build: true}),
+    latest: newer, newerJobs: id => ignoredJobs(id),
+  });
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.ignored, true);
+  assert.equal(result.status.state, null);
+  assert.equal(result.status.description, 'Run order for this head is unresolved');
+  assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 0);
 });
 
 test('a newer ignored label run does not suppress the last run that can publish', () => {
