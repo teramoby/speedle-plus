@@ -915,7 +915,9 @@ test('queue runner overrides retain trusted eligibility and replace task default
   }
 });
 test('quick steps support macOS Bash without Docker or Linux-only tooling', () => {
-  for (const name of ['Select changed packages', 'Check changed Go formatting', 'Test changed packages without integration services', 'Check container dispatcher without Docker']) {
+  for (const name of ['Select changed packages', 'Select quick content checks', 'Check changed Go formatting',
+    'Test changed packages without integration services', 'Check container dispatcher without Docker',
+    'Verify quick documentation walkthroughs']) {
     assert.match(step(name), /if: inputs\.mode == 'quick'/);
     assert.doesNotMatch(script(name), /docker|flock|mapfile|readarray|xargs|grep -P|sed -i/);
   }
@@ -923,7 +925,10 @@ test('quick steps support macOS Bash without Docker or Linux-only tooling', () =
     encoding: 'utf8', env: {...process.env, RUNNER_NAME: 'fiona', RUNNER_OS: 'macOS', RUNNER_ARCH: 'ARM64', CI_TASK: 'quick'},
   });
   assert.equal(identity.status, 0, identity.stderr);
-  assert.match(step('Checkout code'), /inputs\.mode == 'quick'/);
+  // The changed-path diff reads the base commit, so quick keeps full history.
+  assert.match(step('Checkout code'),
+    /fetch-depth: \$\{\{ \(inputs\.mode == 'build' \|\| inputs\.mode == 'quick'\) && '0' \|\| '1' \}\}/,
+    'quick needs the pull request base commit in the checkout');
   for (const name of ['go vet', 'go mod tidy check', 'Build']) assert.match(step(name), /inputs\.mode == 'quick'/);
 });
 test('quick clears inherited integration configuration so MySQL tests use their no-DSN skip', () => {
@@ -935,6 +940,53 @@ test('quick clears inherited integration configuration so MySQL tests use their 
     'SPEEDLE_TEST_EXTERNAL_SERVICES', 'SPEEDLE_MYSQL_EXTERNAL', 'SPEEDLE_CLI_COVERPROFILE']) {
     assert.equal(env[key], '', key);
   }
+});
+
+test('quick content checks select documentation walkthroughs and propagate walkthrough failures', () => {
+  const selection = step('Select quick content checks');
+  assert.match(selection, /^        if: inputs\.mode == 'quick'$/m);
+  assert.doesNotMatch(selection, /github\.event\.pull_request\.labels/);
+  assert.match(step('Verify quick documentation walkthroughs'), /steps\.content\.outputs\.changed == 'true'/);
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-content-'));
+  try {
+    fs.mkdirSync(path.join(dir, 'bin'));
+    fs.writeFileSync(path.join(dir, 'bin/git'), `#!${process.execPath}\nif(process.env.FAIL_BASE)process.exit(3);\nprocess.stdout.write(process.env.CHANGED.split('|').join('\\0'));\n`);
+    fs.chmodSync(path.join(dir, 'bin/git'), 0o755);
+    const output = path.join(dir, 'output');
+    const env = {...process.env, PATH: path.join(dir, 'bin') + path.delimiter + process.env.PATH, PR_BASE: 'base', GITHUB_SHA: 'head', GITHUB_OUTPUT: output};
+    for (const [files, selected] of [['docs/page.md', true], ['website/tests/check_docs.py', true], ['docs/deleted.md|website/page.html', true], ['pkg/eval/x.go', false], ['docs-like/x.md', false], ['', false]]) {
+      fs.writeFileSync(output, '');
+      const result = spawnSync('bash', ['-c', script('Select quick content checks')], {cwd: dir, env: {...env, CHANGED: files}, encoding: 'utf8'});
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal(fs.readFileSync(output, 'utf8'), `changed=${selected}\n`);
+    }
+    // A shallow checkout without the base commit fails with a clear message
+    // instead of a generic git diff error.
+    const missingBase = spawnSync('bash', ['-c', script('Select quick content checks')], {cwd: dir, env: {...env, CHANGED: 'docs/page.md', FAIL_BASE: '1'}, encoding: 'utf8'});
+    assert.notEqual(missingBase.status, 0);
+    assert.match(missingBase.stderr, /base commit base is missing from the quick checkout/);
+    // Intercept commands, retaining the actual shell's fail-fast behavior.
+    for (const tool of ['go', 'python3']) {
+      fs.writeFileSync(path.join(dir, 'bin', tool), `#!${process.execPath}\nconst args=process.argv.slice(2);require('node:fs').appendFileSync(process.env.RECORD,JSON.stringify(args)+'\\n');if(args[0]==='env')process.stdout.write('go1.26.11\\n');process.exit(args.includes(process.env.FAIL_COMMAND)?7:0);\n`);
+      fs.chmodSync(path.join(dir, 'bin', tool), 0o755);
+    }
+    const record = path.join(dir, 'calls');
+    const commands = ['website/tests/check_quick_start.py', 'website/tests/check_embedded.py', './website/tests/docscheck', 'website/tests/check_docs.py'];
+    for (const failure of ['', ...commands]) {
+      fs.writeFileSync(record, '');
+      const result = spawnSync('bash', ['-c', script('Verify quick documentation walkthroughs')], {cwd: dir, env: {...env, RECORD: record, FAIL_COMMAND: failure}, encoding: 'utf8'});
+      assert.equal(result.status, failure ? 7 : 0, result.stderr);
+      const calls = fs.readFileSync(record, 'utf8').trim().split('\n').map(JSON.parse);
+      assert.deepEqual(calls[0], ['env', 'GOVERSION']);
+      assert.equal(calls.length, failure ? commands.indexOf(failure) + 2 : 5);
+      if (!failure) {
+        assert.deepEqual(calls.slice(1), [
+          ['-I', commands[0], '--toolchain', 'go1.26.11'], ['-I', commands[1], '--toolchain', 'go1.26.11', '--candidate'],
+          ['test', '-count=1', commands[2]], ['-I', commands[3]],
+        ]);
+      }
+    }
+  } finally {fs.rmSync(dir, {recursive: true, force: true});}
 });
 
 test('quick dispatcher check vets and builds natively and propagates each failure', () => {

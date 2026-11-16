@@ -202,7 +202,7 @@ test('the explicit workflow and CI-script inline-Python inventory is isolated an
   const files = sources();
   assert.ok(files.length > 0, 'no sources discovered');
   const invocations = files.flatMap(([file, absolute]) => inspectSource(file, fs.readFileSync(absolute, 'utf8')));
-  assert.equal(invocations.length, 54, `discovered invocation count ${invocations.length} must match the reviewed inventory`);
+  assert.equal(invocations.length, 58, `discovered invocation count ${invocations.length} must match the reviewed inventory`);
   assert.deepEqual(invocations.filter(invocation => invocation.kind !== 'probe' && !invocation.isolated), []);
   assert.deepEqual(invocations.filter(invocation => !invocation.guarded), []);
 
@@ -211,6 +211,7 @@ test('the explicit workflow and CI-script inline-Python inventory is isolated an
     ['.github/workflows/ci.yml', 'stdin'],
     ['.github/workflows/go-ci-worker.yml', 'command'],
     ['.github/workflows/go-ci-worker.yml', 'command'],
+    ['.github/workflows/go-ci-worker.yml', 'stdin'],
     ['.github/workflows/go-ci-worker.yml', 'stdin'],
     ['.github/workflows/go-ci-worker.yml', 'stdin'],
     ['.github/workflows/go-ci-worker.yml', 'stdin'],
@@ -228,6 +229,9 @@ test('the explicit workflow and CI-script inline-Python inventory is isolated an
     ['scripts/ci/run-go-tests.sh', 'module'],
     ['scripts/ci/run-go-tests.sh', 'module'],
     ['scripts/ci/validate-mongodb.sh', 'stdin'],
+    ['.github/workflows/go-ci-worker.yml', 'script'],
+    ['.github/workflows/go-ci-worker.yml', 'script'],
+    ['.github/workflows/go-ci-worker.yml', 'script'],
     ['.github/workflows/go-ci-worker.yml', 'script'],
     ['.github/workflows/mongodb-nightly-validation.yml', 'script'],
     ['.github/workflows/mongodb-nightly-validation.yml', 'script'],

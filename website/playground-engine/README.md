@@ -71,7 +71,8 @@ GOOS=js GOARCH=wasm go test -mod=readonly \
 ```
 
 The protected Go CI build worker runs `website/playground-engine/verify.sh` on
-pushes and on pull requests carrying a full-CI label. It restores an
+pushes to the default branch and on pull requests on the full route, including
+the merge-head run that every merge goes through. It restores an
 OS/architecture-specific Chromium cache keyed by `package-lock.json`, then
 installs the locked Playwright/axe-core
 packages and any missing browser revision. A cache miss downloads the exact
@@ -85,6 +86,11 @@ suites, source versus published assets, rendered English/Chinese home-page
 contrast, and deterministic rebuild checks. The Linux Hugo archive is SHA-256
 pinned; no host tools or published pages are overwritten by that check. No test
 failures are ignored.
+Unlabeled pull requests run the quick checks instead. When such a pull request
+changes `docs/` or `website/`, the quick route also runs the documentation
+walkthroughs (documented quick-start, embedded guide, docs contract tests and
+bilingual docs commands); the engine rebuild, browser/axe checks and Hugo
+verification above remain on the full route only.
 The DOM shim does **not** prove browser layout, assistive-technology support,
 native form control behavior or module-worker integration.
 

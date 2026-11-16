@@ -409,6 +409,44 @@ jobs:
         if: inputs.mode == 'build' || inputs.mode == 'quick'
         run: go build ./cmd/speedle-pms/... ./cmd/speedle-ads/... ./cmd/spctl/...
 
+      # Unlabeled content pull requests keep the documentation and site checks
+      # without starting the full integration/coverage suite. The full test
+      # mode runs these walkthroughs itself, so do not duplicate them there.
+      # Quick runs on Linux or macOS; these scripts run natively and use no
+      # Docker. The quick checkout fetches full history so the base commit of
+      # the pull request is available for the diff below.
+      - name: Select quick content checks
+        id: content
+        if: inputs.mode == 'quick'
+        env:
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          python3 -I - <<'PYTHON'
+          import sys; sys.flags.isolated or sys.exit("run with python3 -I"); sys.flags.optimize == 0 or sys.exit("python3 inline checks require optimization to be disabled")
+          import os; unsafe = any(p in sys.path for p in ("", ".", os.getcwd(), os.environ.get("GITHUB_WORKSPACE")) if p is not None); unsafe and sys.exit("python3 -I must exclude the checkout and working directory from sys.path")
+          import os
+          from pathlib import Path
+          import subprocess
+          base = os.environ['PR_BASE']
+          probe = subprocess.run(['git', 'cat-file', '-e', base + '^{commit}'], capture_output=True)
+          if probe.returncode:
+              raise SystemExit(f'The pull request base commit {base} is missing from the quick checkout; quick needs full history.')
+          changed = subprocess.check_output(['git', 'diff', '--name-only', '-z', base, os.environ['GITHUB_SHA'], '--']).decode().split('\0')
+          content = any(p.startswith(('docs/', 'website/')) for p in changed)
+          with Path(os.environ['GITHUB_OUTPUT']).open('a') as output:
+              output.write('changed=' + str(content).lower() + '\n')
+          PYTHON
+
+      - name: Verify quick documentation walkthroughs
+        if: inputs.mode == 'quick' && steps.content.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          toolchain=$(go env GOVERSION)
+          python3 -I website/tests/check_quick_start.py --toolchain "${toolchain}"
+          python3 -I website/tests/check_embedded.py --toolchain "${toolchain}" --candidate
+          go test -count=1 ./website/tests/docscheck
+          python3 -I website/tests/check_docs.py
+
       # The default-branch worker keeps scheduling policy outside PR control.
       - name: Setup pinned Playground Go
         if: inputs.mode == 'build' && hashFiles('website/playground-engine/go.mod') != ''
