@@ -221,6 +221,18 @@ test('a newer run of another pull request does not suppress this result', () => 
   assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 1);
 });
 
+test('a newer run with unknown ownership suppresses an older result', () => {
+  const fixture = fixtureApi({
+    run: run(), pr: pullRequest(), files: ['docs/guide.md'], jobs: jobs({build: true}),
+    latest: [run({id: 102, pull_requests: []}), run()],
+  });
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.ignored, true);
+  assert.equal(result.status.state, null);
+  assert.equal(result.status.description, 'Superseded by a newer CI run');
+  assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 0);
+});
+
 test('a newer attempt of the same run supersedes the event for an older attempt', () => {
   const fixture = fixtureApi({
     run: run({run_attempt: 2}), pr: pullRequest(), files: ['docs/guide.md'], jobs: jobs({build: true}),

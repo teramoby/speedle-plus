@@ -307,8 +307,12 @@ function resolvePullRequest(api, repository, run) {
   return null;
 }
 
+// The run's pull_requests array can be empty for fork contributions, so
+// ownership is returned as unknown instead of "another pull request".
 function samePullRequest(candidate, number) {
-  return Number.isInteger(candidate?.pull_requests?.[0]?.number) && candidate.pull_requests[0].number === number;
+  const pullRequests = candidate?.pull_requests;
+  if (!Array.isArray(pullRequests) || pullRequests.length === 0) return null;
+  return pullRequests.some(pr => pr?.number === number);
 }
 
 // A completed ignored label run never publishes a status, so it must not
@@ -323,7 +327,11 @@ function supersedingRun(api, repository, run, pr) {
   const runs = response.workflow_runs;
   for (const candidate of runs) {
     if (String(candidate?.id) === String(run.id)) return null;
-    if (!samePullRequest(candidate, pr.number)) continue;
+    const ownership = samePullRequest(candidate, pr.number);
+    // Another pull request's runs cannot publish here. When the owner is
+    // unknown, this run cannot be proven newest, so it must not publish.
+    if (ownership === false) continue;
+    if (ownership === null) return candidate;
     const jobs = jobsFromPages(api(`repos/${repository}/actions/runs/${candidate.id}/jobs?per_page=100&filter=latest`, {paginate: true}));
     if (candidate.name === CI_WORKFLOW_NAME && ignoredRun(candidate, jobs)) continue;
     return candidate;
