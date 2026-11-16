@@ -188,6 +188,16 @@ test('change classification preserves raw Git paths, uses the base classifier an
     assert.equal(partial.status, 0, partial.stderr);
     assert.equal(partial.output, flags(true, true, true, true), 'a missing route key must enable every route');
     assert.match(partial.stdout, /did not set: ci/);
+    // A change to any other CI script also runs every route, even when the
+    // classifier itself is unchanged.
+    fs.writeFileSync(path.join(dir, 'scripts/ci/helper.sh'), '#!/usr/bin/env bash\ntrue\n');
+    git('add', '--', 'scripts/ci/helper.sh');
+    git('commit', '-qm', 'another CI script changes');
+    const helperHead = git('rev-parse', 'HEAD');
+    const helper = classify(helperHead, {PR_BASE: partialHead});
+    assert.equal(helper.status, 0, helper.stderr);
+    assert.equal(helper.output, flags(true, true, true, true), 'a pull request that changes scripts/ci must enable every route');
+    assert.match(helper.stdout, /changes scripts\/ci/);
     // The trusted classifier and its output are staged in fresh mktemp files,
     // never in a fixed RUNNER_TEMP path.
     const step = script(ci, 'Classify changed files');

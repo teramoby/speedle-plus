@@ -78,14 +78,14 @@ jobs:
               echo "::warning::No trusted regular-file classifier in the base revision; enabling every changed-path route."
               route_all
             else
-              # A pull request that changes the classifier may add routes the
-              # base copy does not know, so it runs every route.
+              # A pull request that changes the classifier or any other CI script may
+              # change what the base copy decides, so it runs every route.
               set +e
-              git diff --quiet "${base}" "${GITHUB_SHA}" -- scripts/ci/classify-changes.sh
+              git diff --quiet "${base}" "${GITHUB_SHA}" -- scripts/ci/
               status=$?
               set -e
               if [[ "${status}" == 1 ]]; then
-                echo "::notice::This pull request changes the classifier; enabling every changed-path route."
+                echo "::notice::This pull request changes scripts/ci; enabling every changed-path route."
                 route_all
               elif [[ "${status}" != 0 ]]; then
                 echo "::error::Cannot compare the classifier with the base revision." >&2
