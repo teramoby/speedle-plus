@@ -223,7 +223,7 @@ test('a newer run of another pull request does not suppress this result', () => 
 
 test('a newer run with unknown ownership suppresses an older result', () => {
   const fixture = fixtureApi({
-    run: run(), pr: pullRequest(), files: ['docs/guide.md'], jobs: jobs({build: true}),
+    run: run(), pr: pullRequest(), files: ['docs/guide.md'], jobs: jobs({build: true}), commitPulls: [],
     latest: [run({id: 102, pull_requests: []}), run()],
   });
   const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
@@ -231,6 +231,34 @@ test('a newer run with unknown ownership suppresses an older result', () => {
   assert.equal(result.status.state, null);
   assert.equal(result.status.description, 'Superseded by a newer CI run');
   assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 0);
+});
+
+test('a fork run with an empty association is attributed through the commit lookup', () => {
+  const pr = pullRequest();
+  const fixture = fixtureApi({
+    run: run({pull_requests: []}), pr, files: ['docs/guide.md'], jobs: jobs({build: true}),
+    commitPulls: [pr], latest: [run({id: 102, pull_requests: []}), run({pull_requests: []})],
+    newerJobs: ignoredJobs(102),
+  });
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.ignored, false);
+  assert.equal(result.status.state, 'success');
+  assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 1);
+});
+
+test('a forged ignored run cannot suppress a guarded-workflow failure', () => {
+  const fixture = fixtureApi({
+    run: run(), pr: pullRequest(),
+    files: ['pkg/eval/eval.go', '.github/workflows/ci.yml'],
+    jobs: jobs({build: true}),
+    latest: [run({id: 102}), run()], newerJobs: ignoredJobs(102),
+  });
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.ignored, false);
+  assert.equal(result.status.state, 'failure');
+  assert.equal(result.status.description,
+    'The pull request changes the CI workflow; the route cannot be verified from its own run');
+  assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 1);
 });
 
 test('a newer attempt of the same run supersedes the event for an older attempt', () => {
@@ -586,7 +614,8 @@ test('command arguments require one explicit input and keep PR mode read-only', 
   assert.deepEqual(gate.parseArgs(['--pr', '590', '--dry-run'], {GITHUB_REPOSITORY: repository}),
     {repository, prNumber: 590, dryRun: true});
   for (const args of [['--pr', '590'], ['--run-id', '101'], ['--pr', '0', '--dry-run'],
-    ['--pr', '590', '--dry-run', '--publish'], ['--run-id', '1', '--pr', '2', '--dry-run']]) {
+    ['--pr', '590', '--dry-run', '--publish'], ['--run-id', '1', '--pr', '2', '--dry-run'],
+    ['--pr', '590', '--dry-run', '--repo', 'other/repository']]) {
     assert.throws(() => gate.parseArgs(args, {GITHUB_REPOSITORY: repository}));
   }
 });

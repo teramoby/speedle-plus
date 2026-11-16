@@ -7,6 +7,7 @@ const path = require('node:path');
 const {spawnSync} = require('node:child_process');
 
 const CI_WORKFLOW_NAME = 'Speedle CI';
+const TRUSTED_REPOSITORY = 'teramoby/speedle-plus';
 // The workflow files whose job and step names this gate verifies. A
 // pull_request run executes them from the request's merge commit when the
 // caller references them locally, so the names are only trustworthy when the
@@ -307,12 +308,16 @@ function resolvePullRequest(api, repository, run) {
   return null;
 }
 
-// The run's pull_requests array can be empty for fork contributions, so
-// ownership is returned as unknown instead of "another pull request".
-function samePullRequest(candidate, number) {
+// The run's pull_requests array can be empty for fork contributions, so fall
+// back to the commit lookup and return null only when ownership still cannot
+// be established.
+function samePullRequest(api, repository, candidate, number) {
   const pullRequests = candidate?.pull_requests;
-  if (!Array.isArray(pullRequests) || pullRequests.length === 0) return null;
-  return pullRequests.some(pr => pr?.number === number);
+  if (Array.isArray(pullRequests) && pullRequests.length > 0) {
+    return pullRequests.some(pr => pr?.number === number);
+  }
+  const resolved = resolvePullRequest(api, repository, candidate);
+  return resolved ? resolved.number === number : null;
 }
 
 // A completed ignored label run never publishes a status, so it must not
@@ -327,13 +332,15 @@ function supersedingRun(api, repository, run, pr) {
   const runs = response.workflow_runs;
   for (const candidate of runs) {
     if (String(candidate?.id) === String(run.id)) return null;
-    const ownership = samePullRequest(candidate, pr.number);
+    const ownership = samePullRequest(api, repository, candidate, pr.number);
     // Another pull request's runs cannot publish here. When the owner is
     // unknown, this run cannot be proven newest, so it must not publish.
     if (ownership === false) continue;
     if (ownership === null) return candidate;
     const jobs = jobsFromPages(api(`repos/${repository}/actions/runs/${candidate.id}/jobs?per_page=100&filter=latest`, {paginate: true}));
-    if (candidate.name === CI_WORKFLOW_NAME && ignoredRun(candidate, jobs)) continue;
+    // The ignored shape is only meaningful from the guarded workflow file.
+    // supersedingRun runs only after workflowTrust passed for this commit.
+    if (candidate.name === CI_WORKFLOW_NAME && candidate.path === CI_WORKFLOW_PATH && ignoredRun(candidate, jobs)) continue;
     return candidate;
   }
   // Without this run in the sample, newer runs between the sample and this one
@@ -341,21 +348,21 @@ function supersedingRun(api, repository, run, pr) {
   return UNRESOLVED_RUN_ORDER;
 }
 
-function assessRun({api, runner, repository, run, pr}) {
+function assessRun({api, runner, repository, run, pr, comparison, trusted = false}) {
   const jobs = jobsFromPages(api(`repos/${repository}/actions/runs/${run.id}/jobs?per_page=100&filter=latest`, {paginate: true}));
   const early = preflight(run, pr);
   if (early) return evaluate({run, pr, jobs, routes: allRoutes()});
 
   assertSha(pr?.base?.sha, 'pull request base');
   assertSha(run.head_sha, 'workflow run head');
-  const comparison = changedFiles(api(`repos/${repository}/compare/${pr.base.sha}...${run.head_sha}`));
+  const compared = comparison || changedFiles(api(`repos/${repository}/compare/${pr.base.sha}...${run.head_sha}`));
   // Workflow integrity comes before every run-shape decision: never read job
   // or step names, including an ignored label-event shape, from a run whose
   // workflow the pull request controls.
-  const untrusted = workflowTrust(api, repository, pr.number, comparison);
+  const untrusted = trusted ? null : workflowTrust(api, repository, pr.number, compared);
   if (untrusted) return outcome({run, pr, routes: allRoutes(), state: 'failure', message: untrusted});
-  const routes = comparison.complete ? classifyWithBase({
-    api, runner, repository, baseSha: pr.base.sha, headSha: run.head_sha, files: comparison.files,
+  const routes = compared.complete ? classifyWithBase({
+    api, runner, repository, baseSha: pr.base.sha, headSha: run.head_sha, files: compared.files,
   }) : allRoutes();
   return evaluate({run, pr, jobs, routes});
 }
@@ -386,6 +393,17 @@ function execute(options, api, runner = spawnSync) {
       }
       pr = resolvePullRequest(api, options.repository, run);
       if (!pr) return outcome({run, state: null, ignored: true, message: 'No open pull request for this commit'});
+      // Out-of-scope runs are decided without reading the diff: a non-default
+      // base publishes nothing, and identity failures are not a route verdict.
+      if (preflight(run, pr)) return assessRun({api, runner, repository: options.repository, run, pr});
+      // Rule 1: the guarded workflow files are a property of the head commit,
+      // so this verdict holds for every run of it and is published before any
+      // supersession or ignored-run decision.
+      assertSha(pr?.base?.sha, 'pull request base');
+      assertSha(run.head_sha, 'workflow run head');
+      const comparison = changedFiles(api(`repos/${options.repository}/compare/${pr.base.sha}...${run.head_sha}`));
+      const untrusted = workflowTrust(api, options.repository, pr.number, comparison);
+      if (untrusted) return outcome({run, pr, routes: allRoutes(), state: 'failure', message: untrusted});
       const superseding = supersedingRun(api, options.repository, run, pr);
       if (superseding === UNRESOLVED_RUN_ORDER) {
         return outcome({run, pr, state: null, ignored: true, message: 'Run order for this head is unresolved'});
@@ -396,6 +414,7 @@ function execute(options, api, runner = spawnSync) {
           message: superseding.name === CI_WORKFLOW_NAME ? 'Superseded by a newer CI run' : 'Newer CI run has an unexpected workflow name',
         });
       }
+      return assessRun({api, runner, repository: options.repository, run, pr, comparison, trusted: true});
     }
     return assessRun({api, runner, repository: options.repository, run, pr});
   } catch (error) {
@@ -449,7 +468,7 @@ function positiveInteger(value, label) {
 }
 
 function parseArgs(argv, environment = process.env) {
-  const options = {repository: environment.GITHUB_REPOSITORY || 'teramoby/speedle-plus'};
+  const options = {repository: environment.GITHUB_REPOSITORY || TRUSTED_REPOSITORY};
   if (environment.WORKFLOW_RUN_ATTEMPT) {
     options.runAttempt = positiveInteger(environment.WORKFLOW_RUN_ATTEMPT, 'workflow run attempt');
   }
@@ -472,6 +491,11 @@ function parseArgs(argv, environment = process.env) {
   if (Boolean(options.runId) === Boolean(options.prNumber)) throw new Error('specify exactly one of --run-id or --pr');
   if (options.publish && options.dryRun) throw new Error('--publish and --dry-run are mutually exclusive');
   if (options.prNumber && !options.dryRun) throw new Error('--pr requires --dry-run');
+  // The read-only evaluation must not take its classifier from another
+  // repository, which would make its verdict meaningless.
+  if (options.prNumber && options.repository !== TRUSTED_REPOSITORY) {
+    throw new Error(`--pr dry-run only supports ${TRUSTED_REPOSITORY}`);
+  }
   if (options.runId && !options.publish && !options.dryRun) throw new Error('--run-id requires --publish or --dry-run');
   return options;
 }

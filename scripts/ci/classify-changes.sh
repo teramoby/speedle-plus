@@ -34,8 +34,9 @@ if [[ -n "${changed}" ]]; then
       '') ;;
       docs/*) docs=true ;;
       website/*) website=true ;;
-      # The pull-request routing step already enables every route for this
-      # directory. Keep the same result when the API route gate calls us.
+      # Every CI script change enables every route by design: the route gate
+      # consumes these files, so neither a pull-request run nor a push may
+      # narrow the matrix from a classification it controls.
       scripts/ci/*) go=true website=true docs=true ci=true ;;
       .github/workflows/*|scripts/*) go=true ci=true ;;
       # Module files and root Markdown carry the toolchain contract that the
