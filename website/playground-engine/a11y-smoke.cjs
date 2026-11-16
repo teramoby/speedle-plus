@@ -13,8 +13,9 @@
    starting or ending (a page that keeps loading resources fails). It then
    waits up to three seconds for the DOM to stop changing; a page that keeps
    animating its DOM, and any page script error, is only reported in the PASS
-   line. axe must finish without the page requesting anything or changing its
-   stylesheets.
+   line. From before axe is injected until the scan ends, the page must not
+   request anything, and its styles (every stylesheet's rule text, media and
+   disabled state) must not change.
    WebSockets and web workers, which page.route cannot intercept, fail the
    gate. Serve a local copy of any resource the page needs.
    Run from the repository root: node website/playground-engine/a11y-smoke.cjs
@@ -143,18 +144,22 @@ const server = http.createServer((req,res)=>{
         assert.equal(await page.evaluate(()=>Boolean(navigator.serviceWorker&&navigator.serviceWorker.controller)),false,`the ${label} at ${width}px is controlled by a service worker`);
         assertNoProblems('before the contrast check');
         assert.equal(pending,0,`the ${label} at ${width}px still has requests in flight before the contrast check`);
-        await page.addScriptTag({content:axeSource});
-        // Take the baseline after injecting axe: a request the page started meanwhile must not
-        // be hidden in it.
-        assert.equal(pending,0,`the ${label} at ${width}px started a request while axe was injected`);
+        // No request may start from here until the scan ends, including while axe is injected.
         const requestsBefore=requests;
-        // Stylesheets and their rule counts must not change while axe measures the page.
-        const sheets=()=>page.evaluate(()=>JSON.stringify([...document.styleSheets].map(sheet=>{
-          let rules=-1;
-          try {rules=sheet.cssRules.length;} catch {}
-          return [sheet.href||(sheet.ownerNode&&sheet.ownerNode.nodeName)||'',rules];
-        })));
+        await page.addScriptTag({content:axeSource});
+        assert.equal(pending,0,`the ${label} at ${width}px started a request while axe was injected`);
+        // The styles must not change while axe measures the page: each stylesheet (including
+        // adopted ones), whether it is disabled, its media and a hash of all its rule text.
+        const sheets=()=>page.evaluate(()=>{
+          const hash=text=>{let h=0x811c9dc5;for(let i=0;i<text.length;i++){h^=text.charCodeAt(i);h=Math.imul(h,0x01000193)>>>0;}return h.toString(16);};
+          return JSON.stringify([...document.styleSheets,...(document.adoptedStyleSheets||[])].map(sheet=>{
+            let rules='unreadable';
+            try {rules=hash([...sheet.cssRules].map(rule=>rule.cssText).join('\n'));} catch {}
+            return [sheet.href||(sheet.ownerNode&&sheet.ownerNode.nodeName)||'adopted',sheet.disabled,sheet.media?sheet.media.mediaText:'',rules];
+          }));
+        });
         const sheetsBefore=await sheets();
+        const mutationsBefore=await page.evaluate(()=>window.__smokeMutations);
         const report=await page.evaluate(async()=>{
           const result=await axe.run(document,{runOnly:{type:'rule',values:['color-contrast']}});
           return {
@@ -166,11 +171,12 @@ const server = http.createServer((req,res)=>{
         // request can still fail after the scan, so the problems are complete here.
         assert.equal(requests,requestsBefore,`the ${label} at ${width}px requested resources during the contrast check`);
         assert.equal(pending,0,`the ${label} at ${width}px still has requests in flight after the contrast check`);
-        assert.equal(await sheets(),sheetsBefore,`the ${label} at ${width}px changed its stylesheets during the contrast check`);
+        assert.equal(await sheets(),sheetsBefore,`the ${label} at ${width}px changed its styles during the contrast check`);
+        const scanMutations=(await page.evaluate(()=>window.__smokeMutations))-mutationsBefore;
         assertNoProblems('during the contrast check');
         assert.deepEqual(report.violations,[],`axe color-contrast violations on the ${label} at ${width}px: ${JSON.stringify(report.violations,null,2)}`);
         checks++;
-        console.log(`PASS axe color-contrast: ${label} at ${width}px (${report.unchecked.length} gradient or pseudo-element nodes not machine-checkable${cancelled.length?`; ${cancelled.length} local request(s) cancelled by the page: ${cancelled.join(', ')}`:''}${domSettled?'':'; DOM still changing when measured'}${pageErrors.length?`; ${pageErrors.length} page script error(s): ${pageErrors.join(' | ')}`:''})`);
+        console.log(`PASS axe color-contrast: ${label} at ${width}px (${report.unchecked.length} gradient or pseudo-element nodes not machine-checkable${cancelled.length?`; ${cancelled.length} local request(s) cancelled by the page: ${cancelled.join(', ')}`:''}${domSettled?'':'; DOM still changing when measured'}${scanMutations>0?`; ${scanMutations} DOM change(s) during the scan`:''}${pageErrors.length?`; ${pageErrors.length} page script error(s): ${pageErrors.join(' | ')}`:''})`);
         await page.close();
       }
     }
