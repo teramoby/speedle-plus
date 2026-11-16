@@ -13,10 +13,9 @@ Speedle runner carries `speedle-runner`; the Linux runners also carry
 Weekly runs stay on `fiona-speedle`.
 
 ReviewBot selects `[self-hosted, speedle-runner]`, which `charming-speedle-2`,
-`donkey-speedle` and `fiona` carry; its regression fixture job accepts
-`charming-speedle-2` and `fiona`. Go lint, test, post-merge regression and the
-nightly use the same label, and the Go CI worker accepts `donkey-speedle` for
-those tasks as well. Go build
+`donkey-speedle` and `fiona` carry, and its regression fixture job accepts all
+three. Go lint, test, post-merge regression and the nightly use the same label,
+and the Go CI worker accepts `donkey-speedle` for those tasks as well. Go build
 (it needs the Linux Hugo release and `sha256sum`) selects
 `[self-hosted, Linux, X64, speedle-linux]`. The weekly selects
 `[self-hosted, macOS, ARM64, fiona-speedle]` to reduce timing noise in its

@@ -361,13 +361,22 @@ test('configured runner overrides can only land on runners the identity guard ac
   assert.deepEqual(route(job.worker.execute, {...github('push'), ref: 'refs/heads/master'}, overrides,
     {mode: 'regression'}), labels);
 });
-test('the identity guard accepts exactly the registered scheduling runners', () => {
-  const guard = script(job.worker.execute, 'Verify self-hosted runner identity');
-  const accepted = [...guard.matchAll(/^ {2}((?:[\w.-]+\/[\w.-]+\/[\w.-]+)(?:\|[\w.-]+\/[\w.-]+\/[\w.-]+)*)\)$/gm)]
+// Extract the name/OS/arch alternatives from the case arms of a guard script.
+function acceptedIdentities(guard) {
+  return [...guard.matchAll(/^ {2}((?:[\w.-]+\/[\w.-]+\/[\w.-]+)(?:\|[\w.-]+\/[\w.-]+\/[\w.-]+)*)\)(?: ;;)?$/gm)]
     .flatMap(match => match[1].split('|')).sort();
-  const expected = runnerInventory.filter(runner => runner.labels.includes('speedle-runner'))
+}
+function registeredSchedulingRunners() {
+  return runnerInventory.filter(runner => runner.labels.includes('speedle-runner'))
     .map(runner => `${runner.name}/${runner.os}/${runner.arch}`).sort();
-  assert.deepEqual(accepted, expected);
+}
+test('the Go worker identity guard accepts exactly the registered scheduling runners', () => {
+  const guard = script(job.worker.execute, 'Verify self-hosted runner identity');
+  assert.deepEqual(acceptedIdentities(guard), registeredSchedulingRunners());
+});
+test('the ReviewBot fixture guard accepts exactly the registered scheduling runners', () => {
+  const preflight = script(job.review['diff-regression'], 'Verify runner identity and tools');
+  assert.deepEqual(acceptedIdentities(preflight), registeredSchedulingRunners());
 });
 test('the evaluator reads only own properties and opts into workflow inputs explicitly', () => {
   const context = github('workflow_dispatch');
@@ -406,7 +415,7 @@ test('fixture job installs pinned Node 22 before running Node regression suites'
   assert.match(setup, /node-version: '22'/);
   assert.ok(block.indexOf('Set up Node for regression tests') < block.indexOf('node --test'));
   const preflight = script(block, 'Verify runner identity and tools');
-  assert.match(preflight, /charming-speedle-2\/Linux\/X64\|fiona\/macOS\/ARM64\) ;;/);
+  assert.match(preflight, /charming-speedle-2\/Linux\/X64\|donkey-speedle\/Linux\/X64\|fiona\/macOS\/ARM64\) ;;/);
   assert.doesNotMatch(preflight, /charming-speedle\/Linux/,
     'the retired charming-speedle identity must not pass the ReviewBot preflight');
   assert.doesNotMatch(preflight, /fiona-speedle\/macOS/, "the retired fiona-speedle runner name must not pass the identity check");
