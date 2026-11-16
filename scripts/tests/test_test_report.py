@@ -269,6 +269,13 @@ class EmailTest(unittest.TestCase):
         self.assertTrue(self.send(result={"queued": ["recipient@example.com"]})[0])
         self.assertTrue(self.send(result={"delivered": ["recipient@example.com"]})[0])
 
+    def test_result_addresses_accept_strings_and_address_objects(self):
+        self.assertEqual(test_report.addresses(
+            ["A@Example.com", {"address": "B@Example.com", "name": "Operators"}, "not an address"]),
+            ["a@example.com", "b@example.com"])
+        self.assertEqual(test_report.addresses(None), [])
+        self.assertEqual(test_report.addresses("recipient@example.com"), [])
+
     def test_matches_recipients_case_insensitively_and_through_address_objects(self):
         self.assertTrue(self.send(result={"delivered": [
             {"address": "RECIPIENT@example.com", "name": "Operators"}]})[0])
