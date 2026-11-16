@@ -309,14 +309,16 @@ def configured_addresses(value):
     or None when the value is not a list of addresses.
 
     A setting is a string that may list several recipients or use a display
-    name ("Ops <ops@example.com>, second@example.com"). A token without an @ is
-    a configuration error, not a recipient to drop silently. The case is kept
-    because the local part of an address may be case-sensitive on the server.
+    name ("Ops <ops@example.com>, second@example.com"). A token the parser
+    cannot turn into an address is a configuration error, not a recipient to
+    drop silently: a swallowed token appears as an entry with an empty
+    address, and one entry without an @ also rejects the whole setting. The
+    case is kept because the local part may be case-sensitive on the server.
     """
     if not isinstance(value, str):
         return None
-    entries = [(name, address) for name, address in email.utils.getaddresses([value]) if address]
-    if not entries or any("@" not in address for _, address in entries):
+    entries = email.utils.getaddresses([value])
+    if not entries or any(not address or "@" not in address for _, address in entries):
         return None
     return [address for _, address in entries]
 
@@ -641,10 +643,11 @@ def main(argv=None, env=os.environ):
             print(f"::warning::Failure issues not updated ({type(error).__name__}).", file=sys.stderr)
     print(summary)
     # A real report job must not go green when its only notification channel
-    # did not deliver, whether it is misconfigured or the send failed. Tests
-    # and local runs leave REPORT_EMAIL_REQUIRED unset; a real job may spell
-    # the marker "true", "True", "yes" or "1".
-    required = env.get("REPORT_EMAIL_REQUIRED", "").strip().lower() in ("1", "true", "yes")
+    # did not deliver, whether it is misconfigured or the send failed. Any
+    # non-empty marker means required, so a misspelling fails closed; tests
+    # and local runs leave it unset, and only an explicit opt-out stays soft.
+    marker = env.get("REPORT_EMAIL_REQUIRED", "").strip().lower()
+    required = bool(marker) and marker not in ("0", "false", "no")
     if email_failed and required:
         reason = "is not configured" if not email_configured(env) else "could not be sent"
         print(f"::error::The report email {reason}; failing the report job.", file=sys.stderr)

@@ -269,6 +269,20 @@ class EmailTest(unittest.TestCase):
         urlopen.assert_not_called()
         self.assertNotIn("::error::", stderr.getvalue())
 
+    def test_a_token_the_parser_swallows_is_not_dropped(self):
+        # These values leave one good address and a token the parser turns
+        # into an empty entry; sending only to the good one would silently
+        # skip a configured operator, so the whole setting is rejected.
+        for recipients in ("recipient@example.com, b@", "recipient@example.com; second@example.com",
+                           "recipient@example.com, undisclosed-recipients:;"):
+            with self.subTest(recipients=recipients):
+                with mock.patch("test_report.open_no_redirect") as urlopen, \
+                        mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+                    self.assertFalse(test_report.send_email(
+                        "s", "b", dict(self.env, OPS_EMAIL_TO=recipients)))
+                urlopen.assert_not_called()
+                self.assertNotIn("::error::", stderr.getvalue())
+
     def test_rejects_more_recipients_than_the_api_accepts(self):
         env = dict(self.env, OPS_EMAIL_TO=", ".join(f"r{i}@example.com" for i in range(51)))
         with mock.patch("test_report.open_no_redirect") as urlopen, \
@@ -521,10 +535,11 @@ class EmailTest(unittest.TestCase):
                 self.assertIn("TestZ", summary.read_text())
                 self.assertEqual([c[2]["title"] for c in github.calls], ["Test failure: p TestZ"])
 
-    def test_any_truthy_required_marker_fails_a_broken_channel(self):
-        # The marker is a human-set setting, so any usual spelling of true
-        # must keep the fail-closed guarantee.
-        for spelling in ("true", "True", "1", "yes", " TRUE "):
+    def test_any_enabled_required_marker_fails_a_broken_channel(self):
+        # The marker is a human-set setting, so any non-empty value means
+        # required and a misspelling must fail closed, not silently disable
+        # the guarantee.
+        for spelling in ("true", "True", "1", "yes", " TRUE ", "on", "enabled", "ture"):
             with self.subTest(spelling=spelling):
                 directory = Path(tempfile.mkdtemp())
                 (directory / "go.json").write_text(events(("fail", "p", "TestZ", None)))
@@ -536,14 +551,17 @@ class EmailTest(unittest.TestCase):
                 self.assertEqual(code, 1)
                 self.assertIn("::error::The report email is not configured", stderr.getvalue())
 
-    def test_an_unrecognized_required_marker_keeps_a_failed_send_soft(self):
-        directory = Path(tempfile.mkdtemp())
-        (directory / "go.json").write_text(events(("fail", "p", "TestZ", None)))
-        with mock.patch("sys.stdout", new=io.StringIO()), \
-                mock.patch("sys.stderr", new=io.StringIO()):
-            code = test_report.main(["--kind", "nightly", "--go-json",
-                                     str(directory / "go.json")], env={"REPORT_EMAIL_REQUIRED": "false"})
-        self.assertEqual(code, 0)
+    def test_an_explicit_opt_out_keeps_a_failed_send_soft(self):
+        for spelling in ("false", "FALSE", "0", "no", " "):
+            with self.subTest(spelling=spelling):
+                directory = Path(tempfile.mkdtemp())
+                (directory / "go.json").write_text(events(("fail", "p", "TestZ", None)))
+                with mock.patch("sys.stdout", new=io.StringIO()), \
+                        mock.patch("sys.stderr", new=io.StringIO()):
+                    code = test_report.main(["--kind", "nightly", "--go-json",
+                                             str(directory / "go.json")],
+                                            env={"REPORT_EMAIL_REQUIRED": spelling})
+                self.assertEqual(code, 0)
 
     def test_a_passing_report_job_fails_when_the_required_send_fails(self):
         # Nightly and weekly report passing runs too, so a broken channel
