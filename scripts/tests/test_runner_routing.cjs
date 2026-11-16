@@ -272,6 +272,8 @@ test('scheduled suites run through the worker and report from a hosted job', () 
 //   gh api repos/teramoby/speedle-plus/actions/runners --jq '.runners[] | {name, os, labels: [.labels[].name]}'
 // A task routed to labels no registered runner carries would queue forever;
 // one routed to a runner the identity guard rejects fails before any test runs.
+// The guard's accepted identities, including ones that are not registered now,
+// are pinned separately by test_go_ci_worker.cjs.
 const runnerInventory = [
   {name: 'charming-speedle-2', os: 'Linux', arch: 'X64',
     labels: ['self-hosted', 'Linux', 'X64', 'speedle-linux', 'speedle-control', 'speedle-runner', 'reviewbot']},
@@ -282,8 +284,23 @@ const runnerInventory = [
   {name: 'fiona', os: 'macOS', arch: 'ARM64',
     labels: ['self-hosted', 'macOS', 'ARM64', 'speedle-runner', 'speedle-macos', 'fiona-speedle']},
 ];
-test('every self-hosted Go task can only land on runners the identity guard accepts', () => {
+function assertRoutedToAcceptedRunners(mode, event, routed) {
   const guard = script(job.worker.execute, 'Verify self-hosted runner identity');
+  assert.ok(Array.isArray(routed), `${mode} on ${event}: ${JSON.stringify(routed)}`);
+  assert.equal(routed[0], 'self-hosted', `${mode} on ${event} must select the self-hosted pool`);
+  const candidates = runnerInventory.filter(runner => routed.every(label => runner.labels.includes(label)));
+  assert.ok(candidates.length > 0,
+    `${mode} on ${event} selects ${routed.join(', ')}, which no registered runner carries`);
+  for (const runner of candidates) {
+    const result = spawnSync('bash', ['-c', guard], {encoding: 'utf8',
+      env: {...process.env, RUNNER_NAME: runner.name, RUNNER_OS: runner.os,
+        RUNNER_ARCH: runner.arch, CI_TASK: mode}});
+    assert.equal(result.status, 0,
+      `${mode} on ${event} can land on ${runner.name}, which the identity guard rejects:\n${result.stderr}`);
+  }
+  return candidates;
+}
+test('every self-hosted Go task can only land on runners the identity guard accepts', () => {
   const trusted = [
     ['workflow_dispatch', github('workflow_dispatch')],
     ['schedule', {...github('schedule'), ref: 'refs/heads/master'}],
@@ -298,24 +315,37 @@ test('every self-hosted Go task can only land on runners the identity guard acce
         assert.equal(mode, 'quick', `${mode} on ${event} must select a Speedle runner`);
         continue;
       }
-      assert.ok(Array.isArray(routed), `${mode} on ${event}: ${JSON.stringify(routed)}`);
-      assert.equal(routed[0], 'self-hosted', `${mode} on ${event} must select the self-hosted pool`);
-      const candidates = runnerInventory.filter(runner => routed.every(label => runner.labels.includes(label)));
-      assert.ok(candidates.length > 0,
-        `${mode} on ${event} selects ${routed.join(', ')}, which no registered runner carries`);
-      for (const runner of candidates) {
-        const result = spawnSync('bash', ['-c', guard], {encoding: 'utf8',
-          env: {...process.env, RUNNER_NAME: runner.name, RUNNER_OS: runner.os,
-            RUNNER_ARCH: runner.arch, CI_TASK: mode}});
-        assert.equal(result.status, 0,
-          `${mode} on ${event} can land on ${runner.name}, which the identity guard rejects:\n${result.stderr}`);
-      }
+      const candidates = assertRoutedToAcceptedRunners(mode, event, routed);
       if (mode === 'weekly') {
         assert.deepEqual(candidates.map(runner => runner.name), ['fiona'],
           'weekly must schedule only on the macOS runner');
       }
     }
   }
+});
+test('configured runner overrides can only land on runners the identity guard accepts', () => {
+  const pool = '["self-hosted","Linux","X64","speedle-linux"]';
+  const quick = route(job.worker.execute, github('pull_request'), {QUICK_RUNS_ON: pool}, {mode: 'quick'});
+  assert.deepEqual(quick, ['self-hosted', 'Linux', 'X64', 'speedle-linux']);
+  assertRoutedToAcceptedRunners('quick', 'QUICK_RUNS_ON pull request', quick);
+
+  // A merge-head label routes the full jobs that can run from a pull request
+  // to the reserved pool. The schedule-only tasks keep their own pools.
+  const head = {...github('pull_request'), event: {pull_request: {
+    draft: false, labels: [{name: 'merge-head'}],
+    head: {repo: {full_name: canonical}}, user: {login: 'maintainer', type: 'User'}}}};
+  for (const mode of ['lint', 'test', 'build']) {
+    const routed = route(job.worker.execute, head, {HEAD_RUNS_ON: pool}, {mode});
+    assert.deepEqual(routed, ['self-hosted', 'Linux', 'X64', 'speedle-linux'], mode);
+    assertRoutedToAcceptedRunners(mode, `merge-head pull request (${mode})`, routed);
+  }
+  const overrides = {QUICK_RUNS_ON: pool, HEAD_RUNS_ON: pool};
+  const scheduled = {...github('schedule'), ref: 'refs/heads/master'};
+  assert.deepEqual(route(job.worker.execute, scheduled, overrides, {mode: 'weekly'}),
+    ['self-hosted', 'macOS', 'ARM64', 'fiona-speedle']);
+  assert.deepEqual(route(job.worker.execute, scheduled, overrides, {mode: 'nightly'}), labels);
+  assert.deepEqual(route(job.worker.execute, {...github('push'), ref: 'refs/heads/master'}, overrides,
+    {mode: 'regression'}), labels);
 });
 test('every merge to master runs the file regression and reports failures from a hosted job', () => {
   const source = sources.postMerge;
