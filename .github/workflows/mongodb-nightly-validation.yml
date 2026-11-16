@@ -74,9 +74,14 @@ jobs:
           hugo version 2>/dev/null || true
           getconf _NPROCESSORS_ONLN 2>/dev/null || sysctl -n hw.ncpu
           df -h "${RUNNER_TEMP:-/tmp}" | tail -1
-          for port in 2379 2380 6733 6734 27017 3306; do
-            python3 -I -P -c "import sys; assert sys.flags.isolated, 'run with python3 -I'; import socket,sys; s=socket.socket(); s.bind(('127.0.0.1', int(sys.argv[1]))); print('port', sys.argv[1], 'free')" "${port}" 2>/dev/null || echo "port ${port} IN USE"
-          done
+          # Keep an unsupported interpreter distinct from an occupied port.
+          if python3 -I -c 'import sys; assert sys.flags.isolated, "run with python3 -I"' 2>/dev/null; then
+            for port in 2379 2380 6733 6734 27017 3306; do
+              python3 -I -c "import sys; assert sys.flags.isolated, 'run with python3 -I'; import socket,sys; s=socket.socket(); s.bind(('127.0.0.1', int(sys.argv[1]))); print('port', sys.argv[1], 'free')" "${port}" 2>/dev/null || echo "port ${port} IN USE"
+            done
+          else
+            echo 'port checks skipped: this python3 cannot run inline code with -I' >&2
+          fi
 
       - name: Checkout validation revision
         if: ${{ github.event.inputs.inventory_only != 'true' }}
@@ -115,13 +120,13 @@ jobs:
           set -euo pipefail
           test "${RUNNER_NAME}/${RUNNER_OS}/${RUNNER_ARCH}" = fiona/macOS/ARM64
           export GOPATH="$(go env GOPATH)"
-          exec 9>/tmp/speedle-plus-test-services.lock
-          flock -w 7200 9
-          if ! python3 -I -P -c 'import sys; assert sys.flags.isolated, "run with python3 -I"' >/dev/null 2>&1; then
-            echo 'python3 3.11 or newer is required: -I -P keeps the checkout off sys.path, and older interpreters reject -P.' >&2
+          if ! python3 -I -c 'import sys; assert sys.flags.isolated, "run with python3 -I"' >/dev/null 2>&1; then
+            echo 'python3 with -I support is required for isolated inline Python; install Python 3.4 or newer on the runner.' >&2
             exit 1
           fi
-          python3 -I -P - <<'PYTHON'
+          exec 9>/tmp/speedle-plus-test-services.lock
+          flock -w 7200 9
+          python3 -I - <<'PYTHON'
           import sys; assert sys.flags.isolated, 'run with python3 -I'
           import errno
           import socket

@@ -97,7 +97,7 @@ test('documented Go toolchain guard runs after checkout and setup and rejects ve
   // Capture same-line indentation only: `\s` would also match a newline.
   assert.deepEqual([...source.matchAll(/^([ \t]*)GOTOOLCHAIN: (.*)$/gm)].map(match => [match[1], match[2]]),
     [['      ', 'local']], 'only the job-level env may pin GOTOOLCHAIN');
-  assert.match(script('Verify documented Go toolchain'), /^python3 -I -P - <<'PYTHON'$/m,
+  assert.match(script('Verify documented Go toolchain'), /^python3 -I - <<'PYTHON'$/m,
     'the documented-toolchain check must run Python in isolated mode');
 
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-go-toolchain-'));
@@ -310,7 +310,7 @@ if (args.length === 4 && args[0] === 'list' && args[1] === '-m' && args[2] === '
     });
     assert.equal(missingPython.status, 1, missingPython.stderr);
     assert.match(missingPython.stderr,
-      /python3 is required for the documented Go toolchain check; install Python 3\.11 or newer on the runner\./);
+      /python3 is required for the documented Go toolchain check; install Python 3 on the runner./);
     assert.doesNotMatch(missingPython.stderr, /command not found|Traceback/);
   } finally {fs.rmSync(directory, {recursive: true, force: true});}
 });
@@ -414,7 +414,7 @@ test('identity check accepts the Speedle runners for the tasks each may run', ()
     const result = spawnSync(realBash, ['-c', script('Verify self-hosted runner identity')], {encoding: 'utf8', env: environment});
     assert.equal(result.status, 1, result.stderr);
     assert.match(result.stderr,
-      /python3 is required on self-hosted runners; install Python 3\.11 or newer before running this workflow\./);
+      /python3 is required on self-hosted runners; install Python 3 before running this workflow./);
     assert.doesNotMatch(result.stderr, /command not found/);
     // An interpreter that rejects -P fails closed with the version message.
     const python = path.join(directory, 'python3');
@@ -423,7 +423,7 @@ test('identity check accepts the Speedle runners for the tasks each may run', ()
     const oldPython = spawnSync(realBash, ['-c', script('Verify self-hosted runner identity')], {encoding: 'utf8', env: environment});
     assert.equal(oldPython.status, 1, oldPython.stderr);
     assert.match(oldPython.stderr,
-      /python3 3\.11 or newer is required: -I -P keeps the checkout off sys\.path, and older interpreters reject -P\./);
+      /python3 with -I support is required for isolated inline Python; install Python 3\.4 or newer on the runner\./);
     assert.doesNotMatch(oldPython.stderr, /command not found|Traceback/);
   } finally {fs.rmSync(directory, {recursive: true, force: true});}
 });
@@ -544,7 +544,7 @@ const fail=process.env.FIXTURE_FAIL;process.exit(fail&&a.join(' ').includes(fail
       PATH: `${directory}${path.delimiter}${process.env.PATH}`, FIXTURE_CALLS: calls,
       FIXTURE_GOPATH: directory, FIXTURE_LIST_EXIT: String(listExit), FIXTURE_FAIL: failMatching, FIXTURE_DOCKER: docker, FIXTURE_REAL_BASH: realBash,
     }});
-    const records = fs.existsSync(calls) ? fs.readFileSync(calls, 'utf8').trim().split('\n').map(line => JSON.parse(line)).filter(r => !(r.tool === 'python3' && r.args[0] === '-I' && r.args[1] === '-P' && r.args[2] === '-')) : [];
+    const records = fs.existsSync(calls) ? fs.readFileSync(calls, 'utf8').trim().split('\n').map(line => JSON.parse(line)).filter(r => !(r.tool === 'python3' && r.args[0] === '-I' && r.args[1] === '-')) : [];
     const checks = fs.existsSync(path.join(work, 'results', 'checks.txt')) ? fs.readFileSync(path.join(work, 'results', 'checks.txt'), 'utf8') : '';
     return {result, records, checks, directory};
   } finally {fs.rmSync(directory, {recursive: true, force: true}); fs.rmSync(path.join(repoRoot, 'coverage.out'), {force: true});}
@@ -712,12 +712,12 @@ async function freePorts(excluded = []) {
 function guard(ports) {
   const selected = step('Run Go tests');
   assert.match(selected, /flock -w 7200 9/);
-  const body = script('Run Go tests').match(/python3 -I -P - <<'PYTHON'\n([\s\S]+?)\nPYTHON/)?.[1];
+  const body = script('Run Go tests').match(/python3 -I - <<'PYTHON'\n([\s\S]+?)\nPYTHON/)?.[1];
   assert.ok(body); assert.equal((body.match(/for port in \(2379, 2380, 27017, 6733, 6734\):/g) || []).length, 1);
   assert.equal(new Set(ports).size, 5);
   for (const port of ports) assert.ok(![2379, 2380, 27017, 6733, 6734].includes(port));
   const remapped = body.replace('for port in (2379, 2380, 27017, 6733, 6734):', `for port in (${ports.join(', ')}):`);
-  return spawnSync('python3', ['-I', '-P', '-c', remapped], {encoding: 'utf8'});
+  return spawnSync('python3', ['-I', '-c', remapped], {encoding: 'utf8'});
 }
 test('actual service guard accepts five free test-owned ephemeral ports', async () => {
   const result = guard(await freePorts()); assert.equal(result.status, 0, result.stderr);

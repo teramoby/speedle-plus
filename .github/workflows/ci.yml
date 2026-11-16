@@ -172,7 +172,7 @@ jobs:
           if ((${#suites[@]} > 0)); then
             node --test "${suites[@]}"
           fi
-          python3 -m unittest discover -s scripts/tests -p 'test_*.py'
+          python3 -I -m unittest discover -s scripts/tests -p 'test_*.py'
 
   lint:
     name: lint
@@ -223,7 +223,7 @@ jobs:
         env:
           RESULTS: ${{ toJSON(needs) }}
         run: |
-          python3 -I -P - <<'PYTHON'
+          python3 -I - <<'PYTHON'
           import sys; assert sys.flags.isolated, 'run with python3 -I'
           import json
           import os

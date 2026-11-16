@@ -420,7 +420,7 @@ process.exit(process.env.FAIL_TOOL === ${JSON.stringify(tool)} && invocation ===
           assert.deepEqual([...call.args.slice(1)].sort(), [...expectedSuites].sort());
         } else {
           assert.equal(call.tool, 'python3');
-          assert.deepEqual(call.args, ['-m', 'unittest', 'discover', '-s', 'scripts/tests', '-p', 'test_*.py']);
+          assert.deepEqual(call.args, ['-I', '-m', 'unittest', 'discover', '-s', 'scripts/tests', '-p', 'test_*.py']);
         }
       }
       for (const call of recorded) {

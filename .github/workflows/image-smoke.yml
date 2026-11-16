@@ -44,7 +44,7 @@ jobs:
           ALWAYS_SMOKE: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'full-ci') || contains(github.event.pull_request.labels.*.name, 'merge-head') }}
           PR_BASE: ${{ github.event.pull_request.base.sha }}
         run: |
-          python3 -I -P - <<'PYTHON'
+          python3 -I - <<'PYTHON'
           import sys; assert sys.flags.isolated, 'run with python3 -I'
           import os
           from pathlib import Path
