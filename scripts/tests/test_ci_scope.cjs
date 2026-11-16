@@ -159,8 +159,9 @@ test('change classification preserves raw Git paths, uses the base classifier an
     const failed = classify('missing-head');
     assert.notEqual(failed.status, 0);
     assert.equal(failed.output, '', 'diff errors must not publish successful outputs');
-    // Even when the head tree rewrites the classifier to report "nothing
-    // changed", the base revision's copy must decide the routing.
+    // When the head tree rewrites the classifier (here to report "nothing
+    // changed"), the head copy never decides: every route runs, so routes the
+    // base copy does not know cannot be skipped either.
     fs.writeFileSync(path.join(dir, 'scripts/ci/classify-changes.sh'),
       '#!/usr/bin/env bash\nprintf "go=false\\nwebsite=false\\ndocs=false\\nci=false\\n" >> "${GITHUB_OUTPUT}"\n');
     fs.mkdirSync(path.join(dir, 'docs'), {recursive: true});
@@ -170,7 +171,28 @@ test('change classification preserves raw Git paths, uses the base classifier an
     const rewritten = git('rev-parse', 'HEAD');
     const guarded = classify(rewritten, {PR_BASE: previous});
     assert.equal(guarded.status, 0, guarded.stderr);
-    assert.equal(guarded.output, flags(true, false, true, true), 'the base classifier must decide routing');
+    assert.equal(guarded.output, flags(true, true, true, true), 'a pull request that changes the classifier must enable every route');
+    // A base classifier that omits a route key must not silently disable that
+    // route: the step validates the output contract and enables every route.
+    fs.mkdirSync(path.join(dir, 'website'), {recursive: true});
+    fs.writeFileSync(path.join(dir, 'scripts/ci/classify-changes.sh'),
+      '#!/usr/bin/env bash\nprintf "go=false\\nwebsite=false\\ndocs=true\\n" >> "${GITHUB_OUTPUT}"\n');
+    git('add', '--', 'scripts/ci/classify-changes.sh');
+    git('commit', '-qm', 'classifier that omits a key');
+    const partialBase = git('rev-parse', 'HEAD');
+    fs.writeFileSync(path.join(dir, 'docs/guide.md'), 'fixture 2\n');
+    git('add', '--', 'docs/guide.md');
+    git('commit', '-qm', 'docs change under a partial classifier');
+    const partialHead = git('rev-parse', 'HEAD');
+    const partial = classify(partialHead, {PR_BASE: partialBase});
+    assert.equal(partial.status, 0, partial.stderr);
+    assert.equal(partial.output, flags(true, true, true, true), 'a missing route key must enable every route');
+    assert.match(partial.stdout, /did not set: ci/);
+    // The trusted classifier and its output are staged in fresh mktemp files,
+    // never in a fixed RUNNER_TEMP path.
+    const step = script(ci, 'Classify changed files');
+    assert.match(step, /classifier=\$\(mktemp "\$\{RUNNER_TEMP\}\/classify-changes\.XXXXXX"\)/);
+    assert.doesNotMatch(step, /"\$\{RUNNER_TEMP\}\/classify-changes\.sh"/);
     // A base entry that is a symlink is not a regular file: it must take the
     // fallback instead of being staged and executed as text.
     fs.rmSync(path.join(dir, 'scripts/ci/classify-changes.sh'));

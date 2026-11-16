@@ -59,25 +59,53 @@ jobs:
           PUSH_BEFORE: ${{ github.event.before }}
         run: |
           set -euo pipefail
+          # Enable every changed-path route; full CI still follows the full-ci label.
+          route_all() { printf 'go=true\nwebsite=true\ndocs=true\nci=true\n' >> "${GITHUB_OUTPUT}"; }
           if [[ "${EVENT_NAME}" == pull_request ]]; then
-            # Classify with the base revision's script: the checked-out copy
-            # must not decide this route. Defence in depth; the merge gate
-            # remains the label procedure noted on the summary job.
+            # Classify with the base revision's script, so that an edit to
+            # scripts/ci cannot quietly change the route of its own pull
+            # request. This guards against accidental or unreviewed classifier
+            # edits only; it is not a security boundary, because a pull request
+            # can also edit this workflow. Workflow changes are reviewed before
+            # merge, and the merge-head run executes full CI.
             base="${PR_BASE:-}"
             entry=""
             if [[ -n "${base}" && "${base}" != 0000000000000000000000000000000000000000 ]]; then
               entry=$(git ls-tree "${base}" -- scripts/ci/classify-changes.sh 2>/dev/null || true)
             fi
             mode=${entry%% *}
-            if [[ "${mode}" == 100644 || "${mode}" == 100755 ]]; then
-              classifier="${RUNNER_TEMP}/classify-changes.sh"
-              git show "${base}:scripts/ci/classify-changes.sh" > "${classifier}"
-              bash "${classifier}"
-            else
+            if [[ "${mode}" != 100644 && "${mode}" != 100755 ]]; then
               echo "::warning::No trusted regular-file classifier in the base revision; enabling every changed-path route."
-              # Enable every changed-path route; full CI still follows the
-              # full-ci label.
-              printf 'go=true\nwebsite=true\ndocs=true\nci=true\n' >> "${GITHUB_OUTPUT}"
+              route_all
+            else
+              # A pull request that changes the classifier may add routes the
+              # base copy does not know, so it runs every route.
+              set +e
+              git diff --quiet "${base}" "${GITHUB_SHA}" -- scripts/ci/classify-changes.sh
+              status=$?
+              set -e
+              if [[ "${status}" == 1 ]]; then
+                echo "::notice::This pull request changes the classifier; enabling every changed-path route."
+                route_all
+              elif [[ "${status}" != 0 ]]; then
+                echo "::error::Cannot compare the classifier with the base revision." >&2
+                exit 1
+              else
+                classifier=$(mktemp "${RUNNER_TEMP}/classify-changes.XXXXXX")
+                routes=$(mktemp "${RUNNER_TEMP}/classify-routes.XXXXXX")
+                git show "${base}:scripts/ci/classify-changes.sh" > "${classifier}"
+                GITHUB_OUTPUT="${routes}" bash "${classifier}"
+                missing=""
+                for key in go website docs ci; do
+                  grep -q "^${key}=" "${routes}" || missing="${missing} ${key}"
+                done
+                if [[ -n "${missing}" ]]; then
+                  echo "::warning::The base classifier did not set:${missing}; enabling every changed-path route."
+                  route_all
+                else
+                  cat "${routes}" >> "${GITHUB_OUTPUT}"
+                fi
+              fi
             fi
           else
             # Pushes to the default branch run the merged classifier.
