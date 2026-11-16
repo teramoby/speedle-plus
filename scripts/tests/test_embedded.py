@@ -18,7 +18,15 @@ SETUP = (
     "go mod init example.com/speedle-embedded-demo\n"
     "go get github.com/teramoby/speedle-plus/pkg/eval@v1.6.0"
 )
+SETUP_PREFIX = (
+    "mkdir speedle-embedded-demo\n"
+    "cd speedle-embedded-demo\n"
+    "go mod init example.com/speedle-embedded-demo"
+)
+GET = "go get github.com/teramoby/speedle-plus/pkg/eval@v1.6.0"
 BUILD = "go mod tidy\ngo build -o ./bin/embedded-demo ."
+TIDY = "go mod tidy"
+BUILD_COMMAND = "go build -o ./bin/embedded-demo ."
 RUN = "./bin/embedded-demo"
 GO_LIST = "go list -m -json github.com/teramoby/speedle-plus"
 STEPS = {
@@ -69,13 +77,15 @@ class FakeRun:
             return json.dumps(MODULE if self.occurrences(command) == 1 else REPLACED_MODULE) + "\n"
         if command == ["git", "rev-parse", "HEAD"]:
             return "deadbeef\n"
-        if command == STEPS["setup"]:
+        if command == SETUP_PREFIX:
             app = Path(cwd) / "speedle-embedded-demo"
             app.mkdir()
             (app / "go.mod").write_text("module example.com/speedle-embedded-demo\n")
-            (app / "go.sum").write_text("")
             return ""
-        if command == STEPS["run"]:
+        if command == GET:
+            (Path(cwd) / "go.sum").write_text("")
+            return ""
+        if command == RUN:
             return self.run_output
         return ""
 
@@ -88,90 +98,78 @@ class EmbeddedRetryTest(unittest.TestCase):
             check_embedded.verify("en", STEPS, None, candidate)
         return sleep
 
-    def test_retries_a_transient_setup_failure_and_then_passes(self):
-        fake = FakeRun(failures={SETUP: (1,)})
+    def test_retries_a_transient_go_get_failure_and_then_passes(self):
+        fake = FakeRun(failures={GET: (1,)})
         sleep = self.verify(fake)
-        self.assertEqual(fake.occurrences(SETUP), 2)
-        self.assertEqual(fake.occurrences(BUILD), 1)
+        self.assertEqual(fake.occurrences(SETUP_PREFIX), 1)
+        self.assertEqual(fake.occurrences(GET), 2)
+        self.assertEqual(fake.occurrences(TIDY), 1)
+        self.assertEqual(fake.occurrences(BUILD_COMMAND), 1)
         self.assertEqual(fake.occurrences(RUN), 1)
         self.assertEqual(sleep.call_args_list, [mock.call(5.0)])
 
-    def test_does_not_retry_a_setup_attempt_that_times_out(self):
-        # A hung download must not triple the 600 s limit and hide the error.
-        fake = FakeRun(timeouts={SETUP: (1,)})
+    def test_does_not_retry_a_compile_failure_in_the_documented_build(self):
+        # A defect in the guide must fail on the first attempt instead of
+        # looking like a flaky download.
+        fake = FakeRun(failures={BUILD_COMMAND: (1,)})
         with mock.patch.object(check_embedded, "run", fake), \
                 mock.patch.object(check_embedded.time, "sleep") as sleep, \
                 contextlib.redirect_stdout(io.StringIO()), \
-                self.assertRaises(subprocess.TimeoutExpired):
+                self.assertRaisesRegex(RuntimeError, "go build"):
             check_embedded.verify("en", STEPS, None)
-        self.assertEqual(fake.occurrences(SETUP), 1)
-        self.assertEqual(fake.occurrences(BUILD), 0)
+        self.assertEqual(fake.occurrences(GET), 1)
+        self.assertEqual(fake.occurrences(TIDY), 1)
+        self.assertEqual(fake.occurrences(BUILD_COMMAND), 1)
         self.assertEqual(fake.occurrences(RUN), 0)
         sleep.assert_not_called()
 
-    def test_does_not_retry_a_build_that_times_out(self):
-        fake = FakeRun(timeouts={BUILD: (1,)})
+    def test_does_not_retry_a_setup_command_that_times_out(self):
+        # A hung local command is not a download and must not multiply the
+        # 600 s limit.
+        fake = FakeRun(timeouts={SETUP_PREFIX: (1,)})
         with mock.patch.object(check_embedded, "run", fake), \
                 mock.patch.object(check_embedded.time, "sleep") as sleep, \
                 contextlib.redirect_stdout(io.StringIO()), \
                 self.assertRaises(subprocess.TimeoutExpired):
             check_embedded.verify("en", STEPS, None)
-        self.assertEqual(fake.occurrences(SETUP), 1)
-        self.assertEqual(fake.occurrences(BUILD), 1)
+        self.assertEqual(fake.occurrences(SETUP_PREFIX), 1)
+        self.assertEqual(fake.occurrences(GET), 0)
         sleep.assert_not_called()
 
-    def test_clears_the_partial_module_before_retrying_setup(self):
-        fake = FakeRun(failures={SETUP: (1,)})
-        partial_present = []
-
-        def run(command, cwd, env):
-            if command == SETUP:
-                app = Path(cwd) / "speedle-embedded-demo"
-                if fake.occurrences(SETUP) == 0:
-                    app.mkdir()
-                    (app / "go.mod").write_text("module example.com/speedle-embedded-demo\n")
-                else:
-                    partial_present.append(app.exists())
-            return fake(command, cwd, env)
-
-        with mock.patch.object(check_embedded, "run", run), \
-                mock.patch.object(check_embedded.time, "sleep"), \
-                contextlib.redirect_stdout(io.StringIO()):
-            check_embedded.verify("en", STEPS, None)
-        self.assertEqual(partial_present, [False])
-
-    def test_reports_a_cleanup_failure_chained_to_the_command_failure(self):
-        # A swallowed cleanup error would turn into a misleading "File exists"
-        # on the retry; the report must show both failures instead.
-        fake = FakeRun(failures={SETUP: (1,)})
-        real_rmtree = check_embedded.shutil.rmtree
-
-        def rmtree(path, *args, **kwargs):
-            if Path(path).name == "speedle-embedded-demo":
-                raise OSError("read-only file system")
-            return real_rmtree(path, *args, **kwargs)
-
-        with mock.patch.object(check_embedded.shutil, "rmtree", side_effect=rmtree), \
-                mock.patch.object(check_embedded, "run", fake), \
+    def test_does_not_retry_a_go_get_that_times_out(self):
+        fake = FakeRun(timeouts={GET: (1,)})
+        with mock.patch.object(check_embedded, "run", fake), \
                 mock.patch.object(check_embedded.time, "sleep") as sleep, \
                 contextlib.redirect_stdout(io.StringIO()), \
-                self.assertRaises(OSError) as raised:
+                self.assertRaises(subprocess.TimeoutExpired):
             check_embedded.verify("en", STEPS, None)
-        self.assertIsInstance(raised.exception.__cause__, RuntimeError)
-        self.assertEqual(fake.occurrences(SETUP), 1)
-        self.assertEqual(fake.occurrences(BUILD), 0)
+        self.assertEqual(fake.occurrences(GET), 1)
+        self.assertEqual(fake.occurrences(TIDY), 0)
         sleep.assert_not_called()
 
-    def test_retries_a_transient_download_during_the_build(self):
-        fake = FakeRun(failures={BUILD: (1,)})
+    def test_does_not_retry_a_go_mod_tidy_that_times_out(self):
+        fake = FakeRun(timeouts={TIDY: (1,)})
+        with mock.patch.object(check_embedded, "run", fake), \
+                mock.patch.object(check_embedded.time, "sleep") as sleep, \
+                contextlib.redirect_stdout(io.StringIO()), \
+                self.assertRaises(subprocess.TimeoutExpired):
+            check_embedded.verify("en", STEPS, None)
+        self.assertEqual(fake.occurrences(TIDY), 1)
+        self.assertEqual(fake.occurrences(BUILD_COMMAND), 0)
+        sleep.assert_not_called()
+
+    def test_retries_a_transient_go_mod_tidy_failure(self):
+        fake = FakeRun(failures={TIDY: (1,)})
         sleep = self.verify(fake)
-        self.assertEqual(fake.occurrences(BUILD), 2)
+        self.assertEqual(fake.occurrences(TIDY), 2)
+        self.assertEqual(fake.occurrences(BUILD_COMMAND), 1)
         self.assertEqual(sleep.call_args_list, [mock.call(5.0)])
 
-    def test_retries_the_candidate_build_after_a_transient_failure(self):
-        fake = FakeRun(failures={BUILD: (2,)})
+    def test_retries_the_candidate_build_download_after_a_transient_failure(self):
+        fake = FakeRun(failures={TIDY: (2,)})
         sleep = self.verify(fake, candidate=True)
-        self.assertEqual(fake.occurrences(BUILD), 3)
+        self.assertEqual(fake.occurrences(TIDY), 3)
+        self.assertEqual(fake.occurrences(BUILD_COMMAND), 2)
         self.assertEqual(sleep.call_args_list, [mock.call(5.0)])
 
     def test_a_wrong_allow_deny_result_fails_at_once(self):
@@ -184,16 +182,50 @@ class EmbeddedRetryTest(unittest.TestCase):
         self.assertEqual(fake.occurrences(RUN), 1)
         sleep.assert_not_called()
 
-    def test_gives_up_after_three_failed_setup_attempts(self):
-        fake = FakeRun(failures={SETUP: (1, 2, 3)})
+    def test_gives_up_after_three_failed_go_get_attempts(self):
+        fake = FakeRun(failures={GET: (1, 2, 3)})
         with mock.patch.object(check_embedded, "run", fake), \
                 mock.patch.object(check_embedded.time, "sleep") as sleep, \
                 contextlib.redirect_stdout(io.StringIO()), \
                 self.assertRaisesRegex(RuntimeError, "Command failed"):
             check_embedded.verify("en", STEPS, None)
-        self.assertEqual(fake.occurrences(SETUP), 3)
-        self.assertEqual(fake.occurrences(BUILD), 0)
+        self.assertEqual(fake.occurrences(GET), 3)
+        self.assertEqual(fake.occurrences(TIDY), 0)
         self.assertEqual(sleep.call_args_list, [mock.call(5.0), mock.call(10.0)])
+
+    def test_reports_each_retry_with_a_neutral_command_failure_message(self):
+        fake = FakeRun(failures={GET: (1,)})
+        output = io.StringIO()
+        with mock.patch.object(check_embedded, "run", fake), \
+                mock.patch.object(check_embedded.time, "sleep"), \
+                contextlib.redirect_stdout(output):
+            check_embedded.verify("en", STEPS, None)
+        self.assertIn(
+            f"Command failed (attempt 1/3); retrying in 5s: Command failed: {GET}",
+            output.getvalue().splitlines(),
+        )
+        self.assertNotIn("Transient", output.getvalue())
+
+
+class SplitNetworkCommandTest(unittest.TestCase):
+    def test_splits_the_documented_setup_block_around_go_get(self):
+        steps = check_embedded.blocks("en")
+        before, command, after = check_embedded.split_network_command(steps["setup"], "go get")
+        self.assertEqual(before, SETUP_PREFIX)
+        self.assertEqual(command, GET)
+        self.assertEqual(after, "")
+
+    def test_splits_the_documented_build_block_around_go_mod_tidy(self):
+        steps = check_embedded.blocks("en")
+        before, command, after = check_embedded.split_network_command(steps["build"], "go mod tidy")
+        self.assertEqual(before, "")
+        self.assertEqual(command, TIDY)
+        self.assertEqual(after, BUILD_COMMAND)
+
+    def test_requires_exactly_one_matching_command(self):
+        for block in ("mkdir -p bin\ngo build .", "go mod tidy\ngo mod tidy\ngo build ."):
+            with self.subTest(block=block), self.assertRaises(AssertionError):
+                check_embedded.split_network_command(block, "go mod tidy")
 
 
 class CheckerImportTest(unittest.TestCase):

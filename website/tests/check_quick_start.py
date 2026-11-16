@@ -5,13 +5,15 @@ The documented `go install` route runs once into a temporary GOBIN, its module
 path and version pattern are checked against the checkout, and its pinned version
 must match the highest full semantic tag on the public remote. The installed
 binaries must accept the flags used by the guide, and one documented walkthrough
-runs with those installed binaries. Network steps (the public clone, Go module
-downloads and the install) retry up to three times with exponential backoff,
-because a transient TLS or connection reset must not fail the walkthrough; a
-step that hits its timeout fails at once instead of multiplying the limit. The
-documented commands themselves stay byte for byte unchanged. A public shallow
-clone verifies the download step; CI then checks out the captured candidate
-revision before compiling. Linux
+runs with those installed binaries. Network steps (the public clone, the
+module download and the install) retry up to three times with exponential
+backoff, because a transient TLS or connection reset must not fail the
+walkthrough; a step that hits its timeout fails at once instead of multiplying
+the limit. The documented build runs once after a checker-added `go mod
+download`, so a real defect in the guide fails on the first attempt instead of
+looking like a flaky download. The documented commands themselves stay byte
+for byte unchanged. A public shallow clone verifies the download step; CI then
+checks out the captured candidate revision before compiling. Linux
 runs the native services and clients in unprivileged user/network/PID
 namespaces, using the exact documented ports without conflicting with existing
 services. On macOS, alternate REST ports and a shared lock isolate fixture
@@ -71,14 +73,33 @@ def run(command, cwd, env, timeout=60):
     return result.stdout
 
 
+def split_network_command(block, command):
+    """Split a documented block around its single network-touching command.
+
+    Returns the lines before it, the command itself and the lines after it.
+    The caller retries only the network command and runs the others once, so a
+    genuine defect in the guide fails on the first attempt while a transient
+    download failure is retried. The block must contain the command exactly
+    once: a silent mismatch would retry the wrong step or skip a documented
+    command.
+    """
+    pattern = re.compile(rf"(?:^|\s){re.escape(command)}(?:\s|$)")
+    lines = block.splitlines()
+    matches = [index for index, line in enumerate(lines) if pattern.search(line)]
+    assert len(matches) == 1, (command, block)
+    index = matches[0]
+    return "\n".join(lines[:index]), lines[index], "\n".join(lines[index + 1:])
+
+
 def run_with_retry(action, reset=None, attempts=3, delay=5.0):
-    """Retry a network action up to `attempts` times with exponential backoff.
+    """Retry a network command up to `attempts` times with exponential backoff.
 
     Only command failures are retried: they cover the transient TLS and
     connection resets of the clone, module download and install steps. A
     timeout is not retried, because a hung command would multiply the
     per-command limit across attempts and hide the underlying error.
-    Assertions about the result are never retried.
+    Assertions about the result are never retried, and neither is any
+    documented command other than the network step passed in.
 
     `reset` runs after a failed attempt, before the next one. If it fails, the
     cleanup error is raised chained to the command failure that triggered the
@@ -101,7 +122,7 @@ def run_with_retry(action, reset=None, attempts=3, delay=5.0):
                 except OSError as cleanup:
                     raise cleanup from error
             detail = str(error).splitlines()[0]
-            print(f"Transient failure (attempt {attempt}/{attempts}); retrying in {delay:.0f}s: {detail}", flush=True)
+            print(f"Command failed (attempt {attempt}/{attempts}); retrying in {delay:.0f}s: {detail}", flush=True)
             time.sleep(delay)
             delay *= 2
 
@@ -207,7 +228,14 @@ def verify_install_route(env):
     with tempfile.TemporaryDirectory(prefix="speedle-go-install-") as temporary:
         work = Path(temporary)
         # GOBIN is this temporary bin directory, never the shared GOPATH/bin.
-        run_with_retry(lambda: run(english, work, env, timeout=600))
+        # Only the documented install download retries; the `ls bin` check
+        # that follows runs once.
+        before, install, after = split_network_command(english, "go install")
+        if before:
+            run(before, work, env, timeout=600)
+        run_with_retry(lambda: run(install, work, env, timeout=600))
+        if after:
+            run(after, work, env, timeout=600)
         for binary, flags in INSTALLED_FLAGS.items():
             path = work / "bin" / binary
             assert os.access(path, os.X_OK), binary
@@ -250,13 +278,24 @@ def verify(locale, toolchain, env):
             except FileNotFoundError:
                 pass
 
-        run_with_retry(lambda: run("\n".join(build[:2]), work, env, timeout=180), reset=reset_checkout)
+        # Only the documented clone downloads and retries; the `cd` that
+        # follows is a local step and runs once.
+        run_with_retry(lambda: run(build[0], work, env, timeout=180), reset=reset_checkout)
+        run(build[1], work, env)
         revision = run(["git", "rev-parse", "HEAD"], ROOT, env).strip()
         # Keep the real clone step, then test this captured candidate rather than
         # a potentially older/newer master. No credentials or shared config changes.
         run(["git", "-c", "protocol.file.allow=always", "fetch", "--depth=1", "--no-tags", str(ROOT), revision], checkout, env)
         run(["git", "checkout", "--detach", revision], checkout, env)
-        output = run_with_retry(lambda: run("\n".join(build[2:]), checkout, env, timeout=600))
+        before, build_command, after = split_network_command("\n".join(build[2:]), "go build")
+        if before:
+            run(before, checkout, env)
+        # Checker-added download step: the documented build needs the network
+        # on a cold module cache, so the download retries and the documented
+        # `go build` below runs once, failing on the first compile error.
+        run_with_retry(lambda: run(["go", "mod", "download"], checkout, env, timeout=600))
+        run(build_command, checkout, env, timeout=600)
+        output = run(after, checkout, env) if after else ""
         for binary in ("spctl", "speedle-pms", "speedle-ads"):
             assert binary in output and os.access(checkout / "bin" / binary, os.X_OK), binary
         print(f"{locale}: PASS public clone and native build at {revision}", flush=True)

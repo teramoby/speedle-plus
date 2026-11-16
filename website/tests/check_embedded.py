@@ -3,17 +3,19 @@
 
 Execute the documented shell commands and compile the actual Go/SPDL blocks
 against the public release and, in the merge gate, the candidate library too.
-The module download steps (`go get` and `go mod tidy`/`go build`) retry up to
-three times with exponential backoff, because a transient network failure must
-not fail the walkthrough; a step that hits its timeout fails at once instead of
-multiplying the 600 s limit. The documented commands stay byte for byte
-unchanged and the module-version and allow/deny checks are never retried.
+Only the module downloads (`go get` and `go mod tidy`) retry, up to three
+times with exponential backoff, because a transient network failure must not
+fail the walkthrough. Every other documented command, `go build` included,
+runs once: a real defect in the guide must fail on the first attempt instead
+of looking like a flaky download. A command that hits its timeout fails at
+once instead of multiplying the 600 s limit. The documented commands stay byte
+for byte unchanged and the module-version and allow/deny checks are never
+retried.
 """
 import argparse
 import json
 import os
 import re
-import shutil
 import subprocess
 import tempfile
 import time
@@ -42,18 +44,32 @@ def run(command, cwd, env):
     return result.stdout
 
 
-def run_with_retry(action, reset=None, attempts=3, delay=5.0):
-    """Retry a network action up to `attempts` times with exponential backoff.
+def split_network_command(block, command):
+    """Split a documented block around its single network-touching command.
+
+    Returns the lines before it, the command itself and the lines after it.
+    The caller retries only the network command and runs the others once, so a
+    genuine defect in the guide fails on the first attempt while a transient
+    download failure is retried. The block must contain the command exactly
+    once: a silent mismatch would retry the wrong step or skip a documented
+    command.
+    """
+    pattern = re.compile(rf"(?:^|\s){re.escape(command)}(?:\s|$)")
+    lines = block.splitlines()
+    matches = [index for index, line in enumerate(lines) if pattern.search(line)]
+    assert len(matches) == 1, (command, block)
+    index = matches[0]
+    return "\n".join(lines[:index]), lines[index], "\n".join(lines[index + 1:])
+
+
+def run_with_retry(action, attempts=3, delay=5.0):
+    """Retry a network command up to `attempts` times with exponential backoff.
 
     Only command failures are retried: they cover the transient TLS and
-    connection resets of the module download and build steps. A timeout is not
-    retried, because a hung command would multiply the 600 s limit across
-    attempts and hide the underlying error. Assertions about the result are
-    never retried.
-
-    `reset` runs after a failed attempt, before the next one. If it fails, the
-    cleanup error is raised chained to the command failure that triggered the
-    retry, so it cannot surface later as a misleading "File exists".
+    connection resets of the module downloads. A timeout is not retried,
+    because a hung command would multiply the 600 s limit across attempts and
+    hide the underlying error. Assertions about the result are never retried,
+    and neither is any documented command other than the download passed in.
 
     This is a private copy rather than a shared module: the walkthrough checks
     run under python3 -I, which keeps the script directory off sys.path, so a
@@ -66,13 +82,8 @@ def run_with_retry(action, reset=None, attempts=3, delay=5.0):
         except RuntimeError as error:
             if attempt == attempts:
                 raise
-            if reset is not None:
-                try:
-                    reset()
-                except OSError as cleanup:
-                    raise cleanup from error
             detail = str(error).splitlines()[0]
-            print(f"Transient failure (attempt {attempt}/{attempts}); retrying in {delay:.0f}s: {detail}", flush=True)
+            print(f"Command failed (attempt {attempt}/{attempts}); retrying in {delay:.0f}s: {detail}", flush=True)
             time.sleep(delay)
             delay *= 2
 
@@ -84,6 +95,8 @@ def verify(locale, steps, toolchain, candidate=False):
     env["GOFLAGS"] = (env.get("GOFLAGS", "") + " -buildvcs=false").strip()
     if toolchain:
         env["GOTOOLCHAIN"] = toolchain
+    setup_before, get, setup_after = split_network_command(steps["setup"], "go get")
+    build_before, tidy, build_after = split_network_command(steps["build"], "go mod tidy")
     with tempfile.TemporaryDirectory(prefix="speedle-embedded-") as temporary:
         work = Path(temporary)
         version = run(steps["version"], work, env).strip()
@@ -91,21 +104,26 @@ def verify(locale, steps, toolchain, candidate=False):
             assert f"go version {toolchain} " in version, version
         print(f"{locale}: {version}; runner={env.get('RUNNER_NAME', 'local')}", flush=True)
         app = work / "speedle-embedded-demo"
-
-        def reset_app():
-            # A failed attempt can leave the module directory behind, which
-            # would make every retry fail with "File exists"; start clean.
-            # Only absence is expected: any other cleanup error is raised
-            # (chained to the failed attempt) rather than hidden.
-            try:
-                shutil.rmtree(app)
-            except FileNotFoundError:
-                pass
-
-        run_with_retry(lambda: run(steps["setup"], work, env), reset=reset_app)
+        # The `cd` in the documented setup block only affects its own shell, so
+        # the download retries from the module directory the block creates.
+        run(setup_before, work, env)
+        run_with_retry(lambda: run(get, app, env))
+        if setup_after:
+            run(setup_after, app, env)
         (app / "policies.spdl").write_text(steps["policies"] + "\n")
         (app / "main.go").write_text(steps["program"] + "\n")
-        run_with_retry(lambda: run(steps["build"], app, env))
+
+        def build():
+            # Only `go mod tidy` downloads here. The documented `go build` runs
+            # once, so a compile error fails on the first attempt instead of
+            # being retried as a flaky download.
+            if build_before:
+                run(build_before, app, env)
+            run_with_retry(lambda: run(tidy, app, env))
+            if build_after:
+                run(build_after, app, env)
+
+        build()
         module = json.loads(run("go list -m -json github.com/teramoby/speedle-plus", app, env))
         assert module["Version"] == "v1.6.0" and "Replace" not in module, module
         output = run(steps["run"], app, env).strip()
@@ -115,7 +133,7 @@ def verify(locale, steps, toolchain, candidate=False):
         if candidate:
             revision = run(["git", "rev-parse", "HEAD"], ROOT, env).strip()
             run(["go", "mod", "edit", "-replace", f"github.com/teramoby/speedle-plus={ROOT}"], app, env)
-            run_with_retry(lambda: run(steps["build"], app, env))
+            build()
             selected = json.loads(run("go list -m -json github.com/teramoby/speedle-plus", app, env))
             assert Path(selected["Replace"]["Dir"]).resolve() == ROOT.resolve(), selected
             output = run(steps["run"], app, env).strip()
