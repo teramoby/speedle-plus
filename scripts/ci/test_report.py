@@ -246,6 +246,10 @@ def extract_text(payload):
 EMAIL_TIMEOUT = 30
 # The Email Service API accepts at most 50 addresses across to, cc and bcc.
 MAX_EMAIL_RECIPIENTS = 50
+# A mass-failure report can grow to megabytes. The email is the notification
+# channel, so it carries a bounded prefix and points at the full report in the
+# run summary and the tracked issues.
+EMAIL_TEXT_LIMIT = 100_000
 
 
 def addresses(value):
@@ -277,6 +281,17 @@ def configured_addresses(value):
     if not entries or any("@" not in address for _, address in entries):
         return None
     return [address for _, address in entries]
+
+
+def email_text(report, run_url=""):
+    """The report as far as the email carries it, with a pointer when the full
+    report is longer. The summary file and the run summary keep every line."""
+    if len(report) <= EMAIL_TEXT_LIMIT:
+        return report
+    where = f"the run summary ({run_url})" if run_url else "the run summary"
+    footer = (f"\n\n[report truncated at {EMAIL_TEXT_LIMIT} characters; "
+              f"see {where} and the tracked issues]\n")
+    return report[:EMAIL_TEXT_LIMIT - len(footer)] + footer
 
 
 def send_email(subject, body, env, timeout=EMAIL_TIMEOUT):
@@ -487,7 +502,7 @@ def main(argv=None, env=os.environ):
 
     subject = f"[Speedle {policy['title']}] {'PASSED' if ok else 'FAILED'}"
     try:
-        send_email(subject, report, env)
+        send_email(subject, email_text(report, run_url), env)
     except Exception as error:
         # A notification bug must not skip the summary and failure tracking.
         print(f"::error::Email delivery failed ({type(error).__name__}).", file=sys.stderr)

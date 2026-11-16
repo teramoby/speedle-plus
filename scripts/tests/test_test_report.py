@@ -246,6 +246,25 @@ class EmailTest(unittest.TestCase):
         self.assertEqual(payload["to"], ["Ops@Example.com"])
         self.assertEqual(payload["from"], "Sender@Example.com")
 
+    def test_a_large_report_is_truncated_for_the_email(self):
+        directory = Path(tempfile.mkdtemp())
+        stream = directory / "go.json"
+        stream.write_text(events(*[
+            item for i in range(1000)
+            for item in (("output", "p", f"T{i}", "x" * 200 + "\n"), ("fail", "p", f"T{i}", None))]))
+        summary = directory / "report.txt"
+        with mock.patch.object(test_report, "send_email", return_value=True) as send, \
+                mock.patch("builtins.print"):
+            test_report.main(["--kind", "weekly", "--go-json", str(stream),
+                              "--summary-file", str(summary)], env={"RUN_URL": "http://run"})
+        body = send.call_args[0][1]
+        self.assertLessEqual(len(body), test_report.EMAIL_TEXT_LIMIT)
+        self.assertIn("[report truncated", body)
+        self.assertIn("http://run", body)
+        full = summary.read_text()
+        self.assertGreater(len(full), test_report.EMAIL_TEXT_LIMIT)
+        self.assertIn("x" * 200, full)
+
     def test_every_configured_recipient_must_be_confirmed(self):
         env = dict(self.env, OPS_EMAIL_TO="Recipient One <recipient@example.com>, second@example.com")
         ok, _, message = self.send(result={"queued": ["recipient@example.com"]}, env=env)
