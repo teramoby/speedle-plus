@@ -141,7 +141,7 @@ brew install teramoby/tap/speedle
 
 The [Homebrew](https://engine.speedle.io/docs/deployment/homebrew/) page shows how to start the services and run a demo.
 
-With Go 1.27.4 or a newer patch on the Go 1.27 release branch:
+With a Go toolchain that meets the minimum in the installed release's `go.mod` (see [Prerequisites](#prerequisites) for a checkout):
 
 ```
 go install github.com/teramoby/speedle-plus/cmd/...@latest
@@ -173,7 +173,7 @@ Replicas, resources, probes and store flags are in `deployment/helm/speedle/valu
 
 ### Prerequisites
 
--   Go 1.27.4 or a newer patch on the Go 1.27 release branch <https://go.dev/doc/install>. This source module requires Go 1.27.4 or newer. Go sets `GOROOT` and `GOPATH` itself.
+-   Go 1.27.4 or newer <https://go.dev/doc/install>. CI exercises exactly the `go` version in `go.mod`; newer releases are not tested here. Go sets `GOROOT` and `GOPATH` itself.
 
 ### Steps
 

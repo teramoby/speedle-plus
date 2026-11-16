@@ -35,6 +35,10 @@ jobs:
       ${{ github.repository == 'teramoby/speedle-plus' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && github.ref == 'refs/heads/master') || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.event.sender.type == 'User' || github.event.sender.type == 'Bot')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.user.type == 'User' || github.event.pull_request.user.type == 'Bot'))) && fromJSON(inputs.mode == 'quick' && (vars.QUICK_RUNS_ON || '"ubuntu-latest"') || github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'merge-head') && vars.HEAD_RUNS_ON || inputs.mode == 'build' && '["self-hosted","Linux","X64","speedle-linux"]' || inputs.mode == 'weekly' && '["self-hosted","fiona-speedle"]' || '["self-hosted","speedle-runner"]') || 'ubuntu-latest' }}
     # test can wait on the host lock behind a nightly on the other charming runner.
     timeout-minutes: ${{ (inputs.mode == 'nightly' || inputs.mode == 'weekly' || inputs.mode == 'regression' || inputs.mode == 'test') && 150 || 30 }}
+    # Never let a later go command pick another toolchain than the installed
+    # and verified one; a go.mod requirement for a newer release must fail.
+    env:
+      GOTOOLCHAIN: local
     steps:
       - name: Validate CI task
         env:
@@ -57,7 +61,10 @@ jobs:
             *) echo 'Unexpected runner.' >&2; exit 1 ;;
           esac
           command -v git >/dev/null
-          command -v python3 >/dev/null
+          if ! command -v python3 >/dev/null 2>&1; then
+            echo 'python3 is required on self-hosted runners; install Python 3 before running this workflow.' >&2
+            exit 1
+          fi
           echo "Using runner ${RUNNER_NAME} (${RUNNER_OS}/${RUNNER_ARCH})."
 
       - name: Checkout code
@@ -74,6 +81,131 @@ jobs:
           # This persistent host already retains the Go caches. Restoring an
           # archive over read-only module files causes noisy extraction failures.
           cache: ${{ runner.environment != 'self-hosted' }}
+
+      # Run the README/go.mod consistency check on the cheap PR paths; the
+      # repository-level regression in the changes job covers README changes.
+      # CI exercises the exact minimum documented under README's Prerequisites
+      # heading; user builds may use a newer release.
+      - name: Verify documented Go toolchain
+        if: inputs.mode == 'quick' || inputs.mode == 'lint'
+        run: |
+          set -euo pipefail
+          if ! command -v python3 >/dev/null 2>&1; then
+            echo 'python3 is required for the documented Go toolchain check; install Python 3 on the runner.' >&2
+            exit 1
+          fi
+          python3 -I - <<'PYTHON'
+          import re
+          import stat
+          import subprocess
+          from pathlib import Path
+
+          def go(*args):
+              command = ['go', *args]
+              try:
+                  return subprocess.check_output(
+                      command, text=True, stderr=subprocess.PIPE).strip()
+              except subprocess.CalledProcessError as error:
+                  detail = error.stderr.strip() or f'exit status {error.returncode}'
+                  raise SystemExit(f"{' '.join(command)} failed: {detail}") from None
+
+          def documented_minimum(text):
+              # Scope the search to the Prerequisites section so a version
+              # mentioned elsewhere in README cannot satisfy the guard. Only a
+              # prerequisite item or paragraph whose subject is Go or Golang
+              # declares the minimum, so an unrelated version inside the
+              # section is ignored rather than allowed to satisfy or poison the
+              # guard. README is pull-request content, so scan line by line and
+              # bound the digit runs to keep every regex linear on crafted
+              # input.
+              headings = []
+              fenced = False
+              offset = 0
+              for line in text.splitlines(keepends=True):
+                  bare = line.rstrip('\n')
+                  if bare.lstrip().startswith(('```', '~~~')):
+                      fenced = not fenced
+                  elif not fenced:
+                      heading = re.match(r'^#{1,6}[ \t]+(.*)$', bare)
+                      if heading:
+                          # Accept an optional ATX closing sequence.
+                          level = len(bare) - len(bare.lstrip('#'))
+                          title = heading.group(1).strip().rstrip('#').strip()
+                          headings.append((offset, level, title))
+                  offset += len(line)
+              sections = [entry for entry in headings if entry[2] == 'Prerequisites']
+              if not sections:
+                  raise SystemExit('README Prerequisites section not found')
+              if len(sections) != 1:
+                  raise SystemExit(
+                      'README must contain exactly one Prerequisites section,'
+                      f' found {len(sections)}')
+              start = sections[0]
+              # Deeper sub-headings belong to the section; a heading at the same
+              # or a higher level ends it.
+              end = next((entry[0] for entry in headings
+                          if entry[0] > start[0] and entry[1] <= start[1]), len(text))
+              prose = []
+              fenced = False
+              for line in text[start[0]:end].splitlines():
+                  if line.lstrip().startswith(('```', '~~~')):
+                      fenced = not fenced
+                  elif not fenced:
+                      prose.append(line)
+              # Markdown permits up to three leading spaces, an ordered or
+              # unordered list marker, and emphasis around the tool name or the
+              # whole prerequisite; four spaces or a leading tab make an
+              # indented code block, not a declaration. The lookaheads reject
+              # other words that start with Go (Google, GoLand) while still
+              # accepting closing emphasis such as **Go** or __Go__.
+              declaration = re.compile(
+                  r'^ {0,3}(?:(?:[-*+]|\d{1,3}[.)])[ \t]+)?[*_]{0,3}'
+                  r'(?:Go|Golang)(?![0-9A-Za-z])(?![*_][A-Za-z0-9])',
+                  re.IGNORECASE)
+              declared = [line for line in prose if declaration.match(line)]
+              if not declared:
+                  raise SystemExit('README Prerequisites must declare the Go minimum'
+                                   ' in a Go or Golang item')
+              versions = set()
+              for line in declared:
+                  # Links and paths carry no version declaration; drop those
+                  # words so a versioned download link cannot poison the scan.
+                  line = ' '.join(word for word in line.split() if '/' not in word)
+                  for token in re.findall(r'(\d{1,4}\.\d{1,4}\.\d{1,4}[0-9A-Za-z.+_-]*)', line):
+                      release = token.rstrip('.')  # sentence period
+                      release = release.rstrip('_')  # closing underscore emphasis
+                      if release.endswith('+'):  # "1.27.4+" means "or newer"
+                          release = release[:-1]
+                      if not re.fullmatch(r'\d{1,4}\.\d{1,4}\.\d{1,4}', release):
+                          raise SystemExit(
+                              f'README Prerequisites names a non-release Go version {token.rstrip(".")}')
+                      versions.add(release)
+              if len(versions) != 1:
+                  raise SystemExit('README Prerequisites must name exactly one Go version,'
+                                   f' found {sorted(versions) or "none"}')
+              return versions.pop()
+
+          module = go('list', '-m', '-f', '{{.GoVersion}}')
+          actual = go('env', 'GOVERSION')
+          toolchain_mode = go('env', 'GOTOOLCHAIN')
+          if toolchain_mode != 'local':
+              raise SystemExit(
+                  f'go env GOTOOLCHAIN {toolchain_mode} != local; CI must not switch toolchains')
+          readme = Path('README.md')
+          metadata = readme.lstat()
+          if not stat.S_ISREG(metadata.st_mode):
+              raise SystemExit('README.md must be a regular file')
+          if metadata.st_size > 1024 * 1024:
+              raise SystemExit('README.md exceeds the 1 MiB size limit')
+          documented = documented_minimum(readme.read_text(encoding='utf-8'))
+          if module != documented:
+              raise SystemExit(
+                  f'go.mod GoVersion {module} != documented minimum {documented}')
+          if actual != f'go{module}':
+              raise SystemExit(
+                  f'selected toolchain {actual} != required CI minimum go{module}')
+          print(f'Verified documented minimum Go toolchain: {actual}')
+          PYTHON
 
       - name: Select changed packages
         if: inputs.mode == 'quick'
