@@ -5,8 +5,9 @@
    is aborted at once and counted, so a slow or unreachable third party (for
    example the analytics beacon) can neither delay nor fail the load event that
    the check waits for. Stylesheets decide contrast, so a stylesheet request that
-   is blocked (another origin, whether linked, imported or added by script) or
-   does not load fails the gate by URL: serve a local copy instead.
+   is blocked (another origin, whether linked, imported, added by script or
+   fetched as CSS, up to the moment the network settles after load) or does not
+   load fails the gate by URL: serve a local copy instead.
    Run from the repository root: node website/playground-engine/a11y-smoke.cjs
    Optional CHROMIUM_PATH selects a Chrome/Chromium binary. */
 const {chromium} = require('playwright');
@@ -44,9 +45,12 @@ const server = http.createServer((req,res)=>{
         const sheetProblems=new Map();
         page.on('response',response=>{if(response.request().resourceType()==='stylesheet'&&!response.ok()&&!sheetProblems.has(response.url()))sheetProblems.set(response.url(),`HTTP ${response.status()}`);});
         page.on('requestfailed',request=>{
-          if (request.resourceType()!=='stylesheet'||sheetProblems.has(request.url())) return;
-          let local=false;
-          try {local=new URL(request.url()).origin===origin;} catch {}
+          let url=null;
+          try {url=new URL(request.url());} catch {}
+          // A stylesheet, or CSS fetched by script (for example fetch() into a <style> element).
+          const css=request.resourceType()==='stylesheet'||Boolean(url&&/\.css$/i.test(url.pathname));
+          if (!css||sheetProblems.has(request.url())) return;
+          const local=Boolean(url&&url.origin===origin);
           sheetProblems.set(request.url(),local?(request.failure()?.errorText||'failed'):`blocked: outside ${origin}, serve a local copy`);
         });
         await page.route('**/*',request=>{
@@ -57,8 +61,15 @@ const server = http.createServer((req,res)=>{
           blockedRequests++;
           return request.abort();
         });
-        // Every other origin is aborted at once, so nothing outside the local server can delay load.
+        // Every other origin is aborted at once, so nothing outside the local server can delay load,
+        // and the network settles quickly afterwards; waiting for that also catches CSS requested
+        // after load (a timer or load handler).
         await page.goto(origin+route,{waitUntil:'load',timeout:30000});
+        try {
+          await page.waitForLoadState('networkidle',{timeout:15000});
+        } catch (error) {
+          throw new Error(`the ${label} at ${width}px kept the network busy for 15s after load`,{cause:error});
+        }
         assert.ok(await page.$('main'),`the ${label} at ${width}px has no main element`);
         const problems=[...sheetProblems].map(([url,reason])=>`${url} (${reason})`);
         assert.deepEqual(problems,[],`the ${label} at ${width}px could not load stylesheets: ${problems.join(', ')}`);
