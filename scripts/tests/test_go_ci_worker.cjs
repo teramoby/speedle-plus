@@ -173,6 +173,10 @@ if (args.length === 4 && args[0] === 'list' && args[1] === '-m' && args[2] === '
         message: 'selected toolchain go1.27.5 != required CI minimum go1.27.4'},
       {name: 'missing Prerequisites section', readme: '# Fixture without a prerequisite section\n', module: '1.27.4', selected: 'go1.27.4', passes: false,
         message: 'README Prerequisites section not found'},
+      // A decoy section must not satisfy the guard while the real one is stale.
+      {name: 'duplicate Prerequisites sections', readme: `### Prerequisites\n\n-   Go 9.9.9 or newer\n\n## Quick start\n\n${prerequisites('-   Go 1.27.4 or a newer patch')}`,
+        module: '1.27.4', selected: 'go1.27.4', passes: false,
+        message: 'README must contain exactly one Prerequisites section, found 2'},
       {name: 'Prerequisites without a Go declaration', readme: prerequisites('-   A recent Go release'), module: '1.27.4', selected: 'go1.27.4', passes: false,
         message: 'README Prerequisites must declare the Go minimum in a line starting with Go or Golang'},
       {name: 'declaration without a version', readme: prerequisites('-   Go, a recent release'), module: '1.27.4', selected: 'go1.27.4', passes: false,

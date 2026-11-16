@@ -20,10 +20,11 @@ if [[ -n "${base}" && "${base}" != 0000000000000000000000000000000000000000 ]] &
       docs/*) docs=true ;;
       website/*) website=true ;;
       .github/workflows/*|scripts/*) go=true ci=true ;;
-      */*) go=true ;;
-      # Root Markdown includes README.md, whose toolchain requirement the CI
-      # script tests assert against go.mod; run those tests for it.
+      # Module files and root Markdown carry the toolchain contract that the
+      # CI script tests assert against README.md; run those tests for them.
+      go.mod|go.sum) go=true ci=true ;;
       *.md) ci=true ;;
+      */*) go=true ;;
       *) go=true ;;
     esac
   done < "${changed}"

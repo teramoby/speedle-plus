@@ -116,9 +116,14 @@ jobs:
                           title = heading.group(1).strip().rstrip('#').strip()
                           headings.append((offset, level, title))
                   offset += len(line)
-              start = next((entry for entry in headings if entry[2] == 'Prerequisites'), None)
-              if start is None:
+              sections = [entry for entry in headings if entry[2] == 'Prerequisites']
+              if not sections:
                   raise SystemExit('README Prerequisites section not found')
+              if len(sections) != 1:
+                  raise SystemExit(
+                      'README must contain exactly one Prerequisites section,'
+                      f' found {len(sections)}')
+              start = sections[0]
               # Deeper sub-headings belong to the section; a heading at the same
               # or a higher level ends it.
               end = next((entry[0] for entry in headings

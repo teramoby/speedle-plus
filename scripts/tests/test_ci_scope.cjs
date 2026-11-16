@@ -123,6 +123,9 @@ test('change classification preserves raw Git paths and fails on diff errors', (
       ['.github/workflows/ci.yml', flags(true, false, false, true)],
       // Root Markdown runs the CI script tests, including the README/go.mod fixture.
       ['README.md', flags(false, false, false, true)],
+      // Module files also carry the toolchain contract those tests assert.
+      ['go.mod', flags(true, false, false, true)],
+      ['go.sum', flags(true, false, false, true)],
     ];
     let previous = base;
     for (const [file, expected] of cases) {
