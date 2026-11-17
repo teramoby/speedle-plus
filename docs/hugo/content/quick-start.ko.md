@@ -10,7 +10,7 @@ customcssfile = "command-copy.css"
 tocheading = "h2"
 bref = "go install 또는 소스 빌드로 Speedle을 설치하고, SPDL과 spctl로 정책을 생성하며, REST API로 인가 결정을 테스트합니다. 이 가이드는 로컬 파일 저장소를 사용합니다."
 icon = "9. Getting Started.svg"
-lastmod = 2026-11-14T21:41:19+00:00
+lastmod = 2026-11-17T08:36:36+00:00
 +++
 
 ## 먼저 플레이그라운드에서 체험
@@ -40,11 +40,11 @@ Go는 `GOROOT` 및 기본 `GOPATH`를 자동으로 구성하므로 별도의 사
 
 <!-- quick-start: install -->
 ```bash
-GOBIN="$PWD/bin" go install github.com/teramoby/speedle-plus/cmd/...@v1.8.0
+GOBIN="$PWD/bin" go install github.com/teramoby/speedle-plus/cmd/...@v1.9.0
 ls bin
 ```
 
-`GOBIN`을 지정하면 실행 파일이 현재 디렉터리의 `bin` 폴더 내에 유지됩니다. 지정하지 않으면 Go는 `$(go env GOPATH)/bin`에 작성합니다. `v1.8.0`은 작성 시점의 최신 릴리스 태그입니다. `go install`은 태그가 지정된 소스에서 빌드하고 Go 체크섬 데이터베이스와 대조하여 검증합니다.
+`GOBIN`을 지정하면 실행 파일이 현재 디렉터리의 `bin` 폴더 내에 유지됩니다. 지정하지 않으면 Go는 `$(go env GOPATH)/bin`에 작성합니다. `v1.9.0`은 작성 시점의 최신 릴리스 태그입니다. `go install`은 태그가 지정된 소스에서 빌드하고 Go 체크섬 데이터베이스와 대조하여 검증합니다.
 
 ### 경로 B: 클론 후 빌드
 

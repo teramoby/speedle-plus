@@ -5,8 +5,8 @@
 class Speedle < Formula
   desc "Authorization services and command-line tool for Speedle"
   homepage "https://engine.speedle.io"
-  url "https://github.com/teramoby/speedle-plus/releases/download/v1.8.0/checksums.txt"
-  sha256 "88e8233b9bfead599e108d7073340c521c2b7ec50a06bcc9f38bcd79cdd6cfd5"
+  url "https://github.com/teramoby/speedle-plus/releases/download/v1.9.0/checksums.txt"
+  sha256 "6f32cd26429008da27bf7012309357bb21be9dc8fbe8e9d51a79bad3be7d9195"
   license "UPL-1.0"
 
   livecheck do
