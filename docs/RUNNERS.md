@@ -1,38 +1,58 @@
 # Speedle self-hosted runners
 
-`charming-speedle` and `charming-speedle-2` are Linux x64 runners registered to the
+`charming-speedle-2` and `donkey-speedle` are Linux x64 runners registered to the
 `teramoby` organization. Their dedicated `Speedle` runner group allows only
 `teramoby/speedle-plus`, including
 this public repository. It does not reuse or change `pavulabs` registrations or
 the `teramoby` default group's access policy.
 
-`fiona-speedle` (macOS ARM64) is a third runner in the same group. All three
-carry `speedle-runner`; only the two charming instances carry `speedle-linux`.
+`fiona` (macOS ARM64) carries the `fiona-speedle` scheduling label. Every
+Speedle runner carries `speedle-runner`; the Linux runners also carry
+`speedle-linux`.
 
-`donkey-speedle` (Linux x64) is an additional Linux runner. The Go CI worker
-accepts it for the same tasks as `charming-speedle` and `charming-speedle-2`.
 Weekly runs stay on `fiona-speedle`.
 
-ReviewBot selects `[self-hosted, speedle-runner]`, so `charming-speedle`,
-`charming-speedle-2` and `fiona-speedle` may take it. Go lint, test, post-merge
-regression and the nightly use the same label, and the Go CI worker also
-accepts `donkey-speedle` for those tasks. Go build
+ReviewBot selects `[self-hosted, speedle-runner]`, which `charming-speedle-2`,
+`donkey-speedle` and `fiona` carry, and its regression fixture job accepts all
+three. Its two model-calling jobs wait for a GitHub-hosted preflight that
+validates `REVIEWBOT_RUNS_ON` against one literal allowlist of label sets and
+publishes the accepted set as the job output they route on, so an unapproved
+override fails the run before a provider key reaches a runner. The allowlist
+comparison is case-sensitive: a value that differs in case from an approved
+set is rejected.
+Go lint, test, post-merge regression and the nightly use the same label,
+and the Go CI worker accepts `donkey-speedle` for those tasks as well. Go build
 (it needs the Linux Hugo release and `sha256sum`) selects
 `[self-hosted, Linux, X64, speedle-linux]`. The weekly selects
-`[self-hosted, fiona-speedle]` to reduce timing noise in its benchmark check.
+`[self-hosted, fiona-speedle]` to reduce timing noise in its benchmark check,
+and its identity step fails any run on an OS or architecture other than macOS
+ARM64, so a host that later carries that label elsewhere cannot silently take
+the run.
 The benchmarks (`scripts/ci/benchmark.py`) measure master as of May 2026 and
 the current code alternately in the same run; each report names the runner that
 measured it.
 A runner administrator must keep `speedle-runner` and `speedle-linux` exclusive
 to these named instances; adding another host would also admit it to
-credential-bearing jobs. A runner name alone is not a scheduling label. The two
-charming registrations share a physical host, so fixed-port tests there take
-the host test lock (`/tmp/speedle-plus-test-services.lock`) and never overlap.
-Each registration must use its own runner installation and work directory.
+credential-bearing jobs. A runner name alone is not a scheduling label.
+Remove an identity from the workflow identity checks only after its
+registration no longer carries any scheduling label; until then a job routed to
+that label still queues there and fails at the identity check before it starts.
+The routing regression derives the scheduling labels from every workflow
+`runs-on` and requires its runner inventory to cover them. Setting
+`SPEEDLE_RUNNERS_LIVE=1` also compares that inventory with the registration API
+through `gh`; otherwise the live comparison is skipped, even when `GH_TOKEN` or
+`GITHUB_TOKEN` is present. A registration change requires refreshing the
+snapshot from the two `gh api` commands in that test.
+Fixed-port tests take the host test lock
+(`/tmp/speedle-plus-test-services.lock`), so registrations on the same physical
+host never overlap. Each registration must use its own runner installation and
+work directory.
 
-The `speedle-control` label belongs only to `charming-speedle-2`. ReviewBot's
-dependency merge waiter uses it so waiting for CI never occupies the only
-fixed-port test runner. Keep this label off the first runner.
+The `speedle-control` label is carried by the two Linux runners,
+`charming-speedle-2` and `donkey-speedle`; no workflow currently routes on it.
+ReviewBot's dependency auto-merge job runs on GitHub-hosted `ubuntu-24.04` and
+groups its waiters per pull request, so an auto-merge wait never occupies a
+self-hosted runner. See [ReviewBot](REVIEWBOT.md) for its merge gates.
 
 The group also restricts access to these exact default-branch workflows:
 
@@ -50,14 +70,14 @@ directly select this runner or change the trusted worker's routing policy.
 | Workload | Runner |
 | --- | --- |
 | Go lint for repository human/bot pushes, manual dispatch and human/bot same-repository PRs | Any runner via `speedle-runner` |
-| Go build (including the site checks in `verify.sh`) for those trusted events | Either charming runner via `speedle-linux` |
+| Go build (including the site checks in `verify.sh`) for those trusted events | Either Linux runner via `speedle-linux` |
 | Go tests for those trusted events, both file/etcd modes | Any runner via `speedle-runner`, serialized by the host test lock |
 | Go CI fork PRs, unknown actors or other events | GitHub-hosted |
 | Post-merge file-store regression (`post-merge.yml`, every push to master) | Any runner via `speedle-runner`, serialized by the host test lock; its report job is GitHub-hosted |
 | Weekly tests and benchmark comparison (`weekly.yml`) | `fiona-speedle`, serialized by the host test lock; its report job is GitHub-hosted |
 | ReviewBot human/bot same-repository PR analysis/publication | Any runner via `speedle-runner` |
 | ReviewBot fork PRs or unknown authors | GitHub-hosted |
-| Dependency auto-merge waiter | `charming-speedle-2` via `speedle-control` |
+| Dependency auto-merge waiter | GitHub-hosted Ubuntu |
 | ReviewBot regression dispatch and authorized command analysis/publication | Any runner via `speedle-runner` |
 | Public comment authorization and unprivileged inline-comment pointer | GitHub-hosted |
 
@@ -130,11 +150,11 @@ gh workflow run ci.yml --ref master
 ```
 
 Inspect each run's jobs and confirm `runner_name` is an accepted Speedle
-runner for `speedle-runner` jobs (including the nightly): `charming-speedle`,
-`charming-speedle-2`, `donkey-speedle` or `fiona-speedle`. The weekly runs on
-`fiona-speedle` and build runs on a charming runner.
-The regression job prints its workspace and temp paths; verify both registrations
-have distinct paths. An online/idle runner listing alone does not prove checkout,
+runner for `speedle-runner` jobs (including the nightly): `charming-speedle-2`,
+`donkey-speedle` or `fiona`. The weekly runs on `fiona` and build runs on a
+Linux runner.
+The regression job prints its workspace and temp paths; verify every
+registration has a distinct path. An online/idle runner listing alone does not prove checkout,
 tool setup, tests or model connectivity work. The dedicated routing regression
 and protected-worker suites are:
 
@@ -148,7 +168,7 @@ after validation. Do not allow PR merge refs or wildcard workflow revisions.
 
 The workflows limit GitHub tokens to required permissions and do not persist Git
 credentials during CI checkout. `.github/actionlint.yaml` declares the custom
-label for workflow validation.
+scheduling labels for workflow validation.
 
 ## Database regression allocation
 
@@ -161,8 +181,8 @@ container from `run-mysql-tests.py`, and MongoDB on a temporary native replica
 set from `validate-mongodb.sh`. Its results reach the nightly report.
 
 `mongodb-nightly-validation.yml` runs the MongoDB regression on demand through
-`workflow_dispatch`. It selects the `speedle-runner` label, which charming,
-charming-2 and fiona (macOS ARM64, also in the `Speedle` group) carry, accepts
+`workflow_dispatch`. It selects the `speedle-runner` label, which
+`charming-speedle-2`, `donkey-speedle` and `fiona` (macOS ARM64) carry, accepts
 macOS ARM64 or Linux x64, and shares the nightly's concurrency group, so the two
 never run at once on the etcd ports.
 
