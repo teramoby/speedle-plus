@@ -10,11 +10,11 @@ unsupported response; the supported backends retain their Discover tests.
 (01:00 Asia/Shanghai). GitHub schedules execute the workflow on the default
 branch, so a workflow change in an unmerged PR does not activate the schedule.
 
-Trusted nightly jobs use any Speedle runner via `speedle-runner`:
-`charming-speedle-2`, `donkey-speedle` or `fiona` (macOS ARM64 with Docker
-Desktop). The worker holds a host-wide `flock` before checking legacy fixed test
-ports and running tests, to serialize their use across the runner processes. It
-refuses occupied ports without stopping host services.
+Trusted nightly jobs use any Speedle runner via `speedle-runner`, including the
+macOS ARM64 runner with Docker Desktop. The worker holds a host-wide `flock`
+before checking legacy fixed test ports and running tests, to serialize their
+use across the runner processes. It refuses occupied ports without stopping
+host services.
 The protected reusable worker is loaded from `master`; candidate worker changes
 take effect after merge.
 
@@ -87,9 +87,8 @@ the permissions of a deployed PMS/ADS account.
 
 ## Regression repairs and verification
 
-At commit `8d4a7f8aed8b40bad9a707792579415036771ba3`, the
-[charming runner trial](https://github.com/teramoby/speedle-plus/actions/runs/40841295197)
-completed all three stages:
+At commit `8d4a7f8aed8b40bad9a707792579415036771ba3`, a trial on a self-hosted
+Linux runner completed all three stages:
 
 - Ordinary MySQL suites: 690 pass events, 0 failures, 1 optional Discover skip.
 - Runtime preparation: passed.
@@ -107,10 +106,9 @@ expects DENY_POLICY_FOUND; invalid typed attributes assert HTTP 400 and the
 actual error response schema; Boolean inputs use explicit types; month/day
 fixtures use the numeric month and correct built-in day attribute.
 
-The [charming verification after these repairs](https://github.com/teramoby/speedle-plus/actions/runs/40845891556)
-passed all suites at commit `9332c3b1`: 1,032 pass events, no failures and one
-optional Discover skip. The CI script checks passed 52 Python and 134 Node
-tests. Event counts include parent tests and subtests. Later runs also execute
+A verification run after these repairs passed all suites at commit `9332c3b1`:
+1,032 pass events, no failures and one optional Discover skip. The CI script
+checks passed 52 Python and 134 Node tests. Event counts include parent tests and subtests. Later runs also execute
 the bilingual MySQL setup instructions directly from the documentation.
 
 ## Shared regression and four-backend configuration
@@ -139,6 +137,6 @@ when their database is absent. Skips and failures are included in the summary.
 The engine then builds/starts native PMS and ADS over one database, runs fixture
 preparation, and executes every tagged ADS runtime/cache test.
 
-MySQL remains on charming. MongoDB validation runs on any `speedle-runner`
-(charming, charming-2 or fiona) against an owned replica set; see
+The MySQL nightly stays on a self-hosted Linux runner. MongoDB validation runs
+on any Speedle runner (`speedle-runner`) against an owned replica set; see
 `docs/RUNNERS.md`. Neither backend is merged or deployed automatically.

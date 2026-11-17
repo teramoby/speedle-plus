@@ -1,38 +1,39 @@
 # Speedle self-hosted runners
 
-`charming-speedle-2` and `donkey-speedle` are Linux x64 runners registered to the
-`teramoby` organization. Their dedicated `Speedle` runner group allows only
-`teramoby/speedle-plus`, including
-this public repository. It does not reuse or change `pavulabs` registrations or
+The repository uses two self-hosted Linux x64 runners and one self-hosted
+macOS ARM64 runner, registered to the `teramoby` organization. Their dedicated
+`Speedle` runner group allows only `teramoby/speedle-plus`, including this
+public repository. It does not reuse or change `pavulabs` registrations or
 the `teramoby` default group's access policy.
 
-`fiona` (macOS ARM64) carries the `fiona-speedle` scheduling label. Every
-Speedle runner carries `speedle-runner`; the Linux runners also carry
-`speedle-linux`.
+Every Speedle runner carries `speedle-runner`; the Linux runners also carry
+`speedle-linux`. The macOS runner carries a dedicated scheduling label that the
+weekly workflow pins; the exact label strings appear in the workflow `runs-on`
+values and in `.github/actionlint.yaml`.
 
-Weekly runs stay on `fiona-speedle`.
+Weekly runs stay on the macOS runner through its dedicated scheduling label.
 
-ReviewBot selects `[self-hosted, speedle-runner]`, which `charming-speedle-2`,
-`donkey-speedle` and `fiona` carry, and its regression fixture job accepts all
-three. Its two model-calling jobs wait for a GitHub-hosted preflight that
+ReviewBot selects `[self-hosted, speedle-runner]`, which all three runners
+carry, and its regression fixture job accepts all three. Its two model-calling
+jobs wait for a GitHub-hosted preflight that
 validates `REVIEWBOT_RUNS_ON` against one literal allowlist of label sets and
 publishes the accepted set as the job output they route on, so an unapproved
 override fails the run before a provider key reaches a runner. The allowlist
 comparison is case-sensitive: a value that differs in case from an approved
 set is rejected.
 Go lint, test, post-merge regression and the nightly use the same label,
-and the Go CI worker accepts `donkey-speedle` for those tasks as well. Go build
-(it needs the Linux Hugo release and `sha256sum`) selects
-`[self-hosted, Linux, X64, speedle-linux]`. The weekly selects
-`[self-hosted, fiona-speedle]` to reduce timing noise in its benchmark check,
-and its identity step fails any run on an OS or architecture other than macOS
-ARM64, so a host that later carries that label elsewhere cannot silently take
-the run.
+and the Go CI worker accepts both Linux runners and the macOS runner for those
+tasks. Go build (it needs the Linux Hugo release and `sha256sum`) selects
+`[self-hosted, Linux, X64, speedle-linux]`. The weekly selects the macOS
+runner's dedicated scheduling label to reduce timing noise in its benchmark
+check, and its identity step fails any run on an OS or architecture other than
+macOS ARM64, so a host that later carries that label elsewhere cannot silently
+take the run.
 The benchmarks (`scripts/ci/benchmark.py`) measure master as of May 2026 and
 the current code alternately in the same run; each report names the runner that
 measured it.
 A runner administrator must keep `speedle-runner` and `speedle-linux` exclusive
-to these named instances; adding another host would also admit it to
+to the registered instances; adding another host would also admit it to
 credential-bearing jobs. A runner name alone is not a scheduling label.
 Remove an identity from the workflow identity checks only after its
 registration no longer carries any scheduling label; until then a job routed to
@@ -48,8 +49,8 @@ Fixed-port tests take the host test lock
 host never overlap. Each registration must use its own runner installation and
 work directory.
 
-The `speedle-control` label is carried by the two Linux runners,
-`charming-speedle-2` and `donkey-speedle`; no workflow currently routes on it.
+The `speedle-control` label is carried by the two Linux runners; no workflow
+currently routes on it.
 ReviewBot's dependency auto-merge job runs on GitHub-hosted `ubuntu-24.04` and
 groups its waiters per pull request, so an auto-merge wait never occupies a
 self-hosted runner. See [ReviewBot](REVIEWBOT.md) for its merge gates.
@@ -74,7 +75,7 @@ directly select this runner or change the trusted worker's routing policy.
 | Go tests for those trusted events, both file/etcd modes | Any runner via `speedle-runner`, serialized by the host test lock |
 | Go CI fork PRs, unknown actors or other events | GitHub-hosted |
 | Post-merge file-store regression (`post-merge.yml`, every push to master) | Any runner via `speedle-runner`, serialized by the host test lock; its report job is GitHub-hosted |
-| Weekly tests and benchmark comparison (`weekly.yml`) | `fiona-speedle`, serialized by the host test lock; its report job is GitHub-hosted |
+| Weekly tests and benchmark comparison (`weekly.yml`) | The macOS runner via its dedicated scheduling label, serialized by the host test lock; its report job is GitHub-hosted |
 | ReviewBot human/bot same-repository PR analysis/publication | Any runner via `speedle-runner` |
 | ReviewBot fork PRs or unknown authors | GitHub-hosted |
 | Dependency auto-merge waiter | GitHub-hosted Ubuntu |
@@ -149,10 +150,10 @@ gh workflow run reviewbot.yml --ref master
 gh workflow run ci.yml --ref master
 ```
 
-Inspect each run's jobs and confirm `runner_name` is an accepted Speedle
-runner for `speedle-runner` jobs (including the nightly): `charming-speedle-2`,
-`donkey-speedle` or `fiona`. The weekly runs on `fiona` and build runs on a
-Linux runner.
+Inspect each run's jobs and confirm `runner_name` is one of the registered
+Speedle runners for `speedle-runner` jobs (including the nightly): either Linux
+runner or the macOS runner. The weekly runs on the macOS runner and build runs
+on a Linux runner.
 The regression job prints its workspace and temp paths; verify every
 registration has a distinct path. An online/idle runner listing alone does not prove checkout,
 tool setup, tests or model connectivity work. The dedicated routing regression
@@ -181,10 +182,9 @@ container from `run-mysql-tests.py`, and MongoDB on a temporary native replica
 set from `validate-mongodb.sh`. Its results reach the nightly report.
 
 `mongodb-nightly-validation.yml` runs the MongoDB regression on demand through
-`workflow_dispatch`. It selects the `speedle-runner` label, which
-`charming-speedle-2`, `donkey-speedle` and `fiona` (macOS ARM64) carry, accepts
-macOS ARM64 or Linux x64, and shares the nightly's concurrency group, so the two
-never run at once on the etcd ports.
+`workflow_dispatch`. It selects the `speedle-runner` label, which all three
+registered runners carry, accepts macOS ARM64 or Linux x64, and shares the
+nightly's concurrency group, so the two never run at once on the etcd ports.
 
 Shared integration fixtures select `file`, `etcd`, `mongodb` or `mysql` through
 `STORE_TYPE`. `SPEEDLE_TEST_STORE_PROPS` supplies backend connection properties;
@@ -226,27 +226,29 @@ or a test without the settings only prints a notice and stays green. The step su
 and with the cut marked when the report is longer; the email carries the full
 report as an attachment, capped at 17 MiB with a note when it had to be cut.
 
-## Fiona full nightly trial
+## macOS full nightly trial
 
 The manual MongoDB validation workflow accepts `nightly_trial: true` to run
-the complete nightly script on `fiona-speedle` (macOS ARM64), including all
-four stores, executable guides, supported Go releases and CI script checks.
-It uses the nightly host lock, port preflight and sanitized test environment;
-results are uploaded as `fiona-nightly-results`. Its concurrency group remains
-`nightly-tests`. Use `install_flock: true` if the existing macOS host lacks
-`flock`. The nightly moved to `speedle-runner` after this trial passed on fiona
-with Docker Desktop running. On macOS, `run-go-tests.sh` gives Docker a copy of
-the user's config without its keychain credential store, which a runner
-service cannot open; the test images are public.
+the complete nightly script on the macOS runner (pinning its scheduling label),
+including all four stores, executable guides, supported Go releases and CI
+script checks. It uses the nightly host lock, port preflight and sanitized test
+environment; results are uploaded as a trial-results artifact. Its concurrency
+group remains `nightly-tests`. Use `install_flock: true` if the existing macOS
+host lacks `flock`. The nightly moved to `speedle-runner` after this trial
+passed on the macOS runner with Docker Desktop running. On macOS,
+`run-go-tests.sh` gives Docker a copy of the user's config without its keychain
+credential store, which a runner service cannot open; the test images are
+public.
 
-## Fiona CI trial
+## macOS CI trial
 
-`ci_trial` on the same workflow runs one CI task on `fiona-speedle` with the
-commands CI uses: `lint` (go vet, go mod tidy check), `test` (the merge gate,
-`run-go-tests.sh gate`), `regression` (the post-merge regression), `weekly`
-(`run-go-tests.sh weekly`) or `reviewbot`
+`ci_trial` on the same workflow runs one CI task on the macOS runner (pinning
+its scheduling label) with the commands CI uses: `lint` (go vet, go mod tidy
+check), `test` (the merge gate, `run-go-tests.sh gate`), `regression` (the
+post-merge regression), `weekly` (`run-go-tests.sh weekly`) or `reviewbot`
 (ReviewBot's tool and Ark reachability checks and its fixture suites, with no
 credentials). `test`, `regression` and `weekly` hold the host test lock. Lint,
 test, regression and reviewbot run on any Speedle runner; weekly trials and the
-scheduled weekly both stay on fiona for lower-noise benchmark comparisons.
+scheduled weekly both stay on the macOS runner for lower-noise benchmark
+comparisons.
 `build` stays on Linux because it needs the Linux Hugo release and `sha256sum`.

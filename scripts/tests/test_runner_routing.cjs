@@ -271,7 +271,7 @@ test('every Go task uses the protected worker; only classification and reporting
   }
   assert.deepEqual(Object.keys(job.mongodb), ['mongodb']);
   assert.equal(route(job.mongodb.mongodb), 'speedle-runner');
-  // A manual run may pin one Speedle runner by its label, e.g. fiona.
+  // A manual run may pin one Speedle runner by its label, such as speedle-macos.
   const pinned = github('workflow_dispatch', canonical, {event: {inputs: {runner: 'speedle-macos'}}});
   assert.equal(route(job.mongodb.mongodb, pinned), 'speedle-macos');
   const trial = github('workflow_dispatch', canonical, {event: {inputs: {runner: 'speedle-linux', nightly_trial: 'true'}}});
@@ -345,7 +345,7 @@ const runnerInventory = [
     labels: ['self-hosted', 'Linux', 'X64', 'speedle-linux', 'speedle-control', 'speedle-runner', 'reviewbot']},
   {name: 'donkey-speedle', os: 'Linux', arch: 'X64',
     labels: ['self-hosted', 'Linux', 'X64', 'speedle-linux', 'speedle-control', 'speedle-runner', 'reviewbot']},
-  // The aliyun host of the organization ReviewBot runner group. A
+  // The organization ReviewBot runner group's additional host. A
   // REVIEWBOT_RUNS_ON value that selects its labels is checked against this
   // inventory; no workflow default route selects them. The snapshot records
   // the current registration and does not define the group's repository scope.
