@@ -268,16 +268,54 @@ test('open pull requests sharing a head and base keep one verdict', () => {
   assert.equal(forkResult.status.state, 'success');
   assert.equal(forkResult.status.description, 'Quick CI routes passed');
 
-  // A newer completed run of the colliding pull request does not supersede
-  // the victim's run either: it belongs to another pull request.
+  // A newer run of the colliding pull request publishes to the same SHA
+  // status with the same classification, so it supersedes this run.
   const newer = fixtureApi({
     run: run(), pr: first, files: ['docs/guide.md'], jobs: jobs({build: true}),
+    newerJobs: jobs({build: true}),
     commitPulls: [first, second],
     latest: [run({id: 102, pull_requests: [association(591)]}), run()],
   });
   const newerResult = gate.runGate({repository, runId: 101, publish: true}, newer.api);
-  assert.equal(newerResult.status.state, 'success');
-  assert.equal(newerResult.status.description, 'Quick CI routes passed');
+  assert.equal(newerResult.ignored, true);
+  assert.equal(newerResult.status.description, 'Superseded by a newer CI run');
+  assert.equal(newer.calls.filter(call => call.options.method === 'POST').length, 0);
+});
+
+test('a newer failure of a same-base sibling is restored after an older success is written', () => {
+  // Pull requests 590 and 591 share the head and the base. 591's newer run
+  // fails and its gate publishes first; 590's delayed gate then writes its
+  // older success, sees 591's completed run and publishes that verdict again.
+  const first = pullRequest([], {number: 590});
+  const second = pullRequest([], {number: 591, head: {sha: head, repo: {id: 99, name: 'speedle-plus'}}});
+  const current = run();
+  const sibling = run({id: 102, conclusion: 'failure', pull_requests: [association(591)],
+    html_url: 'https://example.invalid/actions/runs/102'});
+  const failing = [job('changes', 'success', [step('Classify changed files'), step('Test CI scripts', 'skipped')]),
+    job('quick / execute', 'failure'), job('CI', 'failure')];
+  const fixture = fixtureApi({
+    run: current, pr: first, files: ['docs/guide.md'], jobs: jobs(), newerJobs: failing,
+    commitPulls: [first, second], runsById: {102: sibling},
+    latest: callIndex => (callIndex <= 2 ? [current] : [sibling, current]),
+  });
+  const api = (endpoint, options = {}) => (endpoint === `repos/${repository}/pulls/591` ? second : fixture.api(endpoint, options));
+  const result = gate.runGate({repository, runId: 101, publish: true}, api);
+  const writes = fixture.calls.filter(call => call.options.method === 'POST');
+  assert.deepEqual(writes.map(call => call.options.input.state), ['success', 'failure']);
+  assert.equal(result.run_id, 102);
+  assert.equal(result.pr_number, 591);
+});
+
+test('a newer run with mixed or missing base associations is unknown, not another owner', () => {
+  for (const pull_requests of [[association(590), association(592, 'release')], [{number: 593}]]) {
+    const fixture = fixtureApi({
+      run: run(), pr: pullRequest(), files: ['docs/guide.md'], jobs: jobs(),
+      latest: [run({id: 102, pull_requests}), run()],
+    });
+    const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+    assert.equal(result.status.state, 'failure');
+    assert.equal(result.status.description, 'a newer run on this head has unknown ownership');
+  }
 });
 
 test('an open sibling on another base fails the shared head even for an associated run', () => {
@@ -428,9 +466,9 @@ test('a fork-style run resolves its pull request by head SHA', () => {
   assert.equal(fixture.calls.some(call => call.endpoint === `repos/${repository}/commits/${head}/pulls?per_page=100`), true);
 });
 
-test('a newer run of another pull request does not suppress this result', () => {
+test('a newer run of a pull request on another base does not suppress this result', () => {
   const pr = pullRequest();
-  const other = run({id: 102, pull_requests: [association(999)]});
+  const other = run({id: 102, pull_requests: [association(999, 'release')]});
   const fixture = fixtureApi({
     run: run(), pr, files: ['docs/guide.md'], jobs: jobs({build: true}), latest: [other, run()],
   });

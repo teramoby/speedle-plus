@@ -400,24 +400,23 @@ function resolveOwnership(api, repository, run) {
   return {pr: open[0]};
 }
 
-// Rule 3: a newer run is provably this pull request's, provably another
-// pull request's, or unknown. A run for another base cannot represent this
-// classification. When a run has no association, the commit lookup decides;
-// if every open pull request for that head shares this classification's base
-// identity, the verdict is the same whichever one the run belongs to.
+// Rule 3: a newer run can publish this head's verdict, provably cannot, or
+// its ownership is unknown. The status is keyed by SHA, so a run for any pull
+// request with this head and this base identity publishes the same status,
+// whatever its pull request number. A run whose pull requests are all on
+// another base cannot represent this classification. When a run has no
+// association, the open pull requests for its head decide the same way. A
+// missing base, or a mix of this base and another, is unknown.
 function candidateOwnership(api, repository, candidate, pr) {
-  const base = baseIdentity(pr?.base);
   const associated = Array.isArray(candidate?.pull_requests) ? candidate.pull_requests : [];
-  if (associated.length > 0) {
-    const bases = associated.map(entry => baseIdentity(entry?.base));
-    if (bases.some(identity => identity === null || identity !== base)) return 'other';
-    return associatedNumbers(candidate).includes(pr.number) ? 'same' : 'other';
-  }
-  const open = openPullRequests(api, repository, candidate);
-  if (open.length === 0) return 'unknown';
-  if (open.length === 1) return open[0].number === pr.number ? 'same' : 'other';
-  const identities = new Set(open.map(entry => baseIdentity(entry?.base)));
-  if (identities.size === 1 && !identities.has(null) && identities.has(base)) return 'same';
+  const owners = associated.length > 0 ? associated : openPullRequests(api, repository, candidate);
+  return ownershipByBase(owners.map(entry => baseIdentity(entry?.base)), baseIdentity(pr?.base));
+}
+
+function ownershipByBase(identities, base) {
+  if (base === null || identities.length === 0 || identities.includes(null)) return 'unknown';
+  if (identities.every(identity => identity === base)) return 'same';
+  if (identities.every(identity => identity !== base)) return 'other';
   return 'unknown';
 }
 
