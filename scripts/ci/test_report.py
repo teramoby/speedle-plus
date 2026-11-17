@@ -26,6 +26,10 @@ import urllib.request
 from pathlib import Path
 
 ARK_URL = "https://ark.cn-beijing.volces.com/api/plan/v3/responses"
+# The Cloudflare Email Service send API, its request fields, the
+# queued/delivered/permanent_bounces/suppressed_recipients result fields and
+# the limits below:
+# https://developers.cloudflare.com/api/resources/email_sending/methods/send/
 EMAIL_API = "https://api.cloudflare.com/client/v4/accounts/{account}/email/sending/send"
 DEFAULT_MODEL = "kimi-k3"
 ISSUE_LABEL = "test-failure"
