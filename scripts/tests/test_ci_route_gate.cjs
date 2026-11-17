@@ -681,7 +681,7 @@ test('a newer verdict published before this write is published again after it', 
   assert.equal(result.run_id, 102);
 });
 
-test('a newer run still in progress after the write publishes for itself', () => {
+test('a newer run still in progress after the write turns the head pending', () => {
   const current = run();
   const fixture = fixtureApi({
     run: current, pr: pullRequest(), files: ['docs/guide.md'], jobs: jobs(),
@@ -689,8 +689,43 @@ test('a newer run still in progress after the write publishes for itself', () =>
     latest: callIndex => (callIndex <= 2 ? [current] : [run({id: 102, status: 'in_progress', conclusion: null}), current]),
   });
   const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
-  assert.equal(result.status.state, 'success');
-  assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 1);
+  const writes = fixture.calls.filter(call => call.options.method === 'POST');
+  assert.deepEqual(writes.map(call => call.options.input.state), ['success', 'pending']);
+  assert.equal(result.status.description, 'A newer CI run is in progress');
+});
+
+test('a newer run in progress replaces an earlier success with pending', () => {
+  // Run 101 published success long ago; run 102 for the same head has
+  // started. Until 102 completes, the shared status must not stay green.
+  const fixture = fixtureApi({
+    run: run(), pr: pullRequest(), files: ['docs/guide.md'], jobs: jobs(), newerJobs: jobs(),
+    latest: [run({id: 102, status: 'in_progress', conclusion: null}), run()],
+  });
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.status.state, 'pending');
+  const writes = fixture.calls.filter(call => call.options.method === 'POST');
+  assert.deepEqual(writes.map(call => call.options.input.state), ['pending']);
+});
+
+test('a CI run that has started publishes pending for its head', () => {
+  const current = run({status: 'in_progress', conclusion: null});
+  const fixture = fixtureApi({run: current, pr: pullRequest(), files: ['docs/guide.md'], jobs: jobs(), latest: [current]});
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.status.state, 'pending');
+  assert.equal(result.status.description, 'CI run in progress');
+  const writes = fixture.calls.filter(call => call.options.method === 'POST');
+  assert.deepEqual(writes.map(call => call.options.input.state), ['pending']);
+});
+
+test('a started run that a newer completed run superseded publishes nothing', () => {
+  const current = run({status: 'in_progress', conclusion: null});
+  const fixture = fixtureApi({
+    run: current, pr: pullRequest(), files: ['docs/guide.md'], jobs: jobs(), newerJobs: jobs(),
+    latest: [run({id: 102}), current],
+  });
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.ignored, true);
+  assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 0);
 });
 
 test('an order that becomes unresolved after a success is written turns it into a failure', () => {
@@ -1066,7 +1101,7 @@ test('dry-run wrapper forwards exactly one PR number and never enables publishin
 
 test('workflow_run gate uses the default branch, Node 22 and minimal permissions', () => {
   const workflow = fs.readFileSync(path.join(root, '.github/workflows/ci-route-gate.yml'), 'utf8');
-  assert.match(workflow, /^  workflow_run:\n    workflows: \[Speedle CI\]\n    types: \[completed\]$/m);
+  assert.match(workflow, /^  workflow_run:\n    workflows: \[Speedle CI\]\n    types: \[in_progress, completed\]$/m);
   const permissions = workflow.match(/^permissions:\n((?:  [a-z-]+: (?:read|write)\n)+)/m)?.[1];
   assert.equal(permissions, '  contents: read\n  statuses: write\n  actions: read\n  pull-requests: read\n');
   assert.match(workflow, /^    if: github\.event\.workflow_run\.event == 'pull_request'$/m);

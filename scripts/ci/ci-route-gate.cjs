@@ -121,11 +121,12 @@ function startedRun(run) {
 // Validate the run before using its job set. An ignored label event has no
 // active jobs and must not replace the status from an active run; its shape is
 // checked against the guarded workflow files before it is honored.
-function preflight(run, pr) {
+// A started run passes only where the caller publishes pending for it.
+function preflight(run, pr, {started = false} = {}) {
   if (run?.name !== CI_WORKFLOW_NAME) return 'Unexpected CI workflow name';
   if (run.path !== CI_WORKFLOW_PATH) return 'Unexpected CI workflow path';
   if (run.event !== 'pull_request') return 'CI run is not a pull request run';
-  if (run.status !== 'completed') return 'CI run is not completed';
+  if (run.status !== 'completed' && !(started && run.status === 'in_progress')) return 'CI run is not completed';
   // A run for another commit, or for a pull request based on another branch,
   // has no verdict for this pull request. Statuses are keyed by SHA, so
   // publishing one could overwrite the result of a different pull request
@@ -546,12 +547,19 @@ function supersession(superseding, run, pr, assess) {
     return result;
   }
   if (superseding) {
-    return outcome({
-      run, pr, state: null, ignored: true,
-      message: superseding.run.name === CI_WORKFLOW_NAME ? 'Superseded by a newer CI run' : 'Newer CI run has an unexpected workflow name',
-    });
+    if (superseding.run.name !== CI_WORKFLOW_NAME) {
+      return outcome({run, pr, state: null, ignored: true, message: 'Newer CI run has an unexpected workflow name'});
+    }
+    // The newer run decides, but until it completes an earlier success on
+    // the shared SHA must not stay green.
+    if (superseding.run.status !== 'completed') return inProgress(run, pr, 'A newer CI run is in progress');
+    return outcome({run, pr, state: null, ignored: true, message: 'Superseded by a newer CI run'});
   }
   return null;
+}
+
+function inProgress(run, pr, message) {
+  return outcome({run, pr, state: 'pending', message});
 }
 
 function execute(options, api, runner = spawnSync) {
@@ -585,7 +593,7 @@ function execute(options, api, runner = spawnSync) {
       // Rule 2: a base other than the default branch publishes failure so an
       // earlier success for another base cannot stand. A head mismatch is
       // left alone.
-      const early = preflight(run, pr);
+      const early = preflight(run, pr, {started: true});
       if (early) {
         return outcome({
           run, pr, routes: allRoutes(),
@@ -606,8 +614,14 @@ function execute(options, api, runner = spawnSync) {
       // the supersession check either, because it cannot publish a status.
       if (!startedRun(run)) return outcome({run, pr, state: null, ignored: true, message: 'CI run did not start'});
       const assess = () => assessRun({api, runner, repository: options.repository, run, pr, comparison, trusted: true});
-      const result = supersession(supersedingRun(api, options.repository, run, pr), run, pr, assess)
-        || recheckOrder(api, options.repository, run, pr, assess());
+      const superseding = supersedingRun(api, options.repository, run, pr);
+      // A started run has no verdict yet; its head waits for it unless a
+      // newer run has taken over.
+      const result = run.status !== 'completed'
+        ? (superseding?.run && superseding.run.name === CI_WORKFLOW_NAME && superseding.run.status === 'completed'
+          ? outcome({run, pr, state: null, ignored: true, message: 'Superseded by a newer CI run'})
+          : inProgress(run, pr, 'CI run in progress'))
+        : supersession(superseding, run, pr, assess) || recheckOrder(api, options.repository, run, pr, assess());
       verdictContext.set(result, {run, pr});
       return result;
     }
@@ -624,9 +638,10 @@ function execute(options, api, runner = spawnSync) {
 // the status alone would keep an earlier success for a head whose newest run
 // is unverified. Only a result without a status target publishes nothing; the
 // workflow step still exits non-zero and the run is visible. It returns
-// whether a status was written.
+// whether a status was written. A pending status marks a head whose newest
+// run has not completed.
 function publish(api, repository, result) {
-  if (result.ignored || !['success', 'failure'].includes(result.status.state)) return false;
+  if (result.ignored || !['success', 'failure', 'pending'].includes(result.status.state)) return false;
   if (result.error && !result.sha) return false;
   assertSha(result.sha, 'status target');
   api(`repos/${repository}/statuses/${result.sha}`, {method: 'POST', input: result.status});
@@ -653,7 +668,13 @@ function afterPublication(api, repository, result) {
       }),
     };
   }
-  if (!superseding || superseding.run.status !== 'completed') return null;
+  if (!superseding) return null;
+  if (superseding.run.status !== 'completed') {
+    // The newer run publishes its verdict when it completes; until then the
+    // head must not keep this run's verdict.
+    if (result.status.state === 'pending') return null;
+    return {result: inProgress(context.run, context.pr, 'A newer CI run is in progress')};
+  }
   return {runId: superseding.run.id};
 }
 
