@@ -409,21 +409,20 @@ function resolveOwnership(api, repository, run) {
 // Rule 3: a newer run can publish this head's verdict, provably cannot, or
 // its ownership is unknown. The status is keyed by SHA, so a run for any pull
 // request with this head and this base identity publishes the same status,
-// whatever its pull request number. A run whose pull requests are all on
-// another base cannot represent this classification. When a run has no
-// association, the open pull requests for its head decide the same way. A
+// whatever its pull request number. Bases come from the open pull requests,
+// never from the run's association. A run whose open pull requests are all on
+// another base cannot represent this classification; one with no open owner
+// at all is unknown unless it names pull requests that have all closed. A
 // missing base, or a mix of this base and another, is unknown.
 function candidateOwnership(api, repository, candidate, pr) {
-  const associated = Array.isArray(candidate?.pull_requests) ? candidate.pull_requests : [];
+  // The current open pull requests decide, as in resolveOwnership: a run's
+  // own association records the base it started on, which a retarget can make
+  // stale. A run whose associated pull requests are all closed or moved on can
+  // never publish, so it cannot decide this head.
   const open = openPullRequests(api, repository, candidate);
-  // Only an open pull request with this head can publish for the candidate,
-  // as resolveOwnership requires, so a run whose pull requests are all closed
-  // or moved on cannot decide this head.
-  if (associated.length > 0) {
-    const numbers = associatedNumbers(candidate);
-    if (!open.some(entry => numbers.includes(entry?.number))) return 'other';
-  }
-  const owners = associated.length > 0 ? associated : open;
+  const numbers = associatedNumbers(candidate);
+  const owners = numbers.length > 0 ? open.filter(entry => numbers.includes(entry?.number)) : open;
+  if (numbers.length > 0 && owners.length === 0) return 'other';
   return ownershipByBase(owners.map(entry => baseIdentity(entry?.base)), baseIdentity(pr?.base));
 }
 

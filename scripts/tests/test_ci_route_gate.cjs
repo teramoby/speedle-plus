@@ -312,10 +312,13 @@ test('a newer failure of a same-base sibling is restored after an older success 
 });
 
 test('a newer run with mixed or missing base associations is unknown, not another owner', () => {
-  for (const pull_requests of [[association(590), association(592, 'release')], [{number: 593}]]) {
+  const release = pullRequest([], {number: 592, base: {...pullRequest().base, ref: 'release'}});
+  const baseless = pullRequest([], {number: 593, base: undefined});
+  for (const [pull_requests, sibling] of [[[association(590), association(592)], release], [[association(593)], baseless]]) {
+    // The sibling opens after this run resolved its own owner.
     const fixture = fixtureApi({
       run: run(), pr: pullRequest(), files: ['docs/guide.md'], jobs: jobs(),
-      commitPulls: [pullRequest(), pullRequest([], {number: 593})],
+      commitPulls: call => (call === 1 ? [pullRequest()] : [pullRequest(), sibling]),
       latest: [run({id: 102, pull_requests}), run()],
     });
     const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
@@ -484,9 +487,11 @@ test('a newer run of a pull request on another base does not suppress this resul
 });
 
 test('a newer run for another base does not supersede this classification', () => {
+  const release = pullRequest([], {number: 591, base: {...pullRequest().base, ref: 'release'}});
   const fixture = fixtureApi({
     run: run(), pr: pullRequest(), files: ['docs/guide.md'], jobs: jobs({build: true}),
-    latest: [run({id: 102, pull_requests: [association(590, 'release')]}), run()],
+    commitPulls: call => (call === 1 ? [pullRequest()] : [pullRequest(), release]),
+    latest: [run({id: 102, pull_requests: [association(591, 'release')]}), run()],
   });
   const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
   assert.equal(result.ignored, false);
@@ -1266,3 +1271,17 @@ for (const status of ['in_progress', 'completed']) {
     assert.deepEqual(writes.map(call => call.options.input.state), ['success']);
   });
 }
+
+test('a retargeted pull request is judged by its current base, not its run association', () => {
+  // Run 102 started while #591 targeted release; #591 now targets master, so
+  // 102 publishes for this head and supersedes the older success of 101.
+  const retargeted = pullRequest([], {number: 591});
+  const fixture = fixtureApi({
+    run: run(), pr: pullRequest(), files: ['docs/guide.md'], jobs: jobs(), newerJobs: jobs(),
+    commitPulls: [pullRequest(), retargeted],
+    latest: [run({id: 102, conclusion: 'failure', pull_requests: [association(591, 'release')]}), run()],
+  });
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.ignored, true);
+  assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 0);
+});
