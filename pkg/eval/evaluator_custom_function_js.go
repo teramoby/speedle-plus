@@ -173,7 +173,11 @@ func (frc *FuncResultCache) generateCustomerExpressionFunction(_ *string, cf *pm
 	caller := registeredCustomFunctionCaller()
 	if caller == nil {
 		return func(_ ...interface{}) (interface{}, error) {
-			return CallCustomerFunction(nil, nil)
+			// A *CustomFunctionError, so a caller removed between snapshot
+			// validation and compilation cannot turn the rejection into a
+			// silent non-match.
+			return nil, newCustomFunctionError(cf.Name, errors.New(errors.EvalEngineError,
+				"custom_function_unsupported: custom functions are unavailable in js/wasm"))
 		}, nil
 	}
 	return func(arguments ...interface{}) (interface{}, error) {

@@ -94,6 +94,11 @@ func TestWasmCustomExpressionRejectsBeforeMarshalling(t *testing.T) {
 	// precedence over cache-key generation and argument serialization.
 	result, err := expression(make(chan int))
 	requireUnsupported(t, result, err)
+	// A caller removed between validation and compilation must fail the
+	// decision, not turn into a silent non-match.
+	if !eval.IsCustomFunctionError(err) {
+		t.Fatalf("the rejected call is not a customer function error: %v", err)
+	}
 }
 
 func testPolicy(id, effect, condition string) *pms.Policy {
