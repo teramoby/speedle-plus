@@ -303,6 +303,7 @@ func insertService(ctx context.Context, tx *sql.Tx, v *pms.Service, preserve boo
 	}
 	return nil
 }
+
 // validateFunctionInput rejects a function definition before it is written.
 func validateFunctionInput(v *pms.Function) error {
 	if v == nil || v.FuncURL == "" {
