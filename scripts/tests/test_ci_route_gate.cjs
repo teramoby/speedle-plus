@@ -9,6 +9,7 @@ const root = path.resolve(__dirname, '../..');
 const gate = require('../ci/ci-route-gate.cjs');
 const classifierSource = fs.readFileSync(path.join(root, 'scripts/ci/classify-changes.sh'), 'utf8');
 const repository = 'teramoby/speedle-plus';
+const repositoryId = 7;
 const base = '1'.repeat(40);
 const head = '2'.repeat(40);
 
@@ -18,6 +19,13 @@ function step(name, conclusion = 'success') {
 
 function job(name, conclusion = 'success', steps) {
   return {name, status: 'completed', conclusion, ...(steps ? {steps} : {})};
+}
+
+// The workflow run shape reports a pull request's base with the repository id
+// and name; the pull request shape reports the full repository. Both expose
+// the same id.
+function association(number, ref = 'master', id = repositoryId) {
+  return {number, base: {ref, repo: {id, name: 'speedle-plus'}}};
 }
 
 function run(overrides = {}) {
@@ -30,7 +38,7 @@ function run(overrides = {}) {
     conclusion: 'success',
     head_sha: head,
     html_url: 'https://example.invalid/actions/runs/101',
-    pull_requests: [{number: 590}],
+    pull_requests: [association(590)],
     ...overrides,
   };
 }
@@ -39,7 +47,7 @@ function pullRequest(labels = [], overrides = {}) {
   return {
     number: 590,
     state: 'open',
-    base: {sha: base, ref: 'master', repo: {default_branch: 'master'}},
+    base: {sha: base, ref: 'master', repo: {id: repositoryId, full_name: repository, name: 'speedle-plus', default_branch: 'master'}},
     head: {sha: head},
     labels: labels.map(name => ({name})),
     ...overrides,
@@ -117,7 +125,10 @@ function fixtureApi({run: completedRun, pr, files, prFiles, jobs: runJobs, newer
     if (endpoint.startsWith(`repos/${repository}/actions/workflows/ci.yml/runs?`)) {
       const completed = endpoint.includes('&status=completed');
       const selected = completed ? (latestCompleted === undefined ? [completedRun] : latestCompleted) : (latest === undefined ? [completedRun] : latest);
-      return {workflow_runs: selected};
+      if (completed) return {workflow_runs: selected};
+      // The supersession scan pages through 100 runs at a time.
+      const page = Number(/[?&]page=(\d+)/.exec(endpoint)?.[1] || '1');
+      return {workflow_runs: selected.slice((page - 1) * 100, page * 100)};
     }
     throw new Error(`unexpected API request: ${endpoint}`);
   };
@@ -181,7 +192,9 @@ test('a renamed workflow is rejected instead of publishing a route success', () 
 });
 
 test('a pull request retargeted away from the default base publishes failure', () => {
-  const pr = pullRequest([], {base: {sha: base, ref: 'release', repo: {default_branch: 'master'}}});
+  const pr = pullRequest([], {
+    base: {sha: base, ref: 'release', repo: {id: repositoryId, full_name: repository, name: 'speedle-plus', default_branch: 'master'}},
+  });
   const fixture = fixtureApi({run: run(), pr, files: ['docs/guide.md'], jobs: jobs({build: true})});
   const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
   assert.equal(result.ignored, false);
@@ -205,16 +218,70 @@ test('a run whose pull request has moved on publishes no status', () => {
   assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 0);
 });
 
-test('two open pull requests sharing the head publish failure in both orders', () => {
+test('open pull requests sharing a head and base keep one verdict', () => {
   const first = pullRequest([], {number: 590});
-  const second = pullRequest([], {number: 591});
-  const expected = '2 open pull requests share this head; one SHA status cannot represent them';
-  for (const [index, association] of [first, second].entries()) {
+  // A fork copies the commit and opens it against the same base: the
+  // classification is identical, so the collision neither blocks nor changes
+  // the verdict.
+  const second = pullRequest([], {number: 591, head: {sha: head, repo: {id: 99, name: 'speedle-plus'}}});
+  for (const [index, owner] of [first, second].entries()) {
     const fixture = fixtureApi({
-      run: run({pull_requests: [{number: association.number}]}),
-      pr: association,
+      run: run({pull_requests: [association(owner.number)]}),
+      pr: owner,
       files: ['docs/guide.md'], jobs: jobs({build: true}),
       commitPulls: index === 0 ? [first, second] : [second, first],
+    });
+    const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+    assert.equal(result.status.state, 'success');
+    assert.equal(result.status.description, 'Quick CI routes passed');
+    const writes = fixture.calls.filter(call => call.options.method === 'POST');
+    assert.equal(writes.length, 1);
+    assert.equal(writes[0].options.input.state, 'success');
+  }
+
+  // A fork-style run without an association may be attributed to any one of
+  // them because the verdict is the same.
+  const fork = fixtureApi({
+    run: run({pull_requests: []}), pr: first, files: ['docs/guide.md'],
+    jobs: jobs({build: true}), commitPulls: [first, second],
+  });
+  const forkResult = gate.runGate({repository, runId: 101, publish: true}, fork.api);
+  assert.equal(forkResult.status.state, 'success');
+  assert.equal(forkResult.status.description, 'Quick CI routes passed');
+
+  // A newer completed run of the colliding pull request does not supersede
+  // the victim's run either: it belongs to another pull request.
+  const newer = fixtureApi({
+    run: run(), pr: first, files: ['docs/guide.md'], jobs: jobs({build: true}),
+    commitPulls: [first, second],
+    latest: [run({id: 102, pull_requests: [association(591)]}), run()],
+  });
+  const newerResult = gate.runGate({repository, runId: 101, publish: true}, newer.api);
+  assert.equal(newerResult.status.state, 'success');
+  assert.equal(newerResult.status.description, 'Quick CI routes passed');
+});
+
+test('open pull requests sharing a head across bases fail closed', () => {
+  const master = pullRequest([], {number: 590});
+  const release = pullRequest([], {
+    number: 591,
+    base: {sha: base, ref: 'release', repo: {id: repositoryId, full_name: repository, name: 'speedle-plus', default_branch: 'master'}},
+  });
+  const mirrored = pullRequest([], {
+    number: 592,
+    base: {sha: base, ref: 'master', repo: {id: 8, full_name: 'mirror/speedle-plus', name: 'speedle-plus', default_branch: 'master'}},
+  });
+  const expected = '2 open pull requests share this head; one SHA status cannot represent them';
+  const collisions = [
+    {open: [master, release], owner: master},
+    {open: [release, master], owner: release},
+    {open: [master, mirrored], owner: master},
+  ];
+  for (const {open, owner} of collisions) {
+    const fixture = fixtureApi({
+      run: run({pull_requests: [association(owner.number)]}),
+      pr: owner, files: ['docs/guide.md'], jobs: jobs({build: true}),
+      commitPulls: open,
     });
     const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
     assert.equal(result.status.state, 'failure');
@@ -223,20 +290,12 @@ test('two open pull requests sharing the head publish failure in both orders', (
     assert.equal(writes.length, 1);
     assert.equal(writes[0].options.input.state, 'failure');
   }
-
-  // A fork-style run with no association is no exception.
-  const fork = fixtureApi({
-    run: run({pull_requests: []}), pr: first, files: ['docs/guide.md'],
-    jobs: jobs({build: true}), commitPulls: [first, second],
-  });
-  const forkResult = gate.runGate({repository, runId: 101, publish: true}, fork.api);
-  assert.equal(forkResult.status.state, 'failure');
-  assert.equal(forkResult.status.description, expected);
 });
 
 test('the run association selects its pull request among shared commits', () => {
   const release = pullRequest([], {
-    number: 591, base: {sha: base, ref: 'release', repo: {default_branch: 'master'}},
+    number: 591,
+    base: {sha: base, ref: 'release', repo: {id: repositoryId, full_name: repository, name: 'speedle-plus', default_branch: 'master'}},
   });
   const fixture = fixtureApi({
     run: run({pull_requests: [{number: 591}]}), pr: release, files: ['docs/guide.md'],
@@ -262,13 +321,64 @@ test('a fork-style run resolves its pull request by head SHA', () => {
 
 test('a newer run of another pull request does not suppress this result', () => {
   const pr = pullRequest();
-  const other = run({id: 102, pull_requests: [{number: 999}]});
+  const other = run({id: 102, pull_requests: [association(999)]});
   const fixture = fixtureApi({
     run: run(), pr, files: ['docs/guide.md'], jobs: jobs({build: true}), latest: [other, run()],
   });
   const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
   assert.equal(result.status.state, 'success');
   assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 1);
+});
+
+test('a newer run for another base does not supersede this classification', () => {
+  const fixture = fixtureApi({
+    run: run(), pr: pullRequest(), files: ['docs/guide.md'], jobs: jobs({build: true}),
+    latest: [run({id: 102, pull_requests: [association(590, 'release')]}), run()],
+  });
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.ignored, false);
+  assert.equal(result.status.state, 'success');
+  assert.equal(result.status.description, 'Quick CI routes passed');
+});
+
+test('approval-pending runs do not suppress the run that can publish', () => {
+  const pr = pullRequest();
+  const pending = Array.from({length: 100}, (_, index) => run({
+    id: 300 + index, status: 'completed', conclusion: 'action_required',
+  }));
+  // The approval-pending runs are newer but never started: they neither
+  // supersede this run nor consume RUN_SAMPLE_LIMIT.
+  const fixture = fixtureApi({
+    run: run(), pr, files: ['docs/guide.md'], jobs: jobs({build: true}),
+    latest: [...pending, run()],
+  });
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.ignored, false);
+  assert.equal(result.status.state, 'success');
+  assert.equal(result.status.description, 'Quick CI routes passed');
+  assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 1);
+  // The 100 approval-pending runs fill the first page without consuming the
+  // sample, so the scan continues to the page that holds this run.
+  assert.ok(fixture.calls.some(call => call.endpoint.includes('&page=2')));
+
+  const waiting = fixtureApi({
+    run: run(), pr, files: ['docs/guide.md'], jobs: jobs({build: true}),
+    latest: [run({id: 400, status: 'queued', conclusion: null}), run()],
+  });
+  const waitingResult = gate.runGate({repository, runId: 101, publish: true}, waiting.api);
+  assert.equal(waitingResult.status.state, 'success');
+});
+
+test('a run that never started publishes no verdict', () => {
+  const fixture = fixtureApi({
+    run: run({conclusion: 'action_required'}), pr: pullRequest(), files: ['docs/guide.md'],
+    jobs: jobs(),
+  });
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.ignored, true);
+  assert.equal(result.status.state, null);
+  assert.equal(result.status.description, 'CI run did not start');
+  assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 0);
 });
 
 test('an unknown newer owner turns a success into failure', () => {
@@ -422,26 +532,60 @@ test('a pull request that rewrites the CI workflow cannot be verified by its own
   assert.equal(writes[0].options.input.state, 'failure');
 
   // The compare list is capped at 300 entries, but the pull request files
-  // endpoint still proves the guarded workflows are untouched, so a large
-  // pull request is not rejected.
+  // endpoint still proves the guarded workflows are untouched, so the trust
+  // check does not reject a large pull request. The verdict for such a
+  // compare is covered by the incomplete-compare test below.
   const largeFiles = Array.from({length: 300}, (_, index) => `pkg/f${index}.go`);
-  const large = fixtureApi({
-    run: run(), pr: pullRequest(), files: largeFiles, prFiles: largeFiles, jobs: jobs({ci: true, build: true}),
-  });
-  const largeResult = gate.runGate({repository, runId: 101, publish: true}, large.api);
-  assert.equal(largeResult.status.state, 'success');
-  assert.equal(large.calls.some(call => call.endpoint.includes('/pulls/590/files?per_page=100&page=1')), true);
-
   const guarded = fixtureApi({
     run: run(), pr: pullRequest(),
     files: largeFiles,
     prFiles: [...largeFiles.slice(0, 250), '.github/workflows/ci.yml', ...largeFiles.slice(250)],
-    jobs: jobs({ci: true, build: true}),
+    jobs: jobs({ci: false, build: false}),
   });
   const guardedResult = gate.runGate({repository, runId: 101, publish: true}, guarded.api);
   assert.equal(guardedResult.status.state, 'failure');
   assert.equal(guardedResult.status.description,
     'The pull request changes the CI workflow; the route cannot be verified from its own run');
+  assert.equal(guarded.calls.some(call => call.endpoint.includes('/pulls/590/files?per_page=100&page=1')), true);
+});
+
+test('an incomplete compare requires a full run instead of a route verdict', () => {
+  const largeFiles = Array.from({length: 300}, (_, index) => `pkg/f${index}.go`);
+  // A code-only change classifies as Go only, so the real quick run skips
+  // build and the CI-script step. The compare API caps the list this gate can
+  // read, so the gate widens to every route and cannot accept a quick run.
+  const quick = fixtureApi({
+    run: run(), pr: pullRequest(), files: largeFiles, prFiles: largeFiles,
+    jobs: jobs({ci: false, build: false}),
+  });
+  const quickResult = gate.runGate({repository, runId: 101, publish: true}, quick.api);
+  assert.equal(quickResult.status.state, 'failure');
+  assert.equal(quickResult.status.description,
+    'changed-file list too large to classify; a full CI run is required');
+  assert.equal(quick.calls.some(call => call.endpoint.endsWith(`/classify-changes.sh?ref=${base}`)), false,
+    'an incomplete compare is not classified from a partial file list');
+  const quickWrites = quick.calls.filter(call => call.options.method === 'POST');
+  assert.equal(quickWrites.length, 1);
+  assert.equal(quickWrites[0].options.input.state, 'failure');
+
+  // A full run schedules lint, test and build for every route, so it can
+  // prove the widened set; the code-only CI-script step stays skipped.
+  const full = fixtureApi({
+    run: run(), pr: pullRequest(), files: largeFiles, prFiles: largeFiles,
+    jobs: jobs({full: true, ci: false, build: true}),
+  });
+  const fullResult = gate.runGate({repository, runId: 101, publish: true}, full.api);
+  assert.equal(fullResult.status.state, 'success');
+  assert.equal(fullResult.status.description, 'Full CI routes passed');
+
+  // A full run that skips a route job it would schedule for the widened set
+  // still fails closed.
+  const skippedLint = jobs({full: true, ci: false, build: true, lint: false});
+  const missing = gate.evaluate({
+    run: run(), pr: pullRequest(), jobs: skippedLint, routes: gate.allRoutes(), incomplete: true,
+  });
+  assert.equal(missing.status.state, 'failure');
+  assert.equal(missing.status.description, 'Required route did not pass: lint');
 });
 
 test('a code-only pull request is still assessed from its base classification', () => {

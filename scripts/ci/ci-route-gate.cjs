@@ -15,9 +15,14 @@ const TRUSTED_REPOSITORY = 'teramoby/speedle-plus';
 const CI_WORKFLOW_PATH = '.github/workflows/ci.yml';
 const GUARDED_WORKFLOW_PATHS = [CI_WORKFLOW_PATH, '.github/workflows/go-ci-worker.yml'];
 const STATUS_CONTEXT = 'speedle/ci-route-gate';
-// The newest runs for one head that the supersession check inspects. A newer
-// run that never publishes a status must not suppress one that does.
+// The newest started runs for one head that the supersession check inspects.
+// A newer run that never publishes a status must not suppress one that does.
 const RUN_SAMPLE_LIMIT = 100;
+// The runs list pages at 100 entries. Runs that never started do not count
+// toward RUN_SAMPLE_LIMIT, so the scan may read further pages; this bounds the
+// API budget for a head with a very large number of approval-pending runs.
+const RUN_PAGE_SIZE = 100;
+const RUN_PAGE_LIMIT = 10;
 const UNRESOLVED_RUN_ORDER = Symbol('unresolved run order');
 const UNKNOWN_OWNERSHIP = Symbol('unknown run ownership');
 // The pull request files endpoint pages through at most 3,000 entries.
@@ -93,6 +98,15 @@ function ignoredRun(run, jobs) {
     && jobs.some(job => job?.name === `Ignored CI event ${run.id}`);
 }
 
+// A run that never started has no route verdict. `action_required` is a
+// completed run whose approval was never granted; queued, requested, waiting
+// and pending runs have not begun. Such a run neither supersedes another run
+// nor publishes a status of its own.
+function startedRun(run) {
+  if (run?.status !== 'completed' && run?.status !== 'in_progress') return false;
+  return run?.conclusion !== 'action_required';
+}
+
 // Validate the run before using its job set. An ignored label event has no
 // active jobs and must not replace the status from an active run; its shape is
 // checked against the guarded workflow files before it is honored.
@@ -116,7 +130,7 @@ function preflight(run, pr) {
   return null;
 }
 
-function evaluate({run, pr, jobs, routes}) {
+function evaluate({run, pr, jobs, routes, incomplete = false}) {
   if (!Array.isArray(jobs)) throw new Error('jobs fixture is not an array');
   const early = preflight(run, pr);
   if (early) {
@@ -134,6 +148,19 @@ function evaluate({run, pr, jobs, routes}) {
     return outcome({run, pr, routes, state: null, ignored: true, message: 'Ignored CI label event'});
   }
 
+  const mode = runMode(jobs);
+  if (mode.error) return outcome({run, pr, routes, state: 'failure', message: mode.error});
+  const full = mode.full;
+  // An incomplete compare enables every route, but a quick run never
+  // schedules them. It cannot prove a wider matrix, so require a full run
+  // instead of naming a route the workflow does not produce for this change.
+  if (incomplete && !full) {
+    return outcome({
+      run, pr, routes, state: 'failure',
+      message: 'changed-file list too large to classify; a full CI run is required',
+    });
+  }
+
   const changes = uniqueEntry(jobs, 'changes', 'route');
   if (changes.error) return outcome({run, pr, routes, state: 'failure', message: changes.error});
   if (!passed(changes.entry)) {
@@ -142,7 +169,10 @@ function evaluate({run, pr, jobs, routes}) {
 
   const steps = Array.isArray(changes.entry.steps) ? changes.entry.steps : [];
   const requiredSteps = ['Classify changed files'];
-  if (routes.ci) requiredSteps.push('Test CI scripts');
+  // The CI-script test is route-driven, so a run on code-only changes skips
+  // it even when it is full. An incomplete compare cannot decide that route;
+  // the widened job requirements below carry the verdict instead.
+  if (routes.ci && !incomplete) requiredSteps.push('Test CI scripts');
   for (const name of requiredSteps) {
     const step = uniqueEntry(steps, name, 'step');
     if (step.error) return outcome({run, pr, routes, state: 'failure', message: step.error});
@@ -151,9 +181,6 @@ function evaluate({run, pr, jobs, routes}) {
     }
   }
 
-  const mode = runMode(jobs);
-  if (mode.error) return outcome({run, pr, routes, state: 'failure', message: mode.error});
-  const full = mode.full;
   for (const name of requiredJobs(routes, full)) {
     // A completed reusable workflow appears as "<caller> / <called job>";
     // a skipped reusable workflow retains only the caller's name.
@@ -300,20 +327,41 @@ function openPullRequests(api, repository, run) {
   return response.filter(pr => pr?.state === 'open' && pr?.head?.sha === run.head_sha);
 }
 
-// Rule 1: ownership always comes from the commit lookup. More than one open
-// pull request for the commit cannot be represented by one SHA status. The
-// run's association selects the owner among them; a fork run with no
-// association uses the unique open pull request. A run whose pull request is
-// closed or has moved on leaves the status alone.
+// The base repository and ref select the classification, so two pull requests
+// with one base identity produce one verdict. The pull request and workflow
+// run shapes describe the repository differently; the numeric id is present
+// in both and is the strongest identity.
+function baseIdentity(base) {
+  if (!base || typeof base.ref !== 'string' || base.ref.length === 0) return null;
+  const repository = base.repo;
+  if (!repository || typeof repository !== 'object') return null;
+  if (repository.id !== undefined && repository.id !== null) return `${repository.id}#${base.ref}`;
+  if (typeof repository.full_name === 'string' && repository.full_name.length > 0) {
+    return `${repository.full_name}#${base.ref}`;
+  }
+  if (typeof repository.name === 'string' && repository.name.length > 0) return `${repository.name}#${base.ref}`;
+  return null;
+}
+
+// Rule 1: ownership always comes from the commit lookup. Colliding open pull
+// requests that share one base repository and ref have one classification, so
+// one SHA status can represent all of them: the run is attributed to its
+// associated pull request, or a fork run without an association may use any
+// one of them. A collision across bases stays a failure because the verdicts
+// can differ. A run whose pull request is closed or has moved on leaves the
+// status alone.
 function resolveOwnership(api, repository, run) {
   const open = openPullRequests(api, repository, run);
   if (open.length > 1) {
-    return {failure: `${open.length} open pull requests share this head; one SHA status cannot represent them`};
+    const identities = new Set(open.map(pr => baseIdentity(pr?.base)));
+    if (identities.size !== 1 || identities.has(null)) {
+      return {failure: `${open.length} open pull requests share this head; one SHA status cannot represent them`};
+    }
   }
   const numbers = associatedNumbers(run);
   if (numbers.length > 0) {
     const owned = open.filter(pr => numbers.includes(pr?.number));
-    if (owned.length !== 1) return {ignored: 'The run pull request is closed or has moved on'};
+    if (owned.length === 0) return {ignored: 'The run pull request is closed or has moved on'};
     return {pr: owned[0]};
   }
   if (open.length === 0) return {ignored: 'Cannot resolve one open pull request for this commit'};
@@ -321,43 +369,63 @@ function resolveOwnership(api, repository, run) {
 }
 
 // Rule 3: a newer run is provably this pull request's, provably another
-// pull request's, or unknown. Unknown ownership must never be treated as
-// "publish nothing".
-function candidateOwnership(api, repository, candidate, number) {
-  const numbers = associatedNumbers(candidate);
-  if (numbers.length > 0) return numbers.includes(number) ? 'same' : 'other';
+// pull request's, or unknown. A run for another base cannot represent this
+// classification. When a run has no association, the commit lookup decides;
+// if every open pull request for that head shares this classification's base
+// identity, the verdict is the same whichever one the run belongs to.
+function candidateOwnership(api, repository, candidate, pr) {
+  const base = baseIdentity(pr?.base);
+  const associated = Array.isArray(candidate?.pull_requests) ? candidate.pull_requests : [];
+  if (associated.length > 0) {
+    const bases = associated.map(entry => baseIdentity(entry?.base));
+    if (bases.some(identity => identity === null || identity !== base)) return 'other';
+    return associatedNumbers(candidate).includes(pr.number) ? 'same' : 'other';
+  }
   const open = openPullRequests(api, repository, candidate);
-  if (open.length === 1) return open[0].number === number ? 'same' : 'other';
+  if (open.length === 0) return 'unknown';
+  if (open.length === 1) return open[0].number === pr.number ? 'same' : 'other';
+  const identities = new Set(open.map(entry => baseIdentity(entry?.base)));
+  if (identities.size === 1 && !identities.has(null) && identities.has(base)) return 'same';
   return 'unknown';
 }
 
 // A completed ignored label run never publishes a status, so it must not
 // suppress the status of the newest run that can. The runs list is ordered by
 // creation, newest first, so the first newer run that is not ignored decides.
-// Another pull request's run cannot publish here and is skipped. An unknown
-// owner is reported so the caller can fail this run's success closed.
+// A run that never started is invisible here: it cannot publish, so it neither
+// supersedes this run nor consumes the sample. Another pull request's run
+// cannot publish here and is skipped. An unknown owner is reported so the
+// caller can fail this run's success closed.
 function supersedingRun(api, repository, run, pr) {
   assertSha(run?.head_sha, 'workflow run head');
-  const response = api(`repos/${repository}/actions/workflows/ci.yml/runs?event=pull_request&head_sha=${run.head_sha}&per_page=${RUN_SAMPLE_LIMIT}`);
-  if (!response || !Array.isArray(response.workflow_runs)) throw new Error('workflow runs response has no run list');
-  const runs = response.workflow_runs;
   let unknown = false;
-  for (const candidate of runs) {
-    if (String(candidate?.id) === String(run.id)) return unknown ? UNKNOWN_OWNERSHIP : null;
-    const ownership = candidateOwnership(api, repository, candidate, pr.number);
-    if (ownership === 'other') continue;
-    if (ownership === 'unknown') {
-      unknown = true;
-      continue;
+  let considered = 0;
+  for (let page = 1; page <= RUN_PAGE_LIMIT; page++) {
+    const response = api(`repos/${repository}/actions/workflows/ci.yml/runs?event=pull_request&head_sha=${run.head_sha}&per_page=${RUN_PAGE_SIZE}&page=${page}`);
+    if (!response || !Array.isArray(response.workflow_runs)) throw new Error('workflow runs response has no run list');
+    const runs = response.workflow_runs;
+    for (const candidate of runs) {
+      if (String(candidate?.id) === String(run.id)) return unknown ? UNKNOWN_OWNERSHIP : null;
+      if (!startedRun(candidate)) continue;
+      // This run does not appear among the newest started runs, so newer runs
+      // between the sample and this one may exist and its place in the order
+      // cannot be established.
+      if (considered >= RUN_SAMPLE_LIMIT) return UNRESOLVED_RUN_ORDER;
+      considered += 1;
+      const ownership = candidateOwnership(api, repository, candidate, pr);
+      if (ownership === 'other') continue;
+      if (ownership === 'unknown') {
+        unknown = true;
+        continue;
+      }
+      const jobs = jobsFromPages(api(`repos/${repository}/actions/runs/${candidate.id}/jobs?per_page=100&filter=latest`, {paginate: true}));
+      // The ignored shape is only meaningful from the guarded workflow file.
+      // supersedingRun runs only after workflowTrust passed for this commit.
+      if (candidate.name === CI_WORKFLOW_NAME && candidate.path === CI_WORKFLOW_PATH && ignoredRun(candidate, jobs)) continue;
+      return {run: candidate};
     }
-    const jobs = jobsFromPages(api(`repos/${repository}/actions/runs/${candidate.id}/jobs?per_page=100&filter=latest`, {paginate: true}));
-    // The ignored shape is only meaningful from the guarded workflow file.
-    // supersedingRun runs only after workflowTrust passed for this commit.
-    if (candidate.name === CI_WORKFLOW_NAME && candidate.path === CI_WORKFLOW_PATH && ignoredRun(candidate, jobs)) continue;
-    return {run: candidate};
+    if (considered >= RUN_SAMPLE_LIMIT || runs.length < RUN_PAGE_SIZE) return UNRESOLVED_RUN_ORDER;
   }
-  // Without this run in the sample, newer runs between the sample and this one
-  // may exist, so its place in the order cannot be established.
   return UNRESOLVED_RUN_ORDER;
 }
 
@@ -374,10 +442,15 @@ function assessRun({api, runner, repository, run, pr, comparison, trusted = fals
   // workflow the pull request controls.
   const untrusted = trusted ? null : workflowTrust(api, repository, pr.number, compared);
   if (untrusted) return outcome({run, pr, routes: allRoutes(), state: 'failure', message: untrusted});
+  // A pull request from a fork can run only after a maintainer approves it.
+  // The approval-pending run never executed, so it has no verdict to publish;
+  // publishing a failure would let an unrelated pull request decide the status
+  // of a head it shares. This follows the workflow check, which stays first.
+  if (!startedRun(run)) return outcome({run, pr, state: null, ignored: true, message: 'CI run did not start'});
   const routes = compared.complete ? classifyWithBase({
     api, runner, repository, baseSha: pr.base.sha, headSha: run.head_sha, files: compared.files,
   }) : allRoutes();
-  return evaluate({run, pr, jobs, routes});
+  return evaluate({run, pr, jobs, routes, incomplete: !compared.complete});
 }
 
 function execute(options, api, runner = spawnSync) {
@@ -428,6 +501,9 @@ function execute(options, api, runner = spawnSync) {
       const comparison = changedFiles(api(`repos/${options.repository}/compare/${pr.base.sha}...${run.head_sha}`));
       const untrusted = workflowTrust(api, options.repository, pr.number, comparison);
       if (untrusted) return outcome({run, pr, routes: allRoutes(), state: 'failure', message: untrusted});
+      // A run that never started has no verdict. It must not acquire one from
+      // the supersession check either, because it cannot publish a status.
+      if (!startedRun(run)) return outcome({run, pr, state: null, ignored: true, message: 'CI run did not start'});
       const superseding = supersedingRun(api, options.repository, run, pr);
       if (superseding === UNRESOLVED_RUN_ORDER) {
         return outcome({run, pr, routes: allRoutes(), state: 'failure', message: 'Run order for this head is unresolved'});
