@@ -60,22 +60,28 @@ Unlabeled pull requests run quick checks: formatting, vet, module tidiness,
 build (including the container dispatcher without Docker), and tests for changed
 Go packages under `pkg`, `cmd`, `api` and `deployment`. Quick checks use the file store,
 compile service-backed store packages without starting services, and do not
-apply the coverage gate. Changes under `docs/` or `website/` also run the
-existing site build, browser/a11y checks and documentation walkthroughs in the
-Linux build worker. Container, command and release paths retain image smoke
-without a label: `deployment/container/**`, `cmd/**`,
+apply the coverage gate. When the pull request changes `docs/` or `website/`,
+quick also runs the documentation walkthroughs: the documented Go install and
+native quick-start commands, the embedded guide, the docs contract tests and
+the bilingual documentation command blocks. The Playground engine rebuild,
+browser/a11y checks and Hugo verification stay on the full route; the merge
+procedure below runs that route at the merge head before merge, and an
+unlabeled pull request does not run them.
+Container, command and release paths retain image smoke without a label:
+`deployment/container/**`, `cmd/**`,
 `.github/workflows/release.yml`, `.github/workflows/image-smoke.yml` and
 `scripts/release-smoke.sh`. Either full-CI label always runs image smoke.
 DCO and automated review retain their own workflows.
 
 Maintainers add `full-ci` or `merge-head` to run the full Go gate, integration
-services, the 90.0% coverage gate, build and image smoke. Full test coverage is
-independent of changed-file classification. Pushes to `master` always run full
-CI; nightly and weekly schedules are unchanged. The stable `CI` check reports
-the selected route, so a quick pass alone is not approval to merge. There is
-currently no branch protection. The manual `full-ci`/`merge-head` procedure below
-enforces full validation before merge; a green `CI` check alone does not enforce
-that procedure, even if it is later configured as required.
+services, the 90.0% coverage gate, the build job (Playground engine rebuild,
+browser/a11y checks and Hugo verification) and image smoke. Full test coverage
+is independent of changed-file classification. Pushes to `master` always run
+full CI; nightly and weekly schedules are unchanged. The stable `CI` check
+reports the selected route, so a quick pass alone is not approval to merge.
+There is currently no branch protection. The manual `full-ci`/`merge-head`
+procedure below enforces full validation before merge; a green `CI` check alone
+does not enforce that procedure, even if it is later configured as required.
 
 Runner variables contain a JSON runner string or label array. `QUICK_RUNS_ON`
 defaults to `"ubuntu-latest"` and supports Linux x64 or macOS ARM64 without

@@ -426,12 +426,16 @@ jobs:
         if: inputs.mode == 'build' || inputs.mode == 'quick'
         run: go build ./cmd/speedle-pms/... ./cmd/speedle-ads/... ./cmd/spctl/...
 
-      # Unlabeled content PRs keep the existing docs and site checks without
-      # starting the full integration/coverage suite. Full test mode already
-      # runs these walkthroughs, so do not duplicate them on labeled runs.
+      # Unlabeled content pull requests keep the documentation checks without
+      # starting the full integration/coverage suite. The full test mode runs
+      # these walkthroughs itself, so do not duplicate them there. The
+      # Playground engine rebuild, browser checks and Hugo verification stay
+      # on the full route. Quick runs on Linux or macOS; these scripts run
+      # natively and use no Docker. The quick checkout fetches full history so
+      # the pull request base commit is available for the diff below.
       - name: Select quick content checks
         id: content
-        if: inputs.mode == 'build' && github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'full-ci') && !contains(github.event.pull_request.labels.*.name, 'merge-head')
+        if: inputs.mode == 'quick'
         env:
           PR_BASE: ${{ github.event.pull_request.base.sha }}
         run: |
@@ -441,16 +445,35 @@ jobs:
           import os
           from pathlib import Path
           import subprocess
-          changed = subprocess.check_output(['git', 'diff', '--name-only', '-z', os.environ['PR_BASE'], os.environ['GITHUB_SHA'], '--']).decode().split('\0')
-          content = any(p.startswith(('docs/', 'website/')) for p in changed)
+          base = os.environ.get('PR_BASE', '')
+          if not base:
+              # A non-pull-request caller has no base to diff, so run the
+              # walkthroughs instead of skipping them without evidence.
+              print('::warning::No pull request base commit; running the quick content checks.')
+              content = True
+          else:
+              probe = subprocess.run(['git', 'cat-file', '-e', base + '^{commit}'], capture_output=True, text=True)
+              if probe.returncode:
+                  detail = probe.stderr.strip() or f'exit status {probe.returncode}'
+                  raise SystemExit(f'The pull request base commit {base} is missing from the quick checkout; quick needs full history: {detail}')
+              changed = subprocess.check_output(['git', 'diff', '--name-only', '-z', base, os.environ['GITHUB_SHA'], '--']).decode().split('\0')
+              content = any(p.startswith(('docs/', 'website/')) for p in changed)
           with Path(os.environ['GITHUB_OUTPUT']).open('a') as output:
               output.write('changed=' + str(content).lower() + '\n')
           PYTHON
 
       - name: Verify quick documentation walkthroughs
-        if: inputs.mode == 'build' && steps.content.outputs.changed == 'true'
+        if: inputs.mode == 'quick' && steps.content.outputs.changed == 'true'
         run: |
           set -euo pipefail
+          # The walkthroughs run inside an unprivileged user namespace and
+          # fail closed without one. GitHub-hosted Ubuntu images may restrict
+          # unprivileged user namespaces through AppArmor; lift that on the
+          # disposable hosted VM only, never on a self-hosted runner.
+          restriction=/proc/sys/kernel/apparmor_restrict_unprivileged_userns
+          if [ "${RUNNER_ENVIRONMENT:-}" = github-hosted ] && [ -r "${restriction}" ] && [ "$(cat "${restriction}")" != 0 ]; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          fi
           toolchain=$(go env GOVERSION)
           python3 -I website/tests/check_quick_start.py --toolchain "${toolchain}"
           python3 -I website/tests/check_embedded.py --toolchain "${toolchain}" --candidate
