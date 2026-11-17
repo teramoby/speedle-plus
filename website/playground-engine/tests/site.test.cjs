@@ -262,6 +262,17 @@ assert.ok(read('docs/en/sitemap.xml').includes('https://engine.speedle.io/playgr
 for (const locale of ['ja', 'ko', 'es', 'zh']) {
   assert.ok(read(`docs/${locale}/sitemap.xml`).includes(`https://engine.speedle.io/${locale}/playground/`), `Playground in the ${locale} sitemap`);
 }
+// The retired documentation snapshot keeps one redirect stub at its entry point.
+const snapshotStub = 'docs/172c4fea633285df5f8950cdef354c38';
+assert.deepEqual(fs.readdirSync(path.join(root, snapshotStub)), ['index.html'], 'The retired snapshot keeps only its redirect stub');
+const stub = read(`${snapshotStub}/index.html`);
+assert.ok(stub.includes('<meta http-equiv="refresh" content="0; url=/">'), 'Retired snapshot stub redirects to the site home');
+assert.ok(stub.includes('<link rel="canonical" href="https://engine.speedle.io/">'), 'Retired snapshot stub points at the site home');
+assert.ok(stub.includes('<meta name="robots" content="noindex">'), 'Retired snapshot stub stays out of search indexes');
+assert.ok(stub.includes('<a href="/index.html">'), 'Retired snapshot stub links the site home');
+for (const name of ['docs/sitemap.xml', 'docs/en/sitemap.xml', 'docs/ja/sitemap.xml', 'docs/ko/sitemap.xml', 'docs/es/sitemap.xml', 'docs/zh/sitemap.xml', 'docs/llms.txt', 'docs/llms-full.txt']) {
+  assert.ok(!read(name).includes('172c4fea'), `The retired snapshot stub is not listed in ${name}`);
+}
 assert.ok(!/[\u4e00-\u9fff]/.test(page.replace(page.match(/<div class="languages">[\s\S]*?<\/div><\/div>/)[0],'')),'English page has no untranslated labels except the language switch');
 for(const source of [page,home]) {
  for(const [,url] of source.matchAll(/(?:src|href)="([^"]+)"/g)) {
@@ -454,7 +465,7 @@ const homes = {
   }
   if (!entry.name.endsWith('.html')) continue;
   const route = '/' + path.relative(docsRoot, file).split(path.sep).join('/').replace(/index\.html$/, '');
-  if (/^\/[0-9a-f]{32}\//.test(route)) continue; // the 2017 archive keeps its own metadata
+  if (/^\/[0-9a-f]{32}\//.test(route)) continue; // snapshot routes are outside the current-site metadata contract
   const html = fs.readFileSync(file, 'utf8');
   const lang = route.match(/^\/(ja|ko|es|zh)(?=\/)/)?.[1] || 'en';
   const htmlLang = lang === 'zh' ? 'zh-CN' : lang;
