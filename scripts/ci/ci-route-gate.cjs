@@ -42,6 +42,11 @@ const verdictContext = new WeakMap();
 const PR_FILE_PAGE_SIZE = 100;
 const PR_FILE_LIMIT = 3000;
 const PR_FILE_PAGES = PR_FILE_LIMIT / PR_FILE_PAGE_SIZE;
+// The paged files endpoint describes the pull request as it is now, not the
+// run being certified. The lookup is bracketed by reads of the request's
+// identity, and either side moving in between fails the verdict closed.
+const PR_HEAD_MOVED = 'the pull request head moved; rerun the gate on the new head';
+const PR_BASE_MOVED = 'the pull request base moved; rerun the gate on the new base';
 const ROUTE_KEYS = ['go', 'website', 'docs', 'ci'];
 
 function allRoutes() {
@@ -319,6 +324,34 @@ function pullRequestFiles(api, repository, prNumber) {
   return {files, previous, complete: false};
 }
 
+// Unlike the compare API it replaced, the paged files endpoint cannot be
+// pinned by SHA: it describes the pull request's current head and base. A push
+// or retarget between the ownership lookup and the file read would certify one
+// commit with another commit's file list, and pages read across a move could
+// mix two diffs. Read the identity before and after the paging and proceed
+// only when both still describe the run being assessed.
+function pinnedPullRequestFiles(api, repository, prNumber, {headSha, baseSha}) {
+  assertSha(headSha, 'workflow run head');
+  assertSha(baseSha, 'pull request base');
+  const identity = () => {
+    const pull = api(`repos/${repository}/pulls/${prNumber}`);
+    assertSha(pull?.head?.sha, 'pull request head');
+    assertSha(pull?.base?.sha, 'pull request base');
+    return pull;
+  };
+  const moved = pull => {
+    if (pull.head.sha !== headSha) return PR_HEAD_MOVED;
+    if (pull.base.sha !== baseSha) return PR_BASE_MOVED;
+    return null;
+  };
+  const before = moved(identity());
+  if (before) return {error: before};
+  const comparison = pullRequestFiles(api, repository, prNumber);
+  const after = moved(identity());
+  if (after) return {error: after};
+  return {comparison};
+}
+
 function guardPaths(files) {
   return files.some(file => GUARDED_WORKFLOW_PATHS.includes(file));
 }
@@ -525,7 +558,12 @@ function assessRun({api, runner, repository, run, pr, comparison, trusted = fals
 
   assertSha(pr?.base?.sha, 'pull request base');
   assertSha(run.head_sha, 'workflow run head');
-  const compared = comparison || pullRequestFiles(api, repository, pr.number);
+  let compared = comparison;
+  if (!compared) {
+    const pinned = pinnedPullRequestFiles(api, repository, pr.number, {headSha: run.head_sha, baseSha: pr.base.sha});
+    if (pinned.error) return outcome({run, pr, routes: allRoutes(), state: 'failure', message: pinned.error});
+    compared = pinned.comparison;
+  }
   // Workflow integrity comes before every run-shape decision: never read job
   // or step names, including an ignored label-event shape, from a run whose
   // workflow the pull request controls.
@@ -644,7 +682,9 @@ function execute(options, api, runner = spawnSync) {
       // supersession or ignored-run decision.
       assertSha(pr?.base?.sha, 'pull request base');
       assertSha(run.head_sha, 'workflow run head');
-      const comparison = pullRequestFiles(api, options.repository, pr.number);
+      const pinned = pinnedPullRequestFiles(api, options.repository, pr.number, {headSha: run.head_sha, baseSha: pr.base.sha});
+      if (pinned.error) return outcome({run, pr, routes: allRoutes(), state: 'failure', message: pinned.error});
+      const comparison = pinned.comparison;
       const untrusted = workflowTrust(comparison);
       if (untrusted) return outcome({run, pr, routes: allRoutes(), state: 'failure', message: untrusted});
       // A run that never started has no verdict. It must not acquire one from

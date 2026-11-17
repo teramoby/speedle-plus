@@ -91,7 +91,7 @@ function routesFor(files) {
   });
 }
 
-function fixtureApi({run: completedRun, runFetches, pr, files, prFiles, prFilesError, renames = {}, jobs: runJobs, newerJobs, latest, latestCompleted, commitPulls, jobsError, runsById = {}, defaultTip = base}) {
+function fixtureApi({run: completedRun, runFetches, pr, prFetches, files, prFiles, prFilesError, renames = {}, jobs: runJobs, newerJobs, latest, latestCompleted, commitPulls, jobsError, runsById = {}, defaultTip = base}) {
   const calls = [];
   const jobsPrefix = `repos/${repository}/actions/runs/`;
   const jobsSuffix = '/jobs?per_page=100&filter=latest';
@@ -99,6 +99,7 @@ function fixtureApi({run: completedRun, runFetches, pr, files, prFiles, prFilesE
   let commitsCalls = 0;
   let runsCalls = 0;
   let runFetchCount = 0;
+  let prFetchCount = 0;
   const api = (endpoint, options = {}) => {
     calls.push({endpoint, options});
     if (options.method === 'POST') {
@@ -112,7 +113,11 @@ function fixtureApi({run: completedRun, runFetches, pr, files, prFiles, prFilesE
     }
     const runMatch = new RegExp(`^repos/${repository}/actions/runs/(\\d+)$`).exec(endpoint);
     if (runMatch && runsById[runMatch[1]]) return runsById[runMatch[1]];
-    if (endpoint === `repos/${repository}/pulls/${pr.number}`) return pr;
+    if (endpoint === `repos/${repository}/pulls/${pr.number}`) {
+      if (!prFetches) return pr;
+      prFetchCount += 1;
+      return prFetches[Math.min(prFetchCount, prFetches.length) - 1];
+    }
     if (endpoint === `repos/${repository}/commits/${completedRun.head_sha}/pulls?per_page=100`) {
       assert.equal(options.paginate, true);
       commitsCalls += 1;
@@ -956,6 +961,95 @@ test('a pull request files paging error fails closed', () => {
   const writes = fixture.calls.filter(call => call.options.method === 'POST');
   assert.equal(writes.length, 1);
   assert.equal(writes[0].options.input.state, 'failure');
+});
+
+test('the changed-file lookup is bracketed by reads of the run pull request identity', () => {
+  const files = Array.from({length: 301}, (_, index) => `docs/page-${index}.md`);
+  const fixture = fixtureApi({run: run(), pr: pullRequest(), files, jobs: jobs({build: true})});
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.status.state, 'success');
+
+  const endpoints = fixture.calls.map(call => call.endpoint);
+  const identity = `repos/${repository}/pulls/590`;
+  assert.deepEqual(endpoints.filter(endpoint => endpoint === identity), [identity, identity],
+    'the identity is read before and after the paged list');
+  const first = endpoints.indexOf(identity);
+  const last = endpoints.lastIndexOf(identity);
+  const pages = endpoints.map((endpoint, index) => (/\/files\?per_page=100&page=\d+$/.test(endpoint) ? index : -1))
+    .filter(index => index >= 0);
+  assert.equal(pages.length, 4, '301 entries are read in four pages');
+  assert.ok(pages.every(index => index > first && index < last),
+    'every page is read between the two identity reads');
+});
+
+test('a pull request head that moved before the file lookup fails closed', () => {
+  // The run lookup resolved the pull request at this run's head; by the time
+  // the files are read the branch has been pushed again. The paged endpoint
+  // would describe the new head, so the gate must not classify it.
+  const moved = pullRequest([], {head: {sha: '3'.repeat(40)}});
+  const fixture = fixtureApi({
+    run: run(), pr: pullRequest(), prFetches: [moved], files: ['docs/guide.md'], jobs: jobs({build: true}),
+  });
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.status.state, 'failure');
+  assert.equal(result.status.description, 'the pull request head moved; rerun the gate on the new head');
+  assert.equal(result.error, undefined);
+  assert.equal(fixture.calls.some(call => call.endpoint.includes('/files?per_page=')), false,
+    'the mismatch is caught before any page is read');
+  assert.equal(fixture.calls.some(call => call.endpoint.includes('/contents/')), false,
+    'a moved head is not classified');
+  const writes = fixture.calls.filter(call => call.options.method === 'POST');
+  assert.equal(writes.length, 1);
+  assert.equal(writes[0].options.input.state, 'failure');
+});
+
+test('a pull request head that moved while the file list was paged fails closed', () => {
+  const files = Array.from({length: 301}, (_, index) => `docs/page-${index}.md`);
+  const moved = pullRequest([], {head: {sha: '3'.repeat(40)}});
+  const fixture = fixtureApi({
+    run: run(), pr: pullRequest(), prFetches: [pullRequest(), moved],
+    files, jobs: jobs({full: true, build: true, lint: false}),
+  });
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.status.state, 'failure');
+  assert.equal(result.status.description, 'the pull request head moved; rerun the gate on the new head');
+  // The pages were read before the move was noticed; a list that may mix two
+  // heads is never classified or used to trust the workflow.
+  assert.equal(fixture.calls.filter(call => call.endpoint.includes('/files?per_page=')).length, 4);
+  assert.equal(fixture.calls.some(call => call.endpoint.includes('/contents/')), false);
+  const writes = fixture.calls.filter(call => call.options.method === 'POST');
+  assert.equal(writes.length, 1);
+  assert.equal(writes[0].options.input.state, 'failure');
+});
+
+test('a pull request base that moved while the file list was paged fails closed', () => {
+  const rebased = pullRequest([], {base: {...pullRequest().base, sha: '4'.repeat(40)}});
+  const fixture = fixtureApi({
+    run: run(), pr: pullRequest(), prFetches: [pullRequest(), rebased],
+    files: ['docs/guide.md'], jobs: jobs({build: true}),
+  });
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.status.state, 'failure');
+  assert.equal(result.status.description, 'the pull request base moved; rerun the gate on the new base');
+  assert.equal(fixture.calls.some(call => call.endpoint.includes('/contents/')), false);
+  const writes = fixture.calls.filter(call => call.options.method === 'POST');
+  assert.equal(writes.length, 1);
+  assert.equal(writes[0].options.input.state, 'failure');
+});
+
+test('a PR dry-run whose head moved before the file lookup fails closed without writing', () => {
+  // The dry-run path looks the files up itself, so the identity is pinned
+  // there too, not only in the publishing path.
+  const moved = pullRequest([], {head: {sha: '3'.repeat(40)}});
+  const fixture = fixtureApi({
+    run: run(), pr: pullRequest(), prFetches: [pullRequest(), moved], files: ['docs/guide.md'],
+    jobs: jobs({build: true}),
+  });
+  const result = gate.runGate({repository, prNumber: 590, dryRun: true}, fixture.api);
+  assert.equal(result.status.state, 'failure');
+  assert.equal(result.status.description, 'the pull request head moved; rerun the gate on the new head');
+  assert.equal(fixture.calls.some(call => call.endpoint.includes('/files?per_page=')), false);
+  assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 0);
 });
 
 test('a code-only pull request is still assessed from its base classification', () => {
