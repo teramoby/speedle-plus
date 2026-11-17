@@ -73,6 +73,9 @@ func (s *Store) writePolicyStoreWithoutLock(ps *pms.PolicyStore) error {
 	// declarations here too, as the other stores do through their create path.
 	if ps != nil {
 		for _, function := range ps.Functions {
+			if function == nil {
+				return errors.New(errors.InvalidRequest, "function is required")
+			}
 			if err := function.ValidateTypeDeclarations(); err != nil {
 				return errors.Wrap(err, errors.InvalidRequest, "invalid type declaration in function definition")
 			}

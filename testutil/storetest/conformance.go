@@ -275,6 +275,8 @@ func testPolicyStore(t *testing.T, s pms.PolicyStoreManager) {
 	// the function declaration.
 	invalid := &pms.PolicyStore{Functions: []*pms.Function{{Name: "f", FuncURL: "https://f", Result: "number"}}}
 	wantCode(t, "invalid declaration in a whole-store write", s.WritePolicyStore(invalid), errors.InvalidRequest)
+	nilFunction := &pms.PolicyStore{Functions: []*pms.Function{nil}}
+	wantCode(t, "nil function in a whole-store write", s.WritePolicyStore(nilFunction), errors.InvalidRequest)
 }
 
 func request(service, resource, user string) *ads.RequestContext {
