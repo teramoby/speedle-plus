@@ -266,6 +266,24 @@ jobs:
     uses: ./.github/workflows/reviewbot-preflight.yml
     permissions: {}
 
+  # The model job requires the preflight's success, so a rejected override
+  # skips it. This gate fails red instead, so the rejection is a visible
+  # failure rather than a skipped job.
+  runner-gate:
+    name: Fail a rejected ReviewBot runner override
+    needs: [prepare, runner-preflight]
+    if: always() && needs.prepare.outputs.should_run == 'true'
+    permissions: {}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require an approved runner override
+        if: needs.runner-preflight.result != 'success'
+        shell: bash
+        run: |
+          echo 'ReviewBot model jobs are disabled: the runner override failed the preflight.' >&2
+          exit 1
+
   analyze:
     name: Analyze ReviewBot command
     # The model call receives provider credentials, so the override must pass
@@ -275,7 +293,7 @@ jobs:
     if: >-
       always() && needs.prepare.outputs.should_run == 'true' &&
       needs.runner-preflight.result == 'success'
-    runs-on: ${{ fromJSON(vars.REVIEWBOT_RUNS_ON || '["self-hosted","speedle-runner"]') }}
+    runs-on: ${{ fromJSON(needs.runner-preflight.outputs.runs_on) }}
     timeout-minutes: 20
     permissions:
       contents: read

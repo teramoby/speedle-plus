@@ -15,8 +15,11 @@ Weekly runs stay on `fiona-speedle`.
 ReviewBot selects `[self-hosted, speedle-runner]`, which `charming-speedle-2`,
 `donkey-speedle` and `fiona` carry, and its regression fixture job accepts all
 three. Its two model-calling jobs wait for a GitHub-hosted preflight that
-validates `REVIEWBOT_RUNS_ON` against one literal allowlist of label sets, so
-an unapproved override fails the run before a provider key reaches a runner.
+validates `REVIEWBOT_RUNS_ON` against one literal allowlist of label sets and
+publishes the accepted set as the job output they route on, so an unapproved
+override fails the run before a provider key reaches a runner. The allowlist
+comparison is case-sensitive: a value that differs in case from an approved
+set is rejected.
 Go lint, test, post-merge regression and the nightly use the same label,
 and the Go CI worker accepts `donkey-speedle` for those tasks as well. Go build
 (it needs the Linux Hugo release and `sha256sum`) selects

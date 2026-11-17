@@ -2,6 +2,7 @@
  * unless the optional live runner-inventory check is enabled. */
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const {spawnSync} = require('node:child_process');
 const test = require('node:test');
@@ -46,12 +47,13 @@ function github(eventName, headRepo = canonical, overrides = {}) {
     ...overrides,
   };
 }
-function evaluate(expression, context, vars = {}, inputs = null) {
+function evaluate(expression, context, vars = {}, inputs = null, needs = {}) {
   // Evaluate the actual workflow predicate, not a duplicate routing function.
   // This intentionally accepts only its current string/boolean comparison,
   // boolean operator, contains, array wildcard and fromJSON subset; other
-  // expression syntax fails closed. Workflow inputs are opt-in so every other
-  // gate still rejects an `inputs.*` lookup instead of trusting it.
+  // expression syntax fails closed. Workflow inputs and the preflight result
+  // are opt-in, so every other gate still rejects such a lookup instead of
+  // trusting it.
   const lookup = name => {
     assert.ok(!name.startsWith('inputs.') || inputs !== null, `Unsupported inputs lookup: ${name}`);
     const walk = (item, parts) => {
@@ -62,9 +64,11 @@ function evaluate(expression, context, vars = {}, inputs = null) {
       return walk(item[part], rest);
     };
     const parts = name.split('.');
-    return walk(parts[0] === 'vars' ? vars : parts[0] === 'inputs' ? inputs : context, parts.slice(1));
+    const root = parts[0] === 'vars' ? vars : parts[0] === 'inputs' ? inputs
+      : parts[0] === 'needs' ? needs : context;
+    return walk(root, parts.slice(1));
   };
-  const tokens = /\s+|'(?:[^']|'')*'|(?:github|vars|inputs)(?:\.(?:[A-Za-z_][\w-]*|\*))+|fromJSON|contains|true|false|null|==|!=|&&|\|\||[(),!]/gy;
+  const tokens = /\s+|'(?:[^']|'')*'|(?:github|vars|inputs|needs)(?:\.(?:[A-Za-z_][\w-]*|\*))+|fromJSON|contains|true|false|null|==|!=|&&|\|\||[(),!]/gy;
   let translated = '', position = 0;
   while (position < expression.length) {
     tokens.lastIndex = position;
@@ -73,19 +77,24 @@ function evaluate(expression, context, vars = {}, inputs = null) {
     const token = found[0]; position = tokens.lastIndex;
     if (/^\s+$/.test(token)) translated += token;
     else if (token.startsWith("'")) translated += JSON.stringify(token.slice(1, -1).replaceAll("''", "'"));
-    else if (token.startsWith('github.') || token.startsWith('vars.') || token.startsWith('inputs.')) translated += `lookup(${JSON.stringify(token)})`;
+    else if (token.startsWith('github.') || token.startsWith('vars.') || token.startsWith('inputs.') || token.startsWith('needs.')) translated += `lookup(${JSON.stringify(token)})`;
     else translated += token;
   }
   const output = vm.runInNewContext(translated,
     {lookup, fromJSON: JSON.parse, contains: (values, value) => values.includes(value)}, {timeout: 100});
   return JSON.parse(JSON.stringify(output));
 }
-function route(block, context = github('workflow_dispatch'), vars = {}, inputs = null) {
+function route(block, context = github('workflow_dispatch'), vars = {}, inputs = null, needs = {}) {
   const raw = value(block, 'runs-on');
-  if (raw.startsWith('${{') && raw.endsWith('}}')) return evaluate(raw.slice(3, -2).trim(), context, vars, inputs);
+  if (raw.startsWith('${{') && raw.endsWith('}}')) return evaluate(raw.slice(3, -2).trim(), context, vars, inputs, needs);
   if (raw.startsWith('[')) return JSON.parse(raw);
   return raw.replace(/^['"]|['"]$/g, '');
 }
+// The preflight publishes the validated label set as its job output; the
+// model-calling jobs route on that output instead of re-reading the variable.
+const preflightOutput = value => ({
+  'runner-preflight': {outputs: {runs_on: JSON.stringify(value)}},
+});
 function step(block, name) {
   const parts = block.split(`      - name: ${name}\n`);
   assert.equal(parts.length, 2, `Missing or ambiguous step: ${name}`);
@@ -107,12 +116,15 @@ test('review and command jobs retain their explicit runner policies and isolated
   assert.deepEqual(Object.keys(job.ci), ['changes', 'lint', 'test', 'build', 'quick', 'summary']);
   assert.doesNotMatch(sources.ci.replace(/^\s*#.*$/gm, ''), /mysql|mongo|check_etcd/i, 'database backends run nightly, not per PR');
   assert.deepEqual(Object.keys(job.review),
-    ['runner-preflight', 'diff-regression', 'review', 'publish', 'automerge-dependabot']);
-  assert.deepEqual(Object.keys(job.commands), ['prepare', 'runner-preflight', 'analyze', 'publish']);
+    ['runner-preflight', 'runner-gate', 'diff-regression', 'review', 'publish', 'automerge-dependabot']);
+  assert.deepEqual(Object.keys(job.commands),
+    ['prepare', 'runner-preflight', 'runner-gate', 'analyze', 'publish']);
   assert.deepEqual(Object.keys(job.inline), ['route']);
   for (const name of ['diff-regression']) assert.deepEqual(route(job.review[name]), labels);
   assert.equal(route(job.commands.prepare), 'ubuntu-24.04');
-  for (const id of ['analyze', 'publish']) assert.deepEqual(route(job.commands[id]), labels);
+  for (const id of ['analyze', 'publish']) {
+    assert.deepEqual(route(job.commands[id], github('issue_comment'), {}, null, preflightOutput(labels)), labels);
+  }
   assert.equal(route(job.review['automerge-dependabot']), 'ubuntu-24.04');
   assert.equal(route(job.inline.route), 'ubuntu-24.04');
   // The preflight is a hosted job that calls one reusable workflow with no
@@ -128,8 +140,21 @@ test('review and command jobs retain their explicit runner policies and isolated
     'the model call must wait for the runner-override preflight');
   assert.match(job.commands.analyze, /^    needs: \[prepare, runner-preflight\]$/m,
     'the model call must wait for the runner-override preflight');
-  assert.match(job.commands.analyze, /needs\.runner-preflight\.result == 'success'/,
-    "always() must not let the model call run after a failed preflight");
+  for (const [name, block] of [['review.review', job.review.review],
+    ['commands.analyze', job.commands.analyze]]) {
+    assert.match(block, /needs\.runner-preflight\.result == 'success'/,
+      `${name} must require the preflight's success`);
+  }
+  // A rejected override skips the model jobs; the gate makes the rejection a
+  // red failure instead of a green skip.
+  for (const [name, block] of [['review', job.review['runner-gate']],
+    ['commands', job.commands['runner-gate']]]) {
+    assert.match(block, /^    needs: (?:\[prepare, )?runner-preflight\]?$/m, name);
+    assert.match(block, /^    if: always\(\)/m, name);
+    assert.match(block, /needs\.runner-preflight\.result != 'success'/, name);
+    assert.match(block, /^    permissions: \{\}$/m, name);
+    assert.equal(route(block), 'ubuntu-latest', name);
+  }
   const lint = fs.readFileSync(path.join(root, '.github/actionlint.yaml'), 'utf8');
   for (const label of ['speedle-linux', 'speedle-control', 'speedle-runner', 'fiona-speedle']) {
     assert.match(lint, new RegExp(`^\\s+- ${label}$`, 'm'), `${label} must stay declared for workflow lint`);
@@ -141,24 +166,26 @@ test('same-repository human and bot authors use Speedle; forks and unknown autho
   const bot = github('pull_request_target'); bot.event.pull_request.user = {login: 'dependabot[bot]', type: 'Bot'};
   const otherBot = github('pull_request_target'); otherBot.event.pull_request.user = {login: 'automation[bot]', type: 'Bot'};
   const unknownAuthor = github('pull_request_target'); delete unknownAuthor.event.pull_request.user;
+  const preflight = preflightOutput(labels);
   for (const id of ['review', 'publish']) {
-    for (const author of [human, bot, otherBot]) assert.deepEqual(route(job.review[id], author), labels);
+    for (const author of [human, bot, otherBot]) {
+      assert.deepEqual(route(job.review[id], author, {}, null, preflight), labels, id);
+    }
     const forkBot = github('pull_request_target', 'outsider/speedle-plus'); forkBot.event.pull_request.user.type = 'Bot';
     for (const context of [forkBot, unknownAuthor, github('pull_request_target', 'outsider/speedle-plus'),
       github('pull_request_target', undefined, {event: {pull_request: {user: {type: 'User'}}}}),
       github('pull_request_target', 'outsider/speedle-plus', {repository: 'outsider/speedle-plus'})]) {
-      assert.equal(route(job.review[id], context), 'ubuntu-24.04', `${id}: ${JSON.stringify(context)}`);
+      assert.equal(route(job.review[id], context, {}, null, preflight), 'ubuntu-24.04',
+        `${id}: ${JSON.stringify(context)}`);
     }
   }
   for (const eventName of ['push', 'workflow_dispatch', 'issue_comment', 'unknown']) {
     assert.equal(evaluate(value(job.review.review, 'if'), github(eventName)), false);
   }
 });
-test('REVIEWBOT_RUNS_ON overrides only the two model-calling ReviewBot jobs and keeps forks hosted', () => {
-  const customLabels = ['self-hosted', 'Linux', 'X64', 'reviewbot'];
-  const customVars = {REVIEWBOT_RUNS_ON: JSON.stringify(customLabels)};
-  const emptyVars = {REVIEWBOT_RUNS_ON: ''};
-  const invalidVars = {REVIEWBOT_RUNS_ON: 'not-json'};
+test('model-calling ReviewBot jobs route only on the validated preflight output', () => {
+  const validated = ['self-hosted', 'Linux', 'reviewbot'];
+  const needs = preflightOutput(validated);
   const human = github('pull_request_target');
   const bot = github('pull_request_target'); bot.event.pull_request.user = {login: 'dependabot[bot]', type: 'Bot'};
   const otherBot = github('pull_request_target'); otherBot.event.pull_request.user = {login: 'automation[bot]', type: 'Bot'};
@@ -166,30 +193,31 @@ test('REVIEWBOT_RUNS_ON overrides only the two model-calling ReviewBot jobs and 
   const forkBot = github('pull_request_target', 'outsider/speedle-plus'); forkBot.event.pull_request.user.type = 'Bot';
 
   for (const author of [human, bot, otherBot]) {
-    assert.deepEqual(route(job.review.review, author, customVars), customLabels);
-    assert.deepEqual(route(job.review.review, author, emptyVars), labels);
-    assert.deepEqual(route(job.review.publish, author, customVars), labels);
+    assert.deepEqual(route(job.review.review, author, {}, null, needs), validated);
   }
-  assert.deepEqual(route(job.commands.analyze, github('issue_comment'), customVars), customLabels);
-  assert.deepEqual(route(job.commands.analyze, github('issue_comment'), emptyVars), labels);
-  assert.throws(() => route(job.review.review, human, invalidVars), SyntaxError);
-  assert.throws(() => route(job.commands.analyze, github('issue_comment'), invalidVars), SyntaxError);
-
+  assert.deepEqual(route(job.commands.analyze, github('issue_comment'), {}, null, needs), validated);
   for (const context of [forkBot, unknownAuthor, github('pull_request_target', 'outsider/speedle-plus'),
     github('pull_request_target', undefined, {event: {pull_request: {user: {type: 'User'}}}}),
     github('pull_request_target', 'outsider/speedle-plus', {repository: 'outsider/speedle-plus'})]) {
-    assert.equal(route(job.review.review, context, customVars), 'ubuntu-24.04', JSON.stringify(context));
-    assert.equal(route(job.review.review, context, invalidVars), 'ubuntu-24.04', JSON.stringify(context));
+    assert.equal(route(job.review.review, context, {}, null, needs), 'ubuntu-24.04', JSON.stringify(context));
   }
 
-  assert.deepEqual(route(job.review['diff-regression'], github('workflow_dispatch'), customVars), labels);
+  // The model jobs never re-read the mutable variable after the preflight:
+  // they run on exactly the label set the preflight validated and published.
+  for (const [name, block] of [['review.review', job.review.review], ['commands.analyze', job.commands.analyze]]) {
+    assert.match(block, /needs\.runner-preflight\.outputs\.runs_on/, name);
+    assert.doesNotMatch(block, /vars\.REVIEWBOT_RUNS_ON/, `${name} must not re-read REVIEWBOT_RUNS_ON`);
+    assert.doesNotMatch(block, /RUNNER_NAME|charming-speedle|fiona-speedle|\/tmp\/speedle-plus-/, `${name} must stay host-neutral`);
+  }
+
+  assert.deepEqual(route(job.review['diff-regression'], github('workflow_dispatch'), {}, null, needs), labels);
   assert.match(job.review['diff-regression'],
     /CONFIGURED_REVIEWBOT_RUNS_ON: \$\{\{ vars\.REVIEWBOT_RUNS_ON/,
     'the trusted regression validates the configured override without routing on it');
-  assert.equal(route(job.review['automerge-dependabot'], human, customVars), 'ubuntu-24.04');
-  assert.equal(route(job.commands.prepare, github('issue_comment'), customVars), 'ubuntu-24.04');
-  assert.deepEqual(route(job.commands.publish, github('issue_comment'), customVars), labels);
-  assert.equal(route(job.inline.route, github('pull_request_review_comment'), customVars), 'ubuntu-24.04');
+  assert.equal(route(job.review['automerge-dependabot'], human, {}, null, needs), 'ubuntu-24.04');
+  assert.equal(route(job.commands.prepare, github('issue_comment'), {}, null, needs), 'ubuntu-24.04');
+  assert.deepEqual(route(job.commands.publish, github('issue_comment'), {}, null, needs), labels);
+  assert.equal(route(job.inline.route, github('pull_request_review_comment'), {}, null, needs), 'ubuntu-24.04');
 
   for (const [name, block] of [
     ['review.publish', job.review.publish],
@@ -198,10 +226,8 @@ test('REVIEWBOT_RUNS_ON overrides only the two model-calling ReviewBot jobs and 
     ['commands.publish', job.commands.publish],
     ['inline.route', job.inline.route],
   ]) {
-    assert.doesNotMatch(block, /REVIEWBOT_RUNS_ON/, `${name} must not depend on REVIEWBOT_RUNS_ON`);
-  }
-  for (const [name, block] of [['review.review', job.review.review], ['commands.analyze', job.commands.analyze]]) {
-    assert.doesNotMatch(block, /RUNNER_NAME|charming-speedle|fiona-speedle|\/tmp\/speedle-plus-/, `${name} must stay host-neutral`);
+    assert.doesNotMatch(block, /REVIEWBOT_RUNS_ON|needs\.runner-preflight/,
+      `${name} must not depend on the override`);
   }
 });
 test('inline pointer stays hosted and secret-bearing command receiver keeps default-branch triggers', () => {
@@ -475,6 +501,13 @@ function routeLabelSets(source) {
     if (/\binputs\.runner\b/.test(expression)) {
       for (const value of runnerChoices(source)) sets.push([value]);
     }
+    if (sets.length === 0 && /\bneeds\.runner-preflight\.outputs\.runs_on\b/.test(expression)) {
+      // The model jobs route on the preflight's validated output, not on a
+      // literal here. The approved-set tests require every allowlisted set to
+      // resolve to recorded runners and the host-neutral checks keep this
+      // route out of the default-pool guard comparison.
+      return [];
+    }
     assert.ok(sets.length > 0, `Unsupported runs-on expression without a label literal: ${JSON.stringify(raw)}`);
     return sets.filter(values => values.length > 0 && !hostedLabels(values));
   });
@@ -547,12 +580,12 @@ test('ReviewBot overrides resolve only to recorded ReviewBot runners', () => {
 test('every REVIEWBOT_RUNS_ON fallback names the same approved label set', () => {
   const fallbacks = [];
   for (const [name, source] of [['reviewbot.yml', sources.review],
-    ['reviewbot-command.yml', sources.commands], ['reviewbot-preflight.yml', sources.preflight]]) {
+    ['reviewbot-preflight.yml', sources.preflight]]) {
     for (const match of source.matchAll(/vars\.REVIEWBOT_RUNS_ON \|\| '((?:[^']|'')*)'/g)) {
       fallbacks.push([name, match[1].replaceAll("''", "'")]);
     }
   }
-  assert.ok(fallbacks.length >= 3, `missing REVIEWBOT_RUNS_ON fallbacks: ${JSON.stringify(fallbacks)}`);
+  assert.ok(fallbacks.length >= 2, `missing REVIEWBOT_RUNS_ON fallbacks: ${JSON.stringify(fallbacks)}`);
   const values = new Set(fallbacks.map(([, value]) => value));
   assert.equal(values.size, 1,
     `REVIEWBOT_RUNS_ON fallbacks differ, so the preflight could approve another value: ${JSON.stringify(fallbacks)}`);
@@ -563,21 +596,38 @@ test('every REVIEWBOT_RUNS_ON fallback names the same approved label set', () =>
 test('the ReviewBot preflight enforces the same allowlist the suite reads', () => {
   const preflight = job.preflight.validate;
   const run = script(preflight, 'Reject a runner override outside the approved label sets');
-  const execute = raw => spawnSync('bash', ['-c', run], {encoding: 'utf8',
-    env: {...process.env, APPROVED_REVIEWBOT_RUNS_ON: JSON.stringify(approvedRunsOn),
-      CONFIGURED_REVIEWBOT_RUNS_ON: raw}});
+  const execute = raw => {
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'reviewbot-preflight-'));
+    const output = path.join(directory, 'output');
+    fs.writeFileSync(output, '');
+    try {
+      const result = spawnSync('bash', ['-c', run], {encoding: 'utf8',
+        env: {...process.env, GITHUB_OUTPUT: output,
+          APPROVED_REVIEWBOT_RUNS_ON: JSON.stringify(approvedRunsOn),
+          CONFIGURED_REVIEWBOT_RUNS_ON: raw}});
+      return {...result, written: fs.readFileSync(output, 'utf8')};
+    } finally {
+      fs.rmSync(directory, {recursive: true, force: true});
+    }
+  };
   for (const set of approvedRunsOn) {
     const result = execute(JSON.stringify(set));
     assert.equal(result.status, 0, `${JSON.stringify(set)}: ${result.stderr}`);
+    // The job output is the canonical set the model jobs will run on.
+    assert.equal(result.written, `runs_on=${canonicalLabels(set)}\n`, JSON.stringify(set));
   }
-  // Label order inside a set does not matter.
-  assert.equal(execute(JSON.stringify([...approvedRunsOn[0]].reverse())).status, 0);
+  // Label order inside a set does not matter; the output stays canonical.
+  const reordered = [...approvedRunsOn[0]].reverse();
+  const reorderedResult = execute(JSON.stringify(reordered));
+  assert.equal(reorderedResult.status, 0, reorderedResult.stderr);
+  assert.equal(reorderedResult.written, `runs_on=${canonicalLabels(reordered)}\n`);
   for (const raw of [JSON.stringify(['self-hosted', 'Linux', 'X64']),
     JSON.stringify(['self-hosted', 'Linux', 'X64', 'aliyun-ecs']),
     JSON.stringify(['self-hosted', 'macOS', 'ARM64']), 'not-json', '{}', '[]', '["self-hosted",1]']) {
     const result = execute(raw);
     assert.notEqual(result.status, 0, raw);
     assert.match(result.stderr, /REVIEWBOT_RUNS_ON/, raw);
+    assert.equal(result.written, '', raw);
   }
   // The preflight is hosted, unprivileged and never reads repository content.
   assert.deepEqual(route(preflight), 'ubuntu-latest');
@@ -589,6 +639,12 @@ test('the ReviewBot preflight enforces the same allowlist the suite reads', () =
   assert.doesNotMatch(run, /self-hosted|speedle-runner|reviewbot/);
   assert.match(preflight,
     /CONFIGURED_REVIEWBOT_RUNS_ON: \$\{\{ vars\.REVIEWBOT_RUNS_ON \|\| '\["self-hosted","speedle-runner"\]' \}\}/);
+  // The reusable workflow publishes the validated set, and its callers route on
+  // that output instead of the variable.
+  assert.match(preflight, /^    outputs:\n      runs_on: \$\{\{ steps\.check\.outputs\.runs_on \}\}$/m);
+  assert.match(sources.preflight,
+    /^      runs_on:\n        description: .+\n        value: \$\{\{ jobs\.validate\.outputs\.runs_on \}\}$/m);
+  assert.match(run, /printf 'runs_on=%s\\n' "\$\{configured\}" >> "\$\{GITHUB_OUTPUT\}"/);
 });
 test('both identity guards accept exactly the hosts a scheduling label can select', () => {
   const expected = scheduledHosts();

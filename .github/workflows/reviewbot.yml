@@ -19,6 +19,24 @@ jobs:
     uses: ./.github/workflows/reviewbot-preflight.yml
     permissions: {}
 
+  # The model jobs require the preflight's success, so a rejected override
+  # skips them. This gate fails red instead, so the rejection is a visible
+  # failure rather than a skipped job.
+  runner-gate:
+    name: Fail a rejected ReviewBot runner override
+    needs: runner-preflight
+    if: always()
+    permissions: {}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require an approved runner override
+        if: needs.runner-preflight.result != 'success'
+        shell: bash
+        run: |
+          echo 'ReviewBot model jobs are disabled: the runner override failed the preflight.' >&2
+          exit 1
+
   diff-regression:
     name: Verify ReviewBot merge-base diff
     if: github.event_name == 'workflow_dispatch'
@@ -100,12 +118,19 @@ jobs:
 
   review:
     name: Analyze pull request
-    if: github.event_name == 'pull_request_target' && github.event.pull_request.draft == false
+    # A rejected override fails the preflight job and skips this one; the
+    # explicit result check keeps that gate if this condition later gains
+    # always().
+    if: >-
+      github.event_name == 'pull_request_target' &&
+      github.event.pull_request.draft == false &&
+      needs.runner-preflight.result == 'success'
     # The model call receives provider credentials, so the override must pass
-    # the hosted preflight first.
+    # the hosted preflight first, and the run routes on the validated value
+    # rather than re-reading the variable after validation.
     needs: runner-preflight
     runs-on: >-
-      ${{ github.repository == 'teramoby/speedle-plus' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.user.type == 'User' || github.event.pull_request.user.type == 'Bot') && fromJSON(vars.REVIEWBOT_RUNS_ON || '["self-hosted","speedle-runner"]') || 'ubuntu-24.04' }}
+      ${{ github.repository == 'teramoby/speedle-plus' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.user.type == 'User' || github.event.pull_request.user.type == 'Bot') && fromJSON(needs.runner-preflight.outputs.runs_on) || 'ubuntu-24.04' }}
     timeout-minutes: 20
     permissions:
       contents: read

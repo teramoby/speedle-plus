@@ -26,10 +26,14 @@ runner labels of only the two model-calling jobs (`Analyze pull request` and
 `Analyze ReviewBot command`). Both model-calling jobs declare `needs:` on the
 GitHub-hosted `reviewbot-preflight.yml` job, which rejects any effective value
 outside its single literal allowlist before a provider key reaches a runner.
-The allowlist is the `APPROVED_REVIEWBOT_RUNS_ON` constant in that workflow:
-the default `speedle-runner` set and the label sets of the organization's
-ReviewBot runner group (`reviewbot`); a broader label set could place provider
-credentials on an unrelated organization runner.
+On acceptance it publishes the canonical label set as a job output, and the
+model jobs route on that output instead of re-reading the variable after
+validation. A rejected override fails the preflight and gate jobs red and
+skips every review, including the GitHub-hosted review path for fork PRs. The allowlist is
+the `APPROVED_REVIEWBOT_RUNS_ON` constant in that workflow: the default
+`speedle-runner` set and the label sets of the organization's ReviewBot runner
+group (`reviewbot`); a broader label set could place provider credentials on
+an unrelated organization runner.
 Fork PRs and unknown author types always use GitHub-hosted `ubuntu-24.04`.
 Review publication, regression dispatch and comment-command publication
 continue to use the `speedle-runner` pool, and public comment authorization and
@@ -99,20 +103,23 @@ reveal credentials, change repository settings, approve or merge PRs.
     sent in the `system` message, and pull-request metadata, diff and any
     untrusted command context are sent in the `user` message. Review text is
     read from `choices[0].message.content`, ignoring any `reasoning_content`.
-- Optional runner variable: `REVIEWBOT_RUNS_ON`, a JSON label array parsed with
-  `fromJSON(vars.REVIEWBOT_RUNS_ON || '["self-hosted","speedle-runner"]')`. It
-  applies only to the two model-calling jobs (`Analyze pull request` in
-  `reviewbot.yml` for human- and bot-authored same-repository PRs, and `Analyze
-  ReviewBot command` in `reviewbot-command.yml`); fork PRs and unknown author
-  types remain on `ubuntu-24.04`, and every other job keeps its existing
-  `runs-on` configuration. These jobs receive provider credentials, so each
+- Optional runner variable: `REVIEWBOT_RUNS_ON`, a JSON label array whose
+  default is `["self-hosted","speedle-runner"]`. It applies only to the two
+  model-calling jobs (`Analyze pull request` in `reviewbot.yml` for human- and
+  bot-authored same-repository PRs, and `Analyze ReviewBot command` in
+  `reviewbot-command.yml`); fork PRs and unknown author types remain on
+  `ubuntu-24.04`, and every other job keeps its existing `runs-on`
+  configuration. These jobs receive provider credentials, so each
   declares `needs:` on the `reviewbot-preflight.yml` job: a GitHub-hosted,
   secret-free job with `permissions: {}` that rejects any effective value
-  outside its single literal allowlist. The allowlist is the
-  `APPROVED_REVIEWBOT_RUNS_ON` constant in that workflow: the default
-  `speedle-runner` set and the label sets of the organization's ReviewBot
-  runner group (`reviewbot`); a broader label set could select an unrelated
-  organization runner. The trusted `diff-regression` routing suite reads the
+  outside its single literal allowlist and publishes the accepted set as its
+  `runs_on` output, which the model job uses as its `runs-on` value. A value
+  outside the allowlist fails the preflight and gate jobs red and disables
+  all reviews, hosted fork reviews included. The allowlist is the `APPROVED_REVIEWBOT_RUNS_ON`
+  constant in that workflow: the default `speedle-runner` set and the label
+  sets of the organization's ReviewBot runner group (`reviewbot`); a broader
+  label set could select an unrelated organization runner. The trusted
+  `diff-regression` routing suite reads the
   same allowlist constant and rejects a value that matches no recorded runner
   or that is outside it. Any selected runner must also provide a GitHub Actions
   runner supporting Node 24-based

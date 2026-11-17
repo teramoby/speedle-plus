@@ -6,6 +6,10 @@ name: ReviewBot runner preflight
 
 on:
   workflow_call:
+    outputs:
+      runs_on:
+        description: The validated REVIEWBOT_RUNS_ON label set, canonicalized.
+        value: ${{ jobs.validate.outputs.runs_on }}
 
 permissions: {}
 
@@ -17,6 +21,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {}
+    # The credential-bearing jobs route on this value instead of re-reading
+    # the variable, so the approved set is the set they run on.
+    outputs:
+      runs_on: ${{ steps.check.outputs.runs_on }}
     env:
       # The only label sets REVIEWBOT_RUNS_ON may select. This line is the
       # single allowlist: scripts/tests/test_runner_routing.cjs parses it and
@@ -27,6 +35,7 @@ jobs:
       CONFIGURED_REVIEWBOT_RUNS_ON: ${{ vars.REVIEWBOT_RUNS_ON || '["self-hosted","speedle-runner"]' }}
     steps:
       - name: Reject a runner override outside the approved label sets
+        id: check
         shell: bash
         run: |
           set -euo pipefail
@@ -50,3 +59,4 @@ jobs:
           fi
           printf 'REVIEWBOT_RUNS_ON=%q is an approved ReviewBot runner label set.\n' \
             "${CONFIGURED_REVIEWBOT_RUNS_ON}"
+          printf 'runs_on=%s\n' "${configured}" >> "${GITHUB_OUTPUT}"
