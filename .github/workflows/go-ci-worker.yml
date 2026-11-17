@@ -466,6 +466,14 @@ jobs:
         if: inputs.mode == 'quick' && steps.content.outputs.changed == 'true'
         run: |
           set -euo pipefail
+          # The walkthroughs run inside an unprivileged user namespace and
+          # fail closed without one. GitHub-hosted Ubuntu images may restrict
+          # unprivileged user namespaces through AppArmor; lift that on the
+          # disposable hosted VM only, never on a self-hosted runner.
+          restriction=/proc/sys/kernel/apparmor_restrict_unprivileged_userns
+          if [ "${RUNNER_ENVIRONMENT:-}" = github-hosted ] && [ -r "${restriction}" ] && [ "$(cat "${restriction}")" != 0 ]; then
+            sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          fi
           toolchain=$(go env GOVERSION)
           python3 -I website/tests/check_quick_start.py --toolchain "${toolchain}"
           python3 -I website/tests/check_embedded.py --toolchain "${toolchain}" --candidate
