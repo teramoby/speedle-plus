@@ -177,6 +177,8 @@ ls bin</code></pre></div>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-ads --store-type file --filestore-loc ./quick-start-policies.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6734 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
 <p>Déjelo en ejecución y espere a que arranque su servidor REST.</p>
 
+<p>ADS vigila el archivo compartido; los cambios se propagan de forma asíncrona, por lo que una política nueva surte efecto al cabo de un momento.</p>
+
 <h3 id="4-verificar-decisiones-de-autorización">4. Verificar decisiones de autorización</h3>
 
 <p>Ejecute estas solicitudes en la segunda terminal. La primera comprueba la concesión directa a <code>user1</code>:</p>

@@ -132,6 +132,8 @@ Abra una tercera terminal en el mismo directorio:
 
 Déjelo en ejecución y espere a que arranque su servidor REST.
 
+ADS vigila el archivo compartido; los cambios se propagan de forma asíncrona, por lo que una política nueva surte efecto al cabo de un momento.
+
 ### 4. Verificar decisiones de autorización
 
 Ejecute estas solicitudes en la segunda terminal. La primera comprueba la concesión directa a `user1`:

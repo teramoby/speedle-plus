@@ -177,6 +177,8 @@ ls bin</code></pre></div>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-ads --store-type file --filestore-loc ./quick-start-policies.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6734 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
 <p>Leave it running and wait for its REST server to start.</p>
 
+<p>ADS watches the shared policy file; changes propagate asynchronously, so a new policy takes effect after a moment.</p>
+
 <h3 id="4-verify-authorization-decisions">4. Verify authorization decisions</h3>
 
 <p>Run these requests in the second terminal. The first request checks the direct grant to <code>user1</code>:</p>
