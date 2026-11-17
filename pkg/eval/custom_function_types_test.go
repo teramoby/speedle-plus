@@ -3,6 +3,7 @@ package eval
 
 import (
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -205,6 +206,26 @@ func TestUndeclaredFunctionUnchanged(t *testing.T) {
 	}
 }
 
+// TestZeroArgumentCallSendsEmptyParameterArray checks that a call without
+// arguments keeps the {"params":[]} wire form: a function endpoint may require
+// the array instead of null.
+func TestZeroArgumentCallSendsEmptyParameterArray(t *testing.T) {
+	var body string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		raw, _ := io.ReadAll(r.Body)
+		body = string(raw)
+		fmt.Fprint(w, `{"result":true}`)
+	}))
+	t.Cleanup(server.Close)
+	p := newDeclaredFunctionEvaluator(t, functionJSON(server.URL, ""), "f()")
+	if allowed, _, err := p.IsAllowed(aliceContext("app", "r", "read")); err != nil || !allowed {
+		t.Fatalf("allowed=%v err=%v", allowed, err)
+	}
+	if body != `{"params":[]}` {
+		t.Errorf("request body = %q, want %q", body, `{"params":[]}`)
+	}
+}
+
 // TestListParametersMatchLargeArgumentLists checks multiple list declarations
 // against a large expanded list. The matcher must stay linear in the argument
 // count, so this stays fast.
@@ -242,7 +263,7 @@ func TestCachedResultRecheckedAgainstDeclaration(t *testing.T) {
 		"functions":[{"name":"f","funcURL":%q,"resultCachable":true,"resultTTL":60,"result":"numeric"}],
 		"services":[{"name":"app","policies":[{"id":"grant","effect":"grant",%s,"condition":"f() == 1"}]}]}`,
 		server.URL, aliceReadPrincipals))
-	key, err := getKey("f", nil) // a call without arguments
+	key, err := getKey("f", []interface{}{})
 	if err != nil {
 		t.Fatal(err)
 	}

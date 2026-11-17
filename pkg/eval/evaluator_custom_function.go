@@ -117,10 +117,16 @@ func (frc *FuncResultCache) CleanExpiredResult() {
 // type. Every error it returns is a *CustomFunctionError, and a failed call is
 // never cached.
 func (frc *FuncResultCache) callCustomFunction(cf *pms.Function, arguments []interface{}, call func(*ext.CustomerFunctionRequest) (interface{}, error)) (interface{}, error) {
-	if err := checkCustomFunctionArguments(cf, arguments); err != nil {
+	// A call without arguments keeps sending an empty JSON array, not null: a
+	// function endpoint may require the array form.
+	params := arguments
+	if params == nil {
+		params = []interface{}{}
+	}
+	if err := checkCustomFunctionArguments(cf, params); err != nil {
 		return nil, err
 	}
-	key, err := getKey(cf.Name, arguments)
+	key, err := getKey(cf.Name, params)
 	if err != nil {
 		return nil, newCustomFunctionError(cf.Name, errors.Wrapf(err, errors.CustomerFuncError, "failed to encode parameters for customer function %q", cf.Name))
 	}
@@ -132,7 +138,7 @@ func (frc *FuncResultCache) callCustomFunction(cf *pms.Function, arguments []int
 		}
 		return result, nil
 	}
-	result, err := call(&ext.CustomerFunctionRequest{Params: arguments})
+	result, err := call(&ext.CustomerFunctionRequest{Params: params})
 	if err != nil {
 		return nil, newCustomFunctionError(cf.Name, err)
 	}

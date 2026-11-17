@@ -55,6 +55,26 @@ func TestWasmRegisteredCallerEvaluatesConditions(t *testing.T) {
 	}
 }
 
+// TestWasmCallerReceivesEmptyParameterArray checks that a call without
+// arguments reaches the host caller as an empty list, not nil.
+func TestWasmCallerReceivesEmptyParameterArray(t *testing.T) {
+	var params []interface{}
+	seen := false
+	registerCaller(t, func(_ *pms.Function, request *ext.CustomerFunctionRequest) (interface{}, error) {
+		params, seen = request.Params, true
+		return true, nil
+	})
+	engine := newWasmEvaluatorFromStore(t, &snapshotStore{snapshot: testSnapshot(
+		[]*pms.Function{{Name: "remote", FuncURL: "https://example.invalid", Result: "bool"}},
+		[]*pms.Policy{testPolicy("grant", pms.Grant, "remote()")})})
+	if allowed, _, err := engine.IsAllowed(aliceRequest()); err != nil || !allowed {
+		t.Fatalf("allowed=%v err=%v", allowed, err)
+	}
+	if !seen || params == nil || len(params) != 0 {
+		t.Fatalf("params=%#v seen=%v", params, seen)
+	}
+}
+
 // TestWasmCallerFailureFailsDecision checks that a caller error and a declared
 // type mismatch fail the decision instead of not matching.
 func TestWasmCallerFailureFailsDecision(t *testing.T) {
