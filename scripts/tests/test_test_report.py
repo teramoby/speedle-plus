@@ -1,8 +1,12 @@
-"""Offline tests for scripts/ci/test_report.py. No Ark, SMTP or GitHub calls."""
+"""Offline tests for scripts/ci/test_report.py. No Ark, email or GitHub calls."""
+import base64
+import http.client
+import io
 import json
 import sys
 import tempfile
 import unittest
+import urllib.error
 from pathlib import Path
 from unittest import mock
 
@@ -92,28 +96,20 @@ class SkipTest(unittest.TestCase):
         _, text = test_report.summarize("nightly", packages, [], [], "", skips=skips)
         self.assertIn("Skipped: 0 not run in any pass; 63 skipped in one store's pass but run in another's; "
                       "2 not applicable", text)
-        card = test_report.feishu_card("nightly", True, packages, [], None, "", "", skips)["elements"][0]["content"]
-        self.assertIn("3 通过，0 失败，0 未运行", card)
-        self.assertIn("跳过 65 项：63 项已在对应存储的轮次运行，2 项不适用于该存储", card)
-        self.assertNotIn("⚠️", card)
 
         not_run = [{"package": "github.com/x/cli", "test": f"T{i}", "reason": "r"} for i in range(12)]
         skips = {"elsewhere": 0, "not_applicable": 0, "not_run": not_run}
         _, text = test_report.summarize("nightly", packages, [], [], "", skips=skips)
         self.assertIn("- github.com/x/cli T0: r", text)
-        card = test_report.feishu_card("nightly", True, packages, [], None, "", "", skips)["elements"][0]["content"]
-        self.assertIn("⚠️ **未运行的测试**（12）", card)
-        self.assertIn("- cli T0：r", card)
-        self.assertIn("另有 2 项", card)
-        self.assertNotIn("T10", card)
+        self.assertIn("- github.com/x/cli T11: r", text)
 
     def test_main_classifies_across_sources(self):
         directory = Path(tempfile.mkdtemp())
         (directory / "file-go.json").write_text(events(*self.skip("mongodb", "TestStore", "MongoDB not available")))
         (directory / "mongodb-go.json").write_text(events(("pass", "mongodb", "TestStore", None)))
-        with mock.patch.object(test_report, "send_feishu", return_value=True) as send, mock.patch("builtins.print"):
+        with mock.patch.object(test_report, "send_email", return_value=True) as send, mock.patch("builtins.print"):
             test_report.main(["--kind", "nightly", "--source", f"run:success:{directory}"], env={})
-        self.assertIn("0 未运行", send.call_args[0][0]["elements"][0]["content"])
+        self.assertIn("0 not run in any pass", send.call_args[0][1])
 
 
 class SummaryTest(unittest.TestCase):
@@ -147,35 +143,675 @@ class ArkTest(unittest.TestCase):
         response = mock.MagicMock()
         response.__enter__.return_value.read.return_value = json.dumps(
             {"output": [{"type": "message", "content": [{"type": "output_text", "text": "ok"}]}]}).encode()
-        with mock.patch("urllib.request.urlopen", return_value=response) as urlopen:
+        with mock.patch("test_report.open_no_redirect", return_value=response) as urlopen:
             self.assertEqual(test_report.ark_analyze("summary", "k", "m"), "ok")
         request = urlopen.call_args[0][0]
         self.assertEqual(request.get_header("Authorization"), "Bearer k")
         self.assertEqual(json.loads(request.data)["model"], "m")
 
     def test_unreachable_ark_returns_none(self):
-        with mock.patch("urllib.request.urlopen", side_effect=OSError("down")):
+        with mock.patch("test_report.open_no_redirect", side_effect=OSError("down")):
             self.assertIsNone(test_report.ark_analyze("summary", "k", "m"))
 
 
-class MailTest(unittest.TestCase):
-    def test_skips_without_configuration(self):
-        self.assertFalse(test_report.send_mail("s", "b", {}))
+class EmailTest(unittest.TestCase):
+    env = {"CF_ACCOUNT_ID": "account-id", "CF_EMAIL_TOKEN": "api-token",
+           "OPS_EMAIL_FROM": "sender@example.com", "OPS_EMAIL_TO": "recipient@example.com",
+           "OPS_EMAIL_REPLY_TO": "reply@example.com"}
 
-    def test_sends_over_ssl_with_login(self):
-        with mock.patch("smtplib.SMTP_SSL") as smtp:
-            self.assertTrue(test_report.send_mail("s", "body", {
-                "SMTP_SERVER": "smtp.example", "SMTP_USERNAME": "u", "SMTP_PASSWORD": "p", "MAIL_TO": "caiwl@acm.org"}))
-        server = smtp.return_value
-        server.login.assert_called_once_with("u", "p")
-        message = server.send_message.call_args[0][0]
-        self.assertEqual(message["To"], "caiwl@acm.org")
-        self.assertEqual(message["Subject"], "s")
+    def send(self, result=None, success=True, reply=None, error=None, env=None, attachment=None):
+        if reply is None:
+            reply = json.dumps({"success": success, "result":
+                                {"queued": [self.env["OPS_EMAIL_TO"]]} if result is None else result}).encode()
+        response = mock.MagicMock()
+        response.__enter__.return_value.read.return_value = reply
+        with mock.patch("test_report.open_no_redirect", return_value=response, side_effect=error) as urlopen, \
+                mock.patch.object(test_report, "EMAIL_RETRY_DELAY", 0), \
+                mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+            ok = test_report.send_email("subject", "body", env or self.env, attachment=attachment)
+        return ok, urlopen, stderr.getvalue()
 
-    def test_starttls_on_other_ports(self):
-        with mock.patch("smtplib.SMTP") as smtp:
-            test_report.send_mail("s", "b", {"SMTP_SERVER": "h", "SMTP_PORT": "587", "MAIL_TO": "t"})
-        smtp.return_value.starttls.assert_called_once()
+    def test_posts_the_report_with_the_configured_settings(self):
+        ok, urlopen, _ = self.send()
+        self.assertTrue(ok)
+        request = urlopen.call_args[0][0]
+        self.assertEqual(request.full_url,
+                         "https://api.cloudflare.com/client/v4/accounts/account-id/email/sending/send")
+        self.assertEqual(request.get_method(), "POST")
+        self.assertEqual(request.get_header("Authorization"), "Bearer api-token")
+        self.assertEqual(json.loads(request.data), {"to": ["recipient@example.com"],
+                                                    "from": "sender@example.com",
+                                                    "subject": "subject", "text": "body",
+                                                    "reply_to": "reply@example.com"})
+        self.assertNotIn("attachments", json.loads(request.data))
+        self.assertEqual(urlopen.call_args.kwargs["timeout"], test_report.EMAIL_TIMEOUT)
+
+    def test_the_send_refuses_redirects(self):
+        # urlopen forwards the Authorization header to a redirect target, so
+        # the email opener must not follow one.
+        self.assertIsNone(test_report._NoRedirect().redirect_request(
+            mock.Mock(), None, 302, "Found", {}, "https://elsewhere.example/send"))
+        with mock.patch("urllib.request.build_opener") as build:
+            test_report.open_no_redirect("request", timeout=5)
+        self.assertEqual(build.call_args[0], (test_report._NoRedirect,))
+        build.return_value.open.assert_called_once_with("request", timeout=5)
+
+    def test_a_redirect_is_a_failure(self):
+        error = urllib.error.HTTPError("https://api.example/send", 302, "Found", None, io.BytesIO(b"{}"))
+        ok, urlopen, message = self.send(error=error)
+        self.assertFalse(ok)
+        self.assertEqual(urlopen.call_count, 1)
+        self.assertIn("HTTP 302", message)
+
+    def test_an_attachment_is_sent_as_base64_text(self):
+        report = "断言失败\n" * 2000
+        attachment = test_report.report_attachment("speedle-nightly-report.txt", report)
+        ok, urlopen, _ = self.send(attachment=attachment)
+        self.assertTrue(ok)
+        [sent] = json.loads(urlopen.call_args[0][0].data)["attachments"]
+        self.assertEqual(sent["filename"], "speedle-nightly-report.txt")
+        self.assertEqual(sent["type"], "text/plain")
+        self.assertEqual(sent["disposition"], "attachment")
+        self.assertEqual(base64.b64decode(sent["content"]).decode("utf-8"), report)
+
+    def test_an_attachment_beyond_its_cap_is_cut_between_characters(self):
+        limit = 200
+        report = "断言失败\n" * 100
+        with mock.patch.object(test_report, "ATTACHMENT_TEXT_LIMIT", limit):
+            attachment = test_report.report_attachment("report.txt", report)
+        text = base64.b64decode(attachment["content"]).decode("utf-8")
+        self.assertLessEqual(len(text.encode("utf-8")), limit)
+        self.assertTrue(text.startswith("断言失败"))
+        self.assertIn("truncated at 200 bytes in the attachment", text)
+
+    def test_the_attachment_cap_fits_the_message_limit(self):
+        # Base64 of the capped text plus a body whose every character is
+        # escaped as a surrogate pair (12 bytes) stays under 25 MiB.
+        encoded = 4 * ((test_report.ATTACHMENT_TEXT_LIMIT + 2) // 3)
+        escaped_body = 12 * test_report.EMAIL_TEXT_LIMIT
+        self.assertLess(encoded + escaped_body, test_report.EMAIL_MAX_BYTES)
+
+    def test_a_message_over_the_api_limit_is_not_sent(self):
+        with mock.patch.object(test_report, "EMAIL_MAX_BYTES", 1024 * 1024), \
+                mock.patch("test_report.open_no_redirect") as urlopen, \
+                mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+            self.assertFalse(test_report.send_email("subject", "x" * (1024 * 1024 + 1), self.env))
+        urlopen.assert_not_called()
+        self.assertIn("::error::", stderr.getvalue())
+        self.assertIn("1 MiB API limit", stderr.getvalue())
+
+    def test_sends_normalized_addresses(self):
+        env = dict(self.env, OPS_EMAIL_FROM="Sender <sender@example.com>",
+                   OPS_EMAIL_TO="Ops <recipient@example.com>, second@example.com",
+                   OPS_EMAIL_REPLY_TO="Reply <reply@example.com>")
+        ok, urlopen, _ = self.send(result={"queued": ["recipient@example.com", "second@example.com"]}, env=env)
+        self.assertTrue(ok)
+        self.assertEqual(json.loads(urlopen.call_args[0][0].data),
+                         {"to": ["recipient@example.com", "second@example.com"],
+                          "from": "sender@example.com", "subject": "subject", "text": "body",
+                          "reply_to": "reply@example.com"})
+
+    def test_invalid_addresses_fail_without_a_request(self):
+        for setting in ("OPS_EMAIL_FROM", "OPS_EMAIL_TO", "OPS_EMAIL_REPLY_TO"):
+            with self.subTest(setting=setting):
+                with mock.patch("test_report.open_no_redirect") as urlopen, \
+                        mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+                    self.assertFalse(test_report.send_email("s", "b", dict(self.env, **{setting: "not an address"})))
+                urlopen.assert_not_called()
+                self.assertIn("not configured", stderr.getvalue())
+                self.assertNotIn("::error::", stderr.getvalue())
+
+    def test_a_configured_recipient_that_is_not_an_address_is_not_dropped(self):
+        env = dict(self.env, OPS_EMAIL_TO="recipient@example.com, not an address")
+        with mock.patch("test_report.open_no_redirect") as urlopen, \
+                mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+            self.assertFalse(test_report.send_email("s", "b", env))
+        urlopen.assert_not_called()
+        self.assertNotIn("::error::", stderr.getvalue())
+
+    def test_a_token_the_parser_swallows_is_not_dropped(self):
+        # These values leave one good address and a token the parser turns
+        # into an empty entry; sending only to the good one would silently
+        # skip a configured operator, so the whole setting is rejected.
+        for recipients in ("recipient@example.com, b@", "recipient@example.com; second@example.com",
+                           "recipient@example.com, undisclosed-recipients:;"):
+            with self.subTest(recipients=recipients):
+                with mock.patch("test_report.open_no_redirect") as urlopen, \
+                        mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+                    self.assertFalse(test_report.send_email(
+                        "s", "b", dict(self.env, OPS_EMAIL_TO=recipients)))
+                urlopen.assert_not_called()
+                self.assertNotIn("::error::", stderr.getvalue())
+
+    def test_rejects_more_recipients_than_the_api_accepts(self):
+        env = dict(self.env, OPS_EMAIL_TO=", ".join(f"r{i}@example.com" for i in range(51)))
+        with mock.patch("test_report.open_no_redirect") as urlopen, \
+                mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+            self.assertFalse(test_report.send_email("s", "b", env))
+        urlopen.assert_not_called()
+        self.assertNotIn("::error::", stderr.getvalue())
+
+    def test_a_missing_reply_to_sends_nothing(self):
+        # The sender is outbound-only, so an email without Reply-To loses replies.
+        env = {key: value for key, value in self.env.items() if key != "OPS_EMAIL_REPLY_TO"}
+        with mock.patch("test_report.open_no_redirect") as urlopen, \
+                mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+            self.assertFalse(test_report.send_email("s", "b", env))
+        urlopen.assert_not_called()
+        self.assertIn("not configured", stderr.getvalue())
+        self.assertNotIn("::error::", stderr.getvalue())
+
+    def test_the_account_id_is_percent_encoded(self):
+        ok, urlopen, _ = self.send(env=dict(self.env, CF_ACCOUNT_ID="a/b?c"))
+        self.assertTrue(ok)
+        self.assertEqual(urlopen.call_args[0][0].full_url,
+                         "https://api.cloudflare.com/client/v4/accounts/a%2Fb%3Fc/email/sending/send")
+
+    def test_a_transient_failure_is_retried(self):
+        transient = urllib.error.HTTPError("https://api.example/send", 503, "unavailable", None, io.BytesIO(b"{}"))
+        response = mock.MagicMock()
+        response.__enter__.return_value.read.return_value = json.dumps(
+            {"success": True, "result": {"queued": ["recipient@example.com"]}}).encode()
+        with mock.patch.object(transient, "close") as close, \
+                mock.patch("test_report.open_no_redirect", side_effect=[transient, response]) as urlopen, \
+                mock.patch.object(test_report, "EMAIL_RETRY_DELAY", 0), \
+                mock.patch("sys.stderr", new=io.StringIO()):
+            self.assertTrue(test_report.send_email("s", "b", self.env))
+        self.assertEqual(urlopen.call_count, 2)
+        close.assert_called_once_with()
+
+    def test_a_persistent_failure_stops_after_the_retries(self):
+        error = urllib.error.HTTPError("https://api.example/send", 500, "server error", None, io.BytesIO(b"{}"))
+        with mock.patch("test_report.open_no_redirect", side_effect=error) as urlopen, \
+                mock.patch.object(test_report, "EMAIL_RETRY_DELAY", 0), \
+                mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+            self.assertFalse(test_report.send_email("s", "b", self.env))
+        self.assertEqual(urlopen.call_count, test_report.EMAIL_RETRIES + 1)
+        self.assertIn("HTTP 500", stderr.getvalue())
+
+    def test_a_rejected_request_is_not_retried(self):
+        error = urllib.error.HTTPError("https://api.example/send", 403, "denied", None, io.BytesIO(b"{}"))
+        with mock.patch("test_report.open_no_redirect", side_effect=error) as urlopen, \
+                mock.patch.object(test_report, "EMAIL_RETRY_DELAY", 0), \
+                mock.patch("sys.stderr", new=io.StringIO()):
+            self.assertFalse(test_report.send_email("s", "b", self.env))
+        self.assertEqual(urlopen.call_count, 1)
+
+    def test_a_queued_or_delivered_recipient_is_success(self):
+        self.assertTrue(self.send(result={"queued": ["recipient@example.com"]})[0])
+        self.assertTrue(self.send(result={"delivered": ["recipient@example.com"]})[0])
+
+    def test_result_addresses_accept_strings_and_address_objects(self):
+        self.assertEqual(test_report.addresses(
+            ["A@Example.com", {"address": "B@Example.com", "name": "Operators"}, "not an address"]),
+            ["a@example.com", "b@example.com"])
+        self.assertEqual(test_report.addresses(None), [])
+        self.assertEqual(test_report.addresses("recipient@example.com"), [])
+
+    def test_matches_recipients_case_insensitively_and_through_address_objects(self):
+        self.assertTrue(self.send(result={"delivered": [
+            {"address": "RECIPIENT@example.com", "name": "Operators"}]})[0])
+
+    def test_case_is_preserved_on_the_wire_and_ignored_for_confirmation(self):
+        env = dict(self.env, OPS_EMAIL_FROM="Sender@Example.com", OPS_EMAIL_TO="Ops@Example.com")
+        ok, urlopen, _ = self.send(result={"queued": ["ops@example.com"]}, env=env)
+        self.assertTrue(ok)
+        payload = json.loads(urlopen.call_args[0][0].data)
+        self.assertEqual(payload["to"], ["Ops@Example.com"])
+        self.assertEqual(payload["from"], "Sender@Example.com")
+
+    def test_a_large_report_is_truncated_for_the_email(self):
+        directory = Path(tempfile.mkdtemp())
+        stream = directory / "go.json"
+        stream.write_text(events(*[
+            item for i in range(1000)
+            for item in (("output", "p", f"T{i}", "x" * 200 + "\n"), ("fail", "p", f"T{i}", None))]))
+        summary = directory / "report.txt"
+        with mock.patch.object(test_report, "send_email", return_value=True) as send, \
+                mock.patch("builtins.print"):
+            test_report.main(["--kind", "weekly", "--go-json", str(stream),
+                              "--summary-file", str(summary)], env=dict(self.env, RUN_URL="http://run"))
+        body = send.call_args[0][1]
+        self.assertLessEqual(len(body), test_report.EMAIL_TEXT_LIMIT)
+        self.assertIn("[report truncated", body)
+        self.assertIn("the full report is attached", body)
+        self.assertIn("the workflow run (http://run)", body)
+        full = summary.read_text()
+        self.assertGreater(len(full), test_report.EMAIL_TEXT_LIMIT)
+        self.assertIn("x" * 200, full)
+        # The attachment is what makes the email self-contained: it carries
+        # the complete report, not the body's prefix.
+        attachment = send.call_args.kwargs["attachment"]
+        self.assertEqual(attachment["filename"], "speedle-weekly-report.txt")
+        attached = base64.b64decode(attachment["content"]).decode("utf-8")
+        self.assertEqual(attached, full)
+        self.assertNotIn("[report truncated", attached)
+
+    def test_the_summary_file_is_written_as_utf8(self):
+        # The step-summary pipeline declares UTF-8; the report file must not
+        # depend on the ambient locale to produce it.
+        directory = Path(tempfile.mkdtemp())
+        (directory / "go.json").write_text(events(
+            ("output", "p", "TestZ", "断言失败\n"), ("fail", "p", "TestZ", None)))
+        summary = directory / "report.txt"
+        with mock.patch.object(test_report, "send_email", return_value=True), \
+                mock.patch("sys.stdout", new=io.StringIO()):
+            test_report.main(["--kind", "weekly", "--go-json", str(directory / "go.json"),
+                              "--summary-file", str(summary)], env={})
+        self.assertIn("断言失败", summary.read_bytes().decode("utf-8"))
+
+    def test_every_configured_recipient_must_be_confirmed(self):
+        env = dict(self.env, OPS_EMAIL_TO="Recipient One <recipient@example.com>, second@example.com")
+        ok, _, message = self.send(result={"queued": ["recipient@example.com"]}, env=env)
+        self.assertFalse(ok)
+        self.assertIn("every recipient", message)
+        ok, _, _ = self.send(result={"queued": ["recipient@example.com"],
+                                     "delivered": ["SECOND@example.com"]}, env=env)
+        self.assertTrue(ok)
+
+    def test_a_permanent_bounce_is_a_failure(self):
+        ok, _, warning = self.send(result={"permanent_bounces": ["recipient@example.com"]})
+        self.assertFalse(ok)
+        self.assertIn("permanent_bounces", warning)
+        self.assertNotIn("recipient@example.com", warning)
+
+    def test_a_suppressed_recipient_is_a_failure(self):
+        ok, _, warning = self.send(result={"queued": ["recipient@example.com"],
+                                           "suppressed_recipients": ["recipient@example.com"]})
+        self.assertFalse(ok)
+        self.assertIn("suppressed_recipients", warning)
+
+    def test_success_false_is_a_failure(self):
+        ok, _, warning = self.send(result={"queued": ["recipient@example.com"]}, success=False)
+        self.assertFalse(ok)
+        self.assertIn("did not report success", warning)
+
+    def test_a_non_2xx_status_is_a_failure(self):
+        error = urllib.error.HTTPError("https://api.example/send", 500, "server error", None, io.BytesIO(b"{}"))
+        ok, _, warning = self.send(error=error)
+        self.assertFalse(ok)
+        self.assertIn("HTTP 500", warning)
+        self.assertNotIn("api.example", warning, "the URL carries the account id and is not logged")
+
+    def test_an_unconfirmable_recipient_is_a_failure(self):
+        self.assertFalse(self.send(result={"queued": [], "permanent_bounces": []})[0])
+        self.assertFalse(self.send(result="not a result")[0])
+
+    def test_an_unreadable_response_is_a_failure(self):
+        self.assertFalse(self.send(reply=b"not json")[0])
+
+    def test_an_unreachable_api_is_a_failure(self):
+        self.assertFalse(self.send(error=OSError("down"))[0])
+
+    def test_a_truncated_response_is_a_failure(self):
+        ok, _, warning = self.send(error=http.client.IncompleteRead(b"{}"))
+        self.assertFalse(ok)
+        self.assertIn("IncompleteRead", warning)
+
+    def test_missing_settings_send_nothing(self):
+        with mock.patch("test_report.open_no_redirect") as urlopen, \
+                mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+            self.assertFalse(test_report.send_email("s", "b", {}))
+        urlopen.assert_not_called()
+        self.assertIn("not configured", stderr.getvalue())
+        self.assertNotIn("::error::", stderr.getvalue())
+
+    def test_a_configuration_problem_is_noted_on_the_run_summary(self):
+        summary = Path(tempfile.mkdtemp()) / "step-summary.md"
+        with mock.patch("test_report.open_no_redirect") as urlopen, \
+                mock.patch("sys.stderr", new=io.StringIO()):
+            self.assertFalse(test_report.send_email("s", "b", {"GITHUB_STEP_SUMMARY": str(summary)}))
+        urlopen.assert_not_called()
+        self.assertIn("Report email not sent", summary.read_text())
+
+    def test_missing_settings_still_track_the_failure(self):
+        # No email is sent, but the run summary and the tracking issue still are.
+        directory = Path(tempfile.mkdtemp())
+        (directory / "go.json").write_text(events(("fail", "p", "TestZ", None)))
+        summary, github = directory / "report.txt", FakeGitHub()
+        env = {"GITHUB_TOKEN": "t", "GITHUB_REPOSITORY": "o/r"}
+        with mock.patch.object(test_report, "GitHub", return_value=github), \
+                mock.patch("sys.stdout", new=io.StringIO()), \
+                mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+            code = test_report.main(["--kind", "nightly", "--go-json", str(directory / "go.json"),
+                                     "--summary-file", str(summary)], env=env)
+        self.assertEqual(code, 0)
+        self.assertNotIn("::error::", stderr.getvalue())
+        self.assertIn("TestZ", summary.read_text())
+        self.assertEqual([c[2]["title"] for c in github.calls], ["Test failure: p TestZ"])
+
+    def test_the_annotation_names_the_setting_to_fix(self):
+        # An operator must be able to tell which setting is wrong from the
+        # failing run alone. Every setting is required, so each is named when
+        # it is the one that is missing or malformed, and the others are not.
+        directory = Path(tempfile.mkdtemp())
+        (directory / "go.json").write_text(events(("fail", "p", "TestZ", None)))
+        cases = {
+            "CF_ACCOUNT_ID": dict(self.env, CF_ACCOUNT_ID=""),
+            "CF_EMAIL_TOKEN": dict(self.env, CF_EMAIL_TOKEN=""),
+            "OPS_EMAIL_FROM": dict(self.env, OPS_EMAIL_FROM="sender@example.com, second@example.com"),
+            "OPS_EMAIL_TO": dict(self.env, OPS_EMAIL_TO="not an address"),
+            "OPS_EMAIL_REPLY_TO": dict(self.env, OPS_EMAIL_REPLY_TO=""),
+        }
+        for name, env in cases.items():
+            with self.subTest(setting=name):
+                with mock.patch("test_report.open_no_redirect") as urlopen, \
+                        mock.patch("sys.stdout", new=io.StringIO()), \
+                        mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+                    code = test_report.main(
+                        ["--kind", "nightly", "--go-json", str(directory / "go.json")],
+                        env=dict(env, REPORT_EMAIL_REQUIRED="true"))
+                urlopen.assert_not_called()
+                self.assertEqual(code, 1)
+                annotations = stderr.getvalue()
+                self.assertIn(f"::error::The report email is not configured correctly ({name} ", annotations)
+                for other in set(cases) - {name}:
+                    self.assertNotIn(other, annotations)
+
+    def test_a_missing_email_setting_still_keeps_the_full_report(self):
+        # The step summary copy is the run's only copy when no email can be
+        # sent, so the summary file must hold the whole report, not the
+        # truncated message body.
+        directory = Path(tempfile.mkdtemp())
+        marker = "end-of-the-report"
+        (directory / "go.json").write_text(events(
+            ("output", "p", "TestZ", "x" * test_report.EMAIL_TEXT_LIMIT + marker + "\n"),
+            ("fail", "p", "TestZ", None)))
+        summary = directory / "report.txt"
+        with mock.patch("test_report.open_no_redirect") as urlopen, \
+                mock.patch("sys.stdout", new=io.StringIO()), \
+                mock.patch("sys.stderr", new=io.StringIO()):
+            code = test_report.main(["--kind", "nightly", "--go-json", str(directory / "go.json"),
+                                     "--summary-file", str(summary)],
+                                    env={"REPORT_EMAIL_REQUIRED": "true"})
+        urlopen.assert_not_called()
+        self.assertEqual(code, 1)
+        kept = summary.read_text(encoding="utf-8")
+        self.assertIn(marker, kept)
+        self.assertGreater(len(kept), test_report.EMAIL_TEXT_LIMIT)
+
+    def test_a_real_report_job_without_settings_fails_after_tracking(self):
+        # A scheduled or post-merge report job must not go green when its only
+        # notification channel is not configured; tests leave the marker unset.
+        directory = Path(tempfile.mkdtemp())
+        (directory / "go.json").write_text(events(("fail", "p", "TestZ", None)))
+        summary, github = directory / "report.txt", FakeGitHub()
+        env = {"GITHUB_TOKEN": "t", "GITHUB_REPOSITORY": "o/r", "REPORT_EMAIL_REQUIRED": "true"}
+        with mock.patch.object(test_report, "GitHub", return_value=github), \
+                mock.patch("sys.stdout", new=io.StringIO()), \
+                mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+            code = test_report.main(["--kind", "nightly", "--go-json", str(directory / "go.json"),
+                                     "--summary-file", str(summary)], env=env)
+        self.assertEqual(code, 1)
+        self.assertIn("::error::The report email is not configured", stderr.getvalue())
+        self.assertIn("TestZ", summary.read_text())
+        self.assertEqual([c[2]["title"] for c in github.calls], ["Test failure: p TestZ"])
+
+    def test_a_required_report_job_fails_for_every_failed_send(self):
+        # Email is the only notification channel, so a real report job must
+        # not go green on any failed send, after it still wrote the summary
+        # and tracked the failure.
+        cases = {
+            "API error": {"error": urllib.error.HTTPError(
+                "https://api.example/send", 500, "server error", None, io.BytesIO(b"{}"))},
+            "success false": {"reply": {"success": False, "result": {"queued": []}}},
+            "permanent bounce": {"reply": {"success": True, "result": {
+                "permanent_bounces": ["recipient@example.com"]}}},
+            "suppressed recipient": {"reply": {"success": True, "result": {
+                "queued": ["recipient@example.com"],
+                "suppressed_recipients": ["recipient@example.com"]}}},
+        }
+        for name, case in cases.items():
+            with self.subTest(name):
+                directory = Path(tempfile.mkdtemp())
+                (directory / "go.json").write_text(events(("fail", "p", "TestZ", None)))
+                summary, github = directory / "report.txt", FakeGitHub()
+                if "reply" in case:
+                    response = mock.MagicMock()
+                    response.__enter__.return_value.read.return_value = json.dumps(case["reply"]).encode()
+                    urlopen = mock.patch("test_report.open_no_redirect", return_value=response)
+                else:
+                    urlopen = mock.patch("test_report.open_no_redirect", side_effect=case["error"])
+                env = dict(self.env, GITHUB_TOKEN="t", GITHUB_REPOSITORY="o/r",
+                           REPORT_EMAIL_REQUIRED="true")
+                with urlopen, mock.patch.object(test_report, "EMAIL_RETRY_DELAY", 0), \
+                        mock.patch.object(test_report, "GitHub", return_value=github), \
+                        mock.patch("sys.stdout", new=io.StringIO()), \
+                        mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+                    code = test_report.main(["--kind", "nightly", "--go-json", str(directory / "go.json"),
+                                             "--summary-file", str(summary)], env=env)
+                self.assertEqual(code, 1)
+                self.assertIn("::error::The report email could not be sent", stderr.getvalue())
+                self.assertIn("TestZ", summary.read_text())
+                self.assertEqual([c[2]["title"] for c in github.calls], ["Test failure: p TestZ"])
+
+    def test_any_enabled_required_marker_fails_a_broken_channel(self):
+        # The marker is a human-set setting, so any non-empty value means
+        # required and a misspelling must fail closed, not silently disable
+        # the guarantee.
+        for spelling in ("true", "True", "1", "yes", " TRUE ", "on", "enabled", "ture"):
+            with self.subTest(spelling=spelling):
+                directory = Path(tempfile.mkdtemp())
+                (directory / "go.json").write_text(events(("fail", "p", "TestZ", None)))
+                env = {"REPORT_EMAIL_REQUIRED": spelling}
+                with mock.patch("sys.stdout", new=io.StringIO()), \
+                        mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+                    code = test_report.main(["--kind", "nightly", "--go-json",
+                                             str(directory / "go.json")], env=env)
+                self.assertEqual(code, 1)
+                self.assertIn("::error::The report email is not configured", stderr.getvalue())
+
+    def test_an_explicit_opt_out_keeps_a_failed_send_soft(self):
+        for spelling in ("false", "FALSE", "0", "no", " "):
+            with self.subTest(spelling=spelling):
+                directory = Path(tempfile.mkdtemp())
+                (directory / "go.json").write_text(events(("fail", "p", "TestZ", None)))
+                with mock.patch("sys.stdout", new=io.StringIO()), \
+                        mock.patch("sys.stderr", new=io.StringIO()):
+                    code = test_report.main(["--kind", "nightly", "--go-json",
+                                             str(directory / "go.json")],
+                                            env={"REPORT_EMAIL_REQUIRED": spelling})
+                self.assertEqual(code, 0)
+
+    def test_a_passing_report_job_fails_when_the_required_send_fails(self):
+        # Nightly and weekly report passing runs too, so a broken channel
+        # makes the run red even though every test passed.
+        directory = Path(tempfile.mkdtemp())
+        (directory / "go.json").write_text(events(("pass", "p", "TestA", None)))
+        env = dict(self.env, REPORT_EMAIL_REQUIRED="true")
+        error = urllib.error.HTTPError("https://api.example/send", 403, "denied", None, io.BytesIO(b"{}"))
+        with mock.patch("test_report.open_no_redirect", side_effect=error), \
+                mock.patch.object(test_report, "EMAIL_RETRY_DELAY", 0), \
+                mock.patch("sys.stdout", new=io.StringIO()), \
+                mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+            code = test_report.main(["--kind", "nightly", "--go-json", str(directory / "go.json")], env=env)
+        self.assertEqual(code, 1)
+        self.assertIn("::error::The report email could not be sent", stderr.getvalue())
+
+    def test_an_unexpected_send_exception_fails_a_required_report_job(self):
+        # Any exception in the send path is a failed send, even when the
+        # settings themselves look valid.
+        directory = Path(tempfile.mkdtemp())
+        (directory / "go.json").write_text(events(("fail", "p", "TestZ", None)))
+        summary, github = directory / "report.txt", FakeGitHub()
+        step_summary = directory / "step-summary.md"
+        env = dict(self.env, GITHUB_TOKEN="t", GITHUB_REPOSITORY="o/r",
+                   REPORT_EMAIL_REQUIRED="true", GITHUB_STEP_SUMMARY=str(step_summary))
+        with mock.patch.object(test_report, "send_email", side_effect=RuntimeError("boom")), \
+                mock.patch.object(test_report, "GitHub", return_value=github), \
+                mock.patch("sys.stdout", new=io.StringIO()), \
+                mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+            code = test_report.main(["--kind", "nightly", "--go-json", str(directory / "go.json"),
+                                     "--summary-file", str(summary)], env=env)
+        self.assertEqual(code, 1)
+        self.assertIn("::error::The report email could not be sent", stderr.getvalue())
+        self.assertIn("**Report email not sent:** Email delivery failed (RuntimeError).",
+                      step_summary.read_text())
+        self.assertIn("TestZ", summary.read_text())
+        self.assertEqual([c[2]["title"] for c in github.calls], ["Test failure: p TestZ"])
+
+    def test_a_failed_send_is_an_error_annotation(self):
+        ok, _, message = self.send(error=OSError("down"))
+        self.assertFalse(ok)
+        self.assertIn("::error::", message)
+
+    def test_a_failed_send_still_reports_the_run(self):
+        # A send failure must not skip the summary or the failure tracking.
+        directory = Path(tempfile.mkdtemp())
+        (directory / "go.json").write_text(events(("fail", "p", "TestZ", None)))
+        summary, github = directory / "report.txt", FakeGitHub()
+        error = urllib.error.HTTPError("https://api.example/send", 500, "server error", None, io.BytesIO(b"{}"))
+        env = dict(self.env, GITHUB_TOKEN="t", GITHUB_REPOSITORY="o/r")
+        with mock.patch("test_report.open_no_redirect", side_effect=error), \
+                mock.patch.object(test_report, "EMAIL_RETRY_DELAY", 0), \
+                mock.patch.object(test_report, "GitHub", return_value=github), \
+                mock.patch("sys.stdout", new=io.StringIO()), \
+                mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+            code = test_report.main(["--kind", "nightly", "--go-json", str(directory / "go.json"),
+                                     "--summary-file", str(summary)], env=env)
+        self.assertEqual(code, 0)
+        self.assertIn("::error::", stderr.getvalue())
+        self.assertIn("TestZ", summary.read_text())
+        self.assertEqual([c[2]["title"] for c in github.calls], ["Test failure: p TestZ"])
+
+    def test_an_unexpected_send_exception_still_reports_the_run(self):
+        # send_email must never be able to skip the summary or the tracking.
+        directory = Path(tempfile.mkdtemp())
+        (directory / "go.json").write_text(events(("fail", "p", "TestZ", None)))
+        summary, github = directory / "report.txt", FakeGitHub()
+        env = dict(self.env, GITHUB_TOKEN="t", GITHUB_REPOSITORY="o/r")
+        with mock.patch.object(test_report, "send_email", side_effect=RuntimeError("boom")), \
+                mock.patch.object(test_report, "GitHub", return_value=github), \
+                mock.patch("sys.stdout", new=io.StringIO()), \
+                mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+            code = test_report.main(["--kind", "nightly", "--go-json", str(directory / "go.json"),
+                                     "--summary-file", str(summary)], env=env)
+        self.assertEqual(code, 0)
+        self.assertIn("::error::", stderr.getvalue())
+        self.assertIn("TestZ", summary.read_text())
+        self.assertEqual([c[2]["title"] for c in github.calls], ["Test failure: p TestZ"])
+
+    def test_logs_never_echo_the_settings(self):
+        error = urllib.error.HTTPError("https://api.example/send", 403, "denied", None, io.BytesIO(b"{}"))
+        _, _, warning = self.send(error=error)
+        for value in self.env.values():
+            self.assertNotIn(value, warning)
+
+    def test_main_emails_the_report(self):
+        directory = Path(tempfile.mkdtemp())
+        (directory / "go.json").write_text(events(("fail", "p", "TestZ", None)))
+        with mock.patch.object(test_report, "send_email", return_value=True) as send, mock.patch("builtins.print"):
+            test_report.main(["--kind", "weekly", "--go-json", str(directory / "go.json")],
+                             env=dict(self.env, GITHUB_REPOSITORY="o/r", RUN_URL="http://run"))
+        subject, body = send.call_args[0][:2]
+        self.assertEqual(subject, "[Speedle weekly] FAILED")
+        self.assertIn("p TestZ", body)
+        self.assertIn("http://run", body)
+        attachment = send.call_args.kwargs["attachment"]
+        self.assertEqual(attachment["filename"], "speedle-weekly-report.txt")
+        self.assertEqual(base64.b64decode(attachment["content"]).decode("utf-8"), body)
+
+    def test_no_attachment_is_built_without_email_settings(self):
+        # A local or test run without the settings must not encode the report.
+        directory = Path(tempfile.mkdtemp())
+        (directory / "go.json").write_text(events(("fail", "p", "TestZ", None)))
+        with mock.patch.object(test_report, "report_attachment") as build, \
+                mock.patch.object(test_report, "send_email", return_value=False), \
+                mock.patch("builtins.print"):
+            test_report.main(["--kind", "weekly", "--go-json", str(directory / "go.json")], env={})
+        build.assert_not_called()
+
+    def test_main_posts_the_configured_report(self):
+        directory = Path(tempfile.mkdtemp())
+        (directory / "go.json").write_text(events(("fail", "p", "TestZ", None)))
+        response = mock.MagicMock()
+        response.__enter__.return_value.read.return_value = json.dumps(
+            {"success": True, "result": {"queued": [self.env["OPS_EMAIL_TO"]]}}).encode()
+        with mock.patch("test_report.open_no_redirect", return_value=response) as urlopen, mock.patch("builtins.print"):
+            code = test_report.main(["--kind", "nightly", "--go-json", str(directory / "go.json")],
+                                    env=dict(self.env))
+        self.assertEqual(code, 0)
+        request = urlopen.call_args[0][0]
+        self.assertEqual(request.full_url,
+                         "https://api.cloudflare.com/client/v4/accounts/account-id/email/sending/send")
+        payload = json.loads(request.data)
+        self.assertEqual(payload["subject"], "[Speedle nightly] FAILED")
+        self.assertIn("TestZ", payload["text"])
+        [attachment] = payload["attachments"]
+        self.assertEqual(attachment["filename"], "speedle-nightly-report.txt")
+        self.assertEqual(base64.b64decode(attachment["content"]).decode("utf-8"), payload["text"])
+
+
+class EmailTextTest(unittest.TestCase):
+    """The body's claim about the attachment must match what it carries."""
+
+    def body_and_attachment(self, report, run_url="http://run",
+                            text_limit=200, attachment_limit=500):
+        with mock.patch.object(test_report, "EMAIL_TEXT_LIMIT", text_limit), \
+                mock.patch.object(test_report, "ATTACHMENT_TEXT_LIMIT", attachment_limit):
+            body = test_report.email_text(report, run_url)
+            attachment = test_report.report_attachment("report.txt", report)
+        return body, base64.b64decode(attachment["content"]).decode("utf-8")
+
+    def test_a_report_within_the_body_limit_is_sent_whole(self):
+        body, attached = self.body_and_attachment("x" * 200)
+        self.assertEqual(body, "x" * 200)
+        self.assertNotIn("truncated", body)
+        self.assertEqual(attached, "x" * 200)
+
+    def test_a_report_within_the_attachment_limit_is_promised_whole(self):
+        body, attached = self.body_and_attachment("x" * 500)
+        self.assertLessEqual(len(body), 200)
+        self.assertIn("the full report is attached", body)
+        self.assertIn("the workflow run (http://run)", body)
+        self.assertEqual(attached, "x" * 500)
+
+    def test_a_report_beyond_the_attachment_limit_is_reported_cut_twice(self):
+        body, attached = self.body_and_attachment("x" * 501)
+        self.assertLessEqual(len(body), 200)
+        self.assertIn("the attachment is truncated as well", body)
+        self.assertNotIn("the full report is attached", body)
+        self.assertIn("the workflow run (http://run)", body)
+        self.assertLessEqual(len(attached.encode("utf-8")), 500)
+
+    def test_the_attachment_cap_counts_bytes_not_characters(self):
+        # Report text is Chinese, so the byte cap can be reached while the
+        # character count is still under it.
+        report = "断" * 250
+        body, attached = self.body_and_attachment(report, attachment_limit=700)
+        self.assertLessEqual(len(report), 700)
+        self.assertGreater(len(report.encode("utf-8")), 700)
+        self.assertIn("the attachment is truncated as well", body)
+        self.assertLessEqual(len(attached.encode("utf-8")), 700)
+
+
+class RequiredMarkerTest(unittest.TestCase):
+    """The accepted opt-outs are documented in docs/RUNNERS.md."""
+
+    def test_only_the_documented_values_turn_the_requirement_off(self):
+        self.assertEqual(test_report.REPORT_EMAIL_OPT_OUTS, ("0", "false", "no"))
+        for value in ("0", "false", "no", "False", "NO", " no ", "0\t"):
+            with self.subTest(value=value):
+                self.assertFalse(test_report.report_email_required({"REPORT_EMAIL_REQUIRED": value}))
+        # Every other non-empty value, including a misspelling, means required.
+        for value in ("true", "1", "yes", "on", "off", "disabled", "n", "ture", " false!"):
+            with self.subTest(value=value):
+                self.assertTrue(test_report.report_email_required({"REPORT_EMAIL_REQUIRED": value}))
+
+    def test_an_unset_or_empty_marker_keeps_the_run_soft(self):
+        self.assertFalse(test_report.report_email_required({}))
+        self.assertFalse(test_report.report_email_required({"REPORT_EMAIL_REQUIRED": ""}))
+        self.assertFalse(test_report.report_email_required({"REPORT_EMAIL_REQUIRED": "   "}))
+
+
+class GitHubTest(unittest.TestCase):
+    def test_call_uses_the_no_redirect_opener(self):
+        # The repository token must not follow a redirect to another host.
+        response = mock.MagicMock()
+        response.__enter__.return_value.read.return_value = b"[]"
+        with mock.patch("test_report.open_no_redirect", return_value=response) as opener:
+            self.assertEqual(test_report.GitHub("token", "o/r").call("GET", "/issues"), [])
+        self.assertEqual(opener.call_args.kwargs["timeout"], 60)
 
 
 class IssueTest(unittest.TestCase):
@@ -209,7 +845,8 @@ class MainTest(unittest.TestCase):
         results.write_text(events(("fail", "p", "TestX", None)))
         summary = directory / "report.txt"
         github = FakeGitHub()
-        with mock.patch.object(test_report, "GitHub", return_value=github), mock.patch("builtins.print"):
+        with mock.patch.object(test_report, "GitHub", return_value=github), \
+                mock.patch.object(test_report, "send_email", return_value=False), mock.patch("builtins.print"):
             code = test_report.main(["--kind", "nightly", "--go-json", str(results), "--go-json", str(directory / "lost.json"),
                                      "--check", "vuln=1:/missing", "--summary-file", str(summary)],
                                     env={"GITHUB_TOKEN": "t", "GITHUB_REPOSITORY": "o/r", "RUN_URL": "http://run"})
@@ -228,7 +865,7 @@ class ResultsDirTest(unittest.TestCase):
         (directory / "quick.log").write_text("step failed\n")
         (directory / "checks.txt").write_text("quick=1:quick.log\ngovulncheck=0:govulncheck.log\n")
         summary = directory / "out.txt"
-        with mock.patch("builtins.print"):
+        with mock.patch.object(test_report, "send_email", return_value=False), mock.patch("builtins.print"):
             test_report.main(["--kind", "weekly", "--results-dir", str(directory),
                               "--results-dir", str(directory / "absent"), "--summary-file", str(summary)], env={})
         text = summary.read_text()
@@ -242,7 +879,7 @@ class ResultsDirTest(unittest.TestCase):
 class SourceTest(unittest.TestCase):
     def report(self, *sources):
         summary = Path(tempfile.mkdtemp()) / "out.txt"
-        with mock.patch("builtins.print"):
+        with mock.patch.object(test_report, "send_email", return_value=False), mock.patch("builtins.print"):
             test_report.main(["--kind", "nightly", *[a for s in sources for a in ("--source", s)],
                               "--summary-file", str(summary)], env={})
         return summary.read_text()
@@ -300,87 +937,9 @@ class DedupeTest(unittest.TestCase):
         self.assertIn("etcd store", body)
         self.assertEqual(body.count("file store"), 1)
 
-    def test_feishu_lists_each_failure_once(self):
-        directory = Path(tempfile.mkdtemp())
-        for name in ("go-file.json", "go-etcd.json"):
-            (directory / name).write_text(events(("fail", "p", "TestZ", None)))
-        with mock.patch.object(test_report, "send_feishu", return_value=True) as send, mock.patch("builtins.print"):
-            test_report.main(["--kind", "nightly", "--results-dir", str(directory)], env={})
-        self.assertEqual(send.call_args[0][0]["elements"][0]["content"].count("- p TestZ"), 1)
-
-
-class FeishuTest(unittest.TestCase):
-    def card(self, ok=False, failed=("p TestX",), analysis="结论：失败"):
-        packages = {"p": {"pass": 3, "fail": 1, "skip": 2, "package_failed": False}}
-        return test_report.feishu_card("nightly", ok, packages, list(failed), analysis,
-                                       "http://run", "http://issues")
-
-    def test_signature_matches_feishu_algorithm(self):
-        import base64, hashlib, hmac
-        expected = base64.b64encode(hmac.new(b"1700000000\nsecret", b"", hashlib.sha256).digest()).decode()
-        self.assertEqual(test_report.feishu_sign("secret", "1700000000"), expected)
-
-    def test_card_content(self):
-        card = self.card()
-        self.assertEqual(card["header"]["template"], "red")
-        self.assertIn("失败", card["header"]["title"]["content"])
-        text = card["elements"][0]["content"]
-        for part in ("3 通过，1 失败，2 跳过", "- p TestX", "结论：失败", "[运行详情](http://run)", "[失败跟踪 issue](http://issues)"):
-            self.assertIn(part, text)
-        passed = self.card(ok=True, failed=(), analysis=None)
-        self.assertEqual(passed["header"]["template"], "green")
-        self.assertIn("Ark 分析不可用", passed["elements"][0]["content"])
-        self.assertNotIn("issue", passed["elements"][0]["content"])
-
-    def test_card_bounds_long_lists_and_analysis(self):
-        card = self.card(failed=[f"p Test{i}" for i in range(15)], analysis="x" * 5000)
-        text = card["elements"][0]["content"]
-        self.assertIn("另有 5 项", text)
-        self.assertNotIn("p Test10", text)
-        self.assertLess(len(text), 2500)
-
-    def send(self, env, reply=b'{"code":0,"msg":"success"}', error=None):
-        response = mock.MagicMock()
-        response.__enter__.return_value.read.return_value = reply
-        with mock.patch("urllib.request.urlopen", return_value=response, side_effect=error) as urlopen, \
-                mock.patch("builtins.print"):
-            result = test_report.send_feishu(self.card(), env, now=lambda: 1700000000.5)
-        return result, urlopen
-
-    def test_signed_message(self):
-        ok, urlopen = self.send({"FEISHU_WEBHOOK": "https://open.feishu.cn/hook/x", "FEISHU_WEBHOOK_SECRET": "secret"})
-        self.assertTrue(ok)
-        request = urlopen.call_args[0][0]
-        body = json.loads(request.data)
-        self.assertEqual(request.full_url, "https://open.feishu.cn/hook/x")
-        self.assertEqual(body["msg_type"], "interactive")
-        self.assertEqual(body["timestamp"], "1700000000")
-        self.assertEqual(body["sign"], test_report.feishu_sign("secret", "1700000000"))
-
-    def test_unsigned_message_and_failures(self):
-        ok, urlopen = self.send({"FEISHU_WEBHOOK": "https://hook"})
-        self.assertTrue(ok)
-        self.assertNotIn("sign", json.loads(urlopen.call_args[0][0].data))
-        self.assertFalse(self.send({"FEISHU_WEBHOOK": "https://hook"}, reply=b'{"code":19021,"msg":"sign match fail"}')[0])
-        self.assertFalse(self.send({"FEISHU_WEBHOOK": "https://hook"}, error=OSError("down"))[0])
-        ok, urlopen = self.send({})
-        self.assertFalse(ok)
-        urlopen.assert_not_called()
-
-    def test_main_sends_the_card(self):
-        directory = Path(tempfile.mkdtemp())
-        (directory / "go.json").write_text(events(("fail", "p", "TestZ", None)))
-        with mock.patch.object(test_report, "send_feishu", return_value=True) as send, mock.patch("builtins.print"):
-            test_report.main(["--kind", "weekly", "--go-json", str(directory / "go.json")],
-                             env={"GITHUB_REPOSITORY": "o/r", "RUN_URL": "http://run"})
-        card = send.call_args[0][0]
-        self.assertEqual(card["header"]["template"], "red")
-        self.assertIn("p TestZ", card["elements"][0]["content"])
-        self.assertIn("https://github.com/o/r/issues?q=is%3Aopen+label%3Atest-failure", card["elements"][0]["content"])
-
 
 class RegressionTest(unittest.TestCase):
-    """The post-merge regression: quiet on success, English, issues and Feishu, no mail."""
+    """The post-merge regression: quiet on success, English, issues and email."""
     env = {"GITHUB_TOKEN": "t", "GITHUB_REPOSITORY": "o/r", "RUN_URL": "http://run",
            "COMMIT_URL": "http://commit/abc", "ARK_API_KEY": "k"}
 
@@ -391,29 +950,88 @@ class RegressionTest(unittest.TestCase):
         github = FakeGitHub(issues)
         with mock.patch.object(test_report, "GitHub", return_value=github), \
                 mock.patch.object(test_report, "ark_analyze", return_value="Likely cause: nil map.") as ark, \
-                mock.patch.object(test_report, "send_feishu", return_value=True) as feishu, \
-                mock.patch.object(test_report, "send_mail") as mail, mock.patch("builtins.print"):
+                mock.patch.object(test_report, "send_email", return_value=True) as email, \
+                mock.patch("builtins.print"):
             code = test_report.main(["--kind", "regression", "--source", f"run:success:{directory}",
                                      "--summary-file", str(summary)], env=self.env)
         self.assertEqual(code, 0)
-        return github, ark, feishu, mail, summary.read_text()
+        return github, ark, email, summary.read_text()
 
     def test_a_passing_run_sends_nothing(self):
-        github, ark, feishu, mail, summary = self.run_main(events(("pass", "p", "TestA", None)))
+        github, ark, email, summary = self.run_main(events(("pass", "p", "TestA", None)))
         ark.assert_not_called()
-        feishu.assert_not_called()
-        mail.assert_not_called()
+        email.assert_not_called()
         self.assertEqual(github.calls, [])
         self.assertIn("post-merge regression test report: PASSED", summary)
         self.assertIn("Commit: http://commit/abc", summary)
 
+    def test_a_passing_required_report_job_fails_with_missing_settings(self):
+        # The run sends nothing when it passes, but it is still a real report
+        # job: the documented fail-closed guarantee must not wait for a
+        # failing run, exactly when the notification matters.
+        directory = Path(tempfile.mkdtemp())
+        (directory / "go-file.json").write_text(events(("pass", "p", "TestA", None)))
+        step_summary = directory / "step-summary.md"
+        with mock.patch.object(test_report, "send_email") as send, \
+                mock.patch("sys.stdout", new=io.StringIO()), \
+                mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+            code = test_report.main(["--kind", "regression", "--source", f"run:success:{directory}"],
+                                    env={"REPORT_EMAIL_REQUIRED": "true",
+                                         "GITHUB_STEP_SUMMARY": str(step_summary)})
+        send.assert_not_called()
+        self.assertEqual(code, 1)
+        self.assertIn("::error::The report email is not configured correctly", stderr.getvalue())
+        self.assertIn("Report email not sent", step_summary.read_text())
+
+    def test_a_passing_required_report_job_with_settings_stays_quiet(self):
+        directory = Path(tempfile.mkdtemp())
+        (directory / "go-file.json").write_text(events(("pass", "p", "TestA", None)))
+        env = {"REPORT_EMAIL_REQUIRED": "true", "CF_ACCOUNT_ID": "a", "CF_EMAIL_TOKEN": "t",
+               "OPS_EMAIL_FROM": "sender@example.com", "OPS_EMAIL_TO": "recipient@example.com",
+               "OPS_EMAIL_REPLY_TO": "reply@example.com"}
+        with mock.patch.object(test_report, "send_email") as send, mock.patch("builtins.print"):
+            code = test_report.main(["--kind", "regression", "--source", f"run:success:{directory}"], env=env)
+        send.assert_not_called()
+        self.assertEqual(code, 0)
+
+    def test_a_passing_required_report_job_fails_with_a_malformed_address(self):
+        # An address with an empty local part or domain, or a domain that is
+        # not a dotted name, cannot receive mail; the passing run must fail
+        # now instead of losing the next failure's email.
+        directory = Path(tempfile.mkdtemp())
+        (directory / "go-file.json").write_text(events(("pass", "p", "TestA", None)))
+        good = {"REPORT_EMAIL_REQUIRED": "true", "CF_ACCOUNT_ID": "a", "CF_EMAIL_TOKEN": "t",
+                "OPS_EMAIL_FROM": "sender@example.com", "OPS_EMAIL_TO": "recipient@example.com",
+                "OPS_EMAIL_REPLY_TO": "reply@example.com"}
+        for setting in ("OPS_EMAIL_FROM", "OPS_EMAIL_TO", "OPS_EMAIL_REPLY_TO"):
+            for value in ("@", "ops@", "@example.com", "ops@example", "ops@example..com",
+                          "a@b@example.com", "o ps@example.com", "Ops <ops@>"):
+                with self.subTest(setting=setting, value=value):
+                    with mock.patch.object(test_report, "send_email") as send, \
+                            mock.patch("sys.stdout", new=io.StringIO()), \
+                            mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+                        code = test_report.main(["--kind", "regression", "--source", f"run:success:{directory}"],
+                                                env=dict(good, **{setting: value}))
+                    send.assert_not_called()
+                    self.assertEqual(code, 1)
+                    self.assertIn(setting, stderr.getvalue())
+
+    def test_valid_address_forms_are_accepted(self):
+        for value in ("ops@example.com", "Ops.Team+ci@mail.example.com", "Ops <ops@example.com>",
+                      "\"Ops, Team\" <ops@example.com>, second@example.org"):
+            with self.subTest(value=value):
+                self.assertTrue(test_report.configured_addresses(value))
+
     def test_a_failure_opens_an_issue_with_output_and_english_analysis(self):
-        github, ark, feishu, mail, summary = self.run_main(events(
+        github, ark, email, summary = self.run_main(events(
             ("output", "p", "TestB", "panic: assignment to entry in nil map\n"), ("fail", "p", "TestB", None)))
         self.assertEqual(ark.call_args.kwargs["language"], "English")
         self.assertIn("Commit: http://commit/abc", ark.call_args[0][0])
-        mail.assert_not_called()
-        self.assertIn("post-merge regression", feishu.call_args[0][0]["header"]["title"]["content"])
+        subject, body = email.call_args[0][:2]
+        self.assertEqual(subject, "[Speedle post-merge regression] FAILED")
+        for part in ("Commit: http://commit/abc", "Run: http://run",
+                     "assignment to entry in nil map", "Likely cause: nil map."):
+            self.assertIn(part, body)
         (method, path, data), = github.calls
         self.assertEqual((method, path, data["title"]), ("POST", "/issues", "Test failure: p TestB"))
         for part in ("post-merge regression run failed `TestB`", "Commit: http://commit/abc",
@@ -433,15 +1051,28 @@ class RegressionTest(unittest.TestCase):
         directory = Path(tempfile.mkdtemp())
         github = FakeGitHub()
         with mock.patch.object(test_report, "GitHub", return_value=github), \
-                mock.patch.object(test_report, "send_feishu", return_value=True), mock.patch("builtins.print"):
+                mock.patch.object(test_report, "send_email", return_value=True), mock.patch("builtins.print"):
             test_report.main(["--kind", "regression", "--source", f"run:failure:{directory / 'missing'}"],
                              env={"GITHUB_TOKEN": "t", "GITHUB_REPOSITORY": "o/r"})
         self.assertEqual([c[2]["title"] for c in github.calls], ["Test failure: check results missing"])
 
+    def test_a_failed_send_still_tracks_the_failure(self):
+        directory = Path(tempfile.mkdtemp())
+        (directory / "go-file.json").write_text(events(("fail", "p", "TestB", None)))
+        github, summary = FakeGitHub(), directory / "report.txt"
+        with mock.patch.object(test_report, "GitHub", return_value=github), \
+                mock.patch.object(test_report, "ark_analyze", return_value=None), \
+                mock.patch.object(test_report, "send_email", return_value=False), mock.patch("builtins.print"):
+            code = test_report.main(["--kind", "regression", "--source", f"run:success:{directory}",
+                                     "--summary-file", str(summary)], env=self.env)
+        self.assertEqual(code, 0)
+        self.assertEqual([c[2]["title"] for c in github.calls], ["Test failure: p TestB"])
+        self.assertIn("TestB", summary.read_text())
+
     def test_scheduled_runs_keep_chinese_analysis(self):
         response = mock.MagicMock()
         response.__enter__.return_value.read.return_value = b"{}"
-        with mock.patch("urllib.request.urlopen", return_value=response) as urlopen:
+        with mock.patch("test_report.open_no_redirect", return_value=response) as urlopen:
             test_report.ark_analyze("s", "k", "m")
             test_report.ark_analyze("s", "k", "m", language="English")
         prompts = [json.loads(c[0][0].data)["input"] for c in urlopen.call_args_list]
@@ -459,7 +1090,7 @@ class PerformanceTest(unittest.TestCase):
         streams, _ = test_report.expand_results_dir(directory)
         self.assertEqual([Path(s).name for s in streams], ["go-file.json"])
         summary = directory / "report.txt"
-        with mock.patch.object(test_report, "send_feishu", return_value=True), mock.patch("builtins.print"):
+        with mock.patch.object(test_report, "send_email", return_value=True), mock.patch("builtins.print"):
             test_report.main(["--kind", "weekly", "--source", f"run:success:{directory}",
                               "--summary-file", str(summary)], env={})
         text = summary.read_text()

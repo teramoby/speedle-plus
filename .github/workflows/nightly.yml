@@ -36,8 +36,8 @@ jobs:
     with:
       mode: nightly
 
-  # Ark analysis, a Feishu message and email to the maintainer, and one tracking issue per failing
-  # test. Hosted, so the test runner never holds the Ark, Feishu, SMTP or issue tokens.
+  # Ark analysis, an email to the operators, and one tracking issue per failing
+  # test. Hosted, so the test runner never holds the Ark, email or issue tokens.
   report:
     name: report
     needs: run
@@ -67,19 +67,42 @@ jobs:
           RUN_RESULT: ${{ needs.run.result }}
           ARK_API_KEY: ${{ secrets.ARK_API_KEY }}
           ARK_MODEL: ${{ vars.ARK_REVIEW_MODEL || 'kimi-k3' }}
-          SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
-          SMTP_PORT: ${{ secrets.SMTP_PORT }}
-          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
-          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
-          MAIL_FROM: ${{ secrets.MAIL_FROM }}
-          MAIL_TO: ${{ vars.TEST_REPORT_MAIL_TO || 'caiwl@acm.org' }}
-          FEISHU_WEBHOOK: ${{ secrets.FEISHU_WEBHOOK }}
-          FEISHU_WEBHOOK_SECRET: ${{ secrets.FEISHU_WEBHOOK_SECRET }}
+          CF_EMAIL_TOKEN: ${{ secrets.CF_EMAIL_TOKEN }}
+          CF_ACCOUNT_ID: ${{ vars.CF_ACCOUNT_ID }}
+          OPS_EMAIL_FROM: ${{ vars.OPS_EMAIL_FROM }}
+          OPS_EMAIL_TO: ${{ vars.OPS_EMAIL_TO }}
+          OPS_EMAIL_REPLY_TO: ${{ vars.OPS_EMAIL_REPLY_TO }}
+          REPORT_EMAIL_REQUIRED: "true"
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           # A job that did not succeed is reported as failed even when its
           # results are partial or show no failure.
+          status=0
           python3 -I scripts/ci/test_report.py --kind nightly \
-            --source "run:${RUN_RESULT}:test-results" --summary-file report.txt
-          cat report.txt >> "${GITHUB_STEP_SUMMARY}"
+            --source "run:${RUN_RESULT}:test-results" --summary-file report.txt || status=$?
+          # The summary must be readable even when a failed required email made
+          # the script exit non-zero. The step summary rejects more than 1 MiB;
+          # copy at most 900000 bytes, cut on a UTF-8 boundary, and say when
+          # the copy was cut or failed. None of this may skip exit "$status".
+          if [[ -f report.txt ]]; then
+            copy="$(mktemp)" || copy=""
+            if [[ -n "${copy}" ]]; then
+              # A cut can split the last character, so iconv drops it and
+              # reports an incomplete sequence; that alone is not a failure.
+              head -c 900000 report.txt | iconv -f UTF-8 -t UTF-8 -c > "${copy}" || :
+              {
+                cat "${copy}"
+                if [[ $(wc -c < report.txt) -gt 900000 ]]; then
+                  printf '\n[report truncated at 900000 bytes in the step summary]\n'
+                fi
+              } >> "${GITHUB_STEP_SUMMARY:-}" || echo "::warning::The step summary could not be written."
+              if [[ -s report.txt && ! -s "${copy}" ]]; then
+                echo "::warning::The step summary copy failed."
+              fi
+              rm -f "${copy}" || :
+            else
+              echo "::warning::The step summary could not be written."
+            fi
+          fi
+          exit "$status"
