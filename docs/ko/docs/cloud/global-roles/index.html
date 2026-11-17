@@ -207,7 +207,9 @@
 <h2 id="역할-할당을-한-번-만들기">역할 할당을 한 번 만들기</h2>
 
 <p>콘솔 서비스 선택기 맨 위에서 <strong>전역 역할</strong>을 선택하고 역할 정책을 만듭니다.</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant user Emma AdminRole</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant user Emma from corp AdminRole</code></pre></div>
+<p><code>from corp</code>는 할당을 <code>corp</code> ID 도메인으로 제한합니다. 생략하면 요청의 도메인에 관계없이 Emma라는 이름의 모든 사용자가 일치합니다. <a href="/ko/docs/idd/">ID 도메인</a>을 참조하십시오.</p>
+
 <p>이제 <code>AdminRole</code> 역할이 계정의 모든 서비스에서 Emma에게 할당됩니다.</p>
 
 <h2 id="서비스에서-권한-부여하기">서비스에서 권한 부여하기</h2>
@@ -218,7 +220,7 @@
 
 <h2 id="결과-확인">결과 확인</h2>
 
-<p><code>library</code>의 Playground를 열고 <code>[{&quot;type&quot;:&quot;user&quot;,&quot;name&quot;:&quot;Emma&quot;}]</code>을 주체, <code>books</code>를 리소스, <code>borrow</code>를 작업으로 테스트를 실행합니다. <code>AdminRole</code>을 통해 허용됩니다. <code>Bob</code>의 같은 요청은 거부됩니다.</p>
+<p><code>library</code>의 Playground를 열고 <code>[{&quot;type&quot;:&quot;user&quot;,&quot;name&quot;:&quot;Emma&quot;,&quot;idd&quot;:&quot;corp&quot;}]</code>을 주체, <code>books</code>를 리소스, <code>borrow</code>를 작업으로 테스트를 실행합니다. <code>AdminRole</code>을 통해 허용됩니다. <code>Bob</code>의 같은 요청은 거부됩니다.</p>
 
 <p>전역 역할 자체의 Playground는 다릅니다. 전역 서비스 자체에 대한 판정은 항상 거부됩니다. 전역 역할은 각 서비스의 Playground에서 적용됩니다.</p>
 

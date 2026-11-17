@@ -23,8 +23,10 @@ bref = "为账号内所有服务共享一次角色分配。"
 在控制台的服务选择器顶部选择 **全局角色**，创建一条角色策略：
 
 ```text
-grant user Emma AdminRole
+grant user Emma from corp AdminRole
 ```
+
+`from corp` 让该分配只作用于 `corp` 身份域。省略 `from` 时，授权会匹配所有身份域中名为 Emma 的用户；详见[身份域](/zh/docs/idd/)。
 
 角色 `AdminRole` 现在已在账号内的所有服务中分配给 Emma。
 
@@ -40,7 +42,7 @@ grant role AdminRole borrow books
 
 ## 检查结果
 
-打开 `library` 的 Playground，以 `[{"type":"user","name":"Emma"}]` 作为主体、`books` 作为资源、`borrow` 作为动作运行测试。请求通过 `AdminRole` 被允许；来自 `Bob` 的同一请求被拒绝。
+打开 `library` 的 Playground，以 `[{"type":"user","name":"Emma","idd":"corp"}]` 作为主体、`books` 作为资源、`borrow` 作为动作运行测试。请求通过 `AdminRole` 被允许；来自 `Bob` 的同一请求被拒绝。
 
 全局角色自己的 Playground 不同：直接对全局服务判定总是拒绝。全局角色在各服务的 Playground 中生效。
 

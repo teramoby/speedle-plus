@@ -207,7 +207,9 @@
 <h2 id="ロールの割り当てを一度作成する">ロールの割り当てを一度作成する</h2>
 
 <p>コンソールのサービス選択の先頭で <strong>グローバルロール</strong> を選び、ロールポリシーを作成します。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant user Emma AdminRole</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant user Emma from corp AdminRole</code></pre></div>
+<p><code>from corp</code> は割り当てを <code>corp</code> ID ドメインに限定します。省略すると、リクエストのドメインにかかわらず Emma という名前のすべてのユーザーが一致します。<a href="/ja/docs/idd/">ID ドメイン</a>を参照してください。</p>
+
 <p>ロール <code>AdminRole</code> がアカウント内のすべてのサービスで Emma に割り当てられました。</p>
 
 <h2 id="サービスで権限を付与する">サービスで権限を付与する</h2>
@@ -218,7 +220,7 @@
 
 <h2 id="結果を確認する">結果を確認する</h2>
 
-<p><code>library</code> の Playground を開き、<code>[{&quot;type&quot;:&quot;user&quot;,&quot;name&quot;:&quot;Emma&quot;}]</code> を主体、<code>books</code> をリソース、<code>borrow</code> をアクションとしてテストを実行します。<code>AdminRole</code> により許可されます。<code>Bob</code> からの同じリクエストは拒否されます。</p>
+<p><code>library</code> の Playground を開き、<code>[{&quot;type&quot;:&quot;user&quot;,&quot;name&quot;:&quot;Emma&quot;,&quot;idd&quot;:&quot;corp&quot;}]</code> を主体、<code>books</code> をリソース、<code>borrow</code> をアクションとしてテストを実行します。<code>AdminRole</code> により許可されます。<code>Bob</code> からの同じリクエストは拒否されます。</p>
 
 <p>グローバルロール自身の Playground は異なります。グローバルサービス自体への判定は常に拒否されます。グローバルロールは各サービスの Playground で有効になります。</p>
 

@@ -207,7 +207,9 @@
 <h2 id="cree-la-asignación-una-vez">Cree la asignación una vez</h2>
 
 <p>En el selector de servicios de la consola, elija <strong>Roles globales</strong> al principio de la lista y cree una política de rol:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant user Emma AdminRole</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant user Emma from corp AdminRole</code></pre></div>
+<p>La cláusula <code>from corp</code> limita la asignación al dominio de identidad <code>corp</code>. Sin ella, la concesión coincide con cualquier usuario llamado Emma en cualquier dominio; consulte <a href="/es/docs/idd/">Dominios de identidad</a>.</p>
+
 <p>El rol <code>AdminRole</code> está ahora asignado a Emma en todos los servicios de la cuenta.</p>
 
 <h2 id="conceda-el-permiso-en-un-servicio">Conceda el permiso en un servicio</h2>
@@ -218,7 +220,7 @@
 
 <h2 id="compruebe-el-resultado">Compruebe el resultado</h2>
 
-<p>Abra el Playground de <code>library</code> y ejecute una prueba con <code>[{&quot;type&quot;:&quot;user&quot;,&quot;name&quot;:&quot;Emma&quot;}]</code> como principal, <code>books</code> como recurso y <code>borrow</code> como acción. Se permite a través de <code>AdminRole</code>; la misma petición de <code>Bob</code> se deniega.</p>
+<p>Abra el Playground de <code>library</code> y ejecute una prueba con <code>[{&quot;type&quot;:&quot;user&quot;,&quot;name&quot;:&quot;Emma&quot;,&quot;idd&quot;:&quot;corp&quot;}]</code> como principal, <code>books</code> como recurso y <code>borrow</code> como acción. Se permite a través de <code>AdminRole</code>; la misma petición de <code>Bob</code> se deniega.</p>
 
 <p>El Playground de Roles globales es distinto: una comprobación contra el servicio global siempre se deniega. Los roles globales se aplican en el Playground de cada servicio.</p>
 

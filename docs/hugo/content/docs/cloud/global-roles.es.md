@@ -23,8 +23,10 @@ Solo se admiten políticas de rol. Una asignación global no concede ninguna ope
 En el selector de servicios de la consola, elija **Roles globales** al principio de la lista y cree una política de rol:
 
 ```text
-grant user Emma AdminRole
+grant user Emma from corp AdminRole
 ```
+
+La cláusula `from corp` limita la asignación al dominio de identidad `corp`. Sin ella, la concesión coincide con cualquier usuario llamado Emma en cualquier dominio; consulte [Dominios de identidad](/es/docs/idd/).
 
 El rol `AdminRole` está ahora asignado a Emma en todos los servicios de la cuenta.
 
@@ -40,7 +42,7 @@ Repita este paso en cada servicio que deba permitir la operación. Un servicio s
 
 ## Compruebe el resultado
 
-Abra el Playground de `library` y ejecute una prueba con `[{"type":"user","name":"Emma"}]` como principal, `books` como recurso y `borrow` como acción. Se permite a través de `AdminRole`; la misma petición de `Bob` se deniega.
+Abra el Playground de `library` y ejecute una prueba con `[{"type":"user","name":"Emma","idd":"corp"}]` como principal, `books` como recurso y `borrow` como acción. Se permite a través de `AdminRole`; la misma petición de `Bob` se deniega.
 
 El Playground de Roles globales es distinto: una comprobación contra el servicio global siempre se deniega. Los roles globales se aplican en el Playground de cada servicio.
 

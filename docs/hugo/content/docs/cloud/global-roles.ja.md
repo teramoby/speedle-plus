@@ -23,8 +23,10 @@ bref = "アカウント内のすべてのサービスで共有するロール割
 コンソールのサービス選択の先頭で **グローバルロール** を選び、ロールポリシーを作成します。
 
 ```text
-grant user Emma AdminRole
+grant user Emma from corp AdminRole
 ```
+
+`from corp` は割り当てを `corp` ID ドメインに限定します。省略すると、リクエストのドメインにかかわらず Emma という名前のすべてのユーザーが一致します。[ID ドメイン](/ja/docs/idd/)を参照してください。
 
 ロール `AdminRole` がアカウント内のすべてのサービスで Emma に割り当てられました。
 
@@ -40,7 +42,7 @@ grant role AdminRole borrow books
 
 ## 結果を確認する
 
-`library` の Playground を開き、`[{"type":"user","name":"Emma"}]` を主体、`books` をリソース、`borrow` をアクションとしてテストを実行します。`AdminRole` により許可されます。`Bob` からの同じリクエストは拒否されます。
+`library` の Playground を開き、`[{"type":"user","name":"Emma","idd":"corp"}]` を主体、`books` をリソース、`borrow` をアクションとしてテストを実行します。`AdminRole` により許可されます。`Bob` からの同じリクエストは拒否されます。
 
 グローバルロール自身の Playground は異なります。グローバルサービス自体への判定は常に拒否されます。グローバルロールは各サービスの Playground で有効になります。
 

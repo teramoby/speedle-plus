@@ -23,8 +23,10 @@ bref = "계정의 모든 서비스가 공유하는 역할 할당입니다."
 콘솔 서비스 선택기 맨 위에서 **전역 역할**을 선택하고 역할 정책을 만듭니다.
 
 ```text
-grant user Emma AdminRole
+grant user Emma from corp AdminRole
 ```
+
+`from corp`는 할당을 `corp` ID 도메인으로 제한합니다. 생략하면 요청의 도메인에 관계없이 Emma라는 이름의 모든 사용자가 일치합니다. [ID 도메인](/ko/docs/idd/)을 참조하십시오.
 
 이제 `AdminRole` 역할이 계정의 모든 서비스에서 Emma에게 할당됩니다.
 
@@ -40,7 +42,7 @@ grant role AdminRole borrow books
 
 ## 결과 확인
 
-`library`의 Playground를 열고 `[{"type":"user","name":"Emma"}]`을 주체, `books`를 리소스, `borrow`를 작업으로 테스트를 실행합니다. `AdminRole`을 통해 허용됩니다. `Bob`의 같은 요청은 거부됩니다.
+`library`의 Playground를 열고 `[{"type":"user","name":"Emma","idd":"corp"}]`을 주체, `books`를 리소스, `borrow`를 작업으로 테스트를 실행합니다. `AdminRole`을 통해 허용됩니다. `Bob`의 같은 요청은 거부됩니다.
 
 전역 역할 자체의 Playground는 다릅니다. 전역 서비스 자체에 대한 판정은 항상 거부됩니다. 전역 역할은 각 서비스의 Playground에서 적용됩니다.
 

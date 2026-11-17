@@ -207,7 +207,9 @@
 <h2 id="创建一次角色分配">创建一次角色分配</h2>
 
 <p>在控制台的服务选择器顶部选择 <strong>全局角色</strong>，创建一条角色策略：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant user Emma AdminRole</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant user Emma from corp AdminRole</code></pre></div>
+<p><code>from corp</code> 让该分配只作用于 <code>corp</code> 身份域。省略 <code>from</code> 时，授权会匹配所有身份域中名为 Emma 的用户；详见<a href="/zh/docs/idd/">身份域</a>。</p>
+
 <p>角色 <code>AdminRole</code> 现在已在账号内的所有服务中分配给 Emma。</p>
 
 <h2 id="在服务中授予权限">在服务中授予权限</h2>
@@ -218,7 +220,7 @@
 
 <h2 id="检查结果">检查结果</h2>
 
-<p>打开 <code>library</code> 的 Playground，以 <code>[{&quot;type&quot;:&quot;user&quot;,&quot;name&quot;:&quot;Emma&quot;}]</code> 作为主体、<code>books</code> 作为资源、<code>borrow</code> 作为动作运行测试。请求通过 <code>AdminRole</code> 被允许；来自 <code>Bob</code> 的同一请求被拒绝。</p>
+<p>打开 <code>library</code> 的 Playground，以 <code>[{&quot;type&quot;:&quot;user&quot;,&quot;name&quot;:&quot;Emma&quot;,&quot;idd&quot;:&quot;corp&quot;}]</code> 作为主体、<code>books</code> 作为资源、<code>borrow</code> 作为动作运行测试。请求通过 <code>AdminRole</code> 被允许；来自 <code>Bob</code> 的同一请求被拒绝。</p>
 
 <p>全局角色自己的 Playground 不同：直接对全局服务判定总是拒绝。全局角色在各服务的 Playground 中生效。</p>
 

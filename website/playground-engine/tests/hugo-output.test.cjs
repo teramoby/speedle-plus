@@ -291,7 +291,7 @@ for (const [locale, copy] of Object.entries(cloudCopy)) {
     for (const phrase of copy.prelaunch) assert.ok(!html.includes(phrase), `No pre-launch wording ${JSON.stringify(phrase)} in the ${page} page in ${locale || 'en'}`);
   }
   assert.ok(guide.includes('grant user alice from corp get /books'), `Domain-scoped getting-started policy in ${locale || 'en'}`);
-  for (const marker of ['grant user Emma AdminRole', 'grant role AdminRole borrow books', 'global_authz_unsupported']) {
+  for (const marker of ['grant user Emma from corp AdminRole', '&quot;idd&quot;:&quot;corp&quot;', 'grant role AdminRole borrow books', 'global_authz_unsupported']) {
     assert.ok(globalRoles.includes(marker), `Global roles workflow marker ${marker} in ${locale || 'en'}`);
   }
   const quickStart = ['SPEEDLE_API_KEY', 'books-app', 'read-books', 'cloud.speedle.io/authz-check/v1/is-allowed', 'HTTP 200'];

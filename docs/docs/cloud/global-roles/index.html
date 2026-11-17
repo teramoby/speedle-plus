@@ -207,7 +207,9 @@
 <h2 id="create-the-role-assignment-once">Create the role assignment once</h2>
 
 <p>In the console service picker, choose <strong>Global roles</strong> at the top of the list. Create a role policy:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant user Emma AdminRole</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant user Emma from corp AdminRole</code></pre></div>
+<p>The <code>from corp</code> clause limits the assignment to the <code>corp</code> identity domain. Without it, a grant matches every user named Emma in every domain; see <a href="/docs/idd/">Identity domains</a>.</p>
+
 <p>The role <code>AdminRole</code> is now assigned to Emma in every service of the account.</p>
 
 <h2 id="grant-the-permission-in-a-service">Grant the permission in a service</h2>
@@ -218,7 +220,7 @@
 
 <h2 id="check-the-result">Check the result</h2>
 
-<p>Open the Playground for <code>library</code> and run a test with <code>[{&quot;type&quot;:&quot;user&quot;,&quot;name&quot;:&quot;Emma&quot;}]</code> as the principal, <code>books</code> as the resource and <code>borrow</code> as the action. The request is allowed through <code>AdminRole</code>; the same request from <code>Bob</code> is denied.</p>
+<p>Open the Playground for <code>library</code> and run a test with <code>[{&quot;type&quot;:&quot;user&quot;,&quot;name&quot;:&quot;Emma&quot;,&quot;idd&quot;:&quot;corp&quot;}]</code> as the principal, <code>books</code> as the resource and <code>borrow</code> as the action. The request is allowed through <code>AdminRole</code>; the same request from <code>Bob</code> is denied.</p>
 
 <p>The Global roles Playground is different: a check against the global service itself always denies. Global roles take effect in each service&rsquo;s Playground.</p>
 

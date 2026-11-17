@@ -23,8 +23,10 @@ Only role policies are supported there. A global role assignment does not grant 
 In the console service picker, choose **Global roles** at the top of the list. Create a role policy:
 
 ```text
-grant user Emma AdminRole
+grant user Emma from corp AdminRole
 ```
+
+The `from corp` clause limits the assignment to the `corp` identity domain. Without it, a grant matches every user named Emma in every domain; see [Identity domains](/docs/idd/).
 
 The role `AdminRole` is now assigned to Emma in every service of the account.
 
@@ -40,7 +42,7 @@ Repeat this in each service that should allow the operation. A service without i
 
 ## Check the result
 
-Open the Playground for `library` and run a test with `[{"type":"user","name":"Emma"}]` as the principal, `books` as the resource and `borrow` as the action. The request is allowed through `AdminRole`; the same request from `Bob` is denied.
+Open the Playground for `library` and run a test with `[{"type":"user","name":"Emma","idd":"corp"}]` as the principal, `books` as the resource and `borrow` as the action. The request is allowed through `AdminRole`; the same request from `Bob` is denied.
 
 The Global roles Playground is different: a check against the global service itself always denies. Global roles take effect in each service's Playground.
 
