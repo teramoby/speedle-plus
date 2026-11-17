@@ -315,6 +315,7 @@ test('a newer run with mixed or missing base associations is unknown, not anothe
   for (const pull_requests of [[association(590), association(592, 'release')], [{number: 593}]]) {
     const fixture = fixtureApi({
       run: run(), pr: pullRequest(), files: ['docs/guide.md'], jobs: jobs(),
+      commitPulls: [pullRequest(), pullRequest([], {number: 593})],
       latest: [run({id: 102, pull_requests}), run()],
     });
     const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
@@ -1238,3 +1239,30 @@ test('a newer attempt that appears after the write is evaluated and published', 
   assert.equal(writes[0].options.input.state, 'success');
   assert.equal(writes.at(-1).options.input.state, 'failure');
 });
+
+test('an ignored CI event that has started publishes nothing', () => {
+  const current = run({status: 'in_progress', conclusion: null});
+  const fixture = fixtureApi({run: current, pr: pullRequest(), files: ['docs/guide.md'], jobs: ignoredJobs(101), latest: [current]});
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.ignored, true);
+  assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 0);
+
+  // Its completed event stays silent too, so no pending was left behind.
+  const done = fixtureApi({run: run(), pr: pullRequest(), files: ['docs/guide.md'], jobs: ignoredJobs(101), latest: [run()]});
+  gate.runGate({repository, runId: 101, publish: true}, done.api);
+  assert.equal(done.calls.filter(call => call.options.method === 'POST').length, 0);
+});
+
+for (const status of ['in_progress', 'completed']) {
+  test(`a newer ${status} run of a closed pull request does not supersede`, () => {
+    // Run 102 belongs only to #591, which is closed: it can never publish.
+    const fixture = fixtureApi({
+      run: run(), pr: pullRequest(), files: ['docs/guide.md'], jobs: jobs(), newerJobs: jobs(),
+      latest: [run({id: 102, status, conclusion: status === 'completed' ? 'failure' : null, pull_requests: [association(591)]}), run()],
+    });
+    const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+    assert.equal(result.status.state, 'success');
+    const writes = fixture.calls.filter(call => call.options.method === 'POST');
+    assert.deepEqual(writes.map(call => call.options.input.state), ['success']);
+  });
+}

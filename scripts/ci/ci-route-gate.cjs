@@ -415,7 +415,15 @@ function resolveOwnership(api, repository, run) {
 // missing base, or a mix of this base and another, is unknown.
 function candidateOwnership(api, repository, candidate, pr) {
   const associated = Array.isArray(candidate?.pull_requests) ? candidate.pull_requests : [];
-  const owners = associated.length > 0 ? associated : openPullRequests(api, repository, candidate);
+  const open = openPullRequests(api, repository, candidate);
+  // Only an open pull request with this head can publish for the candidate,
+  // as resolveOwnership requires, so a run whose pull requests are all closed
+  // or moved on cannot decide this head.
+  if (associated.length > 0) {
+    const numbers = associatedNumbers(candidate);
+    if (!open.some(entry => numbers.includes(entry?.number))) return 'other';
+  }
+  const owners = associated.length > 0 ? associated : open;
   return ownershipByBase(owners.map(entry => baseIdentity(entry?.base)), baseIdentity(pr?.base));
 }
 
@@ -565,6 +573,18 @@ function supersession(superseding, run, pr, assess) {
   return null;
 }
 
+// A started run publishes pending for its head, unless a newer completed run
+// has taken over or the run is an ignored event: an ignored run publishes
+// nothing when it completes, so its pending would never be cleared.
+function startedVerdict(api, repository, run, pr, superseding) {
+  if (superseding?.run && superseding.run.name === CI_WORKFLOW_NAME && superseding.run.status === 'completed') {
+    return outcome({run, pr, state: null, ignored: true, message: 'Superseded by a newer CI run'});
+  }
+  const jobs = jobsFromPages(api(`repos/${repository}/actions/runs/${run.id}/jobs?per_page=100&filter=latest`, {paginate: true}));
+  if (ignoredRun(run, jobs)) return outcome({run, pr, state: null, ignored: true, message: 'Ignored CI event'});
+  return inProgress(run, pr, 'CI run in progress');
+}
+
 function inProgress(run, pr, message) {
   return outcome({run, pr, state: 'pending', message});
 }
@@ -625,9 +645,7 @@ function execute(options, api, runner = spawnSync) {
       // A started run has no verdict yet; its head waits for it unless a
       // newer run has taken over.
       const result = run.status !== 'completed'
-        ? (superseding?.run && superseding.run.name === CI_WORKFLOW_NAME && superseding.run.status === 'completed'
-          ? outcome({run, pr, state: null, ignored: true, message: 'Superseded by a newer CI run'})
-          : inProgress(run, pr, 'CI run in progress'))
+        ? startedVerdict(api, options.repository, run, pr, superseding)
         : supersession(superseding, run, pr, assess) || recheckOrder(api, options.repository, run, pr, assess());
       verdictContext.set(result, {run, pr});
       return result;
