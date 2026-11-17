@@ -25,6 +25,12 @@ const RUN_PAGE_SIZE = 100;
 const RUN_PAGE_LIMIT = 10;
 const UNRESOLVED_RUN_ORDER = Symbol('unresolved run order');
 const UNKNOWN_OWNERSHIP = Symbol('unknown run ownership');
+// A gate that finds a newer completed run after it published re-evaluates
+// that run; past this many rounds the head fails closed.
+const PUBLICATION_ROUNDS = 3;
+// The run and pull request a published verdict belongs to, for the check
+// after publication. Kept beside the result so the printed result is unchanged.
+const verdictContext = new WeakMap();
 // The pull request files endpoint pages through at most 3,000 entries.
 const PR_FILE_PAGES = 30;
 const ROUTE_KEYS = ['go', 'website', 'docs', 'ci'];
@@ -415,29 +421,53 @@ function candidateOwnership(api, repository, candidate, pr) {
   return 'unknown';
 }
 
+// The start of a run's latest attempt, or null when it is not a valid time.
+function attemptStart(run) {
+  const time = Date.parse(run?.run_started_at);
+  return Number.isFinite(time) ? time : null;
+}
+
+// Whether candidate's latest attempt started after run's. A re-run keeps its
+// ID and its place in the creation-ordered runs list but starts later, so the
+// order is by attempt start; equal starts fall back to the newer ID.
+function startedAfter(candidate, run, runStart) {
+  const start = attemptStart(candidate);
+  if (start === null) return null;
+  return start > runStart || (start === runStart && Number(candidate.id) > Number(run.id));
+}
+
 // A completed ignored label run never publishes a status, so it must not
-// suppress the status of the newest run that can. The runs list is ordered by
-// creation, newest first, so the first newer run that is not ignored decides.
-// A run that never started is invisible here: it cannot publish, so it neither
-// supersedes this run nor consumes the sample. Another pull request's run
-// cannot publish here and is skipped. An unknown owner is reported so the
-// caller can fail this run's success closed.
+// suppress the status of the newest run that can: a newer run that is not
+// ignored supersedes this one. Every started run of the head is compared,
+// because a re-run of an older ID can be the newest. A run that never started
+// is invisible here: it cannot publish, so it neither supersedes this run nor
+// consumes the sample. Another pull request's run cannot publish here and is
+// skipped. An unknown owner is reported so the caller can fail this run's
+// success closed.
 function supersedingRun(api, repository, run, pr) {
   assertSha(run?.head_sha, 'workflow run head');
+  const runStart = attemptStart(run);
+  if (runStart === null) return UNRESOLVED_RUN_ORDER;
   let unknown = false;
   let considered = 0;
+  let listed = false;
   for (let page = 1; page <= RUN_PAGE_LIMIT; page++) {
     const response = api(`repos/${repository}/actions/workflows/ci.yml/runs?event=pull_request&head_sha=${run.head_sha}&per_page=${RUN_PAGE_SIZE}&page=${page}`);
     if (!response || !Array.isArray(response.workflow_runs)) throw new Error('workflow runs response has no run list');
     const runs = response.workflow_runs;
     for (const candidate of runs) {
-      if (String(candidate?.id) === String(run.id)) return unknown ? UNKNOWN_OWNERSHIP : null;
+      if (String(candidate?.id) === String(run.id)) {
+        listed = true;
+        continue;
+      }
       if (!startedRun(candidate)) continue;
-      // This run does not appear among the newest started runs, so newer runs
-      // between the sample and this one may exist and its place in the order
-      // cannot be established.
+      // More started runs exist than the sample holds, so a newer attempt
+      // may be among those that were not read.
       if (considered >= RUN_SAMPLE_LIMIT) return UNRESOLVED_RUN_ORDER;
       considered += 1;
+      const newer = startedAfter(candidate, run, runStart);
+      if (newer === null) return UNRESOLVED_RUN_ORDER;
+      if (!newer) continue;
       const ownership = candidateOwnership(api, repository, candidate, pr);
       if (ownership === 'other') continue;
       if (ownership === 'unknown') {
@@ -450,7 +480,10 @@ function supersedingRun(api, repository, run, pr) {
       if (candidate.name === CI_WORKFLOW_NAME && candidate.path === CI_WORKFLOW_PATH && ignoredRun(candidate, jobs)) continue;
       return {run: candidate};
     }
-    if (considered >= RUN_SAMPLE_LIMIT || runs.length < RUN_PAGE_SIZE) return UNRESOLVED_RUN_ORDER;
+    if (runs.length < RUN_PAGE_SIZE) {
+      if (!listed) return UNRESOLVED_RUN_ORDER;
+      return unknown ? UNKNOWN_OWNERSHIP : null;
+    }
   }
   return UNRESOLVED_RUN_ORDER;
 }
@@ -568,8 +601,10 @@ function execute(options, api, runner = spawnSync) {
       // the supersession check either, because it cannot publish a status.
       if (!startedRun(run)) return outcome({run, pr, state: null, ignored: true, message: 'CI run did not start'});
       const assess = () => assessRun({api, runner, repository: options.repository, run, pr, comparison, trusted: true});
-      return supersession(supersedingRun(api, options.repository, run, pr), run, pr, assess)
+      const result = supersession(supersedingRun(api, options.repository, run, pr), run, pr, assess)
         || recheckOrder(api, options.repository, run, pr, assess());
+      verdictContext.set(result, {run, pr});
+      return result;
     }
     return assessRun({api, runner, repository: options.repository, run, pr});
   } catch (error) {
@@ -580,18 +615,70 @@ function execute(options, api, runner = spawnSync) {
   }
 }
 
-// An incomplete evaluation is not a route verdict. Leave the status alone so a
-// transport or API failure cannot replace the result of a completed run; the
-// workflow step still exits non-zero and the run is visible.
+// A failure is published even when the evaluation did not complete: leaving
+// the status alone would keep an earlier success for a head whose newest run
+// is unverified. Only a result without a status target publishes nothing; the
+// workflow step still exits non-zero and the run is visible. It returns
+// whether a status was written.
 function publish(api, repository, result) {
-  if (result.ignored || result.error || !['success', 'failure'].includes(result.status.state)) return;
+  if (result.ignored || !['success', 'failure'].includes(result.status.state)) return false;
+  if (result.error && !result.sha) return false;
   assertSha(result.sha, 'status target');
   api(`repos/${repository}/statuses/${result.sha}`, {method: 'POST', input: result.status});
+  return true;
+}
+
+// The order checks and the status write are not atomic: a newer run's gate
+// can publish between this gate's last check and its write, which then leaves
+// a stale verdict. So the order is checked again after the write. A newer run
+// still in progress publishes when it completes. A newer completed run may
+// already have published before this write, so its verdict is evaluated and
+// published again here. An order that cannot be established turns a success
+// into a failure.
+function afterPublication(api, repository, result) {
+  const context = verdictContext.get(result);
+  if (!context) return null;
+  const superseding = supersedingRun(api, repository, context.run, context.pr);
+  if (superseding === UNRESOLVED_RUN_ORDER || superseding === UNKNOWN_OWNERSHIP) {
+    if (result.status.state !== 'success') return null;
+    return {
+      result: outcome({
+        run: context.run, pr: context.pr, routes: allRoutes(), state: 'failure',
+        message: superseding === UNRESOLVED_RUN_ORDER ? 'Run order for this head is unresolved' : 'a newer run on this head has unknown ownership',
+      }),
+    };
+  }
+  if (!superseding || superseding.run.status !== 'completed') return null;
+  return {runId: superseding.run.id};
 }
 
 function runGate(options, api, runner = spawnSync) {
-  const result = execute(options, api, runner);
-  if (options.publish) publish(api, options.repository, result);
+  let result = execute(options, api, runner);
+  if (!options.publish) return result;
+  for (let round = 1; publish(api, options.repository, result); round++) {
+    let next;
+    try {
+      next = afterPublication(api, options.repository, result);
+    } catch (error) {
+      next = {result: {...result, status: {...result.status, state: 'failure', description: 'CI route gate could not complete'},
+        error: error instanceof Error ? error.message : String(error)}};
+    }
+    if (!next) return result;
+    if (next.result) {
+      publish(api, options.repository, next.result);
+      return next.result;
+    }
+    if (round >= PUBLICATION_ROUNDS) {
+      const context = verdictContext.get(result);
+      const unstable = outcome({
+        run: context.run, pr: context.pr, routes: allRoutes(), state: 'failure',
+        message: 'Run order for this head kept changing while the verdict was published',
+      });
+      publish(api, options.repository, unstable);
+      return unstable;
+    }
+    result = execute({...options, runId: next.runId, runAttempt: undefined}, api, runner);
+  }
   return result;
 }
 

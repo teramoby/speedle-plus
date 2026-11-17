@@ -28,8 +28,15 @@ function association(number, ref = 'master', id = repositoryId) {
   return {number, base: {ref, repo: {id, name: 'speedle-plus'}}};
 }
 
+// A run's latest attempt starts later the larger its ID, unless a test sets
+// run_started_at itself (a re-run of an older ID).
+function startedAt(id) {
+  return new Date(Date.UTC(2026, 10, 17, 0, 0, 0) + Number(id) * 1000).toISOString();
+}
+
 function run(overrides = {}) {
   return {
+    run_started_at: startedAt(overrides.id ?? 101),
     id: 101,
     name: gate.CI_WORKFLOW_NAME,
     path: gate.CI_WORKFLOW_PATH,
@@ -84,7 +91,7 @@ function routesFor(files) {
   });
 }
 
-function fixtureApi({run: completedRun, pr, files, prFiles, jobs: runJobs, newerJobs, latest, latestCompleted, commitPulls, jobsError, defaultTip = base}) {
+function fixtureApi({run: completedRun, pr, files, prFiles, jobs: runJobs, newerJobs, latest, latestCompleted, commitPulls, jobsError, runsById = {}, defaultTip = base}) {
   const calls = [];
   const jobsPrefix = `repos/${repository}/actions/runs/`;
   const jobsSuffix = '/jobs?per_page=100&filter=latest';
@@ -98,6 +105,8 @@ function fixtureApi({run: completedRun, pr, files, prFiles, jobs: runJobs, newer
       return {};
     }
     if (endpoint === `repos/${repository}/actions/runs/${completedRun.id}`) return completedRun;
+    const runMatch = new RegExp(`^repos/${repository}/actions/runs/(\\d+)$`).exec(endpoint);
+    if (runMatch && runsById[runMatch[1]]) return runsById[runMatch[1]];
     if (endpoint === `repos/${repository}/pulls/${pr.number}`) return pr;
     if (endpoint === `repos/${repository}/commits/${completedRun.head_sha}/pulls?per_page=100`) {
       assert.equal(options.paginate, true);
@@ -553,15 +562,133 @@ test('a newer attempt of the same run supersedes the event for an older attempt'
   assert.equal(unverified.calls.filter(call => call.options.method === 'POST').length, 1);
 });
 
-test('an incomplete evaluation is not published as a route verdict', () => {
+test('an incomplete evaluation publishes failure so an earlier success cannot stand', () => {
   const fixture = fixtureApi({
     run: run(), pr: pullRequest(), files: ['docs/guide.md'], jobs: jobs({build: true}), jobsError: true,
   });
   const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
   assert.equal(result.status.state, 'failure');
   assert.equal(result.error, 'jobs request failed');
+  const writes = fixture.calls.filter(call => call.options.method === 'POST');
+  assert.equal(writes.length, 1);
+  assert.equal(writes[0].options.input.state, 'failure');
+  assert.equal(writes[0].options.input.description, 'CI route gate could not complete');
+});
+
+test('an evaluation that fails before it knows the head publishes nothing', () => {
+  const api = (endpoint, options = {}) => {
+    if (options.method === 'POST') throw new Error('unexpected status write');
+    throw new Error('run lookup failed');
+  };
+  const result = gate.runGate({repository, runId: 101, publish: true}, api);
+  assert.equal(result.status.state, 'failure');
+  assert.equal(result.sha, undefined);
+});
+
+test('a re-run of an older run that fails replaces the newer run success', () => {
+  // Run 102 published success first; then run 101 was re-run, so its latest
+  // attempt is the newest execution even though 102 is listed before it.
+  const rerun = run({conclusion: 'failure', run_started_at: startedAt(105)});
+  const fixture = fixtureApi({
+    run: rerun, pr: pullRequest(), files: ['docs/guide.md'],
+    jobs: [job('changes', 'success', [step('Classify changed files'), step('Test CI scripts', 'skipped')]),
+      job('quick / execute', 'failure'), job('CI', 'failure')],
+    latest: [run({id: 102}), rerun],
+  });
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.ignored, false);
+  assert.equal(result.status.state, 'failure');
+  const writes = fixture.calls.filter(call => call.options.method === 'POST');
+  assert.equal(writes.length, 1);
+  assert.equal(writes[0].options.input.state, 'failure');
+});
+
+test('a newer run re-run after this one still supersedes it', () => {
+  const fixture = fixtureApi({
+    run: run({run_started_at: startedAt(110)}), pr: pullRequest(), files: ['docs/guide.md'], jobs: jobs(),
+    newerJobs: jobs(),
+    latest: [run({id: 102, run_started_at: startedAt(120)}), run({run_started_at: startedAt(110)})],
+  });
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.ignored, true);
+  assert.equal(result.status.description, 'Superseded by a newer CI run');
   assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 0);
 });
+
+test('a run without a valid attempt start fails closed', () => {
+  const current = run({run_started_at: 'not a time'});
+  const fixture = fixtureApi({run: current, pr: pullRequest(), files: ['docs/guide.md'], jobs: jobs(), latest: [current]});
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.status.state, 'failure');
+  assert.equal(result.status.description, 'Run order for this head is unresolved');
+});
+
+test('a newer verdict published before this write is published again after it', () => {
+  // Both order checks see this run as the newest. A newer run then completes
+  // and its gate publishes failure before this gate writes its stale success,
+  // so after the write this gate evaluates the newer run and publishes again.
+  const current = run();
+  const newer = run({id: 102, conclusion: 'failure', html_url: 'https://example.invalid/actions/runs/102'});
+  const failing = [job('changes', 'success', [step('Classify changed files'), step('Test CI scripts', 'skipped')]),
+    job('quick / execute', 'failure'), job('CI', 'failure')];
+  const fixture = fixtureApi({
+    run: current, pr: pullRequest(), files: ['docs/guide.md'], jobs: jobs(), newerJobs: failing,
+    runsById: {102: newer},
+    latest: callIndex => (callIndex <= 2 ? [current] : [newer, current]),
+  });
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  const writes = fixture.calls.filter(call => call.options.method === 'POST');
+  assert.deepEqual(writes.map(call => call.options.input.state), ['success', 'failure']);
+  assert.equal(writes[1].options.input.target_url, 'https://example.invalid/actions/runs/102');
+  assert.equal(result.run_id, 102);
+});
+
+test('a newer run still in progress after the write publishes for itself', () => {
+  const current = run();
+  const fixture = fixtureApi({
+    run: current, pr: pullRequest(), files: ['docs/guide.md'], jobs: jobs(),
+    newerJobs: jobs(),
+    latest: callIndex => (callIndex <= 2 ? [current] : [run({id: 102, status: 'in_progress', conclusion: null}), current]),
+  });
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.status.state, 'success');
+  assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 1);
+});
+
+test('an order that becomes unresolved after a success is written turns it into a failure', () => {
+  const current = run();
+  const fixture = fixtureApi({
+    run: current, pr: pullRequest(), files: ['docs/guide.md'], jobs: jobs(),
+    latest: callIndex => (callIndex <= 2 ? [current] : []),
+  });
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  const writes = fixture.calls.filter(call => call.options.method === 'POST');
+  assert.deepEqual(writes.map(call => call.options.input.state), ['success', 'failure']);
+  assert.equal(result.status.description, 'Run order for this head is unresolved');
+});
+
+test('an order that keeps changing during publication fails the head closed', () => {
+  // Every gate round finds a newer completed run once it has written.
+  let newest = 101;
+  const runsById = new Proxy({}, {get: (_, id) => (/^\d+$/.test(id) ? run({id: Number(id)}) : undefined)});
+  const fixture = fixtureApi({
+    run: run(), pr: pullRequest(), files: ['docs/guide.md'], jobs: jobs(), newerJobs: jobs(), runsById,
+    latest: () => {
+      const listed = Array.from({length: newest - 100}, (_, index) => run({id: newest - index}));
+      return listed;
+    },
+  });
+  const api = (endpoint, options = {}) => {
+    const response = fixture.api(endpoint, options);
+    if (options.method === 'POST') newest += 1;
+    return response;
+  };
+  const result = gate.runGate({repository, runId: 101, publish: true}, api);
+  assert.equal(result.status.state, 'failure');
+  assert.equal(result.status.description, 'Run order for this head kept changing while the verdict was published');
+});
+
+
 
 test('the gate subscription matches the name and path of the CI workflow', () => {
   const ci = fs.readFileSync(path.join(root, '.github/workflows/ci.yml'), 'utf8');
