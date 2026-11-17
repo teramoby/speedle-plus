@@ -994,6 +994,34 @@ class RegressionTest(unittest.TestCase):
         send.assert_not_called()
         self.assertEqual(code, 0)
 
+    def test_a_passing_required_report_job_fails_with_a_malformed_address(self):
+        # An address with an empty local part or domain, or a domain that is
+        # not a dotted name, cannot receive mail; the passing run must fail
+        # now instead of losing the next failure's email.
+        directory = Path(tempfile.mkdtemp())
+        (directory / "go-file.json").write_text(events(("pass", "p", "TestA", None)))
+        good = {"REPORT_EMAIL_REQUIRED": "true", "CF_ACCOUNT_ID": "a", "CF_EMAIL_TOKEN": "t",
+                "OPS_EMAIL_FROM": "sender@example.com", "OPS_EMAIL_TO": "recipient@example.com",
+                "OPS_EMAIL_REPLY_TO": "reply@example.com"}
+        for setting in ("OPS_EMAIL_FROM", "OPS_EMAIL_TO", "OPS_EMAIL_REPLY_TO"):
+            for value in ("@", "ops@", "@example.com", "ops@example", "ops@example..com",
+                          "a@b@example.com", "o ps@example.com", "Ops <ops@>"):
+                with self.subTest(setting=setting, value=value):
+                    with mock.patch.object(test_report, "send_email") as send, \
+                            mock.patch("sys.stdout", new=io.StringIO()), \
+                            mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+                        code = test_report.main(["--kind", "regression", "--source", f"run:success:{directory}"],
+                                                env=dict(good, **{setting: value}))
+                    send.assert_not_called()
+                    self.assertEqual(code, 1)
+                    self.assertIn(setting, stderr.getvalue())
+
+    def test_valid_address_forms_are_accepted(self):
+        for value in ("ops@example.com", "Ops.Team+ci@mail.example.com", "Ops <ops@example.com>",
+                      "\"Ops, Team\" <ops@example.com>, second@example.org"):
+            with self.subTest(value=value):
+                self.assertTrue(test_report.configured_addresses(value))
+
     def test_a_failure_opens_an_issue_with_output_and_english_analysis(self):
         github, ark, email, summary = self.run_main(events(
             ("output", "p", "TestB", "panic: assignment to entry in nil map\n"), ("fail", "p", "TestB", None)))

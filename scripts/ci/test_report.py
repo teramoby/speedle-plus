@@ -14,6 +14,7 @@ non-zero on bad input and on such a failure.
 """
 import argparse
 import base64
+import email.errors
 import email.utils
 import http.client
 import json
@@ -23,6 +24,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from email.headerregistry import Address
 from pathlib import Path
 
 ARK_URL = "https://ark.cn-beijing.volces.com/api/plan/v3/responses"
@@ -322,15 +324,27 @@ def configured_addresses(value):
     name ("Ops <ops@example.com>, second@example.com"). A token the parser
     cannot turn into an address is a configuration error, not a recipient to
     drop silently: a swallowed token appears as an entry with an empty
-    address, and one entry without an @ also rejects the whole setting. The
-    case is kept because the local part may be case-sensitive on the server.
+    address, and one malformed entry ("ops@", "@example.com") also rejects
+    the whole setting. The case is kept because the local part may be
+    case-sensitive on the server.
     """
     if not isinstance(value, str):
         return None
     entries = email.utils.getaddresses([value])
-    if not entries or any(not address or "@" not in address for _, address in entries):
+    if not entries or not all(is_mail_address(address) for _, address in entries):
         return None
     return [address for _, address in entries]
+
+
+def is_mail_address(address):
+    """Whether one bare address has a valid local part and a dotted domain
+    name, so that a send to it can be delivered."""
+    try:
+        parsed = Address(addr_spec=address)
+    except (ValueError, email.errors.HeaderParseError):
+        return False
+    labels = parsed.domain.split(".")
+    return bool(parsed.username) and len(labels) > 1 and all(labels)
 
 
 def note_in_summary(env, message):
