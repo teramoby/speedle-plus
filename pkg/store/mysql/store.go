@@ -120,14 +120,23 @@ func validKey(value string) error {
 // always JSON-serializable. JSON null deliberately preserves nil slices/maps.
 func jsonText(value interface{}) string { b, _ := json.Marshal(value); return string(b) }
 
-type jsonTarget[T any] struct{ value *T }
+// jsonTarget scans a JSON column. SQL NULL is rejected unless the column is
+// optional: a required field such as principals must never read as empty,
+// because an empty principal list applies to every user.
+type jsonTarget[T any] struct {
+	value    *T
+	nullable bool
+}
 
 func (j jsonTarget[T]) Scan(src interface{}) error {
 	var raw []byte
 	switch v := src.(type) {
 	case nil:
-		// A NULL column leaves the target at its zero value, which represents
-		// "not declared" for optional columns.
+		if !j.nullable {
+			return errors.New(errors.SerializationError, "invalid MySQL JSON field")
+		}
+		// A NULL optional column leaves the target at its zero value, which
+		// represents "not declared".
 		return nil
 	case []byte:
 		raw = v
@@ -141,7 +150,12 @@ func (j jsonTarget[T]) Scan(src interface{}) error {
 	}
 	return nil
 }
-func jsonInto[T any](target *T) jsonTarget[T] { return jsonTarget[T]{target} }
+func jsonInto[T any](target *T) jsonTarget[T] { return jsonTarget[T]{value: target} }
+
+// nullableJSONInto is jsonInto for an optional column that may be SQL NULL.
+func nullableJSONInto[T any](target *T) jsonTarget[T] {
+	return jsonTarget[T]{value: target, nullable: true}
+}
 
 func query[T any](ctx context.Context, tx *sql.Tx, sqlText string, args []interface{}, scan func(*sql.Rows) (*T, error)) ([]*T, error) {
 	rows, err := tx.QueryContext(ctx, sqlText, args...)
@@ -178,7 +192,7 @@ func scanRole(rows *sql.Rows) (*pms.RolePolicy, error) {
 func scanFunction(rows *sql.Rows) (*pms.Function, error) {
 	v := &pms.Function{}
 	var result sql.NullString
-	if err := rows.Scan(&v.Name, &v.Description, &v.FuncURL, &v.LocalFuncURL, &v.CA, &v.ResultCachable, &v.ResultTTL, jsonInto(&v.Params), &result, jsonInto(&v.Metadata)); err != nil {
+	if err := rows.Scan(&v.Name, &v.Description, &v.FuncURL, &v.LocalFuncURL, &v.CA, &v.ResultCachable, &v.ResultTTL, nullableJSONInto(&v.Params), &result, jsonInto(&v.Metadata)); err != nil {
 		return nil, err
 	}
 	// NULL means the row predates the type declaration columns.

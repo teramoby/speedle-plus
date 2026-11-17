@@ -320,4 +320,13 @@ func TestNameFiltersAndKeys(t *testing.T) {
 	if jsonInto(&target).Scan(`[]`) != nil || jsonInto(&target).Scan([]byte(`null`)) != nil || jsonInto(&target).Scan(1) == nil || jsonInto(&target).Scan(`broken`) == nil {
 		t.Fatal("JSON scanning")
 	}
+	// SQL NULL is accepted only for optional columns: a required JSON field
+	// such as principals must not read as an empty list.
+	if jsonInto(&target).Scan(nil) == nil {
+		t.Fatal("SQL NULL accepted for a required JSON column")
+	}
+	target = []string{"kept"}
+	if nullableJSONInto(&target).Scan(nil) != nil || len(target) != 1 {
+		t.Fatal("SQL NULL rejected or altered for an optional JSON column")
+	}
 }
