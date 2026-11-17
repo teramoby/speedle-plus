@@ -205,6 +205,29 @@ func TestUndeclaredFunctionUnchanged(t *testing.T) {
 	}
 }
 
+// TestListParametersMatchLargeArgumentLists checks multiple list declarations
+// against a large expanded list. The matcher must stay linear in the argument
+// count, so this stays fast.
+func TestListParametersMatchLargeArgumentLists(t *testing.T) {
+	arguments := make([]interface{}, 20000)
+	for i := range arguments {
+		arguments[i] = float64(i)
+	}
+	if !matchDeclaredArguments([]string{"numeric[]", "numeric[]"}, arguments) {
+		t.Fatal("a large numeric list did not match two list parameters")
+	}
+	if !matchDeclaredArguments([]string{"numeric[]", "numeric", "numeric[]"}, append(append([]interface{}{1.0}, arguments...), 2.0)) {
+		t.Fatal("a large list did not match the surrounding scalar parameters")
+	}
+	mixed := append([]interface{}{"split"}, arguments...)
+	if !matchDeclaredArguments([]string{"string", "numeric[]", "numeric[]"}, mixed) {
+		t.Fatal("large list after a scalar did not match")
+	}
+	if matchDeclaredArguments([]string{"string", "numeric[]", "bool"}, append(arguments, "x")) {
+		t.Fatal("a mismatched trailing argument was accepted")
+	}
+}
+
 // TestCachedResultRecheckedAgainstDeclaration checks that a cached value which
 // does not match the declared result type fails the call instead of being
 // returned.

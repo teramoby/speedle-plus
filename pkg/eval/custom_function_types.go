@@ -63,30 +63,48 @@ func declaresListParameter(declared []string) bool {
 // list parameter stands for a variable number of arguments.
 func matchDeclaredArguments(declared []string, arguments []interface{}) bool {
 	// reachable[j] reports whether the parameters seen so far can consume
-	// arguments[:j]. This keeps the match linear in the argument count.
+	// arguments[:j]. Each parameter is matched in one pass over the arguments,
+	// so the work stays linear in their count however many parameters declare
+	// a list.
 	reachable := make([]bool, len(arguments)+1)
 	reachable[0] = true
 	for _, param := range declared {
 		next := make([]bool, len(arguments)+1)
 		element, list := strings.CutSuffix(param, "[]")
-		for j, ok := range reachable {
-			if !ok {
-				continue
-			}
-			if !list {
-				if j < len(arguments) && customFunctionScalarMatches(param, arguments[j]) {
+		if !list {
+			for j := 0; j < len(arguments); j++ {
+				if reachable[j] && customFunctionScalarMatches(param, arguments[j]) {
 					next[j+1] = true
 				}
-				continue
 			}
-			// One argument that is a list of the element type.
-			if j < len(arguments) && customFunctionValueMatches(param, arguments[j]) {
-				next[j+1] = true
+			reachable = next
+			continue
+		}
+		// run[j] counts the consecutive arguments from j that match the
+		// element type; a list value may also arrive as those elements.
+		run := make([]int, len(arguments)+1)
+		for j := len(arguments) - 1; j >= 0; j-- {
+			if customFunctionScalarMatches(element, arguments[j]) {
+				run[j] = run[j+1] + 1
 			}
-			// The elements of a list value, or an empty list.
-			next[j] = true
-			for k := j; k < len(arguments) && customFunctionScalarMatches(element, arguments[k]); k++ {
-				next[k+1] = true
+		}
+		// The positions a list parameter can consume form one interval per
+		// reachable position: [j, j+run[j]], including the empty list at j.
+		// Marking the union of those intervals in one sweep avoids rescanning
+		// the arguments for every start.
+		furthest := -1
+		for j := 0; j <= len(arguments); j++ {
+			if reachable[j] {
+				// One argument that is a list of the element type.
+				if j < len(arguments) && customFunctionValueMatches(param, arguments[j]) {
+					next[j+1] = true
+				}
+				if end := j + run[j]; end > furthest {
+					furthest = end
+				}
+			}
+			if j <= furthest {
+				next[j] = true
 			}
 		}
 		reachable = next
