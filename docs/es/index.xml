@@ -6,7 +6,7 @@
     <description>Recent content in Speedle: Motor de autorización rápido y sencillo on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>es-es</language>
-    <lastBuildDate>Thu, 12 Nov 2026 10:00:00 +0800</lastBuildDate>
+    <lastBuildDate>Tue, 17 Nov 2026 00:00:00 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/es/index.xml" rel="self" type="application/rss+xml" />
     
@@ -209,6 +209,17 @@ El mismo índice de imágenes está disponible en ambos registros:
 Los ejemplos comprueban la política descrita en la descripción general de los SDK.
 Añadir la dependencia Con pip, en un entorno virtual:
 python3 -m venv .venv . .venv/bin/activate pip install speedle==0.2.0 O con uv, en un proyecto uv:</description>
+    </item>
+    
+    <item>
+      <title>Roles globales</title>
+      <link>https://engine.speedle.io/es/docs/cloud/global-roles/</link>
+      <pubDate>Tue, 17 Nov 2026 00:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/cloud/global-roles/</guid>
+      <description>Speedle Cloud está en beta pública. Esta guía describe el flujo de trabajo del servicio en línea.
+Una asignación de rol suele pertenecer a un servicio. Cuando varios servicios comparten la misma asignación, defínala una vez en el servicio Roles globales de la cuenta y use el rol en las políticas de autorización de cada servicio.
+Solo se admiten políticas de rol. Una asignación global no concede ninguna operación por sí misma: cada servicio sigue definiendo los permisos que permite.</description>
     </item>
     
     <item>

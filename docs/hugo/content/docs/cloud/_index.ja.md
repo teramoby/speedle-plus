@@ -22,6 +22,7 @@ Speedle Cloud からのポリシー同期には、Speedle Cloud ADS の `speedle
 
 - [クイックスタート](/ja/docs/cloud/getting-started/)：サインインし、コンソールでサービスとポリシー、API キーを作成して、アプリケーションから認可を確認します。
 - [API キー](/ja/docs/cloud/tokens/): アカウントの認証情報、固定スコープ、必須の有効期限、作成と失効、一度だけの表示、ページング。
+- [グローバルロール](/ja/docs/cloud/global-roles/): アカウント内のすべてのサービスに一度だけロールを割り当て、各サービスで権限を付与します。
 - [認可 API](/ja/docs/cloud/authorization-api/): IsAllowed、ユーザー ID、Node.js 22、通信の制約。
 - [API リファレンス](/ja/docs/cloud/api-reference/): API key による認可チェックとポリシー管理。リクエストはサーバーから送り、このページは読み取り専用です。
 - [制限とエラー](/ja/docs/cloud/limits-and-errors/): アカウント上限、サイズ、バースト、日次枠、エラーコード、リセット時刻。

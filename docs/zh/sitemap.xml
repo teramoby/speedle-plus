@@ -603,6 +603,36 @@
   </url>
   
   <url>
+    <loc>https://engine.speedle.io/zh/docs/cloud/global-roles/</loc>
+    <lastmod>2026-11-17T00:00:00+08:00</lastmod>
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://engine.speedle.io/docs/cloud/global-roles/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="es"
+                href="https://engine.speedle.io/es/docs/cloud/global-roles/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="ja"
+                href="https://engine.speedle.io/ja/docs/cloud/global-roles/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="ko"
+                href="https://engine.speedle.io/ko/docs/cloud/global-roles/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="zh"
+                href="https://engine.speedle.io/zh/docs/cloud/global-roles/"
+                />
+  </url>
+  
+  <url>
     <loc>https://engine.speedle.io/zh/docs/cloud/authorization-api/</loc>
     <lastmod>2026-11-12T00:00:00+08:00</lastmod>
     <xhtml:link

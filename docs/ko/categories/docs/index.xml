@@ -6,7 +6,7 @@
     <description>Recent content in Docs on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>ko-kr</language>
-    <lastBuildDate>Sat, 14 Nov 2026 10:30:00 +0800</lastBuildDate>
+    <lastBuildDate>Tue, 17 Nov 2026 10:00:00 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/ko/categories/docs/index.xml" rel="self" type="application/rss+xml" />
     
@@ -77,31 +77,6 @@ grant group Administrators list,watch,get expr:^c1/default/core/pods/.*$ 이 정
     </item>
     
     <item>
-      <title>Go SDK</title>
-      <link>https://engine.speedle.io/ko/docs/sdks/go/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/ko/docs/sdks/go/</guid>
-      <description>Go SDK는 최신 두 개의 Go 릴리스를 지원하며 표준 라이브러리만 사용합니다. 모듈: github.com/teramoby/speedle-sdk/go v0.2.0, 패키지 이름 speedle. 참조 문서: speedle-sdk/go.
-예제에서는 SDK 개요에서 설명한 정책을 확인합니다.
-의존성 추가 새 모듈에서 다음을 실행합니다:
-go mod init example.com/speedle-example go get github.com/teramoby/speedle-sdk/go@v0.2.0 로컬 Speedle 호출 SDK 개요의 설명에 따라 Speedle을 시작하고 예제 정책을 생성합니다. 이 프로그램을 main.go로 저장합니다:
-package main import ( &amp;#34;context&amp;#34; &amp;#34;fmt&amp;#34; &amp;#34;os&amp;#34; speedle &amp;#34;github.com/teramoby/speedle-sdk/go&amp;#34; ) func main() { client, err := speedle.</description>
-    </item>
-    
-    <item>
-      <title>Homebrew 설치</title>
-      <link>https://engine.speedle.io/ko/docs/deployment/homebrew/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/ko/docs/deployment/homebrew/</guid>
-      <description>macOS 또는 Linux에서 Homebrew로 Speedle 명령줄 도구를 설치합니다. Homebrew는 공식 조직 밖의 tap에 있는 formula를 신뢰하기 전에는 그 formula를 설치하거나 시작하지 않습니다.
-brew tap teramoby/tap brew trust teramoby/tap brew install teramoby/tap/spctl Formula 이름은 spctl입니다. macOS에서 명령은 speedle-spctl이므로, 이 설치는 Apple Gatekeeper의 /usr/sbin/spctl을 바꾸지 않습니다. Linux에서는 같은 프로그램을 spctl로도 호출할 수 있습니다.
-정책 관리 서비스와 인가 결정 서비스는 별도의 formula입니다.
-brew install teramoby/tap/speedle-pms brew install teramoby/tap/speedle-ads 명령줄 도구와 두 서비스를 함께 설치합니다.</description>
-    </item>
-    
-    <item>
       <title>Java SDK</title>
       <link>https://engine.speedle.io/ko/docs/sdks/java/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -112,16 +87,6 @@ brew install teramoby/tap/speedle-pms brew install teramoby/tap/speedle-ads 명�
 의존성 추가 Maven의 경우 전체 pom.xml:
 &amp;lt;?xml version=&amp;#34;1.0&amp;#34; encoding=&amp;#34;UTF-8&amp;#34;?&amp;gt; &amp;lt;project xmlns=&amp;#34;http://maven.apache.org/POM/4.0.0&amp;#34; xmlns:xsi=&amp;#34;http://www.w3.org/2001/XMLSchema-instance&amp;#34; xsi:schemaLocation=&amp;#34;http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd&amp;#34;&amp;gt; &amp;lt;modelVersion&amp;gt;4.0.0&amp;lt;/modelVersion&amp;gt; &amp;lt;groupId&amp;gt;com.example&amp;lt;/groupId&amp;gt; &amp;lt;artifactId&amp;gt;speedle-example&amp;lt;/artifactId&amp;gt; &amp;lt;version&amp;gt;1.0&amp;lt;/version&amp;gt; &amp;lt;properties&amp;gt; &amp;lt;maven.compiler.release&amp;gt;17&amp;lt;/maven.compiler.release&amp;gt; &amp;lt;project.build.sourceEncoding&amp;gt;UTF-8&amp;lt;/project.build.sourceEncoding&amp;gt; &amp;lt;/properties&amp;gt; &amp;lt;dependencies&amp;gt; &amp;lt;dependency&amp;gt; &amp;lt;groupId&amp;gt;io.speedle&amp;lt;/groupId&amp;gt; &amp;lt;artifactId&amp;gt;speedle-sdk&amp;lt;/artifactId&amp;gt; &amp;lt;version&amp;gt;0.2.0&amp;lt;/version&amp;gt; &amp;lt;/dependency&amp;gt; &amp;lt;/dependencies&amp;gt; &amp;lt;/project&amp;gt; Gradle의 경우 전체 build.gradle.kts(rootProject.name을 설정하는 settings.gradle.kts 포함):
 plugins { application } repositories { mavenCentral() } dependencies { implementation(&amp;#34;io.</description>
-    </item>
-    
-    <item>
-      <title>MongoDB 설정 가이드</title>
-      <link>https://engine.speedle.io/ko/docs/store/mongodb/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/ko/docs/store/mongodb/</guid>
-      <description>이 가이드에서는 영구 Docker 볼륨을 사용하는 단일 노드 복제본 세트로서 MongoDB 7.0.16을 사용합니다. PMS는 정책을 작성하고 ADS는 변경 스트림(change stream)을 통해 동일한 데이터베이스를 추적합니다. 로컬 예제에서는 개발 환경을 위해 인증 없이 루프백 주소에서 수신 대기합니다. 프로덕션 환경의 인증, TLS 및 복제본 세트 구성은 가이드 후반부에서 설명합니다.
-MongoDB는 복제본 세트 또는 샤딩된 클러스터로 실행해야 합니다. ADS는 변경 스트림으로 데이터베이스를 감시하고 전체 정책 저장소 교체는 트랜잭션 내에서 실행됩니다. 독립 실행형 mongod는 두 기능 모두 지원하지 않습니다.</description>
     </item>
     
     <item>
@@ -148,34 +113,15 @@ uv add speedle==0.2.0 로컬 Speedle 호출 SDK 개요의 설명에 따라 Speed
     </item>
     
     <item>
-      <title>SPDL: Speedle 정책 정의 언어</title>
-      <link>https://engine.speedle.io/ko/docs/spdl/</link>
+      <title>Speedle Cloud 인가 API</title>
+      <link>https://engine.speedle.io/ko/docs/cloud/authorization-api/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://engine.speedle.io/ko/docs/spdl/</guid>
-      <description>SPDL은 Speedle 정책 및 역할 정책을 작성하기 위한 언어입니다. 이 페이지에서는 구문, 명명 규칙 및 예제를 설명합니다. </description>
-    </item>
-    
-    <item>
-      <title>Speedle Cloud API 키</title>
-      <link>https://engine.speedle.io/ko/docs/cloud/tokens/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/ko/docs/cloud/tokens/</guid>
-      <description>API 키는 계정에 속하며 범위에 따라 해당 계정의 서비스에 접근합니다. 최종 사용자가 아닌 애플리케이션을 인증합니다. API 키, 세션, 연결된 신원 관리에는 로그인한 콘솔 세션이 필요합니다.
-Speedle Cloud는 공개 베타로 제공 중입니다. 이 가이드는 실제 서비스에서의 사용 절차를 설명합니다.
-API 키 생성 API 키에서 앞뒤 공백을 제외한 1–128자 이름, 범위, 만료 기간(7d, 30d, 90d, 180d, 365d. 콘솔 기본값은 3개월)을 지정하고 생성을 선택합니다. 생성하려면 최근 10분 이내에 연결된 제공자로 인증해야 합니다. 403 reauth_required이면 다시 인증한 뒤 생성을 다시 선택하세요.</description>
-    </item>
-    
-    <item>
-      <title>Speedle Cloud 빠른 시작</title>
-      <link>https://engine.speedle.io/ko/docs/cloud/getting-started/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/ko/docs/cloud/getting-started/</guid>
+      <guid>https://engine.speedle.io/ko/docs/cloud/authorization-api/</guid>
       <description>Speedle Cloud는 공개 베타로 제공 중입니다. 이 가이드는 실제 서비스에서의 사용 절차를 설명합니다.
-GitHub 또는 Google을 통한 로그인 브라우저에서 Cloud 콘솔을 열고 사용 가능한 공급자로 로그인합니다. 아직 사용되지 않은 인증된 이메일로 처음 로그인하는 경우 계정 생성을 확인합니다. 이메일이 이미 사용 중이라면 콘솔에 표시된 연결된 공급자로 로그인하십시오.
-서비스와 정책 생성 서비스 워크스페이스를 열고 books를 입력한 뒤 서비스 생성을 선택합니다. 기존 정책이 결과에 영향을 주지 않도록 새 서비스로 예제를 실행하십시오. 기존 데이터를 덮어쓰지 마십시오.</description>
+계정 API 키로 서버에서 인가를 확인합니다. 키를 생성하려면 로그인이 필요합니다. ADS 확인에는 ads 또는 pms:read+ads를 사용합니다. pms:read와 pms:write는 403 insufficient_scope입니다. pms:read+ads는 PMS 읽기도 허용하며 Speedle Cloud ADS(speedle-cloud)의 정책 동기화에 필요하지만 쓰기는 허용하지 않습니다.
+서버에서 IsAllowed 호출 ads 또는 pms:read+ads 범위 API 키를 하나의 Authorization: Bearer 헤더에 넣고 POST로 보냅니다.
+POST /authz-check/v1/is-allowed Authorization: Bearer &amp;lt;API key&amp;gt; Content-Type: application/json {&amp;#34;subject&amp;#34;:{&amp;#34;principals&amp;#34;:[{&amp;#34;type&amp;#34;:&amp;#34;user&amp;#34;,&amp;#34;name&amp;#34;:&amp;#34;alice&amp;#34;,&amp;#34;idd&amp;#34;:&amp;#34;corp&amp;#34;}]},&amp;#34;serviceName&amp;#34;:&amp;#34;books&amp;#34;,&amp;#34;resource&amp;#34;:&amp;#34;/books&amp;#34;,&amp;#34;action&amp;#34;:&amp;#34;get&amp;#34;,&amp;#34;attributes&amp;#34;:[{&amp;#34;name&amp;#34;:&amp;#34;level&amp;#34;,&amp;#34;type&amp;#34;:&amp;#34;numeric&amp;#34;,&amp;#34;value&amp;#34;:3},{&amp;#34;name&amp;#34;:&amp;#34;when&amp;#34;,&amp;#34;type&amp;#34;:&amp;#34;datetime&amp;#34;,&amp;#34;value&amp;#34;:&amp;#34;2026-11-05T03:00:00Z&amp;#34;}]} 본문은 자체 호스팅 Speedle ADS와 같은 REST 형식입니다.</description>
     </item>
     
     <item>
@@ -290,9 +236,18 @@ import { Auth, Reason, SpeedleClient, SpeedleError } from &amp;#34;@speedle/sdk&
     </item>
     
     <item>
+      <title>SPDL: Speedle 정책 정의 언어</title>
+      <link>https://engine.speedle.io/ko/docs/spdl/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/spdl/</guid>
+      <description>SPDL은 Speedle 정책 및 역할 정책을 작성하기 위한 언어입니다. 이 페이지에서는 구문, 명명 규칙 및 예제를 설명합니다. </description>
+    </item>
+    
+    <item>
       <title>Speedle Cloud</title>
       <link>https://engine.speedle.io/ko/docs/cloud/</link>
-      <pubDate>Thu, 12 Nov 2026 21:00:00 +0800</pubDate>
+      <pubDate>Tue, 17 Nov 2026 00:00:00 +0800</pubDate>
       
       <guid>https://engine.speedle.io/ko/docs/cloud/</guid>
       <description>Speedle Cloud는 오픈 소스 Speedle 엔진 기반의 호스팅 인가 서비스입니다. 서비스, SPDL 인가 정책과 역할 정책을 관리하고 Playground에서 판정을 테스트한 뒤 서버에서 API를 호출합니다.
@@ -302,15 +257,25 @@ Speedle Cloud는 공개 베타로 제공 중입니다. 이 가이드는 실제 �
     </item>
     
     <item>
-      <title>Speedle Cloud 인가 API</title>
-      <link>https://engine.speedle.io/ko/docs/cloud/authorization-api/</link>
+      <title>Speedle Cloud API 키</title>
+      <link>https://engine.speedle.io/ko/docs/cloud/tokens/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://engine.speedle.io/ko/docs/cloud/authorization-api/</guid>
+      <guid>https://engine.speedle.io/ko/docs/cloud/tokens/</guid>
+      <description>API 키는 계정에 속하며 범위에 따라 해당 계정의 서비스에 접근합니다. 최종 사용자가 아닌 애플리케이션을 인증합니다. API 키, 세션, 연결된 신원 관리에는 로그인한 콘솔 세션이 필요합니다.
+Speedle Cloud는 공개 베타로 제공 중입니다. 이 가이드는 실제 서비스에서의 사용 절차를 설명합니다.
+API 키 생성 API 키에서 앞뒤 공백을 제외한 1–128자 이름, 범위, 만료 기간(7d, 30d, 90d, 180d, 365d. 콘솔 기본값은 3개월)을 지정하고 생성을 선택합니다. 생성하려면 최근 10분 이내에 연결된 제공자로 인증해야 합니다. 403 reauth_required이면 다시 인증한 뒤 생성을 다시 선택하세요.</description>
+    </item>
+    
+    <item>
+      <title>Speedle Cloud 빠른 시작</title>
+      <link>https://engine.speedle.io/ko/docs/cloud/getting-started/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/cloud/getting-started/</guid>
       <description>Speedle Cloud는 공개 베타로 제공 중입니다. 이 가이드는 실제 서비스에서의 사용 절차를 설명합니다.
-계정 API 키로 서버에서 인가를 확인합니다. 키를 생성하려면 로그인이 필요합니다. ADS 확인에는 ads 또는 pms:read+ads를 사용합니다. pms:read와 pms:write는 403 insufficient_scope입니다. pms:read+ads는 PMS 읽기도 허용하며 Speedle Cloud ADS(speedle-cloud)의 정책 동기화에 필요하지만 쓰기는 허용하지 않습니다.
-서버에서 IsAllowed 호출 ads 또는 pms:read+ads 범위 API 키를 하나의 Authorization: Bearer 헤더에 넣고 POST로 보냅니다.
-POST /authz-check/v1/is-allowed Authorization: Bearer &amp;lt;API key&amp;gt; Content-Type: application/json {&amp;#34;subject&amp;#34;:{&amp;#34;principals&amp;#34;:[{&amp;#34;type&amp;#34;:&amp;#34;user&amp;#34;,&amp;#34;name&amp;#34;:&amp;#34;alice&amp;#34;,&amp;#34;idd&amp;#34;:&amp;#34;corp&amp;#34;}]},&amp;#34;serviceName&amp;#34;:&amp;#34;books&amp;#34;,&amp;#34;resource&amp;#34;:&amp;#34;/books&amp;#34;,&amp;#34;action&amp;#34;:&amp;#34;get&amp;#34;,&amp;#34;attributes&amp;#34;:[{&amp;#34;name&amp;#34;:&amp;#34;level&amp;#34;,&amp;#34;type&amp;#34;:&amp;#34;numeric&amp;#34;,&amp;#34;value&amp;#34;:3},{&amp;#34;name&amp;#34;:&amp;#34;when&amp;#34;,&amp;#34;type&amp;#34;:&amp;#34;datetime&amp;#34;,&amp;#34;value&amp;#34;:&amp;#34;2026-11-05T03:00:00Z&amp;#34;}]} 본문은 자체 호스팅 Speedle ADS와 같은 REST 형식입니다.</description>
+GitHub 또는 Google을 통한 로그인 브라우저에서 Cloud 콘솔을 열고 사용 가능한 공급자로 로그인합니다. 아직 사용되지 않은 인증된 이메일로 처음 로그인하는 경우 계정 생성을 확인합니다. 이메일이 이미 사용 중이라면 콘솔에 표시된 연결된 공급자로 로그인하십시오.
+서비스와 정책 생성 서비스 워크스페이스를 열고 books를 입력한 뒤 서비스 생성을 선택합니다. 기존 정책이 결과에 영향을 주지 않도록 새 서비스로 예제를 실행하십시오. 기존 데이터를 덮어쓰지 마십시오.</description>
     </item>
     
     <item>
@@ -375,16 +340,6 @@ github.com/teramoby/speedle-plus/pkg/ads의 ads.Run(ctx, params, conf, options..
     </item>
     
     <item>
-      <title>보안</title>
-      <link>https://engine.speedle.io/ko/docs/security/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/ko/docs/security/</guid>
-      <description>두 API 전송 계층 모두 보호 독립적으로 작동하는 PMS와 ADS는 REST와 gRPC를 노출합니다. 현재 두 서비스 모두 동일한 --insecure, --cert, --key, --client-cert 및 --force-client-cert 전송 설정을 사용합니다. 인증서나 신뢰 설정이 유효하지 않은 경우 시작 시 실패합니다. 보안 모드가 일반 텍스트로 폴백되지 않습니다.
-TLS는 연결을 암호화하고 서버를 인증합니다. 인증된 클라이언트를 요구하려면 --client-cert로 클라이언트 CA를 제공하고 반드시 --force-client-cert=true를 설정해야 합니다. 해당 플래그가 없는 경우 구성된 CA는 클라이언트가 인증서를 제공한 경우에만 클라이언트 인증서를 검증합니다.</description>
-    </item>
-    
-    <item>
       <title>성능 테스트 가이드</title>
       <link>https://engine.speedle.io/ko/docs/performance-testing/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -392,6 +347,17 @@ TLS는 연결을 암호화하고 서버를 인증합니다. 인증된 클라이�
       <guid>https://engine.speedle.io/ko/docs/performance-testing/</guid>
       <description>여기서는 성능 보고서를 게시하지 않으며, 결과는 하드웨어, 정책 및 고정한 버전에 따라 달라집니다.
 먼저 Speedle과 비교할 오픈 소스 인가 프로젝트가 무엇인지 저에게 물어보세요. 정책 집합 크기와 시간 예산도 물어보고 기본값으로 정책 10, 100, 1,000개와 30분을 제안하세요. 제가 답할 때까지 다른 작업을 하지 마세요. 그런 다음 새 로컬 디렉터리에서 같은 머신을 사용해 예산 내에서 공정하게 비교하세요. 모든 엔진과 도구의 버전을 고정하세요. 동등한 RBAC 및 ABAC 정책과 예상 허용/거부 결정이 있는 공통 요청을 만들고, 시간을 측정하기 전에 모든 엔진의 결정을 검증하세요.</description>
+    </item>
+    
+    <item>
+      <title>연동</title>
+      <link>https://engine.speedle.io/ko/integrations/</link>
+      <pubDate>Tue, 10 Nov 2026 14:45:43 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/integrations/</guid>
+      <description>Speedle은 인가 결정을 수행합니다. 애플리케이션, 게이트웨이 또는 플랫폼의 정책 시행 지점(PEP)은 결정마다 Speedle을 호출하고 그 결과를 적용합니다. 현재 지원되는 인터페이스는 다음과 같습니다.
+REST 및 gRPC API 정책 관리 서비스(PMS)를 통해 서비스, 정책 및 역할을 관리하고, 인가 결정 서비스(ADS)에서 런타임 결정을 요청합니다. 둘 다 REST API를 노출하며, --grpc-endpoint를 지정하여 서버를 시작하면 gRPC API가 활성화됩니다.
+ 정책 관리 API 인가 결정 API 토큰 어설션 웹훅 API 개요(PMS 및 ADS proto 포함)  임베디드 Go 별도의 PMS 또는 ADS 프로세스 없이 Go 애플리케이션 내에서 평가 엔진을 직접 실행합니다.</description>
     </item>
     
     <item>
@@ -406,20 +372,76 @@ TLS는 연결을 암호화하고 서버를 인증합니다. 인증된 클라이�
     </item>
     
     <item>
-      <title>정책 관리 API</title>
-      <link>https://engine.speedle.io/ko/docs/api/management_api/</link>
+      <title>정책 발견</title>
+      <link>https://engine.speedle.io/ko/docs/pms/discover/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://engine.speedle.io/ko/docs/api/management_api/</guid>
-      <description>구성된 PMS 인터페이스 참조 사양입니다. 요청과 응답은 JSON을 사용하고 정책 ID는 문자열이며 응답은 플랫 객체입니다.
-보안 및 엔드포인트 구성. 이 문서는 인터페이스 사양을 설명하며 speedle.io는 호스팅형 백엔드를 제공하지 않습니다. Try it out은 꺼져 있습니다. 사양에 서버 호스트가 없어서, 켜 두면 요청이 이 문서 사이트로 갑니다.
-   document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/swagger/policy-manage.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;</description>
+      <guid>https://engine.speedle.io/ko/docs/pms/discover/</guid>
+      <description>정책 발견의 역할 발견 모드는 요청을 기록하고 기록 작업이 성공하면 이유 5와 함께 allowed=true를 반환합니다. 이는 기존 정책이 해당 작업을 인가했음을 의미하지 않습니다. 격리된 테스트 환경에서만 사용하고 생성된 권한을 검토한 후 일반적인 is-allowed 강제로 복원하십시오. 어설션 또는 저장소 오류는 여전히 적절하게 처리해야 하며 오류를 인가로 간주해서는 안 됩니다.
+재현 가능한 로컬 예제 시작 빠른 시작의 설명에 따라 바이너리를 빌드하고 체크아웃 루트에서 모든 터미널을 실행합니다. 시작하기 전에 새 파일을 사용하고 이전 페이지의 픽스처를 중지하십시오.</description>
+    </item>
+    
+    <item>
+      <title>전역 역할</title>
+      <link>https://engine.speedle.io/ko/docs/cloud/global-roles/</link>
+      <pubDate>Tue, 17 Nov 2026 00:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/cloud/global-roles/</guid>
+      <description>Speedle Cloud는 공개 베타로 제공 중입니다. 이 가이드는 실제 서비스에서의 사용 절차를 설명합니다.
+역할 할당은 보통 하나의 서비스에 속합니다. 여러 서비스가 같은 할당을 공유할 때는 계정의 전역 역할 서비스에 한 번 정의하고 각 서비스의 인가 정책에서 그 역할을 사용합니다.
+전역 역할은 역할 정책만 허용합니다. 전역 역할 할당 자체는 어떤 작업도 허용하지 않습니다. 허용할 권한은 여전히 각 서비스가 정의합니다. 전역 역할은 하나의 Cloud 계정에 속하며 계정 간에 적용되지 않습니다.
+역할 할당을 한 번 만들기 콘솔 서비스 선택기 맨 위에서 전역 역할을 선택하고 역할 정책을 만듭니다.</description>
+    </item>
+    
+    <item>
+      <title>Go SDK</title>
+      <link>https://engine.speedle.io/ko/docs/sdks/go/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/sdks/go/</guid>
+      <description>Go SDK는 최신 두 개의 Go 릴리스를 지원하며 표준 라이브러리만 사용합니다. 모듈: github.com/teramoby/speedle-sdk/go v0.2.0, 패키지 이름 speedle. 참조 문서: speedle-sdk/go.
+예제에서는 SDK 개요에서 설명한 정책을 확인합니다.
+의존성 추가 새 모듈에서 다음을 실행합니다:
+go mod init example.com/speedle-example go get github.com/teramoby/speedle-sdk/go@v0.2.0 로컬 Speedle 호출 SDK 개요의 설명에 따라 Speedle을 시작하고 예제 정책을 생성합니다. 이 프로그램을 main.go로 저장합니다:
+package main import ( &amp;#34;context&amp;#34; &amp;#34;fmt&amp;#34; &amp;#34;os&amp;#34; speedle &amp;#34;github.com/teramoby/speedle-sdk/go&amp;#34; ) func main() { client, err := speedle.</description>
+    </item>
+    
+    <item>
+      <title>Homebrew 설치</title>
+      <link>https://engine.speedle.io/ko/docs/deployment/homebrew/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/deployment/homebrew/</guid>
+      <description>macOS 또는 Linux에서 Homebrew로 Speedle 명령줄 도구를 설치합니다. Homebrew는 공식 조직 밖의 tap에 있는 formula를 신뢰하기 전에는 그 formula를 설치하거나 시작하지 않습니다.
+brew tap teramoby/tap brew trust teramoby/tap brew install teramoby/tap/spctl Formula 이름은 spctl입니다. macOS에서 명령은 speedle-spctl이므로, 이 설치는 Apple Gatekeeper의 /usr/sbin/spctl을 바꾸지 않습니다. Linux에서는 같은 프로그램을 spctl로도 호출할 수 있습니다.
+정책 관리 서비스와 인가 결정 서비스는 별도의 formula입니다.
+brew install teramoby/tap/speedle-pms brew install teramoby/tap/speedle-ads 명령줄 도구와 두 서비스를 함께 설치합니다.</description>
+    </item>
+    
+    <item>
+      <title>MongoDB 설정 가이드</title>
+      <link>https://engine.speedle.io/ko/docs/store/mongodb/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/store/mongodb/</guid>
+      <description>이 가이드에서는 영구 Docker 볼륨을 사용하는 단일 노드 복제본 세트로서 MongoDB 7.0.16을 사용합니다. PMS는 정책을 작성하고 ADS는 변경 스트림(change stream)을 통해 동일한 데이터베이스를 추적합니다. 로컬 예제에서는 개발 환경을 위해 인증 없이 루프백 주소에서 수신 대기합니다. 프로덕션 환경의 인증, TLS 및 복제본 세트 구성은 가이드 후반부에서 설명합니다.
+MongoDB는 복제본 세트 또는 샤딩된 클러스터로 실행해야 합니다. ADS는 변경 스트림으로 데이터베이스를 감시하고 전체 정책 저장소 교체는 트랜잭션 내에서 실행됩니다. 독립 실행형 mongod는 두 기능 모두 지원하지 않습니다.</description>
+    </item>
+    
+    <item>
+      <title>보안</title>
+      <link>https://engine.speedle.io/ko/docs/security/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/security/</guid>
+      <description>두 API 전송 계층 모두 보호 독립적으로 작동하는 PMS와 ADS는 REST와 gRPC를 노출합니다. 현재 두 서비스 모두 동일한 --insecure, --cert, --key, --client-cert 및 --force-client-cert 전송 설정을 사용합니다. 인증서나 신뢰 설정이 유효하지 않은 경우 시작 시 실패합니다. 보안 모드가 일반 텍스트로 폴백되지 않습니다.
+TLS는 연결을 암호화하고 서버를 인증합니다. 인증된 클라이언트를 요구하려면 --client-cert로 클라이언트 CA를 제공하고 반드시 --force-client-cert=true를 설정해야 합니다. 해당 플래그가 없는 경우 구성된 CA는 클라이언트가 인증서를 제공한 경우에만 클라이언트 인증서를 검증합니다.</description>
     </item>
     
     <item>
       <title>플러그형 저장소</title>
       <link>https://engine.speedle.io/ko/docs/store/</link>
-      <pubDate>Sat, 31 Oct 2026 22:36:36 +0800</pubDate>
+      <pubDate>Tue, 17 Nov 2026 10:00:00 +0800</pubDate>
       
       <guid>https://engine.speedle.io/ko/docs/store/</guid>
       <description>기본 내장 저장소와 확장 계약 독립 실행형 바이너리는 pkg/store 아래에 파일, etcd, MongoDB, MySQL 구현을 등록합니다. 사용 가능하다고 해서 동일한 운영상의 보장을 의미하는 것은 아닙니다. 배포하기 전에 백엔드의 인증, 영속성, 트랜잭션 및 감시(watch) 동작을 개별적으로 검토하십시오. 아래 구성 예제는 속성 이름을 설명하기 위한 것이며, 로컬 예제에서 etcd/MongoDB 클러스터를 실행하는 것은 범위에 포함되지 않습니다.
@@ -446,24 +468,14 @@ TLS는 연결을 암호화하고 서버를 인증합니다. 인증된 클라이�
     </item>
     
     <item>
-      <title>연동</title>
-      <link>https://engine.speedle.io/ko/integrations/</link>
-      <pubDate>Tue, 10 Nov 2026 14:45:43 +0800</pubDate>
-      
-      <guid>https://engine.speedle.io/ko/integrations/</guid>
-      <description>Speedle은 인가 결정을 수행합니다. 애플리케이션, 게이트웨이 또는 플랫폼의 정책 시행 지점(PEP)은 결정마다 Speedle을 호출하고 그 결과를 적용합니다. 현재 지원되는 인터페이스는 다음과 같습니다.
-REST 및 gRPC API 정책 관리 서비스(PMS)를 통해 서비스, 정책 및 역할을 관리하고, 인가 결정 서비스(ADS)에서 런타임 결정을 요청합니다. 둘 다 REST API를 노출하며, --grpc-endpoint를 지정하여 서버를 시작하면 gRPC API가 활성화됩니다.
- 정책 관리 API 인가 결정 API 토큰 어설션 웹훅 API 개요(PMS 및 ADS proto 포함)  임베디드 Go 별도의 PMS 또는 ADS 프로세스 없이 Go 애플리케이션 내에서 평가 엔진을 직접 실행합니다.</description>
-    </item>
-    
-    <item>
-      <title>정책 발견</title>
-      <link>https://engine.speedle.io/ko/docs/pms/discover/</link>
+      <title>정책 관리 API</title>
+      <link>https://engine.speedle.io/ko/docs/api/management_api/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://engine.speedle.io/ko/docs/pms/discover/</guid>
-      <description>정책 발견의 역할 발견 모드는 요청을 기록하고 기록 작업이 성공하면 이유 5와 함께 allowed=true를 반환합니다. 이는 기존 정책이 해당 작업을 인가했음을 의미하지 않습니다. 격리된 테스트 환경에서만 사용하고 생성된 권한을 검토한 후 일반적인 is-allowed 강제로 복원하십시오. 어설션 또는 저장소 오류는 여전히 적절하게 처리해야 하며 오류를 인가로 간주해서는 안 됩니다.
-재현 가능한 로컬 예제 시작 빠른 시작의 설명에 따라 바이너리를 빌드하고 체크아웃 루트에서 모든 터미널을 실행합니다. 시작하기 전에 새 파일을 사용하고 이전 페이지의 픽스처를 중지하십시오.</description>
+      <guid>https://engine.speedle.io/ko/docs/api/management_api/</guid>
+      <description>구성된 PMS 인터페이스 참조 사양입니다. 요청과 응답은 JSON을 사용하고 정책 ID는 문자열이며 응답은 플랫 객체입니다.
+보안 및 엔드포인트 구성. 이 문서는 인터페이스 사양을 설명하며 speedle.io는 호스팅형 백엔드를 제공하지 않습니다. Try it out은 꺼져 있습니다. 사양에 서버 호스트가 없어서, 켜 두면 요청이 이 문서 사이트로 갑니다.
+   document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/swagger/policy-manage.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;</description>
     </item>
     
     <item>

@@ -6,7 +6,7 @@
     <description>Recent content in Simplifying Complexity on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Thu, 12 Nov 2026 10:00:00 +0800</lastBuildDate>
+    <lastBuildDate>Tue, 17 Nov 2026 00:00:00 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/index.xml" rel="self" type="application/rss+xml" />
     
@@ -216,6 +216,17 @@ python3 -m venv .venv . .venv/bin/activate pip install speedle==0.2.0 Or with uv
       <description>This walkthrough uses an external etcd v3.6.14 server with a persistent Docker volume. PMS writes policies and ADS watches the same key prefix. The single-node example listens on loopback and uses plain HTTP for local development. Production TLS and cluster configuration follow the walkthrough.
 1. Build Speedle Prepare Bash, Git, curl, Docker and Go 1.27.4. Start Docker, then build the native services:
 git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o .</description>
+    </item>
+    
+    <item>
+      <title>Global roles</title>
+      <link>https://engine.speedle.io/docs/cloud/global-roles/</link>
+      <pubDate>Tue, 17 Nov 2026 00:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/cloud/global-roles/</guid>
+      <description>Speedle Cloud is in public beta. This guide describes the workflow for the live service.
+A role assignment usually belongs to one service. When several services share the same assignment, define it once in the account&amp;rsquo;s Global roles service and use the role in each service&amp;rsquo;s own authorization policies.
+Only role policies are supported there. A global role assignment does not grant any operation by itself: every service still defines the permissions it allows.</description>
     </item>
     
     <item>

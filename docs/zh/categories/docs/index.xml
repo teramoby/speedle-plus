@@ -6,7 +6,7 @@
     <description>Recent content in Docs on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Sat, 14 Nov 2026 10:30:00 +0800</lastBuildDate>
+    <lastBuildDate>Tue, 17 Nov 2026 10:00:00 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/zh/categories/docs/index.xml" rel="self" type="application/rss+xml" />
     
@@ -126,6 +126,20 @@ plugins { application } repositories { mavenCentral() } dependencies { implement
     </item>
     
     <item>
+      <title>MongoDB 配置指南</title>
+      <link>https://engine.speedle.io/zh/docs/store/mongodb/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/zh/docs/store/mongodb/</guid>
+      <description>本指南使用 MongoDB 7.0.16 单节点副本集和 Docker 持久化卷。PMS 写入策略，ADS 通过 change stream 跟踪同一个数据库。本地示例只监听回环地址且不开启身份认证，用于开发环境；生产环境的身份认证、TLS 与副本集配置见后文。
+MongoDB 必须以副本集或分片集群方式运行：ADS 使用 change stream 监听数据库，整体替换策略存储时使用事务，独立运行的 mongod 两者都不支持。开发环境使用单节点副本集即可。
+1. 编译 Speedle 准备 Bash、Git、curl、已启动的 Docker，以及 Go 1.27.4，然后从源码编译：
+git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads 后续命令均在这个代码目录执行。确认 27017、6733、6734 端口可用；修改端口时要同步修改命令和配置。
+2. 启动 MongoDB 命名卷保存 MongoDB 数据。--replSet 让 mongod 作为副本集 speedle-rs 的成员启动；只把数据库端口发布到宿主机的回环地址。
+docker run --name speedle-mongodb --detach \  --publish 127.0.0.1:27017:27017 \  --volume speedle-mongodb-data:/data/db \  mongo:7.</description>
+    </item>
+    
+    <item>
       <title>MySQL 配置指南</title>
       <link>https://engine.speedle.io/zh/docs/store/mysql/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -150,15 +164,6 @@ docker run --name speedle-mysql --detach \  --publish 127.0.0.1:3306:3306 \  --v
 python3 -m venv .venv . .venv/bin/activate pip install speedle==0.2.0 或者使用 uv，在 uv 项目中添加：
 uv add speedle==0.2.0 调用本地 Speedle 按 SDK 概览中的说明启动 Speedle 并创建示例策略。将以下程序保存为 main.py：
 import sys from speedle import Auth, Client, SpeedleError try: with Client( backend=&amp;#34;speedle&amp;#34;, endpoint=&amp;#34;http://localhost:6734&amp;#34;, auth=Auth.none(), service_name=&amp;#34;docs&amp;#34;, ) as speedle: allowed = speedle.is_allowed(&amp;#34;alice&amp;#34;, &amp;#34;get&amp;#34;, &amp;#34;/docs/public&amp;#34;) print(f&amp;#34;alice get /docs/public: allowed={allowed}&amp;#34;) decision = speedle.</description>
-    </item>
-    
-    <item>
-      <title>SPDL：Speedle 策略定义语言</title>
-      <link>https://engine.speedle.io/zh/docs/spdl/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/zh/docs/spdl/</guid>
-      <description>SPDL 是编写 Speedle 策略和角色策略的语言。本文介绍语法、命名规则和示例。 </description>
     </item>
     
     <item>
@@ -290,16 +295,12 @@ import { Auth, Reason, SpeedleClient, SpeedleError } from &amp;#34;@speedle/sdk&
     </item>
     
     <item>
-      <title>Speedle Cloud</title>
-      <link>https://engine.speedle.io/zh/docs/cloud/</link>
-      <pubDate>Thu, 12 Nov 2026 21:00:00 +0800</pubDate>
+      <title>SPDL：Speedle 策略定义语言</title>
+      <link>https://engine.speedle.io/zh/docs/spdl/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://engine.speedle.io/zh/docs/cloud/</guid>
-      <description>Speedle Cloud 是基于开源 Speedle 引擎的托管授权服务。你可以管理服务、SPDL 授权策略和角色策略，在 Playground 中测试判定，并从服务端调用 API。
-从 Speedle Cloud 同步策略使用 Speedle Cloud ADS，即 speedle-cloud 二进制和镜像。自托管 Speedle Engine 的 speedle-ads 二进制不再提供 policy-source 存储。
-Speedle Cloud 已开放公开测试版。 本文介绍线上服务的使用流程。
-使用控制台和创建 API 密钥需要登录账号。免费公开测试版用于试用、学习和评估，不提供 SLA，不建议用于生产环境。功能和限额可能调整。
-文档导航  快速入门：登录控制台，创建服务和策略，创建 API 密钥，从应用发起授权检查。 API 密钥: 账号级凭据、固定权限范围、必须选择有效期、创建与撤销、一次性展示和分页。 授权 API: IsAllowed 请求、调用方身份、Node.js 22 和传输限制。 API 参考：使用 API key 进行授权检查和策略管理。请求从你的服务器发出；本页只读。 限额与错误: 账号上限、大小限制、突发限流、每日额度、错误代码和重置时间。  下载  API 参考（Swagger）：在线浏览所有接口、参数和返回示例。 中文 Markdown：四个 Cloud 章节合并的离线指南。 OpenAPI 规范：YAML · JSON，供代码生成器和 API 客户端使用。  请阅读 Cloud 的 服务条款 / 隐私政策。</description>
+      <guid>https://engine.speedle.io/zh/docs/spdl/</guid>
+      <description>SPDL 是编写 Speedle 策略和角色策略的语言。本文介绍语法、命名规则和示例。 </description>
     </item>
     
     <item>
@@ -354,31 +355,6 @@ docker run --name speedle-etcd --detach \  --publish 127.0.0.1:2379:2379 \  --vo
     </item>
     
     <item>
-      <title>存储扩展</title>
-      <link>https://engine.speedle.io/zh/docs/store/</link>
-      <pubDate>Sun, 08 Nov 2026 11:21:16 +0800</pubDate>
-      
-      <guid>https://engine.speedle.io/zh/docs/store/</guid>
-      <description>内置存储与扩展接口 独立服务在 pkg/store 下注册 file、etcd、MongoDB、MySQL 实现。可用不代表具有相同的运维保证，部署前应分别审查后端认证、持久化、事务与 watch 行为。下方配置说明属性名称，本地示例不涉及启动 etcd/MongoDB 集群。
-完整后端实现 pms.PolicyStoreManager：服务、授权策略、角色策略、函数管理，以及快照读取与 watch/stop。ADS 接受较窄的只读/watch 接口 PolicyStoreManagerADS。实现新后端时应以实际接口为准，不能照搬历史文档中不完整的方法列表。
-逐步部署教程：MySQL 配置指南、etcd 配置指南与 MongoDB 配置指南。
-存储故障与缓存授权 file、etcd、MySQL、MongoDB 使用相同的 ADS 故障策略。 storeFailureGracePeriod 默认是 &amp;quot;0s&amp;quot;：检测到存储故障后，授权返回 allowed:false 和求值错误。ADS 保持运行并持续重试；连接恢复后，还必须成功 加载完整策略快照，才能恢复授权。启用 watch 时，还必须先重新建立故障的订阅； watch 未恢复时，成功读取数据不会重置故障或宽限期的截止时间。策略文件删除后仍会持续重试，ADS 不再退出。
-如果部署方明确接受撤权延迟，可在 ADS JSON 配置的顶层设置有限时长，例如 &amp;quot;storeFailureGracePeriod&amp;quot;: &amp;quot;5s&amp;quot;。对应参数为 --store-failure-grace-period=5s，环境变量为 SPDL_STORE_FAILURE_GRACE_PERIOD，继续遵循“显式参数 → 环境变量 → 配置文件 → 默认值”。 重试失败不会延长宽限期。宽限期内按最后一份完整快照授权，因此撤权要等同步恢复 才能生效。缓存部分更新失败和授权计算 panic 不适用宽限期，仍然立即拒绝。
-内置存储约每秒执行一次轻量健康检查，单次检查超时为一秒；watch 可能更早报告 故障，正在执行的存储读取也受各自后端超时限制。故障检测和正常策略传播均为异步， 不提供瞬时撤权保证。设置 enableWatch:false 时，请求仍检查存储健康，普通策略 变更需要显式刷新；故障恢复时，即使关闭 watch，也必须加载完整快照。首次加载 失败时没有可用缓存，不适用宽限期。自定义存储可以实现 pms.StoreHealthChecker 并发送 pms.STORE_UNAVAILABLE 事件，接入相同故障策略。</description>
-    </item>
-    
-    <item>
-      <title>安全</title>
-      <link>https://engine.speedle.io/zh/docs/security/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/zh/docs/security/</guid>
-      <description>同时保护两种 API 传输 独立运行的 PMS 与 ADS 都提供 REST 和 gRPC。现在两者共同使用 --insecure、--cert、--key、--client-cert 和 --force-client-cert 配置。证书或信任配置无效时启动失败，安全模式不会降级为明文。
-TLS 加密连接并认证服务端。若要强制认证客户端，必须通过 --client-cert 提供客户端 CA，同时设置 --force-client-cert=true。只提供 CA 时，仅在客户端主动发送证书的情况下验证该证书。TLS 本身不决定谁有管理员权限，也不提供 Bearer token 校验。管理、诊断、发现接口需要认证网关或等价的访问控制。--enable-authz 参数不提供内置的端点授权策略。
-监听地址与兼容性    服务 默认 REST 地址 默认 gRPC 地址     PMS 0.0.0.0:6733 默认关闭；需设置 --grpc-endpoint   ADS 0.0.0.0:6734 默认关闭；需设置 --grpc-endpoint    REST 与 gRPC 的地址分别配置。仅设置 --endpoint 不会启用 gRPC；请显式使用 --grpc-endpoint 127.0.0.1:50001（PMS）或 127.0.0.1:50002（ADS）。127.0.0.1:0 为隔离测试选择临时端口。需要 IPv6 时显式指定 IPv6 监听地址。</description>
-    </item>
-    
-    <item>
       <title>性能测试指南</title>
       <link>https://engine.speedle.io/zh/docs/performance-testing/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -386,28 +362,6 @@ TLS 加密连接并认证服务端。若要强制认证客户端，必须通过 
       <guid>https://engine.speedle.io/zh/docs/performance-testing/</guid>
       <description>这里不发布性能报告；结果取决于你的硬件、策略和固定的版本。
 首先问我想把 Speedle 与哪些开源授权项目进行对比，同时询问策略集规模和时间预算，建议默认值为 10、100、1,000 条策略和 30 分钟。等待我的回答，再做任何其他事情。 然后在新的本地目录中，在同一台机器上、预算时间内公平对比。固定所有引擎和工具的版本。构建等价的 RBAC 和 ABAC 策略，以及带有预期允许/拒绝决策的共享请求；计时前，先验证每个引擎的结果都符合预期。记录语义差异，不支持的用例不纳入直接对比。 按商定的策略数量测量规模变化的影响。策略加载与稳态评估分开，嵌入式测量与网络/API 测量分开。使用相同的请求、并发数和缓存设置，为每个引擎预热并至少重复运行五次。报告延迟 p50/p95/p99 和吞吐量，注明单位、运行时长和波动。只报告实测数字，明确标记未运行的用例和失败。在本地保存脚本、策略、准确命令、版本、环境信息和原始输出，让我能复现结果。 复制提示词，粘贴到助手中并回答它的问题。</description>
-    </item>
-    
-    <item>
-      <title>扩展决策服务</title>
-      <link>https://engine.speedle.io/zh/docs/extending-decision-service/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/zh/docs/extending-decision-service/</guid>
-      <description>实现 store.StoreBuilder，用 store.Register 注册唯一名称，并在自己的可执行程序中导入该包。GetStoreParams 将附加命令行参数映射到存储属性。先解析自己的参数，再启动服务；库不解析参数，也不安装信号处理器。
-从 github.com/teramoby/speedle-plus/pkg/ads 调用 ads.Run(ctx, params, conf, options...)，复用标准 ADS 启动流程。params 为 *flags.Parameters，conf 为 *cfg.Config；取消 ctx 会停止两个服务。ads.WithGate(g) 覆盖两个协议的门控发现；ads.WithGate(nil) 禁用门控。ads.WithListeners(rest, rpc) 接受预先绑定的 net.Listener（nil 使用配置的端点）。Run 接管并关闭这些监听器，启动失败时也会关闭。REST 保留配置的 TLS，gRPC 保留服务端凭证。ads.WithHTTPServer(func(*http.Server)) 可在服务启动前包装处理器或添加路由。ads.WithGRPCOptions(...) 添加服务端选项；附加拦截器请用 grpc.ChainUnaryInterceptor(...)，以保留标准的 panic 恢复拦截器。
-与协议无关的 pkg/svcs/gate.Gate 有两个方法：Route(serviceName string) gate.Route 选择 gate.Local、gate.Fallback 或 gate.Unavailable；Forward(context.Context, gate.Operation, *ads.RequestContext) (*gate.Response, error) 提供有类型的后备结果。Local 继续本地求值。Fallback 可返回允许、拒绝、角色或权限；失败时绝不转回本地求值。Diagnose 和 Discover 在选择 Fallback 时拒绝处理。*gate.UnavailableError 携带公开原因码；其他错误及 nil 响应映射为 fallback_unavailable。REST 返回 503，包含 authorization_unavailable、原因、Cache-Control: no-store 和 Retry-After: 30；gRPC 返回 Unavailable。响应的 ErrorMessage 表示求值错误：REST IsAllowed 返回正常的 200 错误体，其他 REST 操作返回 500，gRPC 返回 Internal。后备成功响应携带 X-Speedle-Decision-Source: upstream（gRPC 元数据使用小写键）。可选的 gate.</description>
-    </item>
-    
-    <item>
-      <title>日志</title>
-      <link>https://engine.speedle.io/zh/docs/logging/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/zh/docs/logging/</guid>
-      <description>日志组件 v1.8.0 之后的下一个版本使用 Go log/slog 输出应用日志和审计日志，使用 gopkg.in/natefinch/lumberjack.v2 滚动日志文件。v1.8.0 及更早版本仍使用旧的日志 API。
-日志配置 现有 --log-*、--auditlog-* 参数、SPDL_* 环境变量及 JSON 配置键保持兼容。显式命令行参数优先于环境变量，环境变量优先于配置文件。应用日志默认为 info、text、stderr，不包含调用位置；审计日志默认为 info、JSON。使用对应的 --auditlog-* 参数单独配置审计日志。
---log-level string --log-formatter string --log-reportcaller bool --log-filename string --log-maxsize int --log-maxbackups int --log-maxage int --log-localtime bool --log-compress bool    Flag Default Meaning     --log-level info Minimum severity   --log-formatter text text or json   --log-reportcaller false Include caller file, line and function   --log-filename unset Stderr unless a file is configured   --log-maxsize 100 Maximum file size in MB   --log-maxbackups 0 Backup count; 0 retains all, subject to max age   --log-maxage 0 Backup age in days; 0 disables age deletion   --log-localtime false Local time for backup filenames, otherwise UTC   --log-compress false Compress backups    { &amp;#34;logConfig&amp;#34;: { &amp;#34;level&amp;#34;: &amp;#34;info&amp;#34;, &amp;#34;formatter&amp;#34;: &amp;#34;text&amp;#34;, &amp;#34;setReportCaller&amp;#34;: false, &amp;#34;rotationConfig&amp;#34;: { &amp;#34;filename&amp;#34;: &amp;#34;/mnt/logs/speedle.</description>
     </item>
     
     <item>
@@ -424,6 +378,25 @@ printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一：
 curl --fail --silent --show-error -H &amp;#39;Content-Type: application/json&amp;#39; \  -d &amp;#39;{&amp;#34;subject&amp;#34;:{&amp;#34;principals&amp;#34;:[{&amp;#34;type&amp;#34;:&amp;#34;user&amp;#34;,&amp;#34;name&amp;#34;:&amp;#34;alice&amp;#34;}]},&amp;#34;serviceName&amp;#34;:&amp;#34;observed&amp;#34;,&amp;#34;resource&amp;#34;:&amp;#34;book&amp;#34;,&amp;#34;action&amp;#34;:&amp;#34;read&amp;#34;}&amp;#39; \  http://127.0.0.1:6734/authz-check/v1/discover 检查记录的请求，再生成待审核的服务定义：
 ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ discover request --service-name observed ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ discover policy --service-name observed &amp;gt; discovered-service.json 审核 discovered-service.json 中的角色、身份域和资源。本例尚不存在名为 observed 的策略服务，因此可以直接导入；已有同名服务时应合并和审核其策略，而不是直接重复创建。
 ./bin/spctl --pms-endpoint http://127.</description>
+    </item>
+    
+    <item>
+      <title>全局角色</title>
+      <link>https://engine.speedle.io/zh/docs/cloud/global-roles/</link>
+      <pubDate>Tue, 17 Nov 2026 00:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/zh/docs/cloud/global-roles/</guid>
+      <description> Speedle Cloud 已开放公开测试版。 本文介绍线上服务的使用流程。
+角色分配通常只属于一个服务。当多个服务共享同一个角色分配时，把它定义在账号的 全局角色 服务中一次，再在各服务自己的授权策略中使用该角色。
+全局角色只接受角色策略。全局角色分配本身不授予任何操作：每个服务仍然自己定义允许的权限。全局角色只属于一个 Cloud 账号，不会跨账号生效。
+创建一次角色分配 在控制台的服务选择器顶部选择 全局角色，创建一条角色策略：
+grant user Emma from corp AdminRole from corp 让该分配只作用于 corp 身份域。省略 from 时，授权会匹配所有身份域中名为 Emma 的用户；详见身份域。
+角色 AdminRole 现在已在账号内的所有服务中分配给 Emma。
+在服务中授予权限 切换到需要该权限的服务，例如 library，创建一条授权策略：
+grant role AdminRole borrow books 在每个需要允许该操作的服务中重复这一步。没有自己的授权策略的服务不授予任何权限，即使角色已分配给它。
+检查结果 打开 library 的 Playground，以 [{&amp;quot;type&amp;quot;:&amp;quot;user&amp;quot;,&amp;quot;name&amp;quot;:&amp;quot;Emma&amp;quot;,&amp;quot;idd&amp;quot;:&amp;quot;corp&amp;quot;}] 作为主体、books 作为资源、borrow 作为动作运行测试。请求通过 AdminRole 被允许；来自 Bob 的同一请求被拒绝。
+全局角色自己的 Playground 不同：直接对全局服务判定总是拒绝。全局角色在各服务的 Playground 中生效。
+行为与限制  全局角色只接受角色策略。在全局服务中创建授权策略返回 400 {&amp;quot;error&amp;quot;:&amp;quot;global_authz_unsupported&amp;quot;}。 全局服务计入账号的服务上限，其角色策略计入账号合并的策略上限。参见限额与错误。 控制台把该特殊服务显示为 全局角色；它不能手动创建、改名或删除。 账号的每个 Speedle Cloud ADS 实例都会收到全局角色策略，即使该实例只同步选定的服务集合。 修改与其他策略一样传播：通过已发布的快照约一分钟生效；Playground 直接读取当前状态，立即生效。  </description>
     </item>
     
     <item>
@@ -469,17 +442,64 @@ brew services start speedle-pms brew services start speedle-ads speedle-pms 监�
     </item>
     
     <item>
-      <title>MongoDB 配置指南</title>
-      <link>https://engine.speedle.io/zh/docs/store/mongodb/</link>
+      <title>Speedle Cloud</title>
+      <link>https://engine.speedle.io/zh/docs/cloud/</link>
+      <pubDate>Tue, 17 Nov 2026 00:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/zh/docs/cloud/</guid>
+      <description>Speedle Cloud 是基于开源 Speedle 引擎的托管授权服务。你可以管理服务、SPDL 授权策略和角色策略，在 Playground 中测试判定，并从服务端调用 API。
+从 Speedle Cloud 同步策略使用 Speedle Cloud ADS，即 speedle-cloud 二进制和镜像。自托管 Speedle Engine 的 speedle-ads 二进制不再提供 policy-source 存储。
+Speedle Cloud 已开放公开测试版。 本文介绍线上服务的使用流程。
+使用控制台和创建 API 密钥需要登录账号。免费公开测试版用于试用、学习和评估，不提供 SLA，不建议用于生产环境。功能和限额可能调整。
+文档导航  快速入门：登录控制台，创建服务和策略，创建 API 密钥，从应用发起授权检查。 API 密钥: 账号级凭据、固定权限范围、必须选择有效期、创建与撤销、一次性展示和分页。 全局角色：为账号内所有服务分配一次角色，并在各服务中授予相应权限。 授权 API: IsAllowed 请求、调用方身份、Node.js 22 和传输限制。 API 参考：使用 API key 进行授权检查和策略管理。请求从你的服务器发出；本页只读。 限额与错误: 账号上限、大小限制、突发限流、每日额度、错误代码和重置时间。  下载  API 参考（Swagger）：在线浏览所有接口、参数和返回示例。 中文 Markdown：四个 Cloud 章节合并的离线指南。 OpenAPI 规范：YAML · JSON，供代码生成器和 API 客户端使用。  请阅读 Cloud 的 服务条款 / 隐私政策。</description>
+    </item>
+    
+    <item>
+      <title>存储扩展</title>
+      <link>https://engine.speedle.io/zh/docs/store/</link>
+      <pubDate>Tue, 17 Nov 2026 10:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/zh/docs/store/</guid>
+      <description>内置存储与扩展接口 独立服务在 pkg/store 下注册 file、etcd、MongoDB、MySQL 实现。可用不代表具有相同的运维保证，部署前应分别审查后端认证、持久化、事务与 watch 行为。下方配置说明属性名称，本地示例不涉及启动 etcd/MongoDB 集群。
+完整后端实现 pms.PolicyStoreManager：服务、授权策略、角色策略、函数管理，以及快照读取与 watch/stop。ADS 接受较窄的只读/watch 接口 PolicyStoreManagerADS。实现新后端时应以实际接口为准，不能照搬历史文档中不完整的方法列表。
+逐步部署教程：MySQL 配置指南、etcd 配置指南与 MongoDB 配置指南。
+存储故障与缓存授权 file、etcd、MySQL、MongoDB 使用相同的 ADS 故障策略。 storeFailureGracePeriod 默认是 &amp;quot;0s&amp;quot;：检测到存储故障后，授权返回 allowed:false 和求值错误。ADS 保持运行并持续重试；连接恢复后，还必须成功 加载完整策略快照，才能恢复授权。启用 watch 时，还必须先重新建立故障的订阅； watch 未恢复时，成功读取数据不会重置故障或宽限期的截止时间。策略文件删除后仍会持续重试，ADS 不再退出。
+如果部署方明确接受撤权延迟，可在 ADS JSON 配置的顶层设置有限时长，例如 &amp;quot;storeFailureGracePeriod&amp;quot;: &amp;quot;5s&amp;quot;。对应参数为 --store-failure-grace-period=5s，环境变量为 SPDL_STORE_FAILURE_GRACE_PERIOD，继续遵循“显式参数 → 环境变量 → 配置文件 → 默认值”。 重试失败不会延长宽限期。宽限期内按最后一份完整快照授权，因此撤权要等同步恢复 才能生效。缓存部分更新失败和授权计算 panic 不适用宽限期，仍然立即拒绝。
+内置存储约每秒执行一次轻量健康检查，单次检查超时为一秒；watch 可能更早报告 故障，正在执行的存储读取也受各自后端超时限制。故障检测和正常策略传播均为异步， 不提供瞬时撤权保证。设置 enableWatch:false 时，请求仍检查存储健康，普通策略 变更需要显式刷新；故障恢复时，即使关闭 watch，也必须加载完整快照。首次加载 失败时没有可用缓存，不适用宽限期。自定义存储可以实现 pms.StoreHealthChecker 并发送 pms.STORE_UNAVAILABLE 事件，接入相同故障策略。</description>
+    </item>
+    
+    <item>
+      <title>安全</title>
+      <link>https://engine.speedle.io/zh/docs/security/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://engine.speedle.io/zh/docs/store/mongodb/</guid>
-      <description>本指南使用 MongoDB 7.0.16 单节点副本集和 Docker 持久化卷。PMS 写入策略，ADS 通过 change stream 跟踪同一个数据库。本地示例只监听回环地址且不开启身份认证，用于开发环境；生产环境的身份认证、TLS 与副本集配置见后文。
-MongoDB 必须以副本集或分片集群方式运行：ADS 使用 change stream 监听数据库，整体替换策略存储时使用事务，独立运行的 mongod 两者都不支持。开发环境使用单节点副本集即可。
-1. 编译 Speedle 准备 Bash、Git、curl、已启动的 Docker，以及 Go 1.27.4，然后从源码编译：
-git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads 后续命令均在这个代码目录执行。确认 27017、6733、6734 端口可用；修改端口时要同步修改命令和配置。
-2. 启动 MongoDB 命名卷保存 MongoDB 数据。--replSet 让 mongod 作为副本集 speedle-rs 的成员启动；只把数据库端口发布到宿主机的回环地址。
-docker run --name speedle-mongodb --detach \  --publish 127.0.0.1:27017:27017 \  --volume speedle-mongodb-data:/data/db \  mongo:7.</description>
+      <guid>https://engine.speedle.io/zh/docs/security/</guid>
+      <description>同时保护两种 API 传输 独立运行的 PMS 与 ADS 都提供 REST 和 gRPC。现在两者共同使用 --insecure、--cert、--key、--client-cert 和 --force-client-cert 配置。证书或信任配置无效时启动失败，安全模式不会降级为明文。
+TLS 加密连接并认证服务端。若要强制认证客户端，必须通过 --client-cert 提供客户端 CA，同时设置 --force-client-cert=true。只提供 CA 时，仅在客户端主动发送证书的情况下验证该证书。TLS 本身不决定谁有管理员权限，也不提供 Bearer token 校验。管理、诊断、发现接口需要认证网关或等价的访问控制。--enable-authz 参数不提供内置的端点授权策略。
+监听地址与兼容性    服务 默认 REST 地址 默认 gRPC 地址     PMS 0.0.0.0:6733 默认关闭；需设置 --grpc-endpoint   ADS 0.0.0.0:6734 默认关闭；需设置 --grpc-endpoint    REST 与 gRPC 的地址分别配置。仅设置 --endpoint 不会启用 gRPC；请显式使用 --grpc-endpoint 127.0.0.1:50001（PMS）或 127.0.0.1:50002（ADS）。127.0.0.1:0 为隔离测试选择临时端口。需要 IPv6 时显式指定 IPv6 监听地址。</description>
+    </item>
+    
+    <item>
+      <title>扩展决策服务</title>
+      <link>https://engine.speedle.io/zh/docs/extending-decision-service/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/zh/docs/extending-decision-service/</guid>
+      <description>实现 store.StoreBuilder，用 store.Register 注册唯一名称，并在自己的可执行程序中导入该包。GetStoreParams 将附加命令行参数映射到存储属性。先解析自己的参数，再启动服务；库不解析参数，也不安装信号处理器。
+从 github.com/teramoby/speedle-plus/pkg/ads 调用 ads.Run(ctx, params, conf, options...)，复用标准 ADS 启动流程。params 为 *flags.Parameters，conf 为 *cfg.Config；取消 ctx 会停止两个服务。ads.WithGate(g) 覆盖两个协议的门控发现；ads.WithGate(nil) 禁用门控。ads.WithListeners(rest, rpc) 接受预先绑定的 net.Listener（nil 使用配置的端点）。Run 接管并关闭这些监听器，启动失败时也会关闭。REST 保留配置的 TLS，gRPC 保留服务端凭证。ads.WithHTTPServer(func(*http.Server)) 可在服务启动前包装处理器或添加路由。ads.WithGRPCOptions(...) 添加服务端选项；附加拦截器请用 grpc.ChainUnaryInterceptor(...)，以保留标准的 panic 恢复拦截器。
+与协议无关的 pkg/svcs/gate.Gate 有两个方法：Route(serviceName string) gate.Route 选择 gate.Local、gate.Fallback 或 gate.Unavailable；Forward(context.Context, gate.Operation, *ads.RequestContext) (*gate.Response, error) 提供有类型的后备结果。Local 继续本地求值。Fallback 可返回允许、拒绝、角色或权限；失败时绝不转回本地求值。Diagnose 和 Discover 在选择 Fallback 时拒绝处理。*gate.UnavailableError 携带公开原因码；其他错误及 nil 响应映射为 fallback_unavailable。REST 返回 503，包含 authorization_unavailable、原因、Cache-Control: no-store 和 Retry-After: 30；gRPC 返回 Unavailable。响应的 ErrorMessage 表示求值错误：REST IsAllowed 返回正常的 200 错误体，其他 REST 操作返回 500，gRPC 返回 Internal。后备成功响应携带 X-Speedle-Decision-Source: upstream（gRPC 元数据使用小写键）。可选的 gate.</description>
+    </item>
+    
+    <item>
+      <title>授权决策 API</title>
+      <link>https://engine.speedle.io/zh/docs/api/decision_api/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/zh/docs/api/decision_api/</guid>
+      <description>已配置 ADS 的接口参考。请求属性是带类型的数组，诊断响应属性是对象。
+请配置安全连接与端点访问控制。本文只说明接口约定，speedle.io 不提供托管授权后端。试用已关闭：规范未写服务器主机，否则请求会发到本说明站点。
+   document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/swagger/policy-check.zh.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34;, supportedSubmitMethods: [] }); window.ui = ui; });  健康检查端点 GET /healthz 报告进程存活；进程运行期间始终返回 200 {&amp;quot;status&amp;quot;:&amp;quot;ok&amp;quot;}。
+GET /readyz 无需认证，本地决策服务返回 200 {&amp;quot;ready&amp;quot;:true,&amp;quot;servicesTotal&amp;quot;:0,&amp;quot;servicesUsable&amp;quot;:0}。两个计数始终为零，该探针不枚举存储中的服务。</description>
     </item>
     
     <item>
@@ -489,6 +509,17 @@ docker run --name speedle-mongodb --detach \  --publish 127.0.0.1:27017:27017 \ 
       
       <guid>https://engine.speedle.io/zh/docs/</guid>
       <description></description>
+    </item>
+    
+    <item>
+      <title>日志</title>
+      <link>https://engine.speedle.io/zh/docs/logging/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/zh/docs/logging/</guid>
+      <description>日志组件 v1.8.0 之后的下一个版本使用 Go log/slog 输出应用日志和审计日志，使用 gopkg.in/natefinch/lumberjack.v2 滚动日志文件。v1.8.0 及更早版本仍使用旧的日志 API。
+日志配置 现有 --log-*、--auditlog-* 参数、SPDL_* 环境变量及 JSON 配置键保持兼容。显式命令行参数优先于环境变量，环境变量优先于配置文件。应用日志默认为 info、text、stderr，不包含调用位置；审计日志默认为 info、JSON。使用对应的 --auditlog-* 参数单独配置审计日志。
+--log-level string --log-formatter string --log-reportcaller bool --log-filename string --log-maxsize int --log-maxbackups int --log-maxage int --log-localtime bool --log-compress bool    Flag Default Meaning     --log-level info Minimum severity   --log-formatter text text or json   --log-reportcaller false Include caller file, line and function   --log-filename unset Stderr unless a file is configured   --log-maxsize 100 Maximum file size in MB   --log-maxbackups 0 Backup count; 0 retains all, subject to max age   --log-maxage 0 Backup age in days; 0 disables age deletion   --log-localtime false Local time for backup filenames, otherwise UTC   --log-compress false Compress backups    { &amp;#34;logConfig&amp;#34;: { &amp;#34;level&amp;#34;: &amp;#34;info&amp;#34;, &amp;#34;formatter&amp;#34;: &amp;#34;text&amp;#34;, &amp;#34;setReportCaller&amp;#34;: false, &amp;#34;rotationConfig&amp;#34;: { &amp;#34;filename&amp;#34;: &amp;#34;/mnt/logs/speedle.</description>
     </item>
     
     <item>
@@ -534,18 +565,6 @@ go run ./website/tests/examples/custom-function package main import ( &amp;#34;e
       <description>令牌断言 webhook 参考。errCode 为整数，attributes 为对象。实际端点由 ADS 断言配置指定。
 请配置安全连接与端点访问控制。本文只说明接口约定，speedle.io 不提供托管授权后端。试用已关闭：规范未写服务器主机，否则请求会发到本说明站点。
    document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/swagger/asserter.zh.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34;, supportedSubmitMethods: [] }); window.ui = ui; });  </description>
-    </item>
-    
-    <item>
-      <title>授权决策 API</title>
-      <link>https://engine.speedle.io/zh/docs/api/decision_api/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/zh/docs/api/decision_api/</guid>
-      <description>已配置 ADS 的接口参考。请求属性是带类型的数组，诊断响应属性是对象。
-请配置安全连接与端点访问控制。本文只说明接口约定，speedle.io 不提供托管授权后端。试用已关闭：规范未写服务器主机，否则请求会发到本说明站点。
-   document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/swagger/policy-check.zh.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34;, supportedSubmitMethods: [] }); window.ui = ui; });  健康检查端点 GET /healthz 报告进程存活；进程运行期间始终返回 200 {&amp;quot;status&amp;quot;:&amp;quot;ok&amp;quot;}。
-GET /readyz 无需认证，本地决策服务返回 200 {&amp;quot;ready&amp;quot;:true,&amp;quot;servicesTotal&amp;quot;:0,&amp;quot;servicesUsable&amp;quot;:0}。两个计数始终为零，该探针不枚举存储中的服务。</description>
     </item>
     
     <item>

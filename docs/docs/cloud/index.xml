@@ -6,7 +6,7 @@
     <description>Recent content in Speedle Cloud on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Thu, 12 Nov 2026 21:00:00 +0800</lastBuildDate>
+    <lastBuildDate>Tue, 17 Nov 2026 00:00:00 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/docs/cloud/index.xml" rel="self" type="application/rss+xml" />
     
@@ -31,6 +31,17 @@ Create a service and a policy Open the Service workspace, enter books, and choos
       <description>API keys belong to your account and can access its services according to their scope. They authenticate your application, not its end users. Managing API keys, sessions and linked identities always requires a signed-in console session.
 Speedle Cloud is in public beta. This guide describes the workflow for the live service.
 Create an API key Open API keys, enter a name of 1–128 characters after trimming whitespace, select a scope and an expiry (7d, 30d, 90d, 180d or 365d; the console defaults to 3 months), and choose Create.</description>
+    </item>
+    
+    <item>
+      <title>Global roles</title>
+      <link>https://engine.speedle.io/docs/cloud/global-roles/</link>
+      <pubDate>Tue, 17 Nov 2026 00:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/cloud/global-roles/</guid>
+      <description>Speedle Cloud is in public beta. This guide describes the workflow for the live service.
+A role assignment usually belongs to one service. When several services share the same assignment, define it once in the account&amp;rsquo;s Global roles service and use the role in each service&amp;rsquo;s own authorization policies.
+Only role policies are supported there. A global role assignment does not grant any operation by itself: every service still defines the permissions it allows.</description>
     </item>
     
     <item>

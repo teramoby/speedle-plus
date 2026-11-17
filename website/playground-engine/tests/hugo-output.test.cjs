@@ -76,7 +76,7 @@ for (const locale of LOCALES) {
   const html = fs.readFileSync(path.join(output, `${locale}docs/api/management_api/index.html`), 'utf8');
   assert.ok(html.includes('/css/swagger-ui.css') && html.includes('/css/swagger-custom.css'), `Swagger styles in ${locale || 'en'}`);
 }
-const cloudRoutes = ['', 'getting-started/', 'tokens/', 'authorization-api/', 'api-reference/', 'limits-and-errors/'];
+const cloudRoutes = ['', 'getting-started/', 'tokens/', 'global-roles/', 'authorization-api/', 'api-reference/', 'limits-and-errors/'];
 const navPages = ['docs/index.html', 'docs/spdl/index.html', 'docs/extending-decision-service/index.html', ...cloudRoutes.map(route => `docs/cloud/${route}index.html`)];
 for (const locale of LOCALES) {
   const lang = locale.replace(/\/$/, '');
@@ -209,7 +209,7 @@ function checkDocsAlternates(directory) {
   }
 }
 for (const locale of LOCALES) checkDocsAlternates(path.join(output, `${locale}docs`));
-assert.equal(docsAlternates, 260, 'Every canonical docs page and redirect alias has hreflang alternates for en, ja, ko, es, zh-CN and x-default');
+assert.equal(docsAlternates, 265, 'Every canonical docs page and redirect alias has hreflang alternates for en, ja, ko, es, zh-CN and x-default');
 console.log('PASS Hugo 0.48 output: editor, navigation, sitemap, footer stylesheet and matching release assets');
 
 // The Cloud section is documented in every site language.
@@ -275,6 +275,7 @@ for (const [locale, copy] of Object.entries(cloudCopy)) {
   const overview = read('');
   const guide = read('getting-started/');
   const tokens = read('tokens/');
+  const globalRoles = read('global-roles/');
   const api = read('authorization-api/');
   const limits = read('limits-and-errors/');
   const sidebar = guide.split('<div class="sidebar">')[1];
@@ -286,10 +287,13 @@ for (const [locale, copy] of Object.entries(cloudCopy)) {
   assert.ok(overview.includes(copy.intro) && overview.includes(copy.beta), `Current overview in ${locale || 'en'}`);
   assert.ok(overview.includes(copy.publicBeta) && overview.includes(copy.live), `Public-beta overview in ${locale || 'en'}`);
   assert.ok(guide.includes(copy.live) && guide.includes(copy.signin), `Public-beta sign-in notice in ${locale || 'en'}`);
-  for (const [page, html] of [['overview', overview], ['getting started', guide], ['API keys', tokens], ['authorization API', api], ['limits and errors', limits]]) {
+  for (const [page, html] of [['overview', overview], ['getting started', guide], ['API keys', tokens], ['global roles', globalRoles], ['authorization API', api], ['limits and errors', limits]]) {
     for (const phrase of copy.prelaunch) assert.ok(!html.includes(phrase), `No pre-launch wording ${JSON.stringify(phrase)} in the ${page} page in ${locale || 'en'}`);
   }
   assert.ok(guide.includes('grant user alice from corp get /books'), `Domain-scoped getting-started policy in ${locale || 'en'}`);
+  for (const marker of ['grant user Emma from corp AdminRole', '&quot;idd&quot;:&quot;corp&quot;', 'grant role AdminRole borrow books', 'global_authz_unsupported']) {
+    assert.ok(globalRoles.includes(marker), `Global roles workflow marker ${marker} in ${locale || 'en'}`);
+  }
   const quickStart = ['SPEEDLE_API_KEY', 'books-app', 'read-books', 'cloud.speedle.io/authz-check/v1/is-allowed', 'HTTP 200'];
   assert.ok(quickStart.every(marker => guide.includes(marker)), `API-key quick start in ${locale || 'en'}`);
   assert.ok(tokens.includes('<code>pms:read+ads</code>') && api.includes('<code>pms:read+ads</code>'), `Cloud ADS sync scope in ${locale || 'en'}`);
