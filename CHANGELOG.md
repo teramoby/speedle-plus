@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v1.9.0
+
 - **Behavior change:** custom function failures now fail the decision. A
   timeout, a connection or TLS error, a non-2xx status, an invalid or error
   response, or a value that does not match the function's declared types is an
