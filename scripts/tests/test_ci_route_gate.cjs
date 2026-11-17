@@ -91,7 +91,7 @@ function routesFor(files) {
   });
 }
 
-function fixtureApi({run: completedRun, pr, files, prFiles, jobs: runJobs, newerJobs, latest, latestCompleted, commitPulls, jobsError, runsById = {}, defaultTip = base}) {
+function fixtureApi({run: completedRun, pr, files, prFiles, renames = {}, jobs: runJobs, newerJobs, latest, latestCompleted, commitPulls, jobsError, runsById = {}, defaultTip = base}) {
   const calls = [];
   const jobsPrefix = `repos/${repository}/actions/runs/`;
   const jobsSuffix = '/jobs?per_page=100&filter=latest';
@@ -130,7 +130,7 @@ function fixtureApi({run: completedRun, pr, files, prFiles, jobs: runJobs, newer
       return [{jobs: id === String(completedRun.id) ? runJobs : (typeof other === 'function' ? other(id) : other)}];
     }
     if (endpoint === `repos/${repository}/compare/${base}...${head}`) {
-      return {files: files.map(filename => ({filename}))};
+      return {files: files.map(filename => (renames[filename] ? {filename, previous_filename: renames[filename]} : {filename}))};
     }
     if (endpoint === `repos/${repository}/branches/master`) return {commit: {sha: defaultTip}};
     if (endpoint === `repos/${repository}/contents/scripts/ci/classify-changes.sh?ref=${defaultTip}`) {
@@ -1149,4 +1149,17 @@ test('a gate that runs past the deadline publishes failure instead of keeping an
   const writes = fixture.calls.filter(call => call.options.method === 'POST');
   assert.equal(writes.length, 1);
   assert.equal(writes[0].options.input.state, 'failure');
+});
+
+test('a renamed CI script still requires the CI script route', () => {
+  // Moving scripts/ci/classify-changes.sh into docs/ changes a CI script, so
+  // a quick run that skipped Test CI scripts must not pass.
+  const fixture = fixtureApi({
+    run: run(), pr: pullRequest(), files: ['docs/classify-changes.sh'],
+    renames: {'docs/classify-changes.sh': 'scripts/ci/classify-changes.sh'}, jobs: jobs(),
+  });
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.status.state, 'failure');
+  assert.deepEqual(result.routes, {go: true, website: true, docs: true, ci: true});
+  assert.equal(result.status.description, 'Required step did not pass: Test CI scripts');
 });

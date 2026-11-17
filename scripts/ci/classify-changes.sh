@@ -23,9 +23,11 @@ elif [[ -n "${base}" && "${base}" != 0000000000000000000000000000000000000000 ]]
   # process substitution. NUL separators preserve quoted and multiline paths.
   # A pull request counts only its own side (three dots: from the merge base),
   # so base-branch commits missing from a stale merge ref are not its changes.
+  # Without rename detection a rename lists both its old and new path, so a
+  # file moved out of a routed directory still selects that route.
   range=("${base}" "${GITHUB_SHA}")
   [[ "${EVENT_NAME}" == pull_request ]] && range=("${base}...${GITHUB_SHA}")
-  git diff --name-only -z "${range[@]}" > "${changed}"
+  git diff --no-renames --name-only -z "${range[@]}" > "${changed}"
 fi
 if [[ -n "${changed}" ]]; then
   go=false website=false docs=false ci=false

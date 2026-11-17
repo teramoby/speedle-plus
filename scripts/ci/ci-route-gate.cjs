@@ -512,7 +512,8 @@ function assessRun({api, runner, repository, run, pr, comparison, trusted = fals
   if (!startedRun(run)) return outcome({run, pr, state: null, ignored: true, message: 'CI run did not start'});
   const routes = compared.complete ? classifyWithBase({
     api, runner, repository, baseSha: pr.base.sha, rulesSha: defaultBranchTip(api, repository, pr),
-    headSha: run.head_sha, files: compared.files,
+    // A rename changes both paths, so the old path selects routes too.
+    headSha: run.head_sha, files: [...new Set([...compared.files, ...compared.previous])],
   }) : allRoutes();
   return evaluate({run, pr, jobs, routes, incomplete: !compared.complete});
 }
