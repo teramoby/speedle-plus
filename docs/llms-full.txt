@@ -195,6 +195,8 @@ Open a third terminal in the same directory:
 
 Leave it running and wait for its REST server to start.
 
+ADS watches the shared policy file; changes propagate asynchronously, so a new policy takes effect after a moment.
+
 #### 4. Verify authorization decisions
 
 Run these requests in the second terminal. The first request checks the direct grant to `user1`:

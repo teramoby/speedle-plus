@@ -177,6 +177,8 @@ ls bin</code></pre></div>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-ads --store-type file --filestore-loc ./quick-start-policies.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6734 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
 <p>실행 상태를 유지하고 REST 서버가 시작될 때까지 대기합니다.</p>
 
+<p>ADS는 공유 파일을 감시하며 변경 사항은 비동기적으로 전파되므로 새 정책은 잠시 후 반영됩니다.</p>
+
 <h3 id="4-인가-결정-검증">4. 인가 결정 검증</h3>
 
 <p>두 번째 터미널에서 다음 요청을 실행합니다. 첫 번째 요청은 <code>user1</code>에 대한 직접 인가를 확인합니다:</p>

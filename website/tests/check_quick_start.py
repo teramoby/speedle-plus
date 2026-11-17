@@ -17,7 +17,8 @@ checks out the captured candidate revision before compiling. Linux
 runs the native services and clients in unprivileged user/network/PID
 namespaces, using the exact documented ports without conflicting with existing
 services. On macOS, alternate REST ports and a shared lock isolate fixture
-services; occupied gRPC ports are rejected.
+services; occupied gRPC ports are rejected. Decision steps retry briefly,
+because ADS reloads a changed policy file asynchronously.
 """
 import argparse
 import contextlib
@@ -47,6 +48,19 @@ INSTALLED_FLAGS = {
     "speedle-pms": ("--store-type", "--filestore-loc", "--endpoint", "--insecure", "--grpc-endpoint"),
     "speedle-ads": ("--store-type", "--filestore-loc", "--endpoint", "--insecure", "--grpc-endpoint"),
 }
+# Documented decision steps and their expected `allowed` value. ADS watches the
+# shared policy file and applies changes asynchronously, so a request issued
+# right after `spctl create policy` can still use the previous policy set; the
+# step is retried for DECISION_DEADLINE seconds, polling every DECISION_INTERVAL.
+DECISIONS = {
+    "allow-direct": True,
+    "allow-role": True,
+    "abac-allow": True,
+    "deny": False,
+    "abac-deny": False,
+}
+DECISION_DEADLINE = 10.0
+DECISION_INTERVAL = 0.2
 
 
 def blocks(path):
@@ -315,6 +329,26 @@ def verify(locale, toolchain, env):
                 "revision": revision, **result}
 
 
+def wait_for_decision(name, command, checkout, env):
+    """Run a documented decision command until ADS reports the expected decision.
+
+    ADS watches the shared policy file and reloads it asynchronously, so the
+    request that follows `spctl create policy` can still use the previous policy
+    set. Retry the unchanged documented command until the decision matches or the
+    deadline passes. The caller keeps the final assertion and its message, so a
+    persistent mismatch still fails with the last observed response.
+    """
+    allowed = DECISIONS[name]
+    deadline = time.monotonic() + DECISION_DEADLINE
+    while True:
+        result = json.loads(run(command, checkout, env))
+        if result.get("allowed") is allowed and result.get("reason") == (0 if allowed else 3):
+            return result
+        if time.monotonic() >= deadline:
+            return result
+        time.sleep(DECISION_INTERVAL)
+
+
 def exercise(locale, steps, checkout, env, isolated=False):
     work = checkout.parent
     pms_port, ads_port = (6733, 6734) if isolated else ports()
@@ -338,18 +372,19 @@ def exercise(locale, steps, checkout, env, isolated=False):
                     url = f"http://127.0.0.1:{pms_port}/policy-mgmt/v1/service" if name == "pms" else f"http://127.0.0.1:{ads_port}/authz-check/v1/is-allowed"
                     wait_ready(process, url)
                 else:
-                    output = run(command, checkout, env)
                     if name == "list":
-                        services = json.loads(output)
+                        services = json.loads(run(command, checkout, env))
                         service = next(item for item in services if item["name"] == expected_service)
                         assert len(service.get("policies", [])) == (1 if locale == "zh" else 2), service
                         assert len(service.get("rolePolicies", [])) == (0 if locale == "zh" else 1), service
-                    elif name in {"allow-direct", "allow-role", "abac-allow", "deny", "abac-deny"}:
-                        result = json.loads(output)
-                        allowed = name in {"allow-direct", "allow-role", "abac-allow"}
+                    elif name in DECISIONS:
+                        result = wait_for_decision(name, command, checkout, env)
+                        allowed = DECISIONS[name]
                         assert result.get("allowed") is allowed, (name, result)
                         assert result.get("reason") == (0 if allowed else 3), (name, result)
                         decisions[name] = result["allowed"]
+                    else:
+                        run(command, checkout, env)
                 assert all(process.poll() is None for process in processes), "service stopped during tutorial"
                 print(f"{locale}: PASS {name}", flush=True)
             saved = json.loads((checkout / "quick-start-policies.json").read_text())

@@ -172,6 +172,8 @@ ls bin</code></pre></div>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-ads --store-type file --filestore-loc ./quick-start-policies.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6734 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
 <p>保持服务运行，等待 REST 服务启动后再继续。</p>
 
+<p>ADS 会监视共享文件，策略更新异步到达，因此新策略会在片刻后生效。</p>
+
 <h2 id="第四步-验证授权结果">第四步：验证授权结果</h2>
 
 <p>在第二个终端中，询问张三是否可以借书：</p>
