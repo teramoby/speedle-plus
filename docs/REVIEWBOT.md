@@ -19,9 +19,9 @@ while retaining code examples, verdict markers, commit metadata and model IDs.
 The workflow reads its instructions from the trusted base revision, checks out
 GitHub's persistent PR head ref (including fork PRs), and verifies that checkout
 equals the event's captured immutable head before constructing a merge-base diff. It does not
-execute, build or test PR code. By default, human- and bot-authored same-repository PRs run
-on any self-hosted Speedle runner via `speedle-runner` (`charming-speedle-2`,
-`donkey-speedle` and `fiona`), while `REVIEWBOT_RUNS_ON` can override the
+execute, build or test PR code. By default, human- and bot-authored
+same-repository PRs run on any self-hosted Speedle runner via `speedle-runner`,
+while `REVIEWBOT_RUNS_ON` can override the
 runner labels of only the two model-calling jobs (`Analyze pull request` and
 `Analyze ReviewBot command`). Both model-calling jobs declare `needs:` on the
 GitHub-hosted `reviewbot-preflight.yml` job, which rejects any effective value

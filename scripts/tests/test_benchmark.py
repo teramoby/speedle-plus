@@ -65,13 +65,13 @@ class CompareTest(unittest.TestCase):
         clean = benchmark.render(*benchmark.compare(base, base), "a" * 40, "b" * 40, 5)
         self.assertIn("No regression.", clean)
         self.assertNotIn("Runner:", clean)
-        named = benchmark.render(*benchmark.compare(base, base), "a" * 40, "b" * 40, 5, runner="fiona-speedle (macOS/ARM64)")
-        self.assertIn("Runner: fiona-speedle (macOS/ARM64)", named)
+        named = benchmark.render(*benchmark.compare(base, base), "a" * 40, "b" * 40, 5, runner="runner-a (macOS/ARM64)")
+        self.assertIn("Runner: runner-a (macOS/ARM64)", named)
 
     def test_runner_description(self):
         self.assertEqual(benchmark.runner_description(
-            {"RUNNER_NAME": "charming-speedle-2", "RUNNER_OS": "Linux", "RUNNER_ARCH": "X64"}),
-            "charming-speedle-2 (Linux/X64)")
+            {"RUNNER_NAME": "runner-b", "RUNNER_OS": "Linux", "RUNNER_ARCH": "X64"}),
+            "runner-b (Linux/X64)")
         # Outside Actions the host name and platform are used.
         self.assertRegex(benchmark.runner_description({}), r"^.+ \(.+/.+\)$")
 
