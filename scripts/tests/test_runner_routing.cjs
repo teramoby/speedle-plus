@@ -12,7 +12,7 @@ const canonical = 'teramoby/speedle-plus';
 const labels = ['self-hosted', 'speedle-runner'];
 const read = name => fs.readFileSync(path.join(root, '.github/workflows', name), 'utf8');
 const sources = {
-  ci: read('ci.yml'), review: read('reviewbot.yml'),
+  ci: read('ci.yml'), review: read('reviewbot.yml'), preflight: read('reviewbot-preflight.yml'),
   commands: read('reviewbot-command.yml'), inline: read('reviewbot-inline.yml'),
   nightly: read('nightly.yml'), weekly: read('weekly.yml'), postMerge: read('post-merge.yml'),
   mongodb: read('mongodb-nightly-validation.yml'),
@@ -106,14 +106,30 @@ function script(block, name) {
 test('review and command jobs retain their explicit runner policies and isolated Speedle label', () => {
   assert.deepEqual(Object.keys(job.ci), ['changes', 'lint', 'test', 'build', 'quick', 'summary']);
   assert.doesNotMatch(sources.ci.replace(/^\s*#.*$/gm, ''), /mysql|mongo|check_etcd/i, 'database backends run nightly, not per PR');
-  assert.deepEqual(Object.keys(job.review), ['diff-regression', 'review', 'publish', 'automerge-dependabot']);
-  assert.deepEqual(Object.keys(job.commands), ['prepare', 'analyze', 'publish']);
+  assert.deepEqual(Object.keys(job.review),
+    ['runner-preflight', 'diff-regression', 'review', 'publish', 'automerge-dependabot']);
+  assert.deepEqual(Object.keys(job.commands), ['prepare', 'runner-preflight', 'analyze', 'publish']);
   assert.deepEqual(Object.keys(job.inline), ['route']);
   for (const name of ['diff-regression']) assert.deepEqual(route(job.review[name]), labels);
   assert.equal(route(job.commands.prepare), 'ubuntu-24.04');
   for (const id of ['analyze', 'publish']) assert.deepEqual(route(job.commands[id]), labels);
   assert.equal(route(job.review['automerge-dependabot']), 'ubuntu-24.04');
   assert.equal(route(job.inline.route), 'ubuntu-24.04');
+  // The preflight is a hosted job that calls one reusable workflow with no
+  // permissions; the credential-bearing model calls wait for it.
+  for (const [name, block] of [['review', job.review['runner-preflight']],
+    ['commands', job.commands['runner-preflight']]]) {
+    assert.match(block, /^    uses: \.\/\.github\/workflows\/reviewbot-preflight\.yml$/m, name);
+    assert.match(block, /^    permissions: \{\}$/m, name);
+    assert.doesNotMatch(block, /runs-on:|secrets:|actions\/checkout/, name);
+  }
+  assert.match(job.commands['runner-preflight'], /^    needs: prepare$/m);
+  assert.match(job.review.review, /^    needs: runner-preflight$/m,
+    'the model call must wait for the runner-override preflight');
+  assert.match(job.commands.analyze, /^    needs: \[prepare, runner-preflight\]$/m,
+    'the model call must wait for the runner-override preflight');
+  assert.match(job.commands.analyze, /needs\.runner-preflight\.result == 'success'/,
+    "always() must not let the model call run after a failed preflight");
   const lint = fs.readFileSync(path.join(root, '.github/actionlint.yaml'), 'utf8');
   for (const label of ['speedle-linux', 'speedle-control', 'speedle-runner', 'fiona-speedle']) {
     assert.match(lint, new RegExp(`^\\s+- ${label}$`, 'm'), `${label} must stay declared for workflow lint`);
@@ -288,9 +304,10 @@ const runnerInventory = [
     labels: ['self-hosted', 'Linux', 'X64', 'speedle-linux', 'speedle-control', 'speedle-runner', 'reviewbot']},
   {name: 'donkey-speedle', os: 'Linux', arch: 'X64',
     labels: ['self-hosted', 'Linux', 'X64', 'speedle-linux', 'speedle-control', 'speedle-runner', 'reviewbot']},
-  // The all-repositories aliyun-reviewbot group. Its labels serve ReviewBot for
-  // the whole organization; no workflow default route selects them, and a
-  // REVIEWBOT_RUNS_ON override that does is checked against this inventory.
+  // The aliyun host of the organization ReviewBot runner group. A
+  // REVIEWBOT_RUNS_ON value that selects its labels is checked against this
+  // inventory; no workflow default route selects them. The snapshot records
+  // the current registration and does not define the group's repository scope.
   {name: 'ecs-light-teramoby', os: 'Linux', arch: 'X64',
     labels: ['self-hosted', 'Linux', 'X64', 'aliyun-ecs', 'reviewbot']},
   {name: 'fiona', os: 'macOS', arch: 'ARM64',
@@ -359,7 +376,7 @@ test('configured runner overrides can only land on runners the identity guard ac
   const overrides = {QUICK_RUNS_ON: pool, HEAD_RUNS_ON: pool};
   const scheduled = {...github('schedule'), ref: 'refs/heads/master'};
   assert.deepEqual(route(job.worker.execute, scheduled, overrides, {mode: 'weekly'}),
-    ['self-hosted', 'macOS', 'ARM64', 'fiona-speedle']);
+    ['self-hosted', 'fiona-speedle']);
   assert.deepEqual(route(job.worker.execute, scheduled, overrides, {mode: 'nightly'}), labels);
   assert.deepEqual(route(job.worker.execute, {...github('push'), ref: 'refs/heads/master'}, overrides,
     {mode: 'regression'}), labels);
@@ -479,36 +496,99 @@ function scheduledHosts() {
   return runnerInventory.filter(runner => runner.labels.some(label => routingLabels.has(label)))
     .map(runner => `${runner.name}/${runner.os}/${runner.arch}`).sort();
 }
-// Runners the model-calling ReviewBot jobs may use: the dedicated
-// speedle-runner pool and the organization's ReviewBot runner group.
-const reviewBotLabels = new Set(['speedle-runner', 'reviewbot']);
-function reviewBotOverrideCandidates(raw) {
+// The approved REVIEWBOT_RUNS_ON label sets. The preflight workflow declares
+// them in one constant; this suite reads that constant, uses it for the
+// inventory checks and executes the preflight step with the same value.
+function approvedReviewBotRunsOn() {
+  const match = sources.preflight.match(/^ {6}APPROVED_REVIEWBOT_RUNS_ON: '(.+)'$/m);
+  assert.ok(match, 'reviewbot-preflight.yml must declare APPROVED_REVIEWBOT_RUNS_ON');
+  const sets = JSON.parse(match[1]);
+  assert.ok(Array.isArray(sets) && sets.length > 0 &&
+    sets.every(set => Array.isArray(set) && set.length > 0 &&
+      set.every(label => typeof label === 'string' && label.length > 0)),
+  'APPROVED_REVIEWBOT_RUNS_ON must be a JSON array of non-empty label sets');
+  return sets;
+}
+const approvedRunsOn = approvedReviewBotRunsOn();
+const canonicalLabels = values => JSON.stringify([...values].sort());
+function approvedOverride(raw) {
   const values = JSON.parse(raw);
   assert.ok(Array.isArray(values) && values.length > 0 &&
     values.every(label => typeof label === 'string' && label.length > 0),
   'REVIEWBOT_RUNS_ON must be a non-empty JSON array of labels');
-  assert.ok(values.some(label => reviewBotLabels.has(label)),
-    'REVIEWBOT_RUNS_ON must resolve through a ReviewBot or Speedle runner label');
+  assert.ok(approvedRunsOn.some(set => canonicalLabels(set) === canonicalLabels(values)),
+    `${raw} is not an approved REVIEWBOT_RUNS_ON label set`);
+  return values;
+}
+function reviewBotOverrideCandidates(raw) {
+  const values = approvedOverride(raw);
   const candidates = runnersFor(values);
   assert.ok(candidates.length > 0,
     'REVIEWBOT_RUNS_ON matches no runner in the recorded inventory');
-  for (const runner of candidates) {
-    assert.ok(runner.labels.some(label => reviewBotLabels.has(label)),
-      `REVIEWBOT_RUNS_ON can select ${runner.name}, outside the ReviewBot and Speedle pools`);
-  }
   return candidates;
 }
 test('ReviewBot overrides resolve only to recorded ReviewBot runners', () => {
-  const orgGroup = JSON.stringify(['self-hosted', 'Linux', 'X64', 'reviewbot']);
-  assert.deepEqual(reviewBotOverrideCandidates(orgGroup).map(runner => runner.name),
+  const liveGroup = JSON.stringify(['self-hosted', 'Linux', 'reviewbot']);
+  const x64Group = JSON.stringify(['self-hosted', 'Linux', 'X64', 'reviewbot']);
+  assert.deepEqual(reviewBotOverrideCandidates(liveGroup).map(runner => runner.name),
+    ['charming-speedle-2', 'donkey-speedle', 'ecs-light-teramoby']);
+  assert.deepEqual(reviewBotOverrideCandidates(x64Group).map(runner => runner.name),
     ['charming-speedle-2', 'donkey-speedle', 'ecs-light-teramoby']);
   assert.deepEqual(reviewBotOverrideCandidates(JSON.stringify(labels)).map(runner => runner.name),
     ['charming-speedle-2', 'donkey-speedle', 'fiona']);
   for (const raw of ['not-json', '{}', '[]', '["self-hosted",1]',
-    JSON.stringify(['self-hosted', 'Linux', 'X64', 'aliyun-ecs'])]) {
-    assert.throws(() => reviewBotOverrideCandidates(raw));
+    JSON.stringify(['self-hosted', 'Linux', 'X64']),
+    JSON.stringify(['self-hosted', 'Linux', 'X64', 'aliyun-ecs']),
+    JSON.stringify(['self-hosted', 'macOS', 'ARM64'])]) {
+    assert.throws(() => reviewBotOverrideCandidates(raw), undefined, raw);
   }
   reviewBotOverrideCandidates(process.env.CONFIGURED_REVIEWBOT_RUNS_ON || JSON.stringify(labels));
+});
+test('every REVIEWBOT_RUNS_ON fallback names the same approved label set', () => {
+  const fallbacks = [];
+  for (const [name, source] of [['reviewbot.yml', sources.review],
+    ['reviewbot-command.yml', sources.commands], ['reviewbot-preflight.yml', sources.preflight]]) {
+    for (const match of source.matchAll(/vars\.REVIEWBOT_RUNS_ON \|\| '((?:[^']|'')*)'/g)) {
+      fallbacks.push([name, match[1].replaceAll("''", "'")]);
+    }
+  }
+  assert.ok(fallbacks.length >= 3, `missing REVIEWBOT_RUNS_ON fallbacks: ${JSON.stringify(fallbacks)}`);
+  const values = new Set(fallbacks.map(([, value]) => value));
+  assert.equal(values.size, 1,
+    `REVIEWBOT_RUNS_ON fallbacks differ, so the preflight could approve another value: ${JSON.stringify(fallbacks)}`);
+  const fallback = JSON.parse([...values][0]);
+  assert.ok(approvedRunsOn.some(set => canonicalLabels(set) === canonicalLabels(fallback)),
+    'the REVIEWBOT_RUNS_ON fallback must be an approved label set');
+});
+test('the ReviewBot preflight enforces the same allowlist the suite reads', () => {
+  const preflight = job.preflight.validate;
+  const run = script(preflight, 'Reject a runner override outside the approved label sets');
+  const execute = raw => spawnSync('bash', ['-c', run], {encoding: 'utf8',
+    env: {...process.env, APPROVED_REVIEWBOT_RUNS_ON: JSON.stringify(approvedRunsOn),
+      CONFIGURED_REVIEWBOT_RUNS_ON: raw}});
+  for (const set of approvedRunsOn) {
+    const result = execute(JSON.stringify(set));
+    assert.equal(result.status, 0, `${JSON.stringify(set)}: ${result.stderr}`);
+  }
+  // Label order inside a set does not matter.
+  assert.equal(execute(JSON.stringify([...approvedRunsOn[0]].reverse())).status, 0);
+  for (const raw of [JSON.stringify(['self-hosted', 'Linux', 'X64']),
+    JSON.stringify(['self-hosted', 'Linux', 'X64', 'aliyun-ecs']),
+    JSON.stringify(['self-hosted', 'macOS', 'ARM64']), 'not-json', '{}', '[]', '["self-hosted",1]']) {
+    const result = execute(raw);
+    assert.notEqual(result.status, 0, raw);
+    assert.match(result.stderr, /REVIEWBOT_RUNS_ON/, raw);
+  }
+  // The preflight is hosted, unprivileged and never reads repository content.
+  assert.deepEqual(route(preflight), 'ubuntu-latest');
+  assert.match(sources.preflight, /^permissions: \{\}$/m);
+  assert.match(preflight, /^    permissions: \{\}$/m);
+  assert.doesNotMatch(sources.preflight, /secrets\.|actions\/|checkout/,
+    'the preflight must not receive secrets or read repository content');
+  // The step derives every approved set from the parsed constant.
+  assert.doesNotMatch(run, /self-hosted|speedle-runner|reviewbot/);
+  assert.match(preflight,
+    /CONFIGURED_REVIEWBOT_RUNS_ON: \$\{\{ vars\.REVIEWBOT_RUNS_ON \|\| '\["self-hosted","speedle-runner"\]' \}\}/);
 });
 test('both identity guards accept exactly the hosts a scheduling label can select', () => {
   const expected = scheduledHosts();

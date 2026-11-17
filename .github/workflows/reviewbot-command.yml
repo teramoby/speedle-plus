@@ -259,10 +259,22 @@ jobs:
             core.setOutput("context_b64", encode(JSON.stringify(sourceContext, null, 2)));
             core.setOutput("should_run", "true");
 
-  analyze:
-    name: Analyze ReviewBot command
+  runner-preflight:
+    name: Validate ReviewBot runner override
     needs: prepare
     if: always() && needs.prepare.outputs.should_run == 'true'
+    uses: ./.github/workflows/reviewbot-preflight.yml
+    permissions: {}
+
+  analyze:
+    name: Analyze ReviewBot command
+    # The model call receives provider credentials, so the override must pass
+    # the hosted preflight first. The explicit result check keeps that gate
+    # even though always() would otherwise run this job after a failed need.
+    needs: [prepare, runner-preflight]
+    if: >-
+      always() && needs.prepare.outputs.should_run == 'true' &&
+      needs.runner-preflight.result == 'success'
     runs-on: ${{ fromJSON(vars.REVIEWBOT_RUNS_ON || '["self-hosted","speedle-runner"]') }}
     timeout-minutes: 20
     permissions:

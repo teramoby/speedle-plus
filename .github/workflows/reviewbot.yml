@@ -14,6 +14,11 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  runner-preflight:
+    name: Validate ReviewBot runner override
+    uses: ./.github/workflows/reviewbot-preflight.yml
+    permissions: {}
+
   diff-regression:
     name: Verify ReviewBot merge-base diff
     if: github.event_name == 'workflow_dispatch'
@@ -96,6 +101,9 @@ jobs:
   review:
     name: Analyze pull request
     if: github.event_name == 'pull_request_target' && github.event.pull_request.draft == false
+    # The model call receives provider credentials, so the override must pass
+    # the hosted preflight first.
+    needs: runner-preflight
     runs-on: >-
       ${{ github.repository == 'teramoby/speedle-plus' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.user.type == 'User' || github.event.pull_request.user.type == 'Bot') && fromJSON(vars.REVIEWBOT_RUNS_ON || '["self-hosted","speedle-runner"]') || 'ubuntu-24.04' }}
     timeout-minutes: 20

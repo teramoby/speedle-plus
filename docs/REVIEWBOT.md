@@ -23,10 +23,13 @@ execute, build or test PR code. By default, human- and bot-authored same-reposit
 on any self-hosted Speedle runner via `speedle-runner` (`charming-speedle-2`,
 `donkey-speedle` and `fiona`), while `REVIEWBOT_RUNS_ON` can override the
 runner labels of only the two model-calling jobs (`Analyze pull request` and
-`Analyze ReviewBot command`). The override must resolve only to the
-organization's ReviewBot runner group (`reviewbot`) or the dedicated
-`speedle-runner` pool; a broader label set could place provider credentials on
-an unrelated organization runner.
+`Analyze ReviewBot command`). Both model-calling jobs declare `needs:` on the
+GitHub-hosted `reviewbot-preflight.yml` job, which rejects any effective value
+outside its single literal allowlist before a provider key reaches a runner.
+The allowlist is the `APPROVED_REVIEWBOT_RUNS_ON` constant in that workflow:
+the default `speedle-runner` set and the label sets of the organization's
+ReviewBot runner group (`reviewbot`); a broader label set could place provider
+credentials on an unrelated organization runner.
 Fork PRs and unknown author types always use GitHub-hosted `ubuntu-24.04`.
 Review publication, regression dispatch and comment-command publication
 continue to use the `speedle-runner` pool, and public comment authorization and
@@ -102,14 +105,17 @@ reveal credentials, change repository settings, approve or merge PRs.
   `reviewbot.yml` for human- and bot-authored same-repository PRs, and `Analyze
   ReviewBot command` in `reviewbot-command.yml`); fork PRs and unknown author
   types remain on `ubuntu-24.04`, and every other job keeps its existing
-  `runs-on` configuration. These jobs receive provider credentials and have no
-  host identity check, so the value must resolve only to the organization's
-  ReviewBot runner group (`reviewbot`) or the dedicated `speedle-runner` pool.
-  A broader label set could select an unrelated organization runner. The
-  trusted `diff-regression` routing suite reads the configured value and
-  rejects a value with no ReviewBot or Speedle label, a label set that matches
-  no recorded runner, or a selection outside those two pools. Any selected
-  runner must also provide a GitHub Actions runner supporting Node 24-based
+  `runs-on` configuration. These jobs receive provider credentials, so each
+  declares `needs:` on the `reviewbot-preflight.yml` job: a GitHub-hosted,
+  secret-free job with `permissions: {}` that rejects any effective value
+  outside its single literal allowlist. The allowlist is the
+  `APPROVED_REVIEWBOT_RUNS_ON` constant in that workflow: the default
+  `speedle-runner` set and the label sets of the organization's ReviewBot
+  runner group (`reviewbot`); a broader label set could select an unrelated
+  organization runner. The trusted `diff-regression` routing suite reads the
+  same allowlist constant and rejects a value that matches no recorded runner
+  or that is outside it. Any selected runner must also provide a GitHub Actions
+  runner supporting Node 24-based
   actions (`2.327.1` or newer), `bash`, `git`, `curl`, `jq`, `python3`
   (standard library only), standard POSIX/GNU coreutils, and outbound HTTPS to
   GitHub and the active provider endpoint.

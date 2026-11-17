@@ -14,12 +14,17 @@ Weekly runs stay on `fiona-speedle`.
 
 ReviewBot selects `[self-hosted, speedle-runner]`, which `charming-speedle-2`,
 `donkey-speedle` and `fiona` carry, and its regression fixture job accepts all
-three. Go lint, test, post-merge regression and the nightly use the same label,
+three. Its two model-calling jobs wait for a GitHub-hosted preflight that
+validates `REVIEWBOT_RUNS_ON` against one literal allowlist of label sets, so
+an unapproved override fails the run before a provider key reaches a runner.
+Go lint, test, post-merge regression and the nightly use the same label,
 and the Go CI worker accepts `donkey-speedle` for those tasks as well. Go build
 (it needs the Linux Hugo release and `sha256sum`) selects
 `[self-hosted, Linux, X64, speedle-linux]`. The weekly selects
-`[self-hosted, macOS, ARM64, fiona-speedle]` to reduce timing noise in its
-benchmark check and to keep a mislabelled Linux runner from taking it.
+`[self-hosted, fiona-speedle]` to reduce timing noise in its benchmark check,
+and its identity step fails any run on an OS or architecture other than macOS
+ARM64, so a host that later carries that label elsewhere cannot silently take
+the run.
 The benchmarks (`scripts/ci/benchmark.py`) measure master as of May 2026 and
 the current code alternately in the same run; each report names the runner that
 measured it.

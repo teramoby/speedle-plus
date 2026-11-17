@@ -11,8 +11,9 @@ const vm = require('node:vm');
 const source = fs.readFileSync(path.resolve(__dirname, '../../.github/workflows/go-ci-worker.yml'), 'utf8');
 const pool = ['self-hosted', 'Linux', 'X64', 'speedle-linux'];
 const anyRunner = ['self-hosted', 'speedle-runner'];
-const fiona = ['self-hosted', 'macOS', 'ARM64', 'fiona-speedle'];
-// Build needs the Linux pool and weekly uses fiona to reduce benchmark noise.
+const fiona = ['self-hosted', 'fiona-speedle'];
+// Build needs the Linux pool and weekly uses the unique fiona label to reduce
+// benchmark noise; its macOS ARM64 requirement is a runtime identity check.
 const routeFor = mode => mode === 'quick' ? 'ubuntu-latest' : mode === 'build' ? pool : mode === 'weekly' ? fiona : anyRunner;
 const repository = 'teramoby/speedle-plus';
 function step(name) {
@@ -486,6 +487,14 @@ test('identity check accepts the Speedle runners for the tasks each may run', ()
       const allowed = (['charming-speedle-2/Linux/X64', 'donkey-speedle/Linux/X64'].includes(host) && CI_TASK !== 'weekly') ||
         (host === 'fiona/macOS/ARM64' && CI_TASK !== 'build');
       assert.equal(result.status === 0, allowed, `${host}/${CI_TASK}: ${result.stderr}`);
+      // Weekly's label is unique, but its platform requirement is a runtime
+      // check: an identity-accepted Linux host that later carries the label
+      // must fail red with the platform message, not the identity message.
+      if (CI_TASK === 'weekly' && host !== 'fiona/macOS/ARM64' &&
+          ['charming-speedle-2/Linux/X64', 'donkey-speedle/Linux/X64'].includes(host)) {
+        assert.equal(result.status, 1, host);
+        assert.match(result.stderr, /requires a macOS ARM64 runner/, host);
+      }
     }
   }
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-runner-python-'));
