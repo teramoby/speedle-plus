@@ -177,6 +177,8 @@ ls bin</code></pre></div>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/speedle-ads --store-type file --filestore-loc ./quick-start-policies.json --endpoint <span style="color:#bd93f9">127</span>.0.0.1:6734 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
 <p>起動したままにし、REST サーバーが開始されるのを待ちます。</p>
 
+<p>ADS は共有ファイルを監視しており、変更は非同期に伝播するため、新しいポリシーは少し後に反映されます。</p>
+
 <h3 id="4-認可決定を検証">4. 認可決定を検証</h3>
 
 <p>2つ目のターミナルでこれらのリクエストを実行します。最初のリクエストは <code>user1</code> への直接認可を確認します:</p>
