@@ -1,0 +1,47 @@
+name: Speedle CI route gate
+
+on:
+  workflow_run:
+    workflows: [Speedle CI]
+    types: [in_progress, completed]
+
+permissions:
+  contents: read
+  statuses: write
+  actions: read
+  pull-requests: read
+
+# One group per CI run. GitHub keeps at most one pending run per concurrency
+# group, so a per-head group could drop the gate of a newer failing run behind
+# a publish-silent one. The script orders the runs of a head itself: a run with
+# a newer started run publishes nothing, checked again before it publishes.
+concurrency:
+  group: ci-route-gate-${{ github.event.workflow_run.id }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: CI route gate
+    if: github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout default branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '22'
+          package-manager-cache: false
+
+      - name: Verify completed CI routes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
+          WORKFLOW_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+        run: node scripts/ci/ci-route-gate.cjs --run-id "${WORKFLOW_RUN_ID}" --publish
