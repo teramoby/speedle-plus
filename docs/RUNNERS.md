@@ -200,8 +200,9 @@ is off as well. Every other non-empty value turns it on, so a misspelling such
 as `ture` fails closed instead of silently dropping the guarantee. To make a
 broken email channel a notice instead of a failed job, set the marker to one
 of those three values (or remove it) in the report job's `env:` in the
-workflow. A local run or a test without the settings only prints a notice and
-stays green. The step summary keeps the report for the run, up to 900000 bytes
+workflow. The post-merge regression sends nothing when it passes, but it
+still checks the settings and fails on a missing or malformed one. A local run
+or a test without the settings only prints a notice and stays green. The step summary keeps the report for the run, up to 900000 bytes
 and with the cut marked when the report is longer; the email carries the full
 report as an attachment, capped at 17 MiB with a note when it had to be cut.
 

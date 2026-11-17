@@ -965,6 +965,35 @@ class RegressionTest(unittest.TestCase):
         self.assertIn("post-merge regression test report: PASSED", summary)
         self.assertIn("Commit: http://commit/abc", summary)
 
+    def test_a_passing_required_report_job_fails_with_missing_settings(self):
+        # The run sends nothing when it passes, but it is still a real report
+        # job: the documented fail-closed guarantee must not wait for a
+        # failing run, exactly when the notification matters.
+        directory = Path(tempfile.mkdtemp())
+        (directory / "go-file.json").write_text(events(("pass", "p", "TestA", None)))
+        step_summary = directory / "step-summary.md"
+        with mock.patch.object(test_report, "send_email") as send, \
+                mock.patch("sys.stdout", new=io.StringIO()), \
+                mock.patch("sys.stderr", new=io.StringIO()) as stderr:
+            code = test_report.main(["--kind", "regression", "--source", f"run:success:{directory}"],
+                                    env={"REPORT_EMAIL_REQUIRED": "true",
+                                         "GITHUB_STEP_SUMMARY": str(step_summary)})
+        send.assert_not_called()
+        self.assertEqual(code, 1)
+        self.assertIn("::error::The report email is not configured correctly", stderr.getvalue())
+        self.assertIn("Report email not sent", step_summary.read_text())
+
+    def test_a_passing_required_report_job_with_settings_stays_quiet(self):
+        directory = Path(tempfile.mkdtemp())
+        (directory / "go-file.json").write_text(events(("pass", "p", "TestA", None)))
+        env = {"REPORT_EMAIL_REQUIRED": "true", "CF_ACCOUNT_ID": "a", "CF_EMAIL_TOKEN": "t",
+               "OPS_EMAIL_FROM": "sender@example.com", "OPS_EMAIL_TO": "recipient@example.com",
+               "OPS_EMAIL_REPLY_TO": "reply@example.com"}
+        with mock.patch.object(test_report, "send_email") as send, mock.patch("builtins.print"):
+            code = test_report.main(["--kind", "regression", "--source", f"run:success:{directory}"], env=env)
+        send.assert_not_called()
+        self.assertEqual(code, 0)
+
     def test_a_failure_opens_an_issue_with_output_and_english_analysis(self):
         github, ark, email, summary = self.run_main(events(
             ("output", "p", "TestB", "panic: assignment to entry in nil map\n"), ("fail", "p", "TestB", None)))

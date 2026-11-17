@@ -22,6 +22,8 @@ jobs:
 
   # On failure only: an English Ark analysis, an email to the operators, and
   # one tracking issue per failing test with its output and the analysis.
+  # A passing run sends nothing, but it still checks the email settings, so a
+  # broken channel fails this job before the first failure needs it.
   # Hosted, so the test runner never holds the Ark, email or issue tokens.
   report:
     name: report

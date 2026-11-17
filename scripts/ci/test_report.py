@@ -364,7 +364,7 @@ def email_text(report, run_url=""):
                   f"see also {where} and the tracked issues]\n")
     else:
         footer = (f"\n\n[report truncated at {EMAIL_TEXT_LIMIT} characters; the attachment is truncated "
-                  f"as well, so {where} is the only complete copy]\n")
+                  f"as well; see {where} for the rest]\n")
     return report[:EMAIL_TEXT_LIMIT - len(footer)] + footer
 
 
@@ -665,6 +665,16 @@ def main(argv=None, env=os.environ):
         if args.summary_file:
             Path(args.summary_file).write_text(summary, encoding="utf-8")
         print(summary)
+        # A quiet-on-pass report job sends nothing, but it is still a real
+        # report job: a missing or malformed setting must fail it now rather
+        # than stay hidden until a failing run needs the notification.
+        problems = email_config_problems(env) if report_email_required(env) else []
+        if problems:
+            problem = "; ".join(problems)
+            note_in_summary(env, f"Cloudflare Email is not configured correctly ({problem}).")
+            print(f"::error::The report email is not configured correctly ({problem}); "
+                  "failing the report job.", file=sys.stderr)
+            return 1
         return 0
 
     analysis = None
