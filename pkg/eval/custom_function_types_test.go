@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	adsapi "github.com/teramoby/speedle-plus/api/ads"
+	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/errors"
 )
 
@@ -201,6 +202,36 @@ func TestUndeclaredFunctionUnchanged(t *testing.T) {
 	allowed, _, err := p.IsAllowed(aliceContext("app", "r", "read"))
 	if err != nil || allowed {
 		t.Fatalf("allowed=%v err=%v; an undeclared result must keep the old nonmatch", allowed, err)
+	}
+}
+
+// TestCachedResultRecheckedAgainstDeclaration checks that a cached value which
+// does not match the declared result type fails the call instead of being
+// returned.
+func TestCachedResultRecheckedAgainstDeclaration(t *testing.T) {
+	var calls int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&calls, 1)
+		fmt.Fprint(w, `{"result":1}`)
+	}))
+	t.Cleanup(server.Close)
+	p, _ := newFixtureEvaluator(t, fmt.Sprintf(`{
+		"functions":[{"name":"f","funcURL":%q,"resultCachable":true,"resultTTL":60,"result":"numeric"}],
+		"services":[{"name":"app","policies":[{"id":"grant","effect":"grant",%s,"condition":"f() == 1"}]}]}`,
+		server.URL, aliceReadPrincipals))
+	key, err := getKey("f", nil) // a call without arguments
+	if err != nil {
+		t.Fatal(err)
+	}
+	cached := &pms.Function{Name: "f", ResultCachable: true}
+	p.RuntimePolicyStore.FunctionResultCache.AddToCache(key, cached, "text")
+
+	allowed, _, err := p.IsAllowed(aliceContext("app", "r", "read"))
+	if err == nil || allowed || !strings.Contains(err.Error(), "result is string, want numeric") {
+		t.Fatalf("allowed=%v err=%v", allowed, err)
+	}
+	if got := atomic.LoadInt32(&calls); got != 0 {
+		t.Errorf("%d calls; a cached value must not trigger a call", got)
 	}
 }
 

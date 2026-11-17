@@ -125,6 +125,11 @@ func (frc *FuncResultCache) callCustomFunction(cf *pms.Function, arguments []int
 		return nil, newCustomFunctionError(cf.Name, errors.Wrapf(err, errors.CustomerFuncError, "failed to encode parameters for customer function %q", cf.Name))
 	}
 	if result := frc.ReadFromCache(key, cf); result != nil {
+		// A cached value may precede a declaration change or come from an
+		// embedder's AddToCache, so its declared type is checked again.
+		if err := checkCustomFunctionResult(cf, result); err != nil {
+			return nil, err
+		}
 		return result, nil
 	}
 	result, err := call(&ext.CustomerFunctionRequest{Params: arguments})
