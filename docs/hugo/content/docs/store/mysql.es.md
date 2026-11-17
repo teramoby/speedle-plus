@@ -210,12 +210,34 @@ PMS luego se ejecuta con permisos `SELECT`, `INSERT`, `UPDATE`, `DELETE`; ADS pe
 
 La versión actual del esquema es la 2. Detenga ambos servicios y migre una base de datos de versión 1 antes de iniciar la versión actualizada; el inicio rechaza la versión anterior.
 
-```sql
-ALTER TABLE speedle_functions
-  ADD COLUMN param_types JSON NULL,
-  ADD COLUMN result_type LONGTEXT NULL;
-UPDATE speedle_store_meta SET schema_version = 2 WHERE id = 1;
-```
+MySQL confirma `ALTER TABLE` por separado, así que la migración no es atómica: puede detenerse después de añadir las columnas y antes de actualizar la versión. Los pasos siguientes pueden repetirse desde el principio tras cualquier interrupción.
+
+1. Compruebe cuáles de las columnas nuevas ya existen:
+
+   ```sql
+   SELECT COLUMN_NAME FROM information_schema.COLUMNS
+   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'speedle_functions'
+     AND COLUMN_NAME IN ('param_types', 'result_type');
+   ```
+
+2. Añada solo las columnas que el paso 1 no mostró. Si no existe ninguna de las dos:
+
+   ```sql
+   ALTER TABLE speedle_functions
+     ADD COLUMN param_types JSON NULL,
+     ADD COLUMN result_type LONGTEXT NULL;
+   ```
+
+   Si solo aparece una, añada la otra por separado. Si aparecen las dos, omita este paso.
+
+3. Registre la nueva versión y compruébela:
+
+   ```sql
+   UPDATE speedle_store_meta SET schema_version = 2 WHERE id = 1;
+   SELECT schema_version FROM speedle_store_meta WHERE id = 1;
+   ```
+
+   La consulta debe devolver `2`. Si no devuelve ninguna fila, la base de datos no la creó Speedle y necesita el esquema completo.
 
 Las nuevas columnas almacenan las declaraciones opcionales de tipos de las funciones personalizadas; las filas de funciones existentes permanecen en `NULL`, lo que significa que no hay declaración.
 

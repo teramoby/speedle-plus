@@ -210,12 +210,34 @@ docker exec speedle-mysql mysql --user=root --password=SpeedleDemoRoot84 -e "REV
 
 当前结构版本为 2。升级前先停止两个服务，并对版本 1 的数据库执行一次性迁移；启动时会拒绝旧版本。
 
-```sql
-ALTER TABLE speedle_functions
-  ADD COLUMN param_types JSON NULL,
-  ADD COLUMN result_type LONGTEXT NULL;
-UPDATE speedle_store_meta SET schema_version = 2 WHERE id = 1;
-```
+MySQL 会单独提交 `ALTER TABLE`，因此迁移不是原子操作：可能在新增列之后、更新版本之前中断。以下步骤在任何中断后都可以从头重新执行。
+
+1. 检查哪些新列已经存在：
+
+   ```sql
+   SELECT COLUMN_NAME FROM information_schema.COLUMNS
+   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'speedle_functions'
+     AND COLUMN_NAME IN ('param_types', 'result_type');
+   ```
+
+2. 只添加第 1 步未列出的列。两列都不存在时：
+
+   ```sql
+   ALTER TABLE speedle_functions
+     ADD COLUMN param_types JSON NULL,
+     ADD COLUMN result_type LONGTEXT NULL;
+   ```
+
+   如果只列出了一列，单独添加另一列；两列都已列出时跳过此步。
+
+3. 记录新版本，然后检查：
+
+   ```sql
+   UPDATE speedle_store_meta SET schema_version = 2 WHERE id = 1;
+   SELECT schema_version FROM speedle_store_meta WHERE id = 1;
+   ```
+
+   查询必须返回 `2`。如果没有返回任何行，说明该数据库不是由 Speedle 创建的，需要改用完整的结构初始化。
 
 新增列保存可选的函数类型声明；已有函数行保持 `NULL`，表示未声明。
 

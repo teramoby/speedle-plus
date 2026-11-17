@@ -247,12 +247,34 @@ does not migrate existing tables; unsupported schema versions fail startup.
 
 The current schema version is 2. Stop both services and migrate a version 1 database before starting the upgraded release; startup rejects the old version.
 
-```sql
-ALTER TABLE speedle_functions
-  ADD COLUMN param_types JSON NULL,
-  ADD COLUMN result_type LONGTEXT NULL;
-UPDATE speedle_store_meta SET schema_version = 2 WHERE id = 1;
-```
+MySQL commits `ALTER TABLE` on its own, so the migration is not atomic: it can stop after the columns are added and before the version is updated. The steps below can be rerun from the start after any interruption.
+
+1. Check which of the new columns already exist:
+
+   ```sql
+   SELECT COLUMN_NAME FROM information_schema.COLUMNS
+   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'speedle_functions'
+     AND COLUMN_NAME IN ('param_types', 'result_type');
+   ```
+
+2. Add only the columns that step 1 did not list. With neither column present:
+
+   ```sql
+   ALTER TABLE speedle_functions
+     ADD COLUMN param_types JSON NULL,
+     ADD COLUMN result_type LONGTEXT NULL;
+   ```
+
+   If only one is listed, add the other one alone. If both are listed, skip this step.
+
+3. Record the new version, then check it:
+
+   ```sql
+   UPDATE speedle_store_meta SET schema_version = 2 WHERE id = 1;
+   SELECT schema_version FROM speedle_store_meta WHERE id = 1;
+   ```
+
+   The query must return `2`. If it returns no row, the database was not created by Speedle and needs the full schema instead.
 
 The new columns hold the optional custom-function type declarations; existing function rows stay `NULL`, which means no declaration.
 
