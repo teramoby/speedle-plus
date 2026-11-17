@@ -341,6 +341,14 @@ func (e *RESTService) IsAllowed(w http.ResponseWriter, r *http.Request) {
 	}
 
 	result, reason, err := e.Evaluator.IsAllowed(*context)
+	if eval.IsCustomFunctionError(err) {
+		// A failed custom function call is an evaluation failure, not a
+		// decision: answer with the error response instead of a body that
+		// would read as "denied".
+		logging.WriteFailedAuditLog("IsAllowed", map[string]interface{}{"requestContext": context}, err.Error())
+		httputils.HandleError(w, err)
+		return
+	}
 	response := IsAllowedResponse{
 		Allowed: result,
 		Reason:  int32(reason),

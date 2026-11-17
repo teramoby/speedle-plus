@@ -31,6 +31,9 @@ func errorCodeToHTTPStatus(err error) int {
 		return http.StatusBadRequest
 	case errors.ExceedLimit:
 		return http.StatusForbidden
+	case errors.CustomerFuncError, errors.EvalEngineError:
+		// A decision that could not be evaluated is a server-side failure.
+		return http.StatusInternalServerError
 	default:
 		// Unknown status
 		return http.StatusInternalServerError

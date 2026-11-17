@@ -35,29 +35,13 @@ func validateFunctionAdditionCustomFunctions(_ *RuntimePolicyStore, _ *pms.Funct
 
 func (frc *FuncResultCache) generateCustomerExpressionFunction(cfdUrl *string, cf *pms.Function) (govaluate.ExpressionFunction, error) {
 	return func(arguments ...interface{}) (interface{}, error) {
-		params := []interface{}{}
-		params = append(params, arguments...)
-		request := &ext.CustomerFunctionRequest{
-			Params: params,
-		}
-		key, keyErr := getKey(cf.Name, arguments)
-		if keyErr != nil {
-			return nil, keyErr
-		}
-		var result interface{}
-		var err error
-		if result = frc.ReadFromCache(key, cf); result != nil {
-			return result, nil
-		}
-		if *cfdUrl == "" { //no delegator configured, request goes directly to customer function service
-			result, err = CallCustomerFunction(cf, request)
-		} else { //delegator configured, send request to delegator over http, and delegator sends request to customer function service over https
-			result, err = CallCustomerFunctionViaDelegator(*cfdUrl, cf, request)
-		}
-		if err == nil {
-			frc.AddToCache(key, cf, result)
-		}
-		return result, err
+		return frc.callCustomFunction(cf, arguments, func(request *ext.CustomerFunctionRequest) (interface{}, error) {
+			if *cfdUrl == "" { //no delegator configured, request goes directly to customer function service
+				return CallCustomerFunction(cf, request)
+			}
+			//delegator configured, send request to delegator over http, and delegator sends request to customer function service over https
+			return CallCustomerFunctionViaDelegator(*cfdUrl, cf, request)
+		})
 	}, nil
 }
 

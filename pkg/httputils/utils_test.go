@@ -20,6 +20,8 @@ func TestHandleError(t *testing.T) {
 		errors.New(errors.StoreError, "x"):          http.StatusInternalServerError,
 		errors.New(errors.InvalidRequest, "x"):      http.StatusBadRequest,
 		errors.New(errors.ExceedLimit, "x"):         http.StatusForbidden,
+		errors.New(errors.CustomerFuncError, "x"):   http.StatusInternalServerError,
+		errors.New(errors.EvalEngineError, "x"):     http.StatusInternalServerError,
 		goerrors.New("plain"):                       http.StatusInternalServerError,
 	}
 	for err, want := range cases {
