@@ -13,23 +13,23 @@ class SpeedlePms < Formula
 
   on_macos do
     on_arm do
-      url "https://github.com/teramoby/speedle-plus/releases/download/v1.8.0/speedle-pms_darwin_arm64"
-      sha256 "1f9832f8d44c3fd367adbbea62d590a6d0e627d273ba81d8fff83e36e5ac8a58"
+      url "https://github.com/teramoby/speedle-plus/releases/download/v1.9.0/speedle-pms_darwin_arm64"
+      sha256 "d9d8d1130a493fcec71ff1b2674301ff8cf3df29f2946a088154cf26ba958ffd"
     end
     on_intel do
-      url "https://github.com/teramoby/speedle-plus/releases/download/v1.8.0/speedle-pms_darwin_amd64"
-      sha256 "1fc0edc524a06f203b785a8d8f8617676662afbd91f9dff21721f488146ee8a7"
+      url "https://github.com/teramoby/speedle-plus/releases/download/v1.9.0/speedle-pms_darwin_amd64"
+      sha256 "30e50f63e8459513db45785e09d0d785b64f11efbb63c9d0e5bc29413efae279"
     end
   end
 
   on_linux do
     on_arm do
-      url "https://github.com/teramoby/speedle-plus/releases/download/v1.8.0/speedle-pms_linux_arm64"
-      sha256 "e103563ed2bcb93f8ad58cc1d9a8b67b598dea941e79a21a54459f451217757d"
+      url "https://github.com/teramoby/speedle-plus/releases/download/v1.9.0/speedle-pms_linux_arm64"
+      sha256 "14f6465a02474a63901cfe82ed3b091ed3f01ed1004e408475f1645f5a571132"
     end
     on_intel do
-      url "https://github.com/teramoby/speedle-plus/releases/download/v1.8.0/speedle-pms_linux_amd64"
-      sha256 "3ee64f5e0207117fd0514863914940e536f4161930b732cccc664629a4801eda"
+      url "https://github.com/teramoby/speedle-plus/releases/download/v1.9.0/speedle-pms_linux_amd64"
+      sha256 "ed77e9f43f189159b9686f25dd2d9856c5c27d047e428dac635e2950f50608ed"
     end
   end
 

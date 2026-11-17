@@ -10,7 +10,7 @@ customcssfile = "command-copy.css"
 tocheading = "h2"
 bref = "使用 go install 安装 Speedle 或从源码编译，使用 SPDL 和 spctl 创建策略，再通过 REST API 验证授权结果。本教程使用本地文件存储策略。"
 icon = "9. Getting Started.svg"
-lastmod = 2026-11-14T21:41:19+00:00
+lastmod = 2026-11-17T08:36:36+00:00
 +++
 
 ## 先在 Playground 中试用
@@ -40,11 +40,11 @@ Go 会自动配置 `GOROOT` 和默认的 `GOPATH`，无需手动指定。下面�
 
 <!-- quick-start: install -->
 ```bash
-GOBIN="$PWD/bin" go install github.com/teramoby/speedle-plus/cmd/...@v1.8.0
+GOBIN="$PWD/bin" go install github.com/teramoby/speedle-plus/cmd/...@v1.9.0
 ls bin
 ```
 
-`GOBIN` 把可执行程序放到当前目录的 `bin` 中；不设置时，Go 会把它们写入 `$(go env GOPATH)/bin`。`v1.8.0` 是撰写本文时的最新发布标签；`go install` 使用该标签的源码编译，并通过 Go 校验和数据库验证。
+`GOBIN` 把可执行程序放到当前目录的 `bin` 中；不设置时，Go 会把它们写入 `$(go env GOPATH)/bin`。`v1.9.0` 是撰写本文时的最新发布标签；`go install` 使用该标签的源码编译，并通过 Go 校验和数据库验证。
 
 ### 方式 B：下载源码并编译
 
