@@ -143,6 +143,19 @@ test('job-level condition requires safe verdict and same-repository Dependabot',
   assert.match(job,/needs\.review\.outputs\.safe_to_merge == 'true'/);
   assert.match(job,/needs: \[review, publish\]/);
 });
+test('dependency auto-merge waiters are grouped per pull request on a hosted runner',()=>{
+  const start=workflow.indexOf('  automerge-dependabot:');
+  const job=workflow.slice(start,workflow.indexOf('    steps:',start));
+  const group=job.match(/^    concurrency:\n      group: (.+)\n      cancel-in-progress: false$/m);
+  assert.ok(group,'the waiter must define a non-cancelling concurrency group');
+  assert.equal(group[1],'reviewbot-dependabot-automerge-${{ github.event.pull_request.number }}',
+    'another dependency PR must not share the concurrency group');
+  const resolve=number=>group[1].replace(/\$\{\{ github\.event\.pull_request\.number \}\}/g,String(number));
+  assert.notEqual(resolve(70),resolve(71));
+  assert.match(job,/^    runs-on: ubuntu-24\.04$/m,
+    'the waiter must not occupy a self-hosted runner while dependency CI runs');
+  assert.doesNotMatch(job,/self-hosted|speedle-control/);
+});
 function mergeJobEligible({reviewResult='success',publishResult='success',safe='true',author='dependabot[bot]',headRepo=`${owner}/${repo}`,cancelledWorkflow=false}={}) {
   const job=workflow.slice(workflow.indexOf('  automerge-dependabot:'));
   const condition=job.match(/    if: >-\n([\s\S]*?)\n    runs-on:/)[1].trim();
