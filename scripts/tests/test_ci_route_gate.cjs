@@ -1102,3 +1102,51 @@ test('command arguments require one explicit input and keep PR mode read-only', 
     assert.throws(() => gate.parseArgs(args, {GITHUB_REPOSITORY: repository}));
   }
 });
+
+test('every gh call is bounded and a timeout is an error', () => {
+  const seen = [];
+  const spawn = (command, args, options) => {
+    seen.push(options);
+    return {error: Object.assign(new Error('spawnSync gh ETIMEDOUT'), {code: 'ETIMEDOUT'})};
+  };
+  const api = gate.createGhApi({spawn, now: () => 0});
+  assert.throws(() => api(`repos/${repository}/actions/runs/101`), /gh api timed out/);
+  assert.equal(seen[0].timeout, 60000);
+  assert.equal(seen[0].killSignal, 'SIGKILL');
+});
+
+test('reads stop at the assessment deadline but a status write still goes out', () => {
+  let clock = 0;
+  const calls = [];
+  const spawn = (command, args) => {
+    calls.push(args);
+    return {status: 0, stdout: '{}'};
+  };
+  const api = gate.createGhApi({spawn, now: () => clock});
+  api(`repos/${repository}/actions/runs/101`);
+  clock = 6 * 60 * 1000 + 1;
+  assert.throws(() => api(`repos/${repository}/actions/runs/101`), /assessment deadline/);
+  api(`repos/${repository}/statuses/${head}`, {method: 'POST', input: {state: 'failure'}});
+  assert.equal(calls.length, 2);
+  assert.ok(calls[1].includes('POST'));
+});
+
+test('a gate that runs past the deadline publishes failure instead of keeping an old success', () => {
+  let clock = 0;
+  const fixture = fixtureApi({run: run(), pr: pullRequest(), files: ['docs/guide.md'], jobs: jobs()});
+  const spawn = (command, args, options) => {
+    // Every read advances the clock by a minute, as a slow API would.
+    const endpoint = args[1];
+    const method = args.includes('--method') ? args[args.indexOf('--method') + 1] : undefined;
+    if (!method) clock += 60 * 1000;
+    const input = options.input === undefined ? undefined : JSON.parse(options.input);
+    const response = fixture.api(endpoint, {paginate: args.includes('--paginate'), method, input});
+    return {status: 0, stdout: response === null ? '' : JSON.stringify(response)};
+  };
+  const result = gate.runGate({repository, runId: 101, publish: true}, gate.createGhApi({spawn, now: () => clock}));
+  assert.equal(result.status.state, 'failure');
+  assert.match(result.error, /assessment deadline/);
+  const writes = fixture.calls.filter(call => call.options.method === 'POST');
+  assert.equal(writes.length, 1);
+  assert.equal(writes[0].options.input.state, 'failure');
+});

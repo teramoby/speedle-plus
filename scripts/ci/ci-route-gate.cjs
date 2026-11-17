@@ -28,6 +28,11 @@ const UNKNOWN_OWNERSHIP = Symbol('unknown run ownership');
 // A gate that finds a newer completed run after it published re-evaluates
 // that run; past this many rounds the head fails closed.
 const PUBLICATION_ROUNDS = 3;
+// The workflow job is killed after 10 minutes. Each gh call is bounded, and
+// reads stop at the assessment deadline, so the failure path always has time
+// to write its status: the last read ends by 7 minutes and the write by 8.
+const API_TIMEOUT_MS = 60 * 1000;
+const ASSESSMENT_DEADLINE_MS = 6 * 60 * 1000;
 // The run and pull request a published verdict belongs to, for the check
 // after publication. Kept beside the result so the printed result is unchanged.
 const verdictContext = new WeakMap();
@@ -681,16 +686,30 @@ function runGate(options, api, runner = spawnSync) {
   return result;
 }
 
-function ghApi(endpoint, options = {}) {
+// A gh API client whose reads fail once the assessment deadline has passed. A
+// status write is still allowed after it, so a failure can be published.
+function createGhApi({spawn = spawnSync, now = Date.now, start = now()} = {}) {
+  return (endpoint, options = {}) => {
+    if (!options.method && now() - start > ASSESSMENT_DEADLINE_MS) {
+      throw new Error('CI route gate exceeded its assessment deadline');
+    }
+    return ghApiCall(spawn, endpoint, options);
+  };
+}
+
+function ghApiCall(spawn, endpoint, options) {
   const args = ['api', endpoint];
   if (options.paginate) args.push('--paginate', '--slurp');
   if (options.method) args.push('--method', options.method);
   if (options.input !== undefined) args.push('--input', '-');
-  const result = spawnSync('gh', args, {
+  const result = spawn('gh', args, {
     encoding: 'utf8',
     input: options.input === undefined ? undefined : JSON.stringify(options.input),
     maxBuffer: 32 * 1024 * 1024,
+    timeout: API_TIMEOUT_MS,
+    killSignal: 'SIGKILL',
   });
+  if (result.error?.code === 'ETIMEDOUT') throw new Error(`gh api timed out for ${endpoint}`);
   if (result.error) throw result.error;
   if (result.status !== 0) throw new Error(`gh api exited ${result.status}: ${String(result.stderr || '').trim()}`);
   if (!result.stdout.trim()) return null;
@@ -757,7 +776,7 @@ function main(argv) {
   }
   let result;
   try {
-    result = runGate(options, ghApi);
+    result = runGate(options, createGhApi());
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));
     process.exitCode = 1;
@@ -780,6 +799,7 @@ module.exports = {
   allRoutes,
   changedFiles,
   classifyWithBase,
+  createGhApi,
   evaluate,
   execute,
   parseArgs,
