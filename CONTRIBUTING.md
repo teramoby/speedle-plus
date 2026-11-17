@@ -64,8 +64,9 @@ apply the coverage gate. When the pull request changes `docs/` or `website/`,
 quick also runs the documentation walkthroughs: the documented Go install and
 native quick-start commands, the embedded guide, the docs contract tests and
 the bilingual documentation command blocks. The Playground engine rebuild,
-browser/a11y checks and Hugo verification stay on the full route at the merge
-head; an unlabeled pull request does not run them.
+browser/a11y checks and Hugo verification stay on the full route; the merge
+procedure below runs that route at the merge head before merge, and an
+unlabeled pull request does not run them.
 Container, command and release paths retain image smoke without a label:
 `deployment/container/**`, `cmd/**`,
 `.github/workflows/release.yml`, `.github/workflows/image-smoke.yml` and

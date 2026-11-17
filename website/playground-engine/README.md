@@ -71,8 +71,9 @@ GOOS=js GOARCH=wasm go test -mod=readonly \
 ```
 
 The protected Go CI build worker runs `website/playground-engine/verify.sh` on
-pushes to the default branch and on pull requests on the full route, including
-the merge-head run that every merge goes through. It restores an
+pushes to the default branch and on pull requests on the full route, which the
+[merge procedure](../../CONTRIBUTING.md) runs at the merge head before merge.
+It restores an
 OS/architecture-specific Chromium cache keyed by `package-lock.json`, then
 installs the locked Playwright/axe-core
 packages and any missing browser revision. A cache miss downloads the exact

@@ -950,7 +950,7 @@ test('quick content checks select documentation walkthroughs and propagate walkt
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-content-'));
   try {
     fs.mkdirSync(path.join(dir, 'bin'));
-    fs.writeFileSync(path.join(dir, 'bin/git'), `#!${process.execPath}\nif(process.env.FAIL_BASE)process.exit(3);\nprocess.stdout.write(process.env.CHANGED.split('|').join('\\0'));\n`);
+    fs.writeFileSync(path.join(dir, 'bin/git'), `#!${process.execPath}\nif(process.env.FAIL_BASE){process.stderr.write('fatal: fixture git error\\n');process.exit(3)}\nprocess.stdout.write(process.env.CHANGED.split('|').join('\\0'));\n`);
     fs.chmodSync(path.join(dir, 'bin/git'), 0o755);
     const output = path.join(dir, 'output');
     const env = {...process.env, PATH: path.join(dir, 'bin') + path.delimiter + process.env.PATH, PR_BASE: 'base', GITHUB_SHA: 'head', GITHUB_OUTPUT: output};
@@ -960,11 +960,18 @@ test('quick content checks select documentation walkthroughs and propagate walkt
       assert.equal(result.status, 0, result.stderr);
       assert.equal(fs.readFileSync(output, 'utf8'), `changed=${selected}\n`);
     }
-    // A shallow checkout without the base commit fails with a clear message
-    // instead of a generic git diff error.
+    // Without a pull request base (a non-pull-request caller) the checks run
+    // rather than being skipped without evidence.
+    fs.writeFileSync(output, '');
+    const noBase = spawnSync('bash', ['-c', script('Select quick content checks')], {cwd: dir, env: {...env, PR_BASE: '', CHANGED: ''}, encoding: 'utf8'});
+    assert.equal(noBase.status, 0, noBase.stderr);
+    assert.equal(fs.readFileSync(output, 'utf8'), 'changed=true\n');
+    // A shallow checkout without the base commit fails with a clear message,
+    // not a generic git diff error, and keeps git's own diagnostic.
     const missingBase = spawnSync('bash', ['-c', script('Select quick content checks')], {cwd: dir, env: {...env, CHANGED: 'docs/page.md', FAIL_BASE: '1'}, encoding: 'utf8'});
     assert.notEqual(missingBase.status, 0);
     assert.match(missingBase.stderr, /base commit base is missing from the quick checkout/);
+    assert.match(missingBase.stderr, /fatal: fixture git error/);
     // Intercept commands, retaining the actual shell's fail-fast behavior.
     for (const tool of ['go', 'python3']) {
       fs.writeFileSync(path.join(dir, 'bin', tool), `#!${process.execPath}\nconst args=process.argv.slice(2);require('node:fs').appendFileSync(process.env.RECORD,JSON.stringify(args)+'\\n');if(args[0]==='env')process.stdout.write('go1.26.11\\n');process.exit(args.includes(process.env.FAIL_COMMAND)?7:0);\n`);
