@@ -99,10 +99,13 @@ function fixtureApi({run: completedRun, pr, files, prFiles, jobs: runJobs, newer
     }
     if (endpoint === `repos/${repository}/actions/runs/${completedRun.id}`) return completedRun;
     if (endpoint === `repos/${repository}/pulls/${pr.number}`) return pr;
-    if (endpoint === `repos/${repository}/commits/${completedRun.head_sha}/pulls`) {
+    if (endpoint === `repos/${repository}/commits/${completedRun.head_sha}/pulls?per_page=100`) {
+      assert.equal(options.paginate, true);
       commitsCalls += 1;
-      if (typeof commitPulls === 'function') return commitPulls(commitsCalls);
-      return commitPulls === undefined ? [pr] : commitPulls;
+      const open = typeof commitPulls === 'function' ? commitPulls(commitsCalls) : (commitPulls === undefined ? [pr] : commitPulls);
+      const pages = [];
+      for (let start = 0; start === 0 || start < open.length; start += 100) pages.push(open.slice(start, start + 100));
+      return pages;
     }
     const filesMatch = filesPattern.exec(endpoint);
     if (filesMatch) {
@@ -157,11 +160,15 @@ test('a classifier edit requires every route even when the completed run narrowe
   assert.equal(narrowed.status.state, 'failure');
   assert.equal(narrowed.status.description, 'Required step did not pass: Test CI scripts');
 
-  const withoutBuild = gate.evaluate({run: run(), pr: pullRequest(), jobs: jobs({ci: true}), routes});
+  // ci.yml runs build only in full mode, so a quick run needs no build.
+  const quick = gate.evaluate({run: run(), pr: pullRequest(), jobs: jobs({ci: true}), routes});
+  assert.equal(quick.status.state, 'success');
+
+  const withoutBuild = gate.evaluate({run: run(), pr: pullRequest(), jobs: jobs({full: true, ci: true}), routes});
   assert.equal(withoutBuild.status.state, 'failure');
   assert.equal(withoutBuild.status.description, 'Required route did not pass: build');
 
-  const complete = gate.evaluate({run: run(), pr: pullRequest(), jobs: jobs({ci: true, build: true}), routes});
+  const complete = gate.evaluate({run: run(), pr: pullRequest(), jobs: jobs({full: true, ci: true, build: true}), routes});
   assert.equal(complete.status.state, 'success');
 });
 
@@ -264,7 +271,7 @@ test('open pull requests sharing a head and base keep one verdict', () => {
   assert.equal(newerResult.status.description, 'Quick CI routes passed');
 });
 
-test('a run associated with its pull request keeps that verdict beside a sibling on another base', () => {
+test('an open sibling on another base fails the shared head even for an associated run', () => {
   const master = pullRequest([], {number: 590});
   const release = pullRequest([], {
     number: 591,
@@ -274,12 +281,15 @@ test('a run associated with its pull request keeps that verdict beside a sibling
     number: 592,
     base: {sha: base, ref: 'master', repo: {id: 8, full_name: 'mirror/speedle-plus', name: 'speedle-plus', default_branch: 'master'}},
   });
+  // The status is keyed by SHA and every open pull request at the head wears
+  // it, so a sibling on another base identity makes the head fail closed.
+  const shared = '2 open pull requests share this head; one SHA status cannot represent them';
   const collisions = [
-    {open: [master, release], owner: master, state: 'success'},
-    {open: [release, master], owner: master, state: 'success'},
-    {open: [master, mirrored], owner: master, state: 'success'},
-    // The sibling's own run fails the base rule, so it can only write failure.
-    {open: [master, release], owner: release, state: 'failure', description: 'base is release; the route gate verifies only master'},
+    {open: [master, release], owner: master, state: 'failure', description: shared},
+    {open: [release, master], owner: master, state: 'failure', description: shared},
+    {open: [master, mirrored], owner: master, state: 'failure', description: shared},
+    {open: [master, release], owner: release, state: 'failure', description: shared},
+    {open: [master], owner: master, state: 'success'},
   ];
   for (const {open, owner, state, description} of collisions) {
     const fixture = fixtureApi({
@@ -346,6 +356,42 @@ test('a run superseded while it is assessed publishes nothing', () => {
   assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 0);
 });
 
+test('the recheck applies the same fail-closed policy as the first order check', () => {
+  const current = run();
+  // A newer run of unknown ownership appears while this run is assessed.
+  const unknown = gate.runGate({repository, runId: 101, publish: true}, fixtureApi({
+    run: current, pr: pullRequest(), files: ['docs/guide.md'], jobs: jobs(),
+    commitPulls: call => (call === 1 ? [pullRequest()] : []),
+    latest: callIndex => (callIndex === 1 ? [current] : [run({id: 102, pull_requests: []}), current]),
+  }).api);
+  assert.equal(unknown.status.state, 'failure');
+  assert.equal(unknown.status.description, 'a newer run on this head has unknown ownership');
+
+  // The run drops out of the listed runs, so its place in the order is unknown.
+  const fixture = fixtureApi({
+    run: current, pr: pullRequest(), files: ['docs/guide.md'], jobs: jobs(),
+    latest: callIndex => (callIndex === 1 ? [current] : []),
+  });
+  const unresolved = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(unresolved.status.state, 'failure');
+  assert.equal(unresolved.status.description, 'Run order for this head is unresolved');
+  const writes = fixture.calls.filter(call => call.options.method === 'POST');
+  assert.equal(writes.length, 1);
+  assert.equal(writes[0].options.input.state, 'failure');
+});
+
+test('the ownership lookup reads every page of open pull requests at the head', () => {
+  const owner = pullRequest([], {number: 590});
+  const open = Array.from({length: 130}, (_, index) => (index === 120 ? owner : pullRequest([], {number: 1000 + index})));
+  const fixture = fixtureApi({
+    run: run({pull_requests: [association(590)]}), pr: owner, files: ['docs/guide.md'], jobs: jobs(),
+    commitPulls: open,
+  });
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.ignored, false);
+  assert.equal(result.status.state, 'success');
+});
+
 test('the run association selects its pull request among shared commits', () => {
   const release = pullRequest([], {
     number: 591,
@@ -370,7 +416,7 @@ test('a fork-style run resolves its pull request by head SHA', () => {
   });
   const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
   assert.equal(result.status.state, 'success');
-  assert.equal(fixture.calls.some(call => call.endpoint === `repos/${repository}/commits/${head}/pulls`), true);
+  assert.equal(fixture.calls.some(call => call.endpoint === `repos/${repository}/commits/${head}/pulls?per_page=100`), true);
 });
 
 test('a newer run of another pull request does not suppress this result', () => {
@@ -452,7 +498,7 @@ test('an unknown newer owner turns a success into failure', () => {
 
 test('an unknown newer owner never hides this run failure', () => {
   const fixture = fixtureApi({
-    run: run(), pr: pullRequest(), files: ['docs/guide.md'], jobs: jobs(),
+    run: run(), pr: pullRequest(), files: ['docs/guide.md'], jobs: jobs({full: true}),
     commitPulls: call => (call === 1 ? [pullRequest()] : []),
     latest: [run({id: 102, pull_requests: []}), run()],
   });
@@ -680,16 +726,19 @@ test('a run from an unexpected workflow path fails closed', () => {
   assert.equal(result.status.description, 'Unexpected CI workflow path');
 });
 
-test('a docs-only pull request requires quick and build but no Go lint or CI scripts', () => {
+test('a docs-only pull request requires build only in full mode, and never Go lint or CI scripts', () => {
   const routes = routesFor(['docs/guide.md']);
   assert.deepEqual(routes, {go: false, website: false, docs: true, ci: false});
-  const result = gate.evaluate({run: run(), pr: pullRequest(), jobs: jobs({build: true}), routes});
+  const result = gate.evaluate({run: run(), pr: pullRequest(), jobs: jobs(), routes});
   assert.equal(result.status.state, 'success');
   assert.equal(result.status.description, 'Quick CI routes passed');
 
-  const withoutBuild = gate.evaluate({run: run(), pr: pullRequest(), jobs: jobs(), routes});
+  const withoutBuild = gate.evaluate({run: run(), pr: pullRequest(), jobs: jobs({full: true, lint: false}), routes});
   assert.equal(withoutBuild.status.state, 'failure');
   assert.equal(withoutBuild.status.description, 'Required route did not pass: build');
+
+  const full = gate.evaluate({run: run(), pr: pullRequest(), jobs: jobs({full: true, lint: false, build: true}), routes});
+  assert.equal(full.status.state, 'success');
 });
 
 test('merge-head selects full routes and missing classification steps fail closed', () => {

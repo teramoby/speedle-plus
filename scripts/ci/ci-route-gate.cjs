@@ -67,7 +67,7 @@ function outcome({run, pr, state, message, routes, ignored = false, error}) {
 function requiredJobs(routes, full) {
   const required = [full ? 'test' : 'quick'];
   if (full && routes.go) required.push('lint');
-  if ((full && routes.go) || routes.website || routes.docs) required.push('build');
+  if (full && (routes.go || routes.website || routes.docs)) required.push('build');
   return required;
 }
 
@@ -335,9 +335,12 @@ function associatedNumbers(run) {
 
 function openPullRequests(api, repository, run) {
   assertSha(run?.head_sha, 'workflow run head');
-  const response = api(`repos/${repository}/commits/${run.head_sha}/pulls`);
-  if (!Array.isArray(response)) throw new Error('pull request lookup response is not an array');
-  return response.filter(pr => pr?.state === 'open' && pr?.head?.sha === run.head_sha);
+  const pages = api(`repos/${repository}/commits/${run.head_sha}/pulls?per_page=100`, {paginate: true});
+  if (!Array.isArray(pages)) throw new Error('pull request lookup response is not paginated');
+  return pages.flatMap(page => {
+    if (!Array.isArray(page)) throw new Error('pull request lookup page is not an array');
+    return page;
+  }).filter(pr => pr?.state === 'open' && pr?.head?.sha === run.head_sha);
 }
 
 // The base repository and ref select the classification: the head's file list
@@ -357,20 +360,17 @@ function baseIdentity(base) {
   return null;
 }
 
-// Rule 1: ownership comes from the commit lookup, and the run's own
-// association decides first. A run associated with one open pull request
-// publishes that pull request's verdict even when another open pull request
-// shares the head: a sibling on another base fails the base rule, so its runs
-// can only publish failure, never a success that this pull request would wear.
-// A run that cannot be attributed (no association, and the open pull requests
-// for its head disagree on the base) fails closed, and a run without an
+// Rule 1: ownership comes from the commit lookup. The status is keyed by SHA,
+// so every open pull request at the head wears it: when they disagree on the
+// base identity, one status cannot represent them and the run fails closed,
+// whether or not it is associated with one of them. Otherwise the run's own
+// association decides which pull request it belongs to; a run without an
 // association that never started publishes nothing.
 //
 // Availability trade-off, accepted: anyone who can open a pull request can open
-// one that reuses another pull request's head. Its runs start only after a
-// maintainer approves them; an approved run of it on another base, or one that
-// cannot be attributed, publishes failure on the shared head until that pull
-// request is closed. The shared status is never turned green by it.
+// one that reuses another pull request's head on another base. Its presence
+// makes the shared head fail until that pull request is closed. The shared
+// status is never turned green for a pull request the gate does not certify.
 function resolveOwnership(api, repository, run) {
   const open = openPullRequests(api, repository, run);
   const distinctBases = prs => {
@@ -381,8 +381,8 @@ function resolveOwnership(api, repository, run) {
   if (numbers.length > 0) {
     const owned = open.filter(pr => numbers.includes(pr?.number));
     if (owned.length === 0) return {ignored: 'The run pull request is closed or has moved on'};
-    if (distinctBases(owned)) {
-      return {failure: `${owned.length} open pull requests share this head; one SHA status cannot represent them`};
+    if (distinctBases(open)) {
+      return {failure: `${open.length} open pull requests share this head; one SHA status cannot represent them`};
     }
     return {pr: owned[0]};
   }
@@ -488,11 +488,32 @@ function assessRun({api, runner, repository, run, pr, comparison, trusted = fals
 // publishes nothing.
 function recheckOrder(api, repository, run, pr, result) {
   if (result.ignored || !['success', 'failure'].includes(result.status?.state)) return result;
-  const superseding = supersedingRun(api, repository, run, pr);
-  if (superseding && superseding !== UNRESOLVED_RUN_ORDER && superseding !== UNKNOWN_OWNERSHIP) {
-    return outcome({run, pr, state: null, ignored: true, message: 'Superseded by a newer CI run'});
+  return supersession(supersedingRun(api, repository, run, pr), run, pr, () => result) || result;
+}
+
+// The supersession policy, shared by the check before the assessment and the
+// recheck after it. It returns null when no newer run affects this one.
+function supersession(superseding, run, pr, assess) {
+  if (superseding === UNRESOLVED_RUN_ORDER) {
+    return outcome({run, pr, routes: allRoutes(), state: 'failure', message: 'Run order for this head is unresolved'});
   }
-  return result;
+  if (superseding === UNKNOWN_OWNERSHIP) {
+    // Rule 3: an unknown newer owner never suppresses a failure, and a
+    // success becomes a failure because the newest result is unknown.
+    const result = assess();
+    if (result.status?.state === 'success') {
+      result.status.state = 'failure';
+      result.status.description = 'a newer run on this head has unknown ownership';
+    }
+    return result;
+  }
+  if (superseding) {
+    return outcome({
+      run, pr, state: null, ignored: true,
+      message: superseding.run.name === CI_WORKFLOW_NAME ? 'Superseded by a newer CI run' : 'Newer CI run has an unexpected workflow name',
+    });
+  }
+  return null;
 }
 
 function execute(options, api, runner = spawnSync) {
@@ -546,28 +567,9 @@ function execute(options, api, runner = spawnSync) {
       // A run that never started has no verdict. It must not acquire one from
       // the supersession check either, because it cannot publish a status.
       if (!startedRun(run)) return outcome({run, pr, state: null, ignored: true, message: 'CI run did not start'});
-      const superseding = supersedingRun(api, options.repository, run, pr);
-      if (superseding === UNRESOLVED_RUN_ORDER) {
-        return outcome({run, pr, routes: allRoutes(), state: 'failure', message: 'Run order for this head is unresolved'});
-      }
-      if (superseding === UNKNOWN_OWNERSHIP) {
-        // Rule 3: an unknown newer owner never suppresses a failure, and a
-        // success becomes a failure because the newest result is unknown.
-        const result = assessRun({api, runner, repository: options.repository, run, pr, comparison, trusted: true});
-        if (result.status.state === 'success') {
-          result.status.state = 'failure';
-          result.status.description = 'a newer run on this head has unknown ownership';
-        }
-        return result;
-      }
-      if (superseding) {
-        return outcome({
-          run, pr, state: null, ignored: true,
-          message: superseding.run.name === CI_WORKFLOW_NAME ? 'Superseded by a newer CI run' : 'Newer CI run has an unexpected workflow name',
-        });
-      }
-      return recheckOrder(api, options.repository, run, pr,
-        assessRun({api, runner, repository: options.repository, run, pr, comparison, trusted: true}));
+      const assess = () => assessRun({api, runner, repository: options.repository, run, pr, comparison, trusted: true});
+      return supersession(supersedingRun(api, options.repository, run, pr), run, pr, assess)
+        || recheckOrder(api, options.repository, run, pr, assess());
     }
     return assessRun({api, runner, repository: options.repository, run, pr});
   } catch (error) {
