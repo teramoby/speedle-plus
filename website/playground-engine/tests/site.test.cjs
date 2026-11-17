@@ -35,7 +35,7 @@ const accessibilityCss = /\n    \/\* Accessibility contrast and the community ba
 // #342 adds the hero performance line and inline SPDL in a feature card.
 const performanceCss = /\n    \/\* Performance messaging \(issue #342\): start\.[\s\S]*?    \/\* Performance messaging \(issue #342\): end\. \*\/\n/;
 assert.equal(read('docs/css/site.css').replace(getStartedCss,'').replace(accessibilityCss,'').replace(performanceCss,''),originalCss.replace(footerRule,''), 'The shared stylesheet is the actual original homepage CSS, byte for byte, minus the footer rules, the approved Get started block, the approved accessibility/banner block and the performance messaging block');
-for (const name of ['docs/css/site.css','docs/zh/index.html','docs/172c4fea633285df5f8950cdef354c38/index.html']) assert.ok(!/(?:^|[\s,}])(?:footer|\.footer-[a-z-]+|\.social)(?:[ .:>,][^{\n]*)?\{/m.test(read(name).replace(/<footer[\s\S]*?<\/footer>/g,'')), `No duplicate footer rules in ${name}`);
+for (const name of ['docs/css/site.css','docs/zh/index.html']) assert.ok(!/(?:^|[\s,}])(?:footer|\.footer-[a-z-]+|\.social)(?:[ .:>,][^{\n]*)?\{/m.test(read(name).replace(/<footer[\s\S]*?<\/footer>/g,'')), `No duplicate footer rules in ${name}`);
 const navigationCss = read('docs/css/navigation.css');
 assert.ok(navigationCss.includes('html body footer.site-footer {'), 'navigation.css holds the shared footer rules');
 assert.ok(/^\.site-footer \.footer-legal span \{ display: block; \}$/m.test(navigationCss), 'License and copyright stack at every viewport width');
@@ -297,8 +297,7 @@ for (const name of ['docs/index.html', 'docs/ja/index.html', 'docs/ko/index.html
 for (const name of ['docs/docs', 'docs/ja/docs', 'docs/ko/docs', 'docs/es/docs', 'docs/zh/docs']) checkDocsHeadings(path.join(root, name));
 // #243: every local stylesheet, script and image in the published tree must
 // resolve to a file, so a regeneration cannot leave pages pointing at deleted
-// assets. The archived snapshot at /172c4fea…/ is self-contained; it is checked
-// too, and a directory reference counts only when it serves an index.html.
+// assets. A directory reference counts only when it serves an index.html.
 const docsRoot = path.join(root, 'docs');
 const subresources = [
  [/<link\b[^>]*?\bhref="([^"]*)"/gi, '<link href>'],
