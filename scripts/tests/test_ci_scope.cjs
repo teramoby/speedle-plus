@@ -118,6 +118,22 @@ test('change classification preserves raw Git paths, uses the base classifier an
       return {...result, output: fs.readFileSync(output, 'utf8')};
     };
     const flags = (go, website, docs, ci) => `go=${go}\nwebsite=${website}\ndocs=${docs}\nci=${ci}\n`;
+    // A rename selects the routes of both its old and its new path, so a
+    // file moved out of a routed directory cannot narrow the matrix.
+    {
+      fs.mkdirSync(path.join(dir, 'pkg/a'), {recursive: true});
+      fs.writeFileSync(path.join(dir, 'pkg/a/moved.go'), 'package a\n');
+      git('add', '--', 'pkg/a/moved.go');
+      git('commit', '-qm', 'add a Go file');
+      const before = git('rev-parse', 'HEAD');
+      fs.mkdirSync(path.join(dir, 'docs'), {recursive: true});
+      git('mv', 'pkg/a/moved.go', 'docs/moved.md');
+      git('commit', '-qm', 'move it into docs');
+      const renamed = classify(git('rev-parse', 'HEAD'), {PR_BASE: before});
+      assert.equal(renamed.status, 0, renamed.stderr);
+      assert.equal(renamed.output, flags(true, false, true, false));
+      git('reset', '-q', '--hard', base);
+    }
     const cases = [
       ['docs/使用指南.md', flags(false, false, true, false)],
       ['docs/guide with spaces.md', flags(false, false, true, false)],
@@ -352,6 +368,7 @@ test('CI discovers every script suite, isolates Docker config and propagates fai
     // update it in the same change as any suite rename, split or consolidation.
     const requiredSuites = [
       'test_ci_scope.cjs',
+      'test_ci_route_gate.cjs',
       'test_go_ci_worker.cjs',
       'test_pages_workflow.cjs',
       'test_release_workflow.cjs',
