@@ -36,12 +36,13 @@ const ASSESSMENT_DEADLINE_MS = 6 * 60 * 1000;
 // The run and pull request a published verdict belongs to, for the check
 // after publication. Kept beside the result so the printed result is unchanged.
 const verdictContext = new WeakMap();
-// The pull request files endpoint pages through at most 3,000 entries.
-const PR_FILE_PAGES = 30;
+// The pull request files endpoint returns at most 3,000 entries, at most 100
+// per page. A list that fills the last page may hide further entries, so
+// exactly 3,000 changed files is still treated as truncated.
+const PR_FILE_PAGE_SIZE = 100;
+const PR_FILE_LIMIT = 3000;
+const PR_FILE_PAGES = PR_FILE_LIMIT / PR_FILE_PAGE_SIZE;
 const ROUTE_KEYS = ['go', 'website', 'docs', 'ci'];
-// The compare API returns at most 300 file entries. An incomplete list enables
-// every route rather than making a decision from only part of the diff.
-const COMPARE_FILE_LIMIT = 300;
 
 function allRoutes() {
   return Object.fromEntries(ROUTE_KEYS.map(key => [key, true]));
@@ -163,7 +164,7 @@ function evaluate({run, pr, jobs, routes, incomplete = false}) {
   const mode = runMode(jobs);
   if (mode.error) return outcome({run, pr, routes, state: 'failure', message: mode.error});
   const full = mode.full;
-  // An incomplete compare enables every route, but a quick run never
+  // An incomplete file list enables every route, but a quick run never
   // schedules them. It cannot prove a wider matrix, so require a full run
   // instead of naming a route the workflow does not produce for this change.
   if (incomplete && !full) {
@@ -182,7 +183,7 @@ function evaluate({run, pr, jobs, routes, incomplete = false}) {
   const steps = Array.isArray(changes.entry.steps) ? changes.entry.steps : [];
   const requiredSteps = ['Classify changed files'];
   // The CI-script test is route-driven, so a run on code-only changes skips
-  // it even when it is full. An incomplete compare cannot decide that route;
+  // it even when it is full. An incomplete file list cannot decide that route;
   // the widened job requirements below carry the verdict instead.
   if (routes.ci && !incomplete) requiredSteps.push('Test CI scripts');
   for (const name of requiredSteps) {
@@ -246,7 +247,7 @@ function classifyWithBase({api, runner, repository, baseSha, rulesSha = baseSha,
     const chunks = [];
     for (const file of files) {
       if (typeof file !== 'string' || file.length === 0 || file.includes('\0')) {
-        throw new Error('compare response contains an invalid path');
+        throw new Error('changed-file list contains an invalid path');
       }
       chunks.push(Buffer.from(file), Buffer.from([0]));
     }
@@ -291,38 +292,48 @@ function defaultBranchTip(api, repository, pr) {
   return sha;
 }
 
-function changedFiles(compare) {
-  if (!compare || !Array.isArray(compare.files)) throw new Error('compare response has no file list');
-  const files = compare.files.map(file => file?.filename);
-  const previous = compare.files.map(file => file?.previous_filename).filter(name => typeof name === 'string');
-  return {files, previous, complete: files.length < COMPARE_FILE_LIMIT};
+// The pull request files endpoint reports the request's own side of the
+// change since the merge base, like the three-dot diff the workflow classifier
+// reads, but it is not capped at the compare API's 300 entries. It returns at
+// most PR_FILE_LIMIT entries; a list that fills every page is reported as
+// incomplete because the remainder is unreadable, so no decision may be made
+// from it. A rename reports both paths, as `git diff --no-renames` does.
+function pullRequestFiles(api, repository, prNumber) {
+  const files = [];
+  const previous = [];
+  for (let page = 1; page <= PR_FILE_PAGES; page++) {
+    const entries = api(`repos/${repository}/pulls/${prNumber}/files?per_page=${PR_FILE_PAGE_SIZE}&page=${page}`);
+    if (!Array.isArray(entries)) throw new Error('pull request files response is not an array');
+    if (entries.length > PR_FILE_PAGE_SIZE) throw new Error('pull request files page exceeds the requested size');
+    for (const entry of entries) {
+      if (typeof entry?.filename !== 'string' || entry.filename.length === 0 || entry.filename.includes('\0')) {
+        throw new Error('pull request files response contains an invalid path');
+      }
+      files.push(entry.filename);
+      if (typeof entry.previous_filename === 'string' && entry.previous_filename.length > 0) {
+        previous.push(entry.previous_filename);
+      }
+    }
+    if (entries.length < PR_FILE_PAGE_SIZE) return {files, previous, complete: true};
+  }
+  return {files, previous, complete: false};
 }
 
 function guardPaths(files) {
-  return files.some(file => GUARDED_WORKFLOW_PATHS.includes(file?.filename) || GUARDED_WORKFLOW_PATHS.includes(file?.previous_filename));
+  return files.some(file => GUARDED_WORKFLOW_PATHS.includes(file));
 }
 
 // A pull_request run executes these workflow files from the request's merge
 // commit, so their job and step names are only trustworthy when the request
-// does not change any of them. The compare API reports the request's own side
-// of the change since the merge base, so a base-branch update does not count.
-// The worker is guarded even though callers pin it to @master: a local
-// reference would execute the request's copy. When the compare list is
-// capped, the pull request files endpoint can still prove the files are
-// untouched without rejecting a large pull request.
-function workflowTrust(api, repository, prNumber, comparison) {
+// does not change any of them. The pull request files list reports the
+// request's own side of the change since the merge base, so a base-branch
+// update does not count. The worker is guarded even though callers pin it to
+// @master: a local reference would execute the request's copy. A truncated
+// list cannot prove the guarded files are untouched, so it fails closed.
+function workflowTrust(comparison) {
   const message = 'The pull request changes the CI workflow; the route cannot be verified from its own run';
-  if (comparison.complete) {
-    const changed = [...comparison.files, ...comparison.previous];
-    return changed.some(name => GUARDED_WORKFLOW_PATHS.includes(name)) ? message : null;
-  }
-  for (let page = 1; page <= PR_FILE_PAGES; page++) {
-    const files = api(`repos/${repository}/pulls/${prNumber}/files?per_page=100&page=${page}`);
-    if (!Array.isArray(files)) throw new Error('pull request files response is not an array');
-    if (guardPaths(files)) return message;
-    if (files.length < 100) return null;
-  }
-  throw new Error('pull request file list is too large to verify the guarded workflows');
+  if (!comparison.complete) throw new Error('pull request file list is too large to verify the guarded workflows');
+  return guardPaths([...comparison.files, ...comparison.previous]) ? message : null;
 }
 
 function jobsFromPages(pages) {
@@ -514,11 +525,11 @@ function assessRun({api, runner, repository, run, pr, comparison, trusted = fals
 
   assertSha(pr?.base?.sha, 'pull request base');
   assertSha(run.head_sha, 'workflow run head');
-  const compared = comparison || changedFiles(api(`repos/${repository}/compare/${pr.base.sha}...${run.head_sha}`));
+  const compared = comparison || pullRequestFiles(api, repository, pr.number);
   // Workflow integrity comes before every run-shape decision: never read job
   // or step names, including an ignored label-event shape, from a run whose
   // workflow the pull request controls.
-  const untrusted = trusted ? null : workflowTrust(api, repository, pr.number, compared);
+  const untrusted = trusted ? null : workflowTrust(compared);
   if (untrusted) return outcome({run, pr, routes: allRoutes(), state: 'failure', message: untrusted});
   // A pull request from a fork can run only after a maintainer approves it.
   // The approval-pending run never executed, so it has no verdict to publish;
@@ -633,8 +644,8 @@ function execute(options, api, runner = spawnSync) {
       // supersession or ignored-run decision.
       assertSha(pr?.base?.sha, 'pull request base');
       assertSha(run.head_sha, 'workflow run head');
-      const comparison = changedFiles(api(`repos/${options.repository}/compare/${pr.base.sha}...${run.head_sha}`));
-      const untrusted = workflowTrust(api, options.repository, pr.number, comparison);
+      const comparison = pullRequestFiles(api, options.repository, pr.number);
+      const untrusted = workflowTrust(comparison);
       if (untrusted) return outcome({run, pr, routes: allRoutes(), state: 'failure', message: untrusted});
       // A run that never started has no verdict. It must not acquire one from
       // the supersession check either, because it cannot publish a status.
@@ -843,7 +854,6 @@ module.exports = {
   GUARDED_WORKFLOW_PATHS,
   STATUS_CONTEXT,
   allRoutes,
-  changedFiles,
   classifyWithBase,
   createGhApi,
   evaluate,
@@ -851,6 +861,7 @@ module.exports = {
   parseArgs,
   parseClassifierOutput,
   publish,
+  pullRequestFiles,
   requiredJobs,
   runGate,
 };

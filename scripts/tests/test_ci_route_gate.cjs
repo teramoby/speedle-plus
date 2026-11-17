@@ -91,7 +91,7 @@ function routesFor(files) {
   });
 }
 
-function fixtureApi({run: completedRun, runFetches, pr, files, prFiles, renames = {}, jobs: runJobs, newerJobs, latest, latestCompleted, commitPulls, jobsError, runsById = {}, defaultTip = base}) {
+function fixtureApi({run: completedRun, runFetches, pr, files, prFiles, prFilesError, renames = {}, jobs: runJobs, newerJobs, latest, latestCompleted, commitPulls, jobsError, runsById = {}, defaultTip = base}) {
   const calls = [];
   const jobsPrefix = `repos/${repository}/actions/runs/`;
   const jobsSuffix = '/jobs?per_page=100&filter=latest';
@@ -123,9 +123,14 @@ function fixtureApi({run: completedRun, runFetches, pr, files, prFiles, renames 
     }
     const filesMatch = filesPattern.exec(endpoint);
     if (filesMatch) {
-      const all = prFiles === undefined ? files : prFiles;
       const page = Number(filesMatch[1]);
-      return all.slice((page - 1) * 100, page * 100).map(filename => ({filename}));
+      if (prFilesError === true || prFilesError === page) throw new Error('pull request files request failed');
+      const all = prFiles === undefined ? files : prFiles;
+      return all.slice((page - 1) * 100, page * 100).map(file => {
+        const entry = typeof file === 'string' ? {filename: file} : file;
+        const previous = renames[entry.filename] ?? entry.previous_filename;
+        return previous ? {...entry, previous_filename: previous} : entry;
+      });
     }
     if (endpoint.startsWith(jobsPrefix) && endpoint.endsWith(jobsSuffix)) {
       assert.equal(options.paginate, true);
@@ -133,9 +138,6 @@ function fixtureApi({run: completedRun, runFetches, pr, files, prFiles, renames 
       const id = endpoint.slice(jobsPrefix.length, -jobsSuffix.length);
       const other = newerJobs === undefined ? runJobs : newerJobs;
       return [{jobs: id === String(completedRun.id) ? runJobs : (typeof other === 'function' ? other(id) : other)}];
-    }
-    if (endpoint === `repos/${repository}/compare/${base}...${head}`) {
-      return {files: files.map(filename => (renames[filename] ? {filename, previous_filename: renames[filename]} : {filename}))};
     }
     if (endpoint === `repos/${repository}/branches/master`) return {commit: {sha: defaultTip}};
     if (endpoint === `repos/${repository}/contents/scripts/ci/classify-changes.sh?ref=${defaultTip}`) {
@@ -224,7 +226,7 @@ test('a pull request retargeted away from the default base publishes failure', (
   assert.equal(result.ignored, false);
   assert.equal(result.status.state, 'failure');
   assert.equal(result.status.description, 'base is release; the route gate verifies only master');
-  assert.equal(fixture.calls.some(call => call.endpoint.includes('/compare/')), false);
+  assert.equal(fixture.calls.some(call => call.endpoint.includes('/files?per_page=')), false);
   assert.equal(fixture.calls.some(call => call.endpoint.includes('/contents/')), false);
   const writes = fixture.calls.filter(call => call.options.method === 'POST');
   assert.equal(writes.length, 1);
@@ -238,7 +240,7 @@ test('a run whose pull request has moved on publishes no status', () => {
   assert.equal(result.ignored, true);
   assert.equal(result.status.state, null);
   assert.equal(result.status.description, 'The run pull request is closed or has moved on');
-  assert.equal(fixture.calls.some(call => call.endpoint.includes('/compare/')), false);
+  assert.equal(fixture.calls.some(call => call.endpoint.includes('/files?per_page=')), false);
   assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 0);
 });
 
@@ -842,14 +844,11 @@ test('a pull request that rewrites the CI workflow cannot be verified by its own
   assert.equal(writes.length, 1);
   assert.equal(writes[0].options.input.state, 'failure');
 
-  // The compare list is capped at 300 entries, but the pull request files
-  // endpoint still proves the guarded workflows are untouched, so the trust
-  // check does not reject a large pull request. The verdict for such a
-  // compare is covered by the incomplete-compare test below.
+  // A guarded workflow among a large pull request's changed files is found
+  // by the paged list, which is read one page at a time.
   const largeFiles = Array.from({length: 300}, (_, index) => `pkg/f${index}.go`);
   const guarded = fixtureApi({
     run: run(), pr: pullRequest(),
-    files: largeFiles,
     prFiles: [...largeFiles.slice(0, 250), '.github/workflows/ci.yml', ...largeFiles.slice(250)],
     jobs: jobs({ci: false, build: false}),
   });
@@ -860,43 +859,103 @@ test('a pull request that rewrites the CI workflow cannot be verified by its own
   assert.equal(guarded.calls.some(call => call.endpoint.includes('/pulls/590/files?per_page=100&page=1')), true);
 });
 
-test('an incomplete compare requires a full run instead of a route verdict', () => {
-  const largeFiles = Array.from({length: 300}, (_, index) => `pkg/f${index}.go`);
-  // A code-only change classifies as Go only, so the real quick run skips
-  // build and the CI-script step. The compare API caps the list this gate can
-  // read, so the gate widens to every route and cannot accept a quick run.
-  const quick = fixtureApi({
-    run: run(), pr: pullRequest(), files: largeFiles, prFiles: largeFiles,
-    jobs: jobs({ci: false, build: false}),
+test('a truncated file list fails closed and keeps the widened fail-safe', () => {
+  // The pull request files endpoint returns at most 3,000 entries. A list
+  // that fills the last page may hide the rest of the diff, so the gate
+  // cannot prove the guarded workflows untouched and must fail closed instead
+  // of publishing a verdict from the readable prefix.
+  const largeFiles = Array.from({length: 3000}, (_, index) => `docs/page-${index}.md`);
+  const truncated = fixtureApi({
+    run: run(), pr: pullRequest(), files: largeFiles,
+    jobs: jobs({full: true, build: true, lint: false}),
   });
+  const result = gate.runGate({repository, runId: 101, publish: true}, truncated.api);
+  assert.equal(result.status.state, 'failure');
+  assert.match(result.error, /too large to verify the guarded workflows/);
+  assert.equal(truncated.calls.some(call => call.endpoint.endsWith(`/classify-changes.sh?ref=${base}`)), false,
+    'a truncated list is not classified from its readable prefix');
+  assert.equal(truncated.calls.filter(call => call.endpoint.includes('/files?per_page=')).length, 30);
+  const writes = truncated.calls.filter(call => call.options.method === 'POST');
+  assert.equal(writes.length, 1);
+  assert.equal(writes[0].options.input.state, 'failure');
+
+  // The widened fail-safe itself is unchanged: every route is enabled, a
+  // quick run cannot prove that matrix, and a full run must pass all of it.
+  const quick = gate.evaluate({run: run(), pr: pullRequest(), jobs: jobs(), routes: gate.allRoutes(), incomplete: true});
+  assert.equal(quick.status.state, 'failure');
+  assert.equal(quick.status.description, 'changed-file list too large to classify; a full CI run is required');
+  const proven = gate.evaluate({
+    run: run(), pr: pullRequest(), jobs: jobs({full: true, ci: false, build: true}),
+    routes: gate.allRoutes(), incomplete: true,
+  });
+  assert.equal(proven.status.state, 'success');
+  const skippedLint = gate.evaluate({
+    run: run(), pr: pullRequest(), jobs: jobs({full: true, ci: false, build: true, lint: false}),
+    routes: gate.allRoutes(), incomplete: true,
+  });
+  assert.equal(skippedLint.status.state, 'failure');
+  assert.equal(skippedLint.status.description, 'Required route did not pass: lint');
+});
+
+test('301 docs-only files classify as docs and do not require lint', () => {
+  // A generated docs page joins the sidebar of every page, which changes more
+  // files than the compare API returns. The paged list classifies them as a
+  // docs-only change, exactly like the workflow's own classifier.
+  const files = Array.from({length: 301}, (_, index) => `docs/page-${index}.md`);
+  const fixture = fixtureApi({
+    run: run(), pr: pullRequest(['full-ci']), files,
+    jobs: jobs({full: true, build: true, lint: false}),
+  });
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.status.state, 'success');
+  assert.equal(result.status.description, 'Full CI routes passed');
+  assert.deepEqual(result.routes, {go: false, website: false, docs: true, ci: false});
+  assert.deepEqual(gate.requiredJobs(result.routes, true), ['test', 'build']);
+  assert.equal(fixture.calls.filter(call => call.endpoint.includes('/files?per_page=')).length, 4,
+    '301 entries are read in four pages');
+
+  // The quick run, which the bug rejected with "changed-file list too large
+  // to classify", is accepted as well.
+  const quick = fixtureApi({run: run(), pr: pullRequest(), files, jobs: jobs()});
   const quickResult = gate.runGate({repository, runId: 101, publish: true}, quick.api);
-  assert.equal(quickResult.status.state, 'failure');
-  assert.equal(quickResult.status.description,
-    'changed-file list too large to classify; a full CI run is required');
-  assert.equal(quick.calls.some(call => call.endpoint.endsWith(`/classify-changes.sh?ref=${base}`)), false,
-    'an incomplete compare is not classified from a partial file list');
-  const quickWrites = quick.calls.filter(call => call.options.method === 'POST');
-  assert.equal(quickWrites.length, 1);
-  assert.equal(quickWrites[0].options.input.state, 'failure');
+  assert.equal(quickResult.status.state, 'success');
+  assert.equal(quickResult.status.description, 'Quick CI routes passed');
+});
 
-  // A full run schedules lint, test and build for every route, so it can
-  // prove the widened set; the code-only CI-script step stays skipped.
+test('301 files with one Go file require lint', () => {
+  const files = [...Array.from({length: 300}, (_, index) => `docs/page-${index}.md`), 'pkg/eval/eval.go'];
   const full = fixtureApi({
-    run: run(), pr: pullRequest(), files: largeFiles, prFiles: largeFiles,
-    jobs: jobs({full: true, ci: false, build: true}),
+    run: run(), pr: pullRequest(['full-ci']), files, jobs: jobs({full: true, build: true}),
   });
-  const fullResult = gate.runGate({repository, runId: 101, publish: true}, full.api);
-  assert.equal(fullResult.status.state, 'success');
-  assert.equal(fullResult.status.description, 'Full CI routes passed');
+  const result = gate.runGate({repository, runId: 101, publish: true}, full.api);
+  assert.equal(result.status.state, 'success');
+  assert.deepEqual(result.routes, {go: true, website: false, docs: true, ci: false});
+  assert.deepEqual(gate.requiredJobs(result.routes, true), ['test', 'lint', 'build']);
 
-  // A full run that skips a route job it would schedule for the widened set
-  // still fails closed.
-  const skippedLint = jobs({full: true, ci: false, build: true, lint: false});
-  const missing = gate.evaluate({
-    run: run(), pr: pullRequest(), jobs: skippedLint, routes: gate.allRoutes(), incomplete: true,
+  // A full run that skips lint cannot stand in for the Go route.
+  const skipped = fixtureApi({
+    run: run(), pr: pullRequest(['full-ci']), files, jobs: jobs({full: true, build: true, lint: false}),
   });
-  assert.equal(missing.status.state, 'failure');
-  assert.equal(missing.status.description, 'Required route did not pass: lint');
+  const skippedResult = gate.runGate({repository, runId: 101, publish: true}, skipped.api);
+  assert.equal(skippedResult.status.state, 'failure');
+  assert.equal(skippedResult.status.description, 'Required route did not pass: lint');
+});
+
+test('a pull request files paging error fails closed', () => {
+  const files = Array.from({length: 301}, (_, index) => `docs/page-${index}.md`);
+  const fixture = fixtureApi({
+    run: run(), pr: pullRequest(['full-ci']), files, prFilesError: 2,
+    jobs: jobs({full: true, build: true}),
+  });
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.status.state, 'failure');
+  assert.equal(result.error, 'pull request files request failed');
+  assert.equal(fixture.calls.some(call => call.endpoint.endsWith('/files?per_page=100&page=1')), true);
+  assert.equal(fixture.calls.some(call => call.endpoint.endsWith(`/classify-changes.sh?ref=${base}`)), false,
+    'a partial file list is not classified');
+  const writes = fixture.calls.filter(call => call.options.method === 'POST');
+  assert.equal(writes.length, 1);
+  assert.equal(writes[0].options.input.state, 'failure');
 });
 
 test('a code-only pull request is still assessed from its base classification', () => {
@@ -988,16 +1047,34 @@ test('the completed run selects the mode, not labels changed after it finished',
   assert.equal(missing.status.description, 'Missing required route: test');
 });
 
-test('classifier output contract and incomplete compare responses widen every route', () => {
+test('classifier output contract and paged file list boundaries', () => {
   assert.deepEqual(gate.parseClassifierOutput('go=false\nwebsite=false\ndocs=true\nci=false\n'),
     {go: false, website: false, docs: true, ci: false});
   for (const output of ['go=false\n', 'go=yes\nwebsite=false\ndocs=true\nci=false\n',
     'go=false\nwebsite=false\ndocs=true\nci=false\ngo=true\n']) {
     assert.deepEqual(gate.parseClassifierOutput(output), gate.allRoutes());
   }
-  const comparison = gate.changedFiles({files: Array.from({length: 300}, (_, index) => ({filename: `pkg/f${index}.go`}))});
-  assert.equal(comparison.complete, false);
-  assert.equal(comparison.files.length, 300);
+
+  // The endpoint returns at most 3,000 entries. A full last page may hide the
+  // remainder, so 3,000 entries are truncated while one fewer is complete.
+  const read = count => {
+    const page = endpoint => Number(/page=(\d+)$/.exec(endpoint)[1]);
+    const all = Array.from({length: count}, (_, index) => (index === 0
+      ? {filename: 'docs/page-0.md', previous_filename: 'docs/old.md'}
+      : {filename: `docs/page-${index}.md`}));
+    return gate.pullRequestFiles(endpoint => all.slice((page(endpoint) - 1) * 100, page(endpoint) * 100), repository, 590);
+  };
+  const complete = read(2999);
+  assert.equal(complete.complete, true);
+  assert.equal(complete.files.length, 2999);
+  assert.deepEqual(complete.previous, ['docs/old.md']);
+  const truncated = read(3000);
+  assert.equal(truncated.complete, false);
+  assert.equal(truncated.files.length, 3000);
+
+  // A malformed page or path fails closed instead of truncating silently.
+  assert.throws(() => gate.pullRequestFiles(() => ({}), repository, 590), /not an array/);
+  assert.throws(() => gate.pullRequestFiles(() => [{filename: ''}], repository, 590), /invalid path/);
 });
 
 test('publishing evaluates API fixtures with the base classifier and writes the stable status', () => {
@@ -1017,7 +1094,7 @@ test('publishing evaluates API fixtures with the base classifier and writes the 
     target_url: completedRun.html_url,
   });
   assert.ok(calls.some(call => call.endpoint.endsWith(`/classify-changes.sh?ref=${base}`)));
-  assert.ok(calls.some(call => call.endpoint.endsWith(`/compare/${base}...${head}`)));
+  assert.equal(calls.filter(call => call.endpoint === `repos/${repository}/pulls/590/files?per_page=100&page=1`).length, 1);
 });
 
 test('PR dry-run evaluates the latest completed run without writing a status', () => {
@@ -1039,7 +1116,7 @@ test('ignored label events and superseded runs do not replace an existing status
   assert.equal(ignoredFixture.calls.filter(call => call.options.method === 'POST').length, 0);
   // The ignored shape is reported by the run, so the guarded workflow files
   // are checked even when the event is ignored.
-  assert.equal(ignoredFixture.calls.some(call => call.endpoint.includes('/compare/')), true);
+  assert.equal(ignoredFixture.calls.some(call => call.endpoint.includes('/files?per_page=')), true);
 
   const supersededFixture = fixtureApi({run: run(), pr, files: [], jobs: jobs(), latest: [run({id: 102}), run()]});
   const superseded = gate.runGate({repository, runId: 101, publish: true}, supersededFixture.api);
