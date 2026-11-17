@@ -6,7 +6,7 @@
     <description>Recent content in Speedle: 高速・シンプルな認可エンジン on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>ja-jp</language>
-    <lastBuildDate>Thu, 12 Nov 2026 10:00:00 +0800</lastBuildDate>
+    <lastBuildDate>Tue, 17 Nov 2026 00:00:00 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/ja/index.xml" rel="self" type="application/rss+xml" />
     
@@ -288,6 +288,24 @@ import sys from speedle import Auth, Client, SpeedleError try: with Client( back
 git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads 後続のコマンドはこのチェックアウトから実行します。ローカルポート 2379、6733、6734 を利用可能にしておくか、コマンドと構成を同時に更新してください。
 2. 外部 etcd サーバーの起動 名前付きボリュームが etcd のデータを保持します。ホストにはクライアントポートのみが公開され、ピアポートはこのシングルノードコンテナ内に留まります。
 docker run --name speedle-etcd --detach \  --publish 127.0.0.1:2379:2379 \  --volume speedle-etcd-data:/etcd-data \  gcr.io/etcd-development/etcd:v3.6.14 \  /usr/local/bin/etcd \  --name speedle-local \  --data-dir /etcd-data \  --listen-client-urls http://0.</description>
+    </item>
+    
+    <item>
+      <title>グローバルロール</title>
+      <link>https://engine.speedle.io/ja/docs/cloud/global-roles/</link>
+      <pubDate>Tue, 17 Nov 2026 00:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/ja/docs/cloud/global-roles/</guid>
+      <description> Speedle Cloud はパブリックベータを提供中です。 このガイドでは、稼働中のサービスでの手順を説明します。
+ロールの割り当ては通常ひとつのサービスに属します。複数のサービスが同じ割り当てを共有する場合は、アカウントの グローバルロール サービスに一度だけ定義し、各サービス自身の認可ポリシーでそのロールを使用します。
+グローバルロールはロールポリシーのみを受け付けます。グローバルなロール割り当て自体は操作を許可しません。許可する権限は引き続き各サービスが定義します。グローバルロールはひとつの Cloud アカウントに属し、アカウントをまたいで適用されることはありません。
+ロールの割り当てを一度作成する コンソールのサービス選択の先頭で グローバルロール を選び、ロールポリシーを作成します。
+grant user Emma AdminRole ロール AdminRole がアカウント内のすべてのサービスで Emma に割り当てられました。
+サービスで権限を付与する 権限が必要なサービス（例: library）に切り替え、認可ポリシーを作成します。
+grant role AdminRole borrow books この操作を許可する各サービスでこの手順を繰り返します。独自の認可ポリシーがないサービスは、ロールが割り当てられていても何も許可しません。
+結果を確認する library の Playground を開き、[{&amp;quot;type&amp;quot;:&amp;quot;user&amp;quot;,&amp;quot;name&amp;quot;:&amp;quot;Emma&amp;quot;}] を主体、books をリソース、borrow をアクションとしてテストを実行します。AdminRole により許可されます。Bob からの同じリクエストは拒否されます。
+グローバルロール自身の Playground は異なります。グローバルサービス自体への判定は常に拒否されます。グローバルロールは各サービスの Playground で有効になります。
+動作と制限  グローバルロールはロールポリシーのみを受け付けます。グローバルサービスで認可ポリシーを作成すると 400 {&amp;quot;error&amp;quot;:&amp;quot;global_authz_unsupported&amp;quot;} を返します。 グローバルサービスはアカウントのサービス上限に数えられ、そのロールポリシーはアカウントの合算ポリシー上限に数えられます。制限とエラーを参照してください。 コンソールはこの特別なサービスを グローバルロール と表示します。手動での作成、名前の変更、削除はできません。 アカウントの各 Speedle Cloud ADS インスタンスは、選択したサービス集合のみを同期する場合でも、常にグローバルロールポリシーを受け取ります。 変更は他のポリシーと同様に伝播します。公開スナップショット経由で約 1 分、現在の状態を直接読む Playground では即時です。  </description>
     </item>
     
     <item>

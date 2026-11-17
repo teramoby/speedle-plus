@@ -6,7 +6,7 @@
     <description>Recent content in Speedle: 빠르고 간단한 인가 엔진 on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>ko-kr</language>
-    <lastBuildDate>Thu, 12 Nov 2026 10:00:00 +0800</lastBuildDate>
+    <lastBuildDate>Tue, 17 Nov 2026 00:00:00 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/ko/index.xml" rel="self" type="application/rss+xml" />
     
@@ -219,6 +219,18 @@ uv add speedle==0.2.0 로컬 Speedle 호출 SDK 개요의 설명에 따라 Speed
       <description>이 가이드에서는 영구 Docker 볼륨을 사용하는 외부 etcd v3.6.14 서버를 사용합니다. PMS는 정책을 작성하고 ADS는 동일한 키 접두사를 감시(watch)합니다. 단일 노드 예제는 로컬 개발을 위해 루프백 주소에서 수신 대기하고 일반 텍스트 HTTP를 사용합니다. 프로덕션 환경의 TLS 및 클러스터 구성은 가이드 후반부에서 설명합니다.
 1. Speedle 빌드 Bash, Git, curl, Docker, 그리고 Go 1.27.4을 준비합니다. Docker를 시작하고 네이티브 서비스를 빌드합니다:
 git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o .</description>
+    </item>
+    
+    <item>
+      <title>전역 역할</title>
+      <link>https://engine.speedle.io/ko/docs/cloud/global-roles/</link>
+      <pubDate>Tue, 17 Nov 2026 00:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/cloud/global-roles/</guid>
+      <description>Speedle Cloud는 공개 베타로 제공 중입니다. 이 가이드는 실제 서비스에서의 사용 절차를 설명합니다.
+역할 할당은 보통 하나의 서비스에 속합니다. 여러 서비스가 같은 할당을 공유할 때는 계정의 전역 역할 서비스에 한 번 정의하고 각 서비스의 인가 정책에서 그 역할을 사용합니다.
+전역 역할은 역할 정책만 허용합니다. 전역 역할 할당 자체는 어떤 작업도 허용하지 않습니다. 허용할 권한은 여전히 각 서비스가 정의합니다. 전역 역할은 하나의 Cloud 계정에 속하며 계정 간에 적용되지 않습니다.
+역할 할당을 한 번 만들기 콘솔 서비스 선택기 맨 위에서 전역 역할을 선택하고 역할 정책을 만듭니다.</description>
     </item>
     
     <item>

@@ -6,7 +6,7 @@
     <description>Recent content in Speedle Cloud on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>es-es</language>
-    <lastBuildDate>Thu, 12 Nov 2026 21:00:00 +0800</lastBuildDate>
+    <lastBuildDate>Tue, 17 Nov 2026 00:00:00 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/es/docs/cloud/index.xml" rel="self" type="application/rss+xml" />
     
@@ -31,6 +31,17 @@ Crear un servicio y una política Abra el espacio de trabajo del servicio, intro
       <description>Las claves API pertenecen a la cuenta y acceden a sus servicios según su ámbito. Autentican la aplicación, no al usuario final. Administrar claves API, sesiones e identidades vinculadas requiere una sesión de consola iniciada.
 Speedle Cloud está en beta pública. Esta guía describe el flujo de trabajo del servicio en línea.
 Crear una clave API Abra Claves API, escriba un nombre de 1–128 caracteres después de quitar espacios al principio y al final, elija un ámbito y una caducidad (7d, 30d, 90d, 180d o 365d; la consola usa 3 meses de forma predeterminada) y seleccione Crear.</description>
+    </item>
+    
+    <item>
+      <title>Roles globales</title>
+      <link>https://engine.speedle.io/es/docs/cloud/global-roles/</link>
+      <pubDate>Tue, 17 Nov 2026 00:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/cloud/global-roles/</guid>
+      <description>Speedle Cloud está en beta pública. Esta guía describe el flujo de trabajo del servicio en línea.
+Una asignación de rol suele pertenecer a un servicio. Cuando varios servicios comparten la misma asignación, defínala una vez en el servicio Roles globales de la cuenta y use el rol en las políticas de autorización de cada servicio.
+Solo se admiten políticas de rol. Una asignación global no concede ninguna operación por sí misma: cada servicio sigue definiendo los permisos que permite.</description>
     </item>
     
     <item>

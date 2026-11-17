@@ -6,7 +6,7 @@
     <description>Recent content in Speedle：强大易用的权限控制引擎 on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Thu, 12 Nov 2026 10:00:00 +0800</lastBuildDate>
+    <lastBuildDate>Tue, 17 Nov 2026 00:00:00 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/zh/index.xml" rel="self" type="application/rss+xml" />
     
@@ -293,6 +293,24 @@ import sys from speedle import Auth, Client, SpeedleError try: with Client( back
 git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads 后续命令均在这个代码目录执行。确认 2379、6733、6734 端口可用；修改端口时要同步修改命令和配置。
 2. 启动独立 etcd 服务 命名卷保存 etcd 数据。这里只把客户端端口发布到宿主机，单节点内部通信使用的 peer 端口保留在容器内。
 docker run --name speedle-etcd --detach \  --publish 127.0.0.1:2379:2379 \  --volume speedle-etcd-data:/etcd-data \  gcr.io/etcd-development/etcd:v3.6.14 \  /usr/local/bin/etcd \  --name speedle-local \  --data-dir /etcd-data \  --listen-client-urls http://0.</description>
+    </item>
+    
+    <item>
+      <title>全局角色</title>
+      <link>https://engine.speedle.io/zh/docs/cloud/global-roles/</link>
+      <pubDate>Tue, 17 Nov 2026 00:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/zh/docs/cloud/global-roles/</guid>
+      <description> Speedle Cloud 已开放公开测试版。 本文介绍线上服务的使用流程。
+角色分配通常只属于一个服务。当多个服务共享同一个角色分配时，把它定义在账号的 全局角色 服务中一次，再在各服务自己的授权策略中使用该角色。
+全局角色只接受角色策略。全局角色分配本身不授予任何操作：每个服务仍然自己定义允许的权限。全局角色只属于一个 Cloud 账号，不会跨账号生效。
+创建一次角色分配 在控制台的服务选择器顶部选择 全局角色，创建一条角色策略：
+grant user Emma AdminRole 角色 AdminRole 现在已在账号内的所有服务中分配给 Emma。
+在服务中授予权限 切换到需要该权限的服务，例如 library，创建一条授权策略：
+grant role AdminRole borrow books 在每个需要允许该操作的服务中重复这一步。没有自己的授权策略的服务不授予任何权限，即使角色已分配给它。
+检查结果 打开 library 的 Playground，以 [{&amp;quot;type&amp;quot;:&amp;quot;user&amp;quot;,&amp;quot;name&amp;quot;:&amp;quot;Emma&amp;quot;}] 作为主体、books 作为资源、borrow 作为动作运行测试。请求通过 AdminRole 被允许；来自 Bob 的同一请求被拒绝。
+全局角色自己的 Playground 不同：直接对全局服务判定总是拒绝。全局角色在各服务的 Playground 中生效。
+行为与限制  全局角色只接受角色策略。在全局服务中创建授权策略返回 400 {&amp;quot;error&amp;quot;:&amp;quot;global_authz_unsupported&amp;quot;}。 全局服务计入账号的服务上限，其角色策略计入账号合并的策略上限。参见限额与错误。 控制台把该特殊服务显示为 全局角色；它不能手动创建、改名或删除。 账号的每个 Speedle Cloud ADS 实例都会收到全局角色策略，即使该实例只同步选定的服务集合。 修改与其他策略一样传播：通过已发布的快照约一分钟生效；Playground 直接读取当前状态，立即生效。  </description>
     </item>
     
     <item>

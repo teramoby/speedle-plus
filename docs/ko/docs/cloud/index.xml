@@ -6,7 +6,7 @@
     <description>Recent content in Speedle Cloud on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>ko-kr</language>
-    <lastBuildDate>Thu, 12 Nov 2026 21:00:00 +0800</lastBuildDate>
+    <lastBuildDate>Tue, 17 Nov 2026 00:00:00 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/ko/docs/cloud/index.xml" rel="self" type="application/rss+xml" />
     
@@ -31,6 +31,18 @@ GitHub 또는 Google을 통한 로그인 브라우저에서 Cloud 콘솔을 열�
       <description>API 키는 계정에 속하며 범위에 따라 해당 계정의 서비스에 접근합니다. 최종 사용자가 아닌 애플리케이션을 인증합니다. API 키, 세션, 연결된 신원 관리에는 로그인한 콘솔 세션이 필요합니다.
 Speedle Cloud는 공개 베타로 제공 중입니다. 이 가이드는 실제 서비스에서의 사용 절차를 설명합니다.
 API 키 생성 API 키에서 앞뒤 공백을 제외한 1–128자 이름, 범위, 만료 기간(7d, 30d, 90d, 180d, 365d. 콘솔 기본값은 3개월)을 지정하고 생성을 선택합니다. 생성하려면 최근 10분 이내에 연결된 제공자로 인증해야 합니다. 403 reauth_required이면 다시 인증한 뒤 생성을 다시 선택하세요.</description>
+    </item>
+    
+    <item>
+      <title>전역 역할</title>
+      <link>https://engine.speedle.io/ko/docs/cloud/global-roles/</link>
+      <pubDate>Tue, 17 Nov 2026 00:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/cloud/global-roles/</guid>
+      <description>Speedle Cloud는 공개 베타로 제공 중입니다. 이 가이드는 실제 서비스에서의 사용 절차를 설명합니다.
+역할 할당은 보통 하나의 서비스에 속합니다. 여러 서비스가 같은 할당을 공유할 때는 계정의 전역 역할 서비스에 한 번 정의하고 각 서비스의 인가 정책에서 그 역할을 사용합니다.
+전역 역할은 역할 정책만 허용합니다. 전역 역할 할당 자체는 어떤 작업도 허용하지 않습니다. 허용할 권한은 여전히 각 서비스가 정의합니다. 전역 역할은 하나의 Cloud 계정에 속하며 계정 간에 적용되지 않습니다.
+역할 할당을 한 번 만들기 콘솔 서비스 선택기 맨 위에서 전역 역할을 선택하고 역할 정책을 만듭니다.</description>
     </item>
     
     <item>

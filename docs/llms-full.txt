@@ -40,6 +40,7 @@ This file contains the complete English documentation published at https://engin
 - [Speedle Cloud](https://engine.speedle.io/docs/cloud/)
 - [Getting started with Speedle Cloud](https://engine.speedle.io/docs/cloud/getting-started/)
 - [Speedle Cloud API keys](https://engine.speedle.io/docs/cloud/tokens/)
+- [Global roles](https://engine.speedle.io/docs/cloud/global-roles/)
 - [Speedle Cloud authorization API](https://engine.speedle.io/docs/cloud/authorization-api/)
 - [API reference](https://engine.speedle.io/docs/cloud/api-reference/)
 - [Speedle Cloud Limits and errors](https://engine.speedle.io/docs/cloud/limits-and-errors/)
@@ -3216,6 +3217,7 @@ Sign in to use the console and create API keys. The free public beta is for tria
 
 - [Getting started](https://engine.speedle.io/docs/cloud/getting-started/): Sign in, create a service and policy in the console, create an API key, and check authorization from your application.
 - [API keys](https://engine.speedle.io/docs/cloud/tokens/): Account-level credentials, fixed scopes, a required expiry, Create and Revoke, one-time secret display and pagination.
+- [Global roles](https://engine.speedle.io/docs/cloud/global-roles/): Assign a role once for every service of the account and grant its permissions in each service.
 - [Authorization API](https://engine.speedle.io/docs/cloud/authorization-api/): IsAllowed requests, caller identity, Node.js 22 and transport constraints.
 - [API reference](https://engine.speedle.io/docs/cloud/api-reference/): authorization checks and policy management with an API key. Requests run from your server; this page is read-only.
 - [Limits and errors](https://engine.speedle.io/docs/cloud/limits-and-errors/): Account caps, size limits, burst limits, daily quota, error codes and reset times.
@@ -3366,6 +3368,50 @@ The first revocation returns an empty HTTP 204. Unknown, other-account or alread
 The available actions are **Create** and **Revoke**. To change a secret, scope or expiry, create another key, update callers and revoke the old key. If all active keys are in use at the cap, plan for interruption before revoking one. Deleting a service does not revoke account API keys.
 
 If a creation or revocation response is lost, refresh the list before acting again. A matching name cannot recover a lost secret. See [Limits and errors](https://engine.speedle.io/docs/cloud/limits-and-errors/) and the [Authorization API](https://engine.speedle.io/docs/cloud/authorization-api/).
+
+## Global roles
+
+Source: https://engine.speedle.io/docs/cloud/global-roles/
+
+**Speedle Cloud is in public beta.** This guide describes the workflow for the live service.
+
+A role assignment usually belongs to one service. When several services share the same assignment, define it once in the account's **Global roles** service and use the role in each service's own authorization policies.
+
+Only role policies are supported there. A global role assignment does not grant any operation by itself: every service still defines the permissions it allows. Global roles belong to one Cloud account and never cross accounts.
+
+### Create the role assignment once
+
+In the console service picker, choose **Global roles** at the top of the list. Create a role policy:
+
+```text
+grant user Emma AdminRole
+```
+
+The role `AdminRole` is now assigned to Emma in every service of the account.
+
+### Grant the permission in a service
+
+Switch to a service that needs the permission, for example `library`, and create an authorization policy:
+
+```text
+grant role AdminRole borrow books
+```
+
+Repeat this in each service that should allow the operation. A service without its own authorization policy grants nothing, even when the role is assigned there.
+
+### Check the result
+
+Open the Playground for `library` and run a test with `[{"type":"user","name":"Emma"}]` as the principal, `books` as the resource and `borrow` as the action. The request is allowed through `AdminRole`; the same request from `Bob` is denied.
+
+The Global roles Playground is different: a check against the global service itself always denies. Global roles take effect in each service's Playground.
+
+### Behaviour and limits
+
+- Global roles accept role policies only. An authorization policy in the global service returns `400 {"error":"global_authz_unsupported"}`.
+- The global service counts as one of the account's services, and its role policies count toward the combined account policy limit. See [Limits and errors](https://engine.speedle.io/docs/cloud/limits-and-errors/).
+- The console names the special service **Global roles**; it cannot be created by hand, renamed or deleted.
+- Every Speedle Cloud ADS instance of the account always receives the global role policies, even when it synchronizes a selected set of services.
+- Changes propagate like other policies: about a minute through published snapshots, and immediately in the Playground, which reads the current state.
 
 ## Speedle Cloud authorization API
 

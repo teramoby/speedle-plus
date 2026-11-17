@@ -22,6 +22,7 @@ Sign in to use the console and create API keys. The free public beta is for tria
 
 - [Getting started](/docs/cloud/getting-started/): Sign in, create a service and policy in the console, create an API key, and check authorization from your application.
 - [API keys](/docs/cloud/tokens/): Account-level credentials, fixed scopes, a required expiry, Create and Revoke, one-time secret display and pagination.
+- [Global roles](/docs/cloud/global-roles/): Assign a role once for every service of the account and grant its permissions in each service.
 - [Authorization API](/docs/cloud/authorization-api/): IsAllowed requests, caller identity, Node.js 22 and transport constraints.
 - [API reference](/docs/cloud/api-reference/): authorization checks and policy management with an API key. Requests run from your server; this page is read-only.
 - [Limits and errors](/docs/cloud/limits-and-errors/): Account caps, size limits, burst limits, daily quota, error codes and reset times.
