@@ -742,6 +742,68 @@ class EmailTest(unittest.TestCase):
         self.assertEqual(base64.b64decode(attachment["content"]).decode("utf-8"), payload["text"])
 
 
+class EmailTextTest(unittest.TestCase):
+    """The body's claim about the attachment must match what it carries."""
+
+    def body_and_attachment(self, report, run_url="http://run",
+                            text_limit=200, attachment_limit=500):
+        with mock.patch.object(test_report, "EMAIL_TEXT_LIMIT", text_limit), \
+                mock.patch.object(test_report, "ATTACHMENT_TEXT_LIMIT", attachment_limit):
+            body = test_report.email_text(report, run_url)
+            attachment = test_report.report_attachment("report.txt", report)
+        return body, base64.b64decode(attachment["content"]).decode("utf-8")
+
+    def test_a_report_within_the_body_limit_is_sent_whole(self):
+        body, attached = self.body_and_attachment("x" * 200)
+        self.assertEqual(body, "x" * 200)
+        self.assertNotIn("truncated", body)
+        self.assertEqual(attached, "x" * 200)
+
+    def test_a_report_within_the_attachment_limit_is_promised_whole(self):
+        body, attached = self.body_and_attachment("x" * 500)
+        self.assertLessEqual(len(body), 200)
+        self.assertIn("the full report is attached", body)
+        self.assertIn("the workflow run (http://run)", body)
+        self.assertEqual(attached, "x" * 500)
+
+    def test_a_report_beyond_the_attachment_limit_is_reported_cut_twice(self):
+        body, attached = self.body_and_attachment("x" * 501)
+        self.assertLessEqual(len(body), 200)
+        self.assertIn("the attachment is truncated as well", body)
+        self.assertNotIn("the full report is attached", body)
+        self.assertIn("the workflow run (http://run)", body)
+        self.assertLessEqual(len(attached.encode("utf-8")), 500)
+
+    def test_the_attachment_cap_counts_bytes_not_characters(self):
+        # Report text is Chinese, so the byte cap can be reached while the
+        # character count is still under it.
+        report = "断" * 250
+        body, attached = self.body_and_attachment(report, attachment_limit=700)
+        self.assertLessEqual(len(report), 700)
+        self.assertGreater(len(report.encode("utf-8")), 700)
+        self.assertIn("the attachment is truncated as well", body)
+        self.assertLessEqual(len(attached.encode("utf-8")), 700)
+
+
+class RequiredMarkerTest(unittest.TestCase):
+    """The accepted opt-outs are documented in docs/RUNNERS.md."""
+
+    def test_only_the_documented_values_turn_the_requirement_off(self):
+        self.assertEqual(test_report.REPORT_EMAIL_OPT_OUTS, ("0", "false", "no"))
+        for value in ("0", "false", "no", "False", "NO", " no ", "0\t"):
+            with self.subTest(value=value):
+                self.assertFalse(test_report.report_email_required({"REPORT_EMAIL_REQUIRED": value}))
+        # Every other non-empty value, including a misspelling, means required.
+        for value in ("true", "1", "yes", "on", "off", "disabled", "n", "ture", " false!"):
+            with self.subTest(value=value):
+                self.assertTrue(test_report.report_email_required({"REPORT_EMAIL_REQUIRED": value}))
+
+    def test_an_unset_or_empty_marker_keeps_the_run_soft(self):
+        self.assertFalse(test_report.report_email_required({}))
+        self.assertFalse(test_report.report_email_required({"REPORT_EMAIL_REQUIRED": ""}))
+        self.assertFalse(test_report.report_email_required({"REPORT_EMAIL_REQUIRED": "   "}))
+
+
 class GitHubTest(unittest.TestCase):
     def test_call_uses_the_no_redirect_opener(self):
         # The repository token must not follow a redirect to another host.

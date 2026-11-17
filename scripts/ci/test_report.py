@@ -289,6 +289,11 @@ EMAIL_TEXT_LIMIT = 100_000
 EMAIL_MAX_BYTES = 25 * 1024 * 1024
 ATTACHMENT_TEXT_LIMIT = 17 * 1024 * 1024
 REPORT_FILENAME = "speedle-{kind}-report.txt"
+# The report jobs set REPORT_EMAIL_REQUIRED. These non-empty values turn the
+# requirement off, compared case-insensitively after trimming whitespace; every
+# other non-empty value turns it on, so a misspelling fails closed. An empty or
+# unset marker is off too, keeping local runs and tests green.
+REPORT_EMAIL_OPT_OUTS = ("0", "false", "no")
 
 
 def addresses(value):
@@ -340,12 +345,22 @@ def note_in_summary(env, message):
 
 def email_text(report, run_url=""):
     """The report as far as the message body carries it, with a pointer to the
-    attachment when the full report is longer."""
+    attachment when the full report travels there, or to the run page when the
+    attachment is cut as well.
+
+    The attachment is cut at ATTACHMENT_TEXT_LIMIT bytes, so the body must not
+    call it complete beyond that. A report can exceed the byte cap while its
+    character count is still under it, so the check is on the encoded bytes.
+    """
     if len(report) <= EMAIL_TEXT_LIMIT:
         return report
     where = f"the workflow run ({run_url})" if run_url else "the workflow run page"
-    footer = (f"\n\n[report truncated at {EMAIL_TEXT_LIMIT} characters; the full report is attached; "
-              f"see also {where} and the tracked issues]\n")
+    if len(report.encode("utf-8")) <= ATTACHMENT_TEXT_LIMIT:
+        footer = (f"\n\n[report truncated at {EMAIL_TEXT_LIMIT} characters; the full report is attached; "
+                  f"see also {where} and the tracked issues]\n")
+    else:
+        footer = (f"\n\n[report truncated at {EMAIL_TEXT_LIMIT} characters; the attachment is truncated "
+                  f"as well, so {where} is the only complete copy]\n")
     return report[:EMAIL_TEXT_LIMIT - len(footer)] + footer
 
 
@@ -408,6 +423,16 @@ def email_configured(env):
     """True when the Cloudflare Email settings hold one sender, one valid
     Reply-To and a usable recipient list."""
     return not email_config_problems(env)
+
+
+def report_email_required(env):
+    """True when the run is a real report job, so a failed send fails it.
+
+    Any non-empty marker means required so a misspelling fails closed; only
+    REPORT_EMAIL_OPT_OUTS and an unset or empty marker stay soft.
+    """
+    marker = env.get("REPORT_EMAIL_REQUIRED", "").strip().lower()
+    return bool(marker) and marker not in REPORT_EMAIL_OPT_OUTS
 
 
 def send_email(subject, body, env, attachment=None, timeout=EMAIL_TIMEOUT):
@@ -673,12 +698,8 @@ def main(argv=None, env=os.environ):
             print(f"::warning::Failure issues not updated ({type(error).__name__}).", file=sys.stderr)
     print(summary)
     # A real report job must not go green when its only notification channel
-    # did not deliver, whether it is misconfigured or the send failed. Any
-    # non-empty marker means required, so a misspelling fails closed; tests
-    # and local runs leave it unset, and only an explicit opt-out stays soft.
-    marker = env.get("REPORT_EMAIL_REQUIRED", "").strip().lower()
-    required = bool(marker) and marker not in ("0", "false", "no")
-    if email_failed and required:
+    # did not deliver, whether it is misconfigured or the send failed.
+    if email_failed and report_email_required(env):
         problems = email_config_problems(env)
         reason = (f"is not configured correctly ({'; '.join(problems)})" if problems
                   else "could not be sent")

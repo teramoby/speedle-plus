@@ -191,13 +191,19 @@ receive mail, so a report sent without a Reply-To loses any reply. A second
 sender address, or an `OPS_EMAIL_TO` entry that is not an address, is a
 configuration error rather than a recipient that is dropped silently.
 
-The report step sets `REPORT_EMAIL_REQUIRED`, so a missing or malformed setting
-fails the job with an `::error::` annotation that names the setting, after the
-step summary and the failure issues have been written. A local run or a test
-without the settings only prints a notice and stays green. The step summary
-keeps the report for the run, up to 900000 bytes and with the cut marked when
-the report is longer; the email carries the full report as an attachment,
-capped at 17 MiB with a note when it had to be cut.
+The report jobs set `REPORT_EMAIL_REQUIRED: "true"`, so a missing or malformed
+setting fails the job with an `::error::` annotation that names the setting,
+after the step summary and the failure issues have been written. Of the
+non-empty values, exactly `0`, `false` and `no` turn that requirement off,
+compared case-insensitively after trimming whitespace; an empty or unset marker
+is off as well. Every other non-empty value turns it on, so a misspelling such
+as `ture` fails closed instead of silently dropping the guarantee. To make a
+broken email channel a notice instead of a failed job, set the marker to one
+of those three values (or remove it) in the report job's `env:` in the
+workflow. A local run or a test without the settings only prints a notice and
+stays green. The step summary keeps the report for the run, up to 900000 bytes
+and with the cut marked when the report is longer; the email carries the full
+report as an attachment, capped at 17 MiB with a note when it had to be cut.
 
 ## Fiona full nightly trial
 
