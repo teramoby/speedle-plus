@@ -76,7 +76,7 @@ func expectSchema(m sqlmock.Sqlmock, create bool, version, engines int) {
 		m.ExpectExec("INSERT IGNORE").WillReturnResult(sqlmock.NewResult(0, 1))
 	}
 	m.ExpectQuery("SELECT schema_version").WillReturnRows(sqlmock.NewRows([]string{"schema_version"}).AddRow(version))
-	if version != 1 {
+	if version != 2 {
 		return
 	}
 	for i := 0; i < 5; i++ {
@@ -88,7 +88,7 @@ func TestSchemaInitialization(t *testing.T) {
 	for _, create := range []bool{true, false} {
 		t.Run(map[bool]string{true: "automatic", false: "no-ddl"}[create], func(t *testing.T) {
 			s, m := mockStore(t)
-			expectSchema(m, create, 1, 5)
+			expectSchema(m, create, 2, 5)
 			if err := s.initialize(create); err != nil {
 				t.Fatal(err)
 			}
@@ -96,14 +96,14 @@ func TestSchemaInitialization(t *testing.T) {
 	}
 	t.Run("version", func(t *testing.T) {
 		s, m := mockStore(t)
-		expectSchema(m, false, 2, 5)
+		expectSchema(m, false, 3, 5)
 		if errors.Code(s.initialize(false)) != errors.ConfigError {
 			t.Fatal("accepted future schema")
 		}
 	})
 	t.Run("engine", func(t *testing.T) {
 		s, m := mockStore(t)
-		expectSchema(m, false, 1, 4)
+		expectSchema(m, false, 2, 4)
 		if errors.Code(s.initialize(false)) != errors.ConfigError {
 			t.Fatal("accepted nontransactional table")
 		}

@@ -69,6 +69,15 @@ func (s *Store) WritePolicyStore(ps *pms.PolicyStore) error {
 }
 
 func (s *Store) writePolicyStoreWithoutLock(ps *pms.PolicyStore) error {
+	// A whole-store write is the file store's import path. Reject invalid type
+	// declarations here too, as the other stores do through their create path.
+	if ps != nil {
+		for _, function := range ps.Functions {
+			if err := function.ValidateTypeDeclarations(); err != nil {
+				return errors.Wrap(err, errors.InvalidRequest, "invalid type declaration in function definition")
+			}
+		}
+	}
 	data, err := json.MarshalIndent(ps, "", "    ")
 	if err != nil {
 		return errors.Wrap(err, errors.StoreError, "marshal indent failed")
@@ -581,6 +590,9 @@ func (s *Store) CreateRolePolicy(serviceName string, rolePolicy *pms.RolePolicy)
 func validateFunc(function *pms.Function) error {
 	if function.Name == "" || function.FuncURL == "" {
 		return errors.New(errors.InvalidRequest, "\"name\" and \"funcURL\" in function definition can not be empty")
+	}
+	if err := function.ValidateTypeDeclarations(); err != nil {
+		return errors.Wrap(err, errors.InvalidRequest, "invalid type declaration in function definition")
 	}
 	return nil
 }

@@ -20,7 +20,7 @@ func sampleRole() *sqlmock.Rows {
 	return sqlmock.NewRows(strings.Split(roleColumns, ",")).AddRow("rp", "role", "grant", `["admin"]`, `["user:alice"]`, `null`, `null`, "", `null`)
 }
 func sampleFunction() *sqlmock.Rows {
-	return sqlmock.NewRows(strings.Split(functionColumns, ",")).AddRow("f", "desc", "https://f", "", "", true, 5, `null`)
+	return sqlmock.NewRows(strings.Split(functionColumns, ",")).AddRow("f", "desc", "https://f", "", "", true, 5, `["numeric","string"]`, "bool", `null`)
 }
 
 func TestSnapshotIsReadInOneTransaction(t *testing.T) {

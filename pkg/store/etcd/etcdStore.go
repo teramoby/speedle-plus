@@ -425,6 +425,9 @@ func validateFunc(function *pms.Function) error {
 	if function.Name == "" || function.FuncURL == "" {
 		return errors.New(errors.InvalidRequest, "\"name\" and \"funcURL\" in function definition can not be empty")
 	}
+	if err := function.ValidateTypeDeclarations(); err != nil {
+		return errors.Wrap(err, errors.InvalidRequest, "invalid type declaration in function definition")
+	}
 	return nil
 }
 

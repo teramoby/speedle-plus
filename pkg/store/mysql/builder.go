@@ -145,8 +145,8 @@ func (s *Store) initialize(create bool) error {
 	if err := s.db.QueryRowContext(ctx, "SELECT schema_version FROM speedle_store_meta WHERE id = 1").Scan(&version); err != nil {
 		return s.translate(err)
 	}
-	if version != 1 {
-		return errors.New(errors.ConfigError, "unsupported MySQL schema version (expected 1)")
+	if version != 2 {
+		return errors.New(errors.ConfigError, "unsupported MySQL schema version (expected 2)")
 	}
 	for _, table := range []struct{ name, columns string }{
 		{"speedle_services", serviceColumns}, {"speedle_policies", policyColumns},

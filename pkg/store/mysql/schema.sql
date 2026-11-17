@@ -1,4 +1,4 @@
--- MySQL 8.4, schema version 1. Create the database before running this script.
+-- MySQL 8.4, schema version 2. Create the database before running this script.
 -- DDL is deliberately separate from policy transactions (MySQL DDL commits).
 CREATE TABLE IF NOT EXISTS speedle_store_meta (
   id TINYINT NOT NULL PRIMARY KEY,
@@ -49,7 +49,9 @@ CREATE TABLE IF NOT EXISTS speedle_functions (
   ca LONGTEXT NOT NULL,
   result_cachable BOOLEAN NOT NULL,
   result_ttl BIGINT NOT NULL,
+  param_types JSON NOT NULL,
+  result_type LONGTEXT NOT NULL,
   metadata JSON NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
 
-INSERT IGNORE INTO speedle_store_meta (id, schema_version, revision) VALUES (1, 1, 0);
+INSERT IGNORE INTO speedle_store_meta (id, schema_version, revision) VALUES (1, 2, 0);

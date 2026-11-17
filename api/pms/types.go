@@ -17,6 +17,8 @@ type Function struct {
 	CA             string            `json:"ca,omitempty" bson:"ca,omitempty"`                         //security related configurations
 	ResultCachable bool              `json:"resultCachable,omitempty" bson:"resultcachable,omitempty"` //false by default
 	ResultTTL      int64             `json:"resultTTL,omitempty" bson:"resultttl,omitempty"`           // TTL of function result in second
+	Params         []string          `json:"params,omitempty" bson:"params,omitempty"`                 // optional declared parameter types
+	Result         string            `json:"result,omitempty" bson:"result,omitempty"`                 // optional declared result type
 	Metadata       map[string]string `json:"metadata,omitempty" bson:"metadata,omitempty"`
 }
 

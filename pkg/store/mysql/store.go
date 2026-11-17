@@ -21,7 +21,7 @@ const (
 	serviceColumns  = "name,service_type,metadata"
 	policyColumns   = "id,name,effect,permissions,principals,condition_expr,metadata"
 	roleColumns     = "id,name,effect,roles,principals,resources,resource_expressions,condition_expr,metadata"
-	functionColumns = "name,description,func_url,local_func_url,ca,result_cachable,result_ttl,metadata"
+	functionColumns = "name,description,func_url,local_func_url,ca,result_cachable,result_ttl,param_types,result_type,metadata"
 	revisionSQL     = "SELECT revision FROM speedle_store_meta WHERE id = 1"
 )
 
@@ -173,7 +173,7 @@ func scanRole(rows *sql.Rows) (*pms.RolePolicy, error) {
 }
 func scanFunction(rows *sql.Rows) (*pms.Function, error) {
 	v := &pms.Function{}
-	err := rows.Scan(&v.Name, &v.Description, &v.FuncURL, &v.LocalFuncURL, &v.CA, &v.ResultCachable, &v.ResultTTL, jsonInto(&v.Metadata))
+	err := rows.Scan(&v.Name, &v.Description, &v.FuncURL, &v.LocalFuncURL, &v.CA, &v.ResultCachable, &v.ResultTTL, jsonInto(&v.Params), &v.Result, jsonInto(&v.Metadata))
 	return v, err
 }
 
@@ -301,8 +301,11 @@ func insertFunction(ctx context.Context, tx *sql.Tx, v *pms.Function) error {
 	if err := validKey(v.Name); err != nil {
 		return err
 	}
-	_, err := tx.ExecContext(ctx, "INSERT INTO speedle_functions ("+functionColumns+") VALUES (?,?,?,?,?,?,?,?)",
-		v.Name, v.Description, v.FuncURL, v.LocalFuncURL, v.CA, v.ResultCachable, v.ResultTTL, jsonText(v.Metadata))
+	if err := v.ValidateTypeDeclarations(); err != nil {
+		return errors.Wrap(err, errors.InvalidRequest, "invalid type declaration in function definition")
+	}
+	_, err := tx.ExecContext(ctx, "INSERT INTO speedle_functions ("+functionColumns+") VALUES (?,?,?,?,?,?,?,?,?,?)",
+		v.Name, v.Description, v.FuncURL, v.LocalFuncURL, v.CA, v.ResultCachable, v.ResultTTL, jsonText(v.Params), v.Result, jsonText(v.Metadata))
 	return err
 }
 

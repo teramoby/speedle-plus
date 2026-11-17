@@ -33,7 +33,7 @@ func aliceContext(service, resource, action string) adsapi.RequestContext {
 	}
 }
 
-const failurePrincipals = `"principals":[["user:alice"]],"permissions":[{"resource":"r","actions":["read"]}]`
+const aliceReadPrincipals = `"principals":[["user:alice"]],"permissions":[{"resource":"r","actions":["read"]}]`
 
 // TestFunctionFailureFailsGrantPolicy checks a grant policy whose condition
 // cannot run: the decision is an error, not a denial and not a silent nonmatch.
@@ -42,7 +42,7 @@ func TestFunctionFailureFailsGrantPolicy(t *testing.T) {
 	p, _ := newFixtureEvaluator(t, fmt.Sprintf(`{
 		"functions":[{"name":"boom","funcURL":%q}],
 		"services":[{"name":"app","policies":[{"id":"grant","effect":"grant",%s,"condition":"boom() == 1"}]}]}`,
-		server.URL, failurePrincipals))
+		server.URL, aliceReadPrincipals))
 	allowed, reason, err := p.IsAllowed(aliceContext("app", "r", "read"))
 	if err == nil || allowed {
 		t.Fatalf("allowed=%v err=%v", allowed, err)
@@ -70,7 +70,7 @@ func TestFunctionFailureFailsDenyPolicy(t *testing.T) {
 		"services":[{"name":"app","policies":[
 			{"id":"grant","effect":"grant",%s},
 			{"id":"deny","effect":"deny",%s,"condition":"boom() == 1"}]}]}`,
-		server.URL, failurePrincipals, failurePrincipals))
+		server.URL, aliceReadPrincipals, aliceReadPrincipals))
 	allowed, _, err := p.IsAllowed(aliceContext("app", "r", "read"))
 	if err == nil {
 		t.Fatalf("allowed=%v, want an error", allowed)
@@ -89,7 +89,7 @@ func TestFunctionFailureFailsRolePolicy(t *testing.T) {
 		"services":[{"name":"app",
 			"rolePolicies":[{"id":"role","effect":"grant","roles":["admin"],"principals":["user:alice"],"condition":"boom() == 1"}],
 			"policies":[{"id":"grant","effect":"grant",%s}]}]}`,
-		server.URL, failurePrincipals))
+		server.URL, aliceReadPrincipals))
 	ctx := aliceContext("app", "r", "read")
 	if _, err := p.GetAllGrantedRoles(ctx); !IsCustomFunctionError(err) {
 		t.Errorf("GetAllGrantedRoles error %v is not a customer function error", err)
@@ -109,7 +109,7 @@ func TestFunctionFailureFailsGrantedPermissions(t *testing.T) {
 	p, _ := newFixtureEvaluator(t, fmt.Sprintf(`{
 		"functions":[{"name":"boom","funcURL":%q}],
 		"services":[{"name":"app","policies":[{"id":"grant","effect":"grant",%s,"condition":"boom() == 1"}]}]}`,
-		server.URL, failurePrincipals))
+		server.URL, aliceReadPrincipals))
 	if _, err := p.GetAllGrantedPermissions(aliceContext("app", "r", "read")); !IsCustomFunctionError(err) {
 		t.Errorf("GetAllGrantedPermissions error %v is not a customer function error", err)
 	}
@@ -122,7 +122,7 @@ func TestDiagnoseReportsFunctionFailure(t *testing.T) {
 	p, _ := newFixtureEvaluator(t, fmt.Sprintf(`{
 		"functions":[{"name":"boom","funcURL":%q}],
 		"services":[{"name":"app","policies":[{"id":"grant","effect":"grant",%s,"condition":"boom() == 1"}]}]}`,
-		server.URL, failurePrincipals))
+		server.URL, aliceReadPrincipals))
 	result, err := p.Diagnose(aliceContext("app", "r", "read"))
 	if err == nil || !IsCustomFunctionError(err) {
 		t.Fatalf("error %v is not a customer function error", err)
@@ -145,7 +145,7 @@ func TestFunctionFailureNotCached(t *testing.T) {
 	p, _ := newFixtureEvaluator(t, fmt.Sprintf(`{
 		"functions":[{"name":"boom","funcURL":%q,"resultCachable":true,"resultTTL":60}],
 		"services":[{"name":"app","policies":[{"id":"grant","effect":"grant",%s,"condition":"boom() == 1"}]}]}`,
-		server.URL, failurePrincipals))
+		server.URL, aliceReadPrincipals))
 	for i := 0; i < 2; i++ {
 		if _, _, err := p.IsAllowed(aliceContext("app", "r", "read")); !IsCustomFunctionError(err) {
 			t.Fatalf("call %d: error %v is not a customer function error", i, err)
@@ -164,8 +164,8 @@ func TestFunctionFailureNotCached(t *testing.T) {
 func TestConditionErrorsKeepNotMatching(t *testing.T) {
 	p, _ := newFixtureEvaluator(t, `{
 		"services":[{"name":"app","policies":[
-			{"id":"grant","effect":"grant",`+failurePrincipals+`},
-			{"id":"deny","effect":"deny",`+failurePrincipals+`,"condition":"missing == 'x'"}]}]}`)
+			{"id":"grant","effect":"grant",`+aliceReadPrincipals+`},
+			{"id":"deny","effect":"deny",`+aliceReadPrincipals+`,"condition":"missing == 'x'"}]}]}`)
 	allowed, _, err := p.IsAllowed(aliceContext("app", "r", "read"))
 	if err != nil || !allowed {
 		t.Fatalf("allowed=%v err=%v; a missing attribute must not match the deny", allowed, err)

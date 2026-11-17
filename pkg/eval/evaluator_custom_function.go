@@ -111,11 +111,15 @@ func (frc *FuncResultCache) CleanExpiredResult() {
 	}
 }
 
-// callCustomFunction runs one custom function call: it consults the result
-// cache, invokes call when the cache has no usable entry, and caches a
-// successful result. Every error it returns is a *CustomFunctionError, and a
-// failed call is never cached.
+// callCustomFunction runs one custom function call: it checks the declared
+// argument types, consults the result cache, invokes call when the cache has no
+// usable entry, and caches a successful result after checking its declared
+// type. Every error it returns is a *CustomFunctionError, and a failed call is
+// never cached.
 func (frc *FuncResultCache) callCustomFunction(cf *pms.Function, arguments []interface{}, call func(*ext.CustomerFunctionRequest) (interface{}, error)) (interface{}, error) {
+	if err := checkCustomFunctionArguments(cf, arguments); err != nil {
+		return nil, err
+	}
 	key, err := getKey(cf.Name, arguments)
 	if err != nil {
 		return nil, newCustomFunctionError(cf.Name, errors.Wrapf(err, errors.CustomerFuncError, "failed to encode parameters for customer function %q", cf.Name))
@@ -126,6 +130,9 @@ func (frc *FuncResultCache) callCustomFunction(cf *pms.Function, arguments []int
 	result, err := call(&ext.CustomerFunctionRequest{Params: arguments})
 	if err != nil {
 		return nil, newCustomFunctionError(cf.Name, err)
+	}
+	if err := checkCustomFunctionResult(cf, result); err != nil {
+		return nil, err
 	}
 	frc.AddToCache(key, cf, result)
 	return result, nil
