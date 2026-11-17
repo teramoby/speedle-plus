@@ -23,7 +23,7 @@ only its own disposable database. Failures are retained across every stage.
   100,000 policies within a single MongoDB service document.
 
 Normal nightly runs at 01:00 Asia/Shanghai. To validate a review branch on the
-charming runners without sending the scheduled report:
+self-hosted Linux runners without sending the scheduled report:
 
 ```sh
 gh workflow run nightly.yml --repo teramoby/speedle-plus \

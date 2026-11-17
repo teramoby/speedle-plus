@@ -12,7 +12,7 @@ const source = fs.readFileSync(path.resolve(__dirname, '../../.github/workflows/
 const pool = ['self-hosted', 'Linux', 'X64', 'speedle-linux'];
 const anyRunner = ['self-hosted', 'speedle-runner'];
 const fiona = ['self-hosted', 'fiona-speedle'];
-// Build needs the Linux pool and weekly uses the unique fiona label to reduce
+// Build needs the Linux pool and weekly uses the macOS-only label to reduce
 // benchmark noise; its macOS ARM64 requirement is a runtime identity check.
 const routeFor = mode => mode === 'quick' ? 'ubuntu-latest' : mode === 'build' ? pool : mode === 'weekly' ? fiona : anyRunner;
 const repository = 'teramoby/speedle-plus';

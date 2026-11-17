@@ -104,11 +104,11 @@ Choose one route: route A installs the latest release, route B builds the curren
 
 
 ```bash
-GOBIN="$PWD/bin" go install github.com/teramoby/speedle-plus/cmd/...@v1.8.0
+GOBIN="$PWD/bin" go install github.com/teramoby/speedle-plus/cmd/...@v1.9.0
 ls bin
 ```
 
-`GOBIN` keeps the executables in this directory's `bin` folder; without it, Go writes them to `$(go env GOPATH)/bin`. `v1.8.0` is the latest release tag at the time of writing; `go install` builds it from the tagged source and verifies it against the Go checksum database.
+`GOBIN` keeps the executables in this directory's `bin` folder; without it, Go writes them to `$(go env GOPATH)/bin`. `v1.9.0` is the latest release tag at the time of writing; `go install` builds it from the tagged source and verifies it against the Go checksum database.
 
 #### Route B: clone and build
 
@@ -195,6 +195,8 @@ Open a third terminal in the same directory:
 ```
 
 Leave it running and wait for its REST server to start.
+
+ADS watches the shared policy file; changes propagate asynchronously, so a new policy takes effect after a moment.
 
 #### 4. Verify authorization decisions
 

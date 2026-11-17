@@ -201,7 +201,7 @@ XACML モデルに詳しい方であれば、ポリシー管理サービス (PMS
 公式インストール手順 に従って Go をインストールし、バージョンを確認します:
 go version Go は GOROOT とデフォルトの GOPATH を自動的に構成します。カスタム値は不要です。以下のどちらの手順でも、3つの実行可能ファイルが bin ディレクトリに配置されます。
 Speedle のインストール どちらか1つのルートを選択してください: ルート A は最新リリースをインストールし、ルート B は現在のソースコードからビルドします。ガイドの残りの部分では ./bin/... を使用し、どちらのルートでも同様に動作します。
-ルート A: 最新リリースのインストール GOBIN=&amp;#34;$PWD/bin&amp;#34; go install github.com/teramoby/speedle-plus/cmd/...@v1.8.0 ls bin GOBIN により、実行可能ファイルがこのディレクトリの bin フォルダー内に保持されます。指定しない場合、Go は $(go env GOPATH)/bin に書き込みます。v1.8.0 は執筆時点での最新リリースタグです。go install はタグ付けされたソースからビルドし、Go チェックサムデータベースと照合して検証します。</description>
+ルート A: 最新リリースのインストール GOBIN=&amp;#34;$PWD/bin&amp;#34; go install github.com/teramoby/speedle-plus/cmd/...@v1.9.0 ls bin GOBIN により、実行可能ファイルがこのディレクトリの bin フォルダー内に保持されます。指定しない場合、Go は $(go env GOPATH)/bin に書き込みます。v1.9.0 は執筆時点での最新リリースタグです。go install はタグ付けされたソースからビルドし、Go チェックサムデータベースと照合して検証します。</description>
     </item>
     
     <item>
