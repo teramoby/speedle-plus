@@ -84,12 +84,13 @@ function routesFor(files) {
   });
 }
 
-function fixtureApi({run: completedRun, pr, files, prFiles, jobs: runJobs, newerJobs, latest, latestCompleted, commitPulls, jobsError}) {
+function fixtureApi({run: completedRun, pr, files, prFiles, jobs: runJobs, newerJobs, latest, latestCompleted, commitPulls, jobsError, defaultTip = base}) {
   const calls = [];
   const jobsPrefix = `repos/${repository}/actions/runs/`;
   const jobsSuffix = '/jobs?per_page=100&filter=latest';
   const filesPattern = new RegExp(`^repos/${repository}/pulls/\\d+/files\\?per_page=100&page=(\\d+)$`);
   let commitsCalls = 0;
+  let runsCalls = 0;
   const api = (endpoint, options = {}) => {
     calls.push({endpoint, options});
     if (options.method === 'POST') {
@@ -119,12 +120,14 @@ function fixtureApi({run: completedRun, pr, files, prFiles, jobs: runJobs, newer
     if (endpoint === `repos/${repository}/compare/${base}...${head}`) {
       return {files: files.map(filename => ({filename}))};
     }
-    if (endpoint === `repos/${repository}/contents/scripts/ci/classify-changes.sh?ref=${base}`) {
+    if (endpoint === `repos/${repository}/branches/master`) return {commit: {sha: defaultTip}};
+    if (endpoint === `repos/${repository}/contents/scripts/ci/classify-changes.sh?ref=${defaultTip}`) {
       return {type: 'file', encoding: 'base64', content: Buffer.from(classifierSource).toString('base64')};
     }
     if (endpoint.startsWith(`repos/${repository}/actions/workflows/ci.yml/runs?`)) {
       const completed = endpoint.includes('&status=completed');
-      const selected = completed ? (latestCompleted === undefined ? [completedRun] : latestCompleted) : (latest === undefined ? [completedRun] : latest);
+      const listed = typeof latest === 'function' ? latest(++runsCalls) : latest;
+      const selected = completed ? (latestCompleted === undefined ? [completedRun] : latestCompleted) : (listed === undefined ? [completedRun] : listed);
       if (completed) return {workflow_runs: selected};
       // The supersession scan pages through 100 runs at a time.
       const page = Number(/[?&]page=(\d+)/.exec(endpoint)?.[1] || '1');
@@ -261,7 +264,7 @@ test('open pull requests sharing a head and base keep one verdict', () => {
   assert.equal(newerResult.status.description, 'Quick CI routes passed');
 });
 
-test('open pull requests sharing a head across bases fail closed', () => {
+test('a run associated with its pull request keeps that verdict beside a sibling on another base', () => {
   const master = pullRequest([], {number: 590});
   const release = pullRequest([], {
     number: 591,
@@ -271,25 +274,76 @@ test('open pull requests sharing a head across bases fail closed', () => {
     number: 592,
     base: {sha: base, ref: 'master', repo: {id: 8, full_name: 'mirror/speedle-plus', name: 'speedle-plus', default_branch: 'master'}},
   });
-  const expected = '2 open pull requests share this head; one SHA status cannot represent them';
   const collisions = [
-    {open: [master, release], owner: master},
-    {open: [release, master], owner: release},
-    {open: [master, mirrored], owner: master},
+    {open: [master, release], owner: master, state: 'success'},
+    {open: [release, master], owner: master, state: 'success'},
+    {open: [master, mirrored], owner: master, state: 'success'},
+    // The sibling's own run fails the base rule, so it can only write failure.
+    {open: [master, release], owner: release, state: 'failure', description: 'base is release; the route gate verifies only master'},
   ];
-  for (const {open, owner} of collisions) {
+  for (const {open, owner, state, description} of collisions) {
     const fixture = fixtureApi({
-      run: run({pull_requests: [association(owner.number)]}),
+      run: run({pull_requests: [association(owner.number, owner.base.ref)]}),
       pr: owner, files: ['docs/guide.md'], jobs: jobs({build: true}),
       commitPulls: open,
     });
     const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
-    assert.equal(result.status.state, 'failure');
-    assert.equal(result.status.description, expected);
+    assert.equal(result.status.state, state);
+    if (description) assert.equal(result.status.description, description);
     const writes = fixture.calls.filter(call => call.options.method === 'POST');
     assert.equal(writes.length, 1);
-    assert.equal(writes[0].options.input.state, 'failure');
+    assert.equal(writes[0].options.input.state, state);
   }
+});
+
+test('a run without an association fails closed when the open pull requests disagree on the base', () => {
+  const master = pullRequest([], {number: 590});
+  const release = pullRequest([], {
+    number: 591,
+    base: {sha: base, ref: 'release', repo: {id: repositoryId, full_name: repository, name: 'speedle-plus', default_branch: 'master'}},
+  });
+  const fixture = fixtureApi({
+    run: run({pull_requests: []}), pr: master, files: ['docs/guide.md'], jobs: jobs({build: true}),
+    commitPulls: [master, release],
+  });
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.status.state, 'failure');
+  assert.equal(result.status.description, '2 open pull requests share this head; one SHA status cannot represent them');
+  // Without an association, a run that never started cannot pin the head red.
+  const pending = fixtureApi({
+    run: run({pull_requests: [], conclusion: 'action_required'}), pr: master, files: ['docs/guide.md'],
+    jobs: [], commitPulls: [master, release],
+  });
+  const quiet = gate.runGate({repository, runId: 101, publish: true}, pending.api);
+  assert.equal(quiet.ignored, true);
+  assert.equal(pending.calls.filter(call => call.options.method === 'POST').length, 0);
+});
+
+test('the classifier comes from the default branch tip, not from the pull request base commit', () => {
+  const tip = '3'.repeat(40);
+  const fixture = fixtureApi({
+    run: run(), pr: pullRequest(), files: ['docs/guide.md'], jobs: jobs({build: true}), defaultTip: tip,
+  });
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.status.state, 'success');
+  const reads = fixture.calls.map(call => call.endpoint).filter(endpoint => endpoint.includes('classify-changes.sh'));
+  assert.deepEqual(reads, [`repos/${repository}/contents/scripts/ci/classify-changes.sh?ref=${tip}`]);
+});
+
+test('a run superseded while it is assessed publishes nothing', () => {
+  const current = run();
+  const newer = run({id: 102, html_url: 'https://example.invalid/actions/runs/102'});
+  const fixture = fixtureApi({
+    run: current, pr: pullRequest(), files: ['docs/guide.md'], jobs: jobs({build: true}),
+    newerJobs: jobs({build: true}),
+    // The first order check sees this run as the newest; a newer run of the
+    // same pull request has started by the time the verdict is ready.
+    latest: callIndex => (callIndex === 1 ? [current] : [newer, current]),
+  });
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.ignored, true);
+  assert.equal(result.status.description, 'Superseded by a newer CI run');
+  assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 0);
 });
 
 test('the run association selects its pull request among shared commits', () => {
@@ -802,6 +856,7 @@ test('workflow_run gate uses the default branch, Node 22 and minimal permissions
   const permissions = workflow.match(/^permissions:\n((?:  [a-z-]+: (?:read|write)\n)+)/m)?.[1];
   assert.equal(permissions, '  contents: read\n  statuses: write\n  actions: read\n  pull-requests: read\n');
   assert.match(workflow, /^    if: github\.event\.workflow_run\.event == 'pull_request'$/m);
+  assert.match(workflow, /^  group: ci-route-gate-\$\{\{ github\.event\.workflow_run\.id \}\}$/m);
   assert.match(workflow, /^  cancel-in-progress: false$/m);
 
   const checkout = workflow.split('      - name: Checkout default branch\n')[1].split('      - name:')[0];

@@ -11,10 +11,12 @@ permissions:
   actions: read
   pull-requests: read
 
-# Runs for one head are serialized. The script also ignores a run when a newer
-# run exists for the same head, so completion order cannot replace its result.
+# One group per CI run. GitHub keeps at most one pending run per concurrency
+# group, so a per-head group could drop the gate of a newer failing run behind
+# a publish-silent one. The script orders the runs of a head itself: a run with
+# a newer started run publishes nothing, checked again before it publishes.
 concurrency:
-  group: ci-route-gate-${{ github.event.workflow_run.head_sha }}
+  group: ci-route-gate-${{ github.event.workflow_run.id }}
   cancel-in-progress: false
 
 jobs:

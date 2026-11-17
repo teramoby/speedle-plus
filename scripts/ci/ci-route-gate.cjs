@@ -214,10 +214,11 @@ function parseClassifierOutput(output) {
   return routes;
 }
 
-function classifyWithBase({api, runner, repository, baseSha, headSha, files}) {
+function classifyWithBase({api, runner, repository, baseSha, rulesSha = baseSha, headSha, files}) {
   assertSha(baseSha, 'pull request base');
+  assertSha(rulesSha, 'classifier revision');
   assertSha(headSha, 'pull request head');
-  const metadata = api(`repos/${repository}/contents/scripts/ci/classify-changes.sh?ref=${baseSha}`);
+  const metadata = api(`repos/${repository}/contents/scripts/ci/classify-changes.sh?ref=${rulesSha}`);
   if (metadata?.type !== 'file' || metadata.encoding !== 'base64' || typeof metadata.content !== 'string') {
     throw new Error('base classifier is not a regular file with inline content');
   }
@@ -264,6 +265,18 @@ function classifyWithBase({api, runner, repository, baseSha, headSha, files}) {
   } finally {
     fs.rmSync(temporary, {recursive: true, force: true});
   }
+}
+
+// The classifier always comes from the default branch tip, never from the
+// pull request's base commit: the routes are decided by the repository's
+// current trusted rules, so every pull request that shares a head classifies it
+// the same way, whichever base tip it was opened against.
+function defaultBranchTip(api, repository, pr) {
+  const branch = pr?.base?.repo?.default_branch;
+  if (typeof branch !== 'string' || branch.length === 0) throw new Error('pull request base has no default branch');
+  const sha = api(`repos/${repository}/branches/${encodeURIComponent(branch)}`)?.commit?.sha;
+  assertSha(sha, 'default branch tip');
+  return sha;
 }
 
 function changedFiles(compare) {
@@ -327,10 +340,11 @@ function openPullRequests(api, repository, run) {
   return response.filter(pr => pr?.state === 'open' && pr?.head?.sha === run.head_sha);
 }
 
-// The base repository and ref select the classification, so two pull requests
-// with one base identity produce one verdict. The pull request and workflow
-// run shapes describe the repository differently; the numeric id is present
-// in both and is the strongest identity.
+// The base repository and ref select the classification: the head's file list
+// against that base, classified by the default branch's current rules. Two
+// pull requests with one base identity therefore produce one verdict. The pull
+// request and workflow run shapes describe the repository differently; the
+// numeric id is present in both and is the strongest identity.
 function baseIdentity(base) {
   if (!base || typeof base.ref !== 'string' || base.ref.length === 0) return null;
   const repository = base.repo;
@@ -343,28 +357,40 @@ function baseIdentity(base) {
   return null;
 }
 
-// Rule 1: ownership always comes from the commit lookup. Colliding open pull
-// requests that share one base repository and ref have one classification, so
-// one SHA status can represent all of them: the run is attributed to its
-// associated pull request, or a fork run without an association may use any
-// one of them. A collision across bases stays a failure because the verdicts
-// can differ. A run whose pull request is closed or has moved on leaves the
-// status alone.
+// Rule 1: ownership comes from the commit lookup, and the run's own
+// association decides first. A run associated with one open pull request
+// publishes that pull request's verdict even when another open pull request
+// shares the head: a sibling on another base fails the base rule, so its runs
+// can only publish failure, never a success that this pull request would wear.
+// A run that cannot be attributed (no association, and the open pull requests
+// for its head disagree on the base) fails closed, and a run without an
+// association that never started publishes nothing.
+//
+// Availability trade-off, accepted: anyone who can open a pull request can open
+// one that reuses another pull request's head. Its runs start only after a
+// maintainer approves them; an approved run of it on another base, or one that
+// cannot be attributed, publishes failure on the shared head until that pull
+// request is closed. The shared status is never turned green by it.
 function resolveOwnership(api, repository, run) {
   const open = openPullRequests(api, repository, run);
-  if (open.length > 1) {
-    const identities = new Set(open.map(pr => baseIdentity(pr?.base)));
-    if (identities.size !== 1 || identities.has(null)) {
-      return {failure: `${open.length} open pull requests share this head; one SHA status cannot represent them`};
-    }
-  }
+  const distinctBases = prs => {
+    const identities = new Set(prs.map(pr => baseIdentity(pr?.base)));
+    return identities.size !== 1 || identities.has(null);
+  };
   const numbers = associatedNumbers(run);
   if (numbers.length > 0) {
     const owned = open.filter(pr => numbers.includes(pr?.number));
     if (owned.length === 0) return {ignored: 'The run pull request is closed or has moved on'};
+    if (distinctBases(owned)) {
+      return {failure: `${owned.length} open pull requests share this head; one SHA status cannot represent them`};
+    }
     return {pr: owned[0]};
   }
+  if (!startedRun(run)) return {ignored: 'CI run did not start'};
   if (open.length === 0) return {ignored: 'Cannot resolve one open pull request for this commit'};
+  if (distinctBases(open)) {
+    return {failure: `${open.length} open pull requests share this head; one SHA status cannot represent them`};
+  }
   return {pr: open[0]};
 }
 
@@ -448,9 +474,25 @@ function assessRun({api, runner, repository, run, pr, comparison, trusted = fals
   // of a head it shares. This follows the workflow check, which stays first.
   if (!startedRun(run)) return outcome({run, pr, state: null, ignored: true, message: 'CI run did not start'});
   const routes = compared.complete ? classifyWithBase({
-    api, runner, repository, baseSha: pr.base.sha, headSha: run.head_sha, files: compared.files,
+    api, runner, repository, baseSha: pr.base.sha, rulesSha: defaultBranchTip(api, repository, pr),
+    headSha: run.head_sha, files: compared.files,
   }) : allRoutes();
   return evaluate({run, pr, jobs, routes, incomplete: !compared.complete});
+}
+
+// Gate executions for different CI runs of one head run in parallel: the
+// workflow groups them per CI run, because a per-head group keeps only one
+// pending execution and could drop the gate of a newer run. A newer run can
+// therefore complete while this one is assessed, so the order is checked again
+// just before the verdict is returned; a run superseded in the meantime
+// publishes nothing.
+function recheckOrder(api, repository, run, pr, result) {
+  if (result.ignored || !['success', 'failure'].includes(result.status?.state)) return result;
+  const superseding = supersedingRun(api, repository, run, pr);
+  if (superseding && superseding !== UNRESOLVED_RUN_ORDER && superseding !== UNKNOWN_OWNERSHIP) {
+    return outcome({run, pr, state: null, ignored: true, message: 'Superseded by a newer CI run'});
+  }
+  return result;
 }
 
 function execute(options, api, runner = spawnSync) {
@@ -524,7 +566,8 @@ function execute(options, api, runner = spawnSync) {
           message: superseding.run.name === CI_WORKFLOW_NAME ? 'Superseded by a newer CI run' : 'Newer CI run has an unexpected workflow name',
         });
       }
-      return assessRun({api, runner, repository: options.repository, run, pr, comparison, trusted: true});
+      return recheckOrder(api, options.repository, run, pr,
+        assessRun({api, runner, repository: options.repository, run, pr, comparison, trusted: true}));
     }
     return assessRun({api, runner, repository: options.repository, run, pr});
   } catch (error) {
