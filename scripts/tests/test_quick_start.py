@@ -2,6 +2,7 @@
 import contextlib
 import importlib.util
 import io
+import json
 import os
 import re
 import subprocess
@@ -174,6 +175,140 @@ class SplitNetworkCommandTest(unittest.TestCase):
         for block in ("mkdir -p bin", "go build .\nls bin\ngo build -o x ."):
             with self.subTest(block=block), self.assertRaises(AssertionError):
                 QUICK_START.split_network_command(block, "go build")
+
+
+class DecisionWaitTest(unittest.TestCase):
+    """ADS reloads the policy file asynchronously after a documented create."""
+
+    def wait(self, responses, clock=None, name="allow-direct"):
+        with contextlib.ExitStack() as stack:
+            run = stack.enter_context(mock.patch.object(
+                QUICK_START, "run", side_effect=[json.dumps(response) for response in responses]))
+            sleep = stack.enter_context(mock.patch.object(QUICK_START.time, "sleep"))
+            monotonic = None
+            if clock is not None:
+                monotonic = stack.enter_context(
+                    mock.patch.object(QUICK_START.time, "monotonic", side_effect=clock))
+            result = QUICK_START.wait_for_decision(
+                name, "curl", ROOT, {"GOFLAGS": ""})
+        return result, run, sleep, monotonic
+
+    def test_returns_the_first_matching_decision_without_sleeping(self):
+        result, run, sleep, _ = self.wait([{"allowed": True, "reason": 0}])
+        self.assertEqual(result, {"allowed": True, "reason": 0})
+        run.assert_called_once_with("curl", ROOT, {"GOFLAGS": ""})
+        sleep.assert_not_called()
+
+    def test_retries_the_unchanged_documented_command_until_ads_reloads(self):
+        result, run, sleep, _ = self.wait(
+            [{"allowed": False, "reason": 3}, {"allowed": False, "reason": 3},
+             {"allowed": True, "reason": 0}],
+            clock=[0.0, 0.0, 5.0],
+        )
+        self.assertEqual(result, {"allowed": True, "reason": 0})
+        self.assertEqual(run.call_count, 3)
+        self.assertEqual(sleep.call_args_list,
+                         [mock.call(QUICK_START.DECISION_INTERVAL)] * 2)
+
+    def test_returns_the_last_decision_after_the_deadline_passes(self):
+        stale = {"allowed": False, "reason": 3}
+        result, run, sleep, _ = self.wait([stale], clock=[0.0, 10.0])
+        self.assertEqual(result, stale)
+        self.assertEqual(run.call_count, 1)
+        sleep.assert_not_called()
+
+    def test_a_deny_step_retries_an_unexpected_reason(self):
+        result, run, sleep, _ = self.wait(
+            [{"allowed": False, "reason": 1}, {"allowed": False, "reason": 3}],
+            clock=[0.0, 5.0], name="deny",
+        )
+        self.assertEqual(result, {"allowed": False, "reason": 3})
+        self.assertEqual(run.call_count, 2)
+        self.assertEqual(sleep.call_args_list, [mock.call(QUICK_START.DECISION_INTERVAL)])
+
+    def test_a_permanent_mismatch_is_returned_for_the_callers_assertion(self):
+        # wait_for_decision never asserts: exercise() keeps the original final
+        # assertions and their messages, including the last observed response.
+        stale = {"allowed": False, "reason": 3}
+        with contextlib.ExitStack() as stack:
+            stack.enter_context(mock.patch.object(
+                QUICK_START, "run", return_value=json.dumps(stale)))
+            stack.enter_context(mock.patch.object(QUICK_START.time, "sleep"))
+            stack.enter_context(mock.patch.object(
+                QUICK_START.time, "monotonic", side_effect=[0.0, 11.0]))
+            result = QUICK_START.wait_for_decision("allow-direct", "curl", ROOT, {})
+        self.assertEqual(result, stale)
+
+
+class DecisionStepsTest(unittest.TestCase):
+    def test_covers_every_documented_decision_step_in_order(self):
+        expected = {
+            "": ["allow-direct", "allow-role", "deny", "abac-allow", "abac-deny"],
+            ".zh": ["allow-direct", "deny", "abac-allow", "abac-deny"],
+        }
+        for locale, names in expected.items():
+            with self.subTest(locale=locale or "en"):
+                steps = QUICK_START.blocks(
+                    ROOT / "docs/hugo/content" / f"quick-start{locale}.md")
+                documented = [name for name, _ in steps if name in QUICK_START.DECISIONS]
+                self.assertEqual(documented, names)
+
+
+class ExerciseDecisionRetryTest(unittest.TestCase):
+    def test_retries_only_the_decision_steps_until_ads_reloads(self):
+        steps = QUICK_START.blocks(ROOT / "docs/hugo/content/quick-start.md")
+        documented = dict(steps)
+        pending = {name: 1 for name in QUICK_START.DECISIONS}
+        calls = []
+
+        def run(command, cwd, env, timeout=60):
+            calls.append(command)
+            for name in QUICK_START.DECISIONS:
+                if command == documented[name]:
+                    allowed = QUICK_START.DECISIONS[name]
+                    current = not allowed if pending[name] else allowed
+                    pending[name] = 0
+                    return json.dumps({"allowed": current, "reason": 0 if current else 3})
+            if command == documented["list"]:
+                return json.dumps([{
+                    "name": "mysvc",
+                    "policies": [{}, {}],
+                    "rolePolicies": [{}],
+                }])
+            return ""
+
+        class Process:
+            pid = os.getpid()
+
+            def __init__(self, *args, **kwargs):
+                pass
+
+            def poll(self):
+                return None
+
+        with tempfile.TemporaryDirectory() as temporary:
+            checkout = Path(temporary) / "speedle-plus"
+            checkout.mkdir()
+            (checkout / "quick-start-policies.json").write_text(
+                json.dumps({"services": [{"name": "mysvc"}]}))
+            with mock.patch.object(QUICK_START, "ports", return_value=(6733, 6734)), \
+                    mock.patch.object(QUICK_START, "server_lock",
+                                      lambda: contextlib.nullcontext()), \
+                    mock.patch.object(QUICK_START.subprocess, "Popen", Process), \
+                    mock.patch.object(QUICK_START, "wait_ready"), \
+                    mock.patch.object(QUICK_START, "stop"), \
+                    mock.patch.object(QUICK_START.time, "sleep"), \
+                    mock.patch.object(QUICK_START, "run", side_effect=run), \
+                    contextlib.redirect_stdout(io.StringIO()):
+                result = QUICK_START.exercise("en", steps, checkout, dict(os.environ))
+        for name in QUICK_START.DECISIONS:
+            with self.subTest(step=name):
+                self.assertEqual(calls.count(documented[name]), 2)
+        self.assertEqual(calls.count(documented["list"]), 1)
+        for name in ("service", "policies", "roles", "abac-policy"):
+            with self.subTest(step=name):
+                self.assertEqual(calls.count(documented[name]), 1)
+        self.assertEqual(result["decisions"], QUICK_START.DECISIONS)
 
 
 class DocumentedBuildTest(unittest.TestCase):
