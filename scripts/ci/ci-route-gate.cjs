@@ -444,7 +444,8 @@ function startedAfter(candidate, run, runStart) {
 // A completed ignored label run never publishes a status, so it must not
 // suppress the status of the newest run that can: a newer run that is not
 // ignored supersedes this one. Every started run of the head is compared,
-// because a re-run of an older ID can be the newest. A run that never started
+// because a re-run of an older ID can be the newest; a newer attempt of this
+// same run supersedes it too. A run that never started
 // is invisible here: it cannot publish, so it neither supersedes this run nor
 // consumes the sample. Another pull request's run cannot publish here and is
 // skipped. An unknown owner is reported so the caller can fail this run's
@@ -463,6 +464,12 @@ function supersedingRun(api, repository, run, pr) {
     for (const candidate of runs) {
       if (String(candidate?.id) === String(run.id)) {
         listed = true;
+        // A re-run keeps the run ID, so the listing shows its latest
+        // attempt. A newer attempt than this one decides the head.
+        const listedAttempt = Number(candidate.run_attempt ?? 1);
+        const ownAttempt = Number(run.run_attempt ?? 1);
+        if (!Number.isInteger(listedAttempt) || !Number.isInteger(ownAttempt)) return UNRESOLVED_RUN_ORDER;
+        if (listedAttempt > ownAttempt) return {run: candidate};
         continue;
       }
       if (!startedRun(candidate)) continue;

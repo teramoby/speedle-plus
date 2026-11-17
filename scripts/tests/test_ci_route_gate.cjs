@@ -91,20 +91,25 @@ function routesFor(files) {
   });
 }
 
-function fixtureApi({run: completedRun, pr, files, prFiles, renames = {}, jobs: runJobs, newerJobs, latest, latestCompleted, commitPulls, jobsError, runsById = {}, defaultTip = base}) {
+function fixtureApi({run: completedRun, runFetches, pr, files, prFiles, renames = {}, jobs: runJobs, newerJobs, latest, latestCompleted, commitPulls, jobsError, runsById = {}, defaultTip = base}) {
   const calls = [];
   const jobsPrefix = `repos/${repository}/actions/runs/`;
   const jobsSuffix = '/jobs?per_page=100&filter=latest';
   const filesPattern = new RegExp(`^repos/${repository}/pulls/\\d+/files\\?per_page=100&page=(\\d+)$`);
   let commitsCalls = 0;
   let runsCalls = 0;
+  let runFetchCount = 0;
   const api = (endpoint, options = {}) => {
     calls.push({endpoint, options});
     if (options.method === 'POST') {
       assert.match(endpoint, new RegExp(`^repos/${repository}/statuses/${head}$`));
       return {};
     }
-    if (endpoint === `repos/${repository}/actions/runs/${completedRun.id}`) return completedRun;
+    if (endpoint === `repos/${repository}/actions/runs/${completedRun.id}`) {
+      if (!runFetches) return completedRun;
+      runFetchCount += 1;
+      return runFetches[Math.min(runFetchCount, runFetches.length) - 1];
+    }
     const runMatch = new RegExp(`^repos/${repository}/actions/runs/(\\d+)$`).exec(endpoint);
     if (runMatch && runsById[runMatch[1]]) return runsById[runMatch[1]];
     if (endpoint === `repos/${repository}/pulls/${pr.number}`) return pr;
@@ -1197,4 +1202,39 @@ test('a renamed CI script still requires the CI script route', () => {
   assert.equal(result.status.state, 'failure');
   assert.deepEqual(result.routes, {go: true, website: true, docs: true, ci: true});
   assert.equal(result.status.description, 'Required step did not pass: Test CI scripts');
+});
+
+test('a newer attempt of the same run in progress turns the head pending', () => {
+  const fixture = fixtureApi({
+    run: run(), pr: pullRequest(), files: ['docs/guide.md'], jobs: jobs(),
+    latest: [run({run_attempt: 2, status: 'in_progress', conclusion: null, run_started_at: startedAt(105)})],
+  });
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.status.state, 'pending');
+  assert.equal(result.status.description, 'A newer CI run is in progress');
+});
+
+test('a stale attempt does not publish over a newer failed attempt of the same run', () => {
+  const fixture = fixtureApi({
+    run: run(), pr: pullRequest(), files: ['docs/guide.md'], jobs: jobs(),
+    latest: [run({run_attempt: 2, conclusion: 'failure', run_started_at: startedAt(105)})],
+  });
+  const result = gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  assert.equal(result.ignored, true);
+  assert.equal(fixture.calls.filter(call => call.options.method === 'POST').length, 0);
+});
+
+test('a newer attempt that appears after the write is evaluated and published', () => {
+  // Attempt 1 passes the start check and publishes success; attempt 2 of the
+  // same run appears only afterwards and has failed.
+  const second = run({run_attempt: 2, conclusion: 'failure', run_started_at: startedAt(105)});
+  const fixture = fixtureApi({
+    run: run(), runFetches: [run(), second], pr: pullRequest(), files: ['docs/guide.md'],
+    jobs: jobs(), newerJobs: jobs(),
+    latest: callIndex => (callIndex <= 2 ? [run()] : [second]),
+  });
+  gate.runGate({repository, runId: 101, publish: true}, fixture.api);
+  const writes = fixture.calls.filter(call => call.options.method === 'POST');
+  assert.equal(writes[0].options.input.state, 'success');
+  assert.equal(writes.at(-1).options.input.state, 'failure');
 });
