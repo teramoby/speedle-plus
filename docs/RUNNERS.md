@@ -190,6 +190,42 @@ Shared integration fixtures select `file`, `etcd`, `mongodb` or `mysql` through
 `STORE_TYPE`. `SPEEDLE_TEST_STORE_PROPS` supplies backend connection properties;
 see `docs/MYSQL_TESTS.md` for isolation, optional-capability checks and artifacts.
 
+## Report email
+
+The nightly, weekly and post-merge regression workflows publish their report by
+email from a GitHub-hosted `report` job. `scripts/ci/test_report.py` builds the
+message and attaches the complete report as a text attachment; the transport is
+the Cloudflare Email Service REST API. The report jobs read five repository
+settings, and all five must be provisioned before these workflows run:
+
+| Setting | Kind | Contents |
+| --- | --- | --- |
+| `CF_EMAIL_TOKEN` | secret | API token used to send the report |
+| `CF_ACCOUNT_ID` | variable | the account that sends it |
+| `OPS_EMAIL_FROM` | variable | the sender, exactly one address |
+| `OPS_EMAIL_TO` | variable | the recipients, one or more addresses |
+| `OPS_EMAIL_REPLY_TO` | variable | the reply address, exactly one |
+
+Every setting is required. The sender is an outbound-only address that cannot
+receive mail, so a report sent without a Reply-To loses any reply. A second
+sender address, or an `OPS_EMAIL_TO` entry that is not an address, is a
+configuration error rather than a recipient that is dropped silently.
+
+The report jobs set `REPORT_EMAIL_REQUIRED: "true"`, so a missing or malformed
+setting fails the job with an `::error::` annotation that names the setting,
+after the step summary and the failure issues have been written. Of the
+non-empty values, exactly `0`, `false` and `no` turn that requirement off,
+compared case-insensitively after trimming whitespace; an empty or unset marker
+is off as well. Every other non-empty value turns it on, so a misspelling such
+as `ture` fails closed instead of silently dropping the guarantee. To make a
+broken email channel a notice instead of a failed job, set the marker to one
+of those three values (or remove it) in the report job's `env:` in the
+workflow. The post-merge regression sends nothing when it passes, but it
+still checks the settings and fails on a missing or malformed one. A local run
+or a test without the settings only prints a notice and stays green. The step summary keeps the report for the run, up to 900000 bytes
+and with the cut marked when the report is longer; the email carries the full
+report as an attachment, capped at 17 MiB with a note when it had to be cut.
+
 ## Fiona full nightly trial
 
 The manual MongoDB validation workflow accepts `nightly_trial: true` to run

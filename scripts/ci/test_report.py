@@ -1,42 +1,58 @@
 #!/usr/bin/env python3
 """Summarize scheduled and post-merge test results, analyze them with Ark,
-send the report and track failing tests in GitHub issues.
+email the report with its full text attached, and track failing tests in
+GitHub issues.
 
-Inputs are `go test -json` streams and plain check results. Every external
-step is optional and fails soft: without an Ark key the raw summary is sent,
-without a Feishu webhook or SMTP settings nothing is sent that way, and
-without a GitHub token no issues are touched. The script exits non-zero only
-on bad input.
+Inputs are `go test -json` streams and plain check results. Ark analysis and
+GitHub tracking are optional and fail soft: without an Ark key the raw
+summary is sent, and without a GitHub token no issues are touched. The email
+is the notification channel: a missing or malformed configuration and a
+failed send are annotated (a configuration annotation names the setting) and
+fail the step only when it runs as a real report job, marked by
+REPORT_EMAIL_REQUIRED; tests and local runs stay green. The script exits
+non-zero on bad input and on such a failure.
 """
 import argparse
 import base64
-import hashlib
-import hmac
+import email.errors
+import email.utils
+import http.client
 import json
 import os
-import smtplib
 import sys
 import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from email.message import EmailMessage
+from email.headerregistry import Address
 from pathlib import Path
 
 ARK_URL = "https://ark.cn-beijing.volces.com/api/plan/v3/responses"
+# The Cloudflare Email Service send API, its request fields, the
+# queued/delivered/permanent_bounces/suppressed_recipients result fields and
+# the limits below:
+# https://developers.cloudflare.com/api/resources/email_sending/methods/send/
+EMAIL_API = "https://api.cloudflare.com/client/v4/accounts/{account}/email/sending/send"
 DEFAULT_MODEL = "kimi-k3"
 ISSUE_LABEL = "test-failure"
 MAX_ISSUES = 20
 OUTPUT_LINES = 40
 PROMPT_LIMIT = 200_000
+# A transient email-API failure must not turn a passing run red. Only these
+# statuses and a network error are retried; a rejected request is not. One
+# retry bounds a duplicate report whose first response was lost, while still
+# covering a single blip.
+EMAIL_RETRIES = 1
+EMAIL_RETRY_DELAY = 2
+RETRYABLE_STATUS = (429, 500, 502, 503, 504)
 
 # How each kind of run reports. Scheduled runs report every result in
-# Chinese, by Feishu and email. The post-merge regression only speaks up
-# when it fails, in English, by Feishu and issues.
+# Chinese, by email. The post-merge regression only speaks up when it fails,
+# in English, by email and issues.
 KINDS = {
-    "nightly": {"title": "nightly", "language": "Chinese", "mail": True, "quiet_on_pass": False},
-    "weekly": {"title": "weekly", "language": "Chinese", "mail": True, "quiet_on_pass": False},
-    "regression": {"title": "post-merge regression", "language": "English", "mail": False, "quiet_on_pass": True},
+    "nightly": {"title": "nightly", "language": "Chinese", "quiet_on_pass": False},
+    "weekly": {"title": "weekly", "language": "Chinese", "quiet_on_pass": False},
+    "regression": {"title": "post-merge regression", "language": "English", "quiet_on_pass": True},
 }
 
 
@@ -210,6 +226,23 @@ def summarize(kind, packages, failures, checks, run_url, commit_url="", performa
     return ok, "\n".join(lines) + "\n"
 
 
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    """Refuse redirects: urlopen copies the Authorization header to the
+    target, so a 3xx would hand a bearer token to another host."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+def open_no_redirect(request, timeout):
+    """Open a request without following redirects.
+
+    Returning None from the redirect handler leaves urllib raising the 3xx as
+    an HTTPError. Every call that carries a bearer token uses this opener.
+    """
+    return urllib.request.build_opener(_NoRedirect).open(request, timeout=timeout)
+
+
 def ark_analyze(summary, api_key, model, url=ARK_URL, timeout=300, language="Chinese"):
     """Return the model's analysis, or None when Ark is unavailable."""
     prompt = (
@@ -225,7 +258,7 @@ def ark_analyze(summary, api_key, model, url=ARK_URL, timeout=300, language="Chi
     request = urllib.request.Request(url, data=body, method="POST", headers={
         "Authorization": f"Bearer {api_key}", "Content-Type": "application/json"})
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
+        with open_no_redirect(request, timeout=timeout) as response:
             payload = json.loads(response.read())
     except (urllib.error.URLError, OSError, ValueError) as error:
         # Never echo the response or the key; the status class is enough.
@@ -247,101 +280,271 @@ def extract_text(payload):
     return text or None
 
 
-def send_mail(subject, body, env):
-    host, to = env.get("SMTP_SERVER"), env.get("MAIL_TO")
-    if not host or not to:
-        print("::warning::SMTP_SERVER or MAIL_TO is not configured; the report is not mailed.", file=sys.stderr)
-        return False
-    message = EmailMessage()
-    message["Subject"] = subject
-    message["From"] = env.get("MAIL_FROM") or env.get("SMTP_USERNAME") or to
-    message["To"] = to
-    message.set_content(body)
-    port = int(env.get("SMTP_PORT") or 465)
-    user, password = env.get("SMTP_USERNAME"), env.get("SMTP_PASSWORD")
-    if port == 465:
-        server = smtplib.SMTP_SSL(host, port, timeout=60)
-    else:
-        server = smtplib.SMTP(host, port, timeout=60)
-        server.starttls()
-    with server:
-        if user and password:
-            server.login(user, password)
-        server.send_message(message)
-    return True
+EMAIL_TIMEOUT = 30
+# The Email Service API accepts at most 50 addresses across to, cc and bcc.
+MAX_EMAIL_RECIPIENTS = 50
+# A mass-failure report can grow to megabytes. The message body carries a
+# bounded prefix, and the full report travels in the attachment, so the email
+# does not depend on the run summary or the issues for the whole text.
+EMAIL_TEXT_LIMIT = 100_000
+# The Email Service API accepts at most 25 MiB for the whole message,
+# attachments included. Base64 expands the attachment by a third, so 17 MiB of
+# report text becomes about 22.7 MiB, and even a body of EMAIL_TEXT_LIMIT
+# characters, every one escaped in JSON, fits beside it. No real report comes
+# near the cap; it keeps a pathological one from failing the send.
+EMAIL_MAX_BYTES = 25 * 1024 * 1024
+ATTACHMENT_TEXT_LIMIT = 17 * 1024 * 1024
+REPORT_FILENAME = "speedle-{kind}-report.txt"
+# The report jobs set REPORT_EMAIL_REQUIRED. These non-empty values turn the
+# requirement off, compared case-insensitively after trimming whitespace; every
+# other non-empty value turns it on, so a misspelling fails closed. An empty or
+# unset marker is off too, keeping local runs and tests green.
+REPORT_EMAIL_OPT_OUTS = ("0", "false", "no")
 
 
-FEISHU_ANALYSIS_CHARS = 1500
-FEISHU_LISTED_FAILURES = 10
+def addresses(value):
+    """The bare, lowercased addresses of one key of the send result.
+
+    A list entry is an address string or a REST address object
+    ({"address", "name"}). Comparing bare addresses keeps a display name or a
+    case difference from turning a delivered report into a failure.
+    """
+    if not isinstance(value, list):
+        return []
+    entries = [item.get("address") if isinstance(item, dict) else item for item in value]
+    return [address.lower() for _, address in email.utils.getaddresses(
+        [entry for entry in entries if isinstance(entry, str)]) if "@" in address]
 
 
-def feishu_sign(secret, timestamp):
-    """Signature of a Feishu custom bot with signature verification on."""
-    key = f"{timestamp}\n{secret}".encode()
-    return base64.b64encode(hmac.new(key, b"", hashlib.sha256).digest()).decode()
+def configured_addresses(value):
+    """The bare addresses of one configured setting, in their configured case,
+    or None when the value is not a list of addresses.
+
+    A setting is a string that may list several recipients or use a display
+    name ("Ops <ops@example.com>, second@example.com"). A token the parser
+    cannot turn into an address is a configuration error, not a recipient to
+    drop silently: a swallowed token appears as an entry with an empty
+    address, and one malformed entry ("ops@", "@example.com") also rejects
+    the whole setting. The case is kept because the local part may be
+    case-sensitive on the server.
+    """
+    if not isinstance(value, str):
+        return None
+    entries = email.utils.getaddresses([value])
+    if not entries or not all(is_mail_address(address) for _, address in entries):
+        return None
+    return [address for _, address in entries]
 
 
-def feishu_card(kind, ok, packages, failed, analysis, run_url, issues_url, skips=None):
-    """A short card: verdict, counts, the first failures, the analysis and links."""
-    total = {k: sum(c[k] for c in packages.values()) for k in ("pass", "fail", "skip")}
-    if skips is None:
-        lines = [f"**Go 测试**：{total['pass']} 通过，{total['fail']} 失败，{total['skip']} 跳过（{len(packages)} 个包）"]
-    else:
-        not_run = skips["not_run"]
-        lines = [f"**Go 测试**：{total['pass']} 通过，{total['fail']} 失败，{len(not_run)} 未运行（{len(packages)} 个包）"]
-        if skips["elsewhere"] or skips["not_applicable"]:
-            lines.append(f"跳过 {total['skip']} 项：{skips['elsewhere']} 项已在对应存储的轮次运行，"
-                         f"{skips['not_applicable']} 项不适用于该存储")
-        if not_run:
-            lines.append(f"⚠️ **未运行的测试**（{len(not_run)}）：")
-            lines += [f"- {s['package'].rsplit('/', 1)[-1]} {s['test']}：{s['reason'] or '未说明原因'}"
-                      for s in not_run[:LISTED_SKIPS]]
-            if len(not_run) > LISTED_SKIPS:
-                lines.append(f"- ……另有 {len(not_run) - LISTED_SKIPS} 项")
-    if failed:
-        lines.append(f"**失败项**（{len(failed)}）：")
-        lines += [f"- {name}" for name in failed[:FEISHU_LISTED_FAILURES]]
-        if len(failed) > FEISHU_LISTED_FAILURES:
-            lines.append(f"- ……另有 {len(failed) - FEISHU_LISTED_FAILURES} 项")
-    if analysis:
-        text = analysis if len(analysis) <= FEISHU_ANALYSIS_CHARS else analysis[:FEISHU_ANALYSIS_CHARS] + "……"
-        lines += ["**Ark 分析**：", text]
-    else:
-        lines.append("（Ark 分析不可用）")
-    links = [f"[运行详情]({run_url})"] if run_url else []
-    if failed and issues_url:
-        links.append(f"[失败跟踪 issue]({issues_url})")
-    if links:
-        lines.append(" · ".join(links))
-    return {
-        "header": {"template": "green" if ok else "red",
-                   "title": {"tag": "plain_text",
-                             "content": f"Speedle {KINDS[kind]['title']} 测试：{'通过' if ok else '失败'}"}},
-        "elements": [{"tag": "markdown", "content": "\n".join(lines)}],
-    }
-
-
-def send_feishu(card, env, now=time.time):
-    webhook = env.get("FEISHU_WEBHOOK")
-    if not webhook:
-        print("::warning::FEISHU_WEBHOOK is not configured; no Feishu message is sent.", file=sys.stderr)
-        return False
-    body = {"msg_type": "interactive", "card": card}
-    if env.get("FEISHU_WEBHOOK_SECRET"):
-        timestamp = str(int(now()))
-        body.update(timestamp=timestamp, sign=feishu_sign(env["FEISHU_WEBHOOK_SECRET"], timestamp))
-    request = urllib.request.Request(webhook, data=json.dumps(body).encode(), method="POST",
-                                     headers={"Content-Type": "application/json"})
+def is_mail_address(address):
+    """Whether one bare address has a valid local part and a dotted domain
+    name, so that a send to it can be delivered."""
     try:
-        with urllib.request.urlopen(request, timeout=30) as response:
-            reply = json.loads(response.read() or b"{}")
-    except (urllib.error.URLError, OSError, ValueError) as error:
-        # Never echo the webhook URL: it is a credential.
-        print(f"::warning::Feishu message failed ({type(error).__name__}).", file=sys.stderr)
+        parsed = Address(addr_spec=address)
+    except (ValueError, email.errors.HeaderParseError):
         return False
-    if reply.get("code", reply.get("StatusCode", 0)) != 0:
-        print(f"::warning::Feishu rejected the message (code {reply.get('code', reply.get('StatusCode'))}).",
-              file=sys.stderr)
+    labels = parsed.domain.split(".")
+    return bool(parsed.username) and len(labels) > 1 and all(labels)
+
+
+def note_in_summary(env, message):
+    """Add a plain notice to the run summary, where an operator sees it,
+    without a workflow-command annotation. Annotations are reserved for a
+    failed send."""
+    path = env.get("GITHUB_STEP_SUMMARY")
+    if not path:
+        return
+    try:
+        with open(path, "a", encoding="utf-8") as summary:
+            summary.write(f"\n**Report email not sent:** {message}\n")
+    except OSError:
+        pass
+
+
+def email_text(report, run_url=""):
+    """The report as far as the message body carries it, with a pointer to the
+    attachment when the full report travels there, or to the run page when the
+    attachment is cut as well.
+
+    The attachment is cut at ATTACHMENT_TEXT_LIMIT bytes, so the body must not
+    call it complete beyond that. A report can exceed the byte cap while its
+    character count is still under it, so the check is on the encoded bytes.
+    """
+    if len(report) <= EMAIL_TEXT_LIMIT:
+        return report
+    where = f"the workflow run ({run_url})" if run_url else "the workflow run page"
+    if len(report.encode("utf-8")) <= ATTACHMENT_TEXT_LIMIT:
+        footer = (f"\n\n[report truncated at {EMAIL_TEXT_LIMIT} characters; the full report is attached; "
+                  f"see also {where} and the tracked issues]\n")
+    else:
+        footer = (f"\n\n[report truncated at {EMAIL_TEXT_LIMIT} characters; the attachment is truncated "
+                  f"as well; see {where} for the rest]\n")
+    return report[:EMAIL_TEXT_LIMIT - len(footer)] + footer
+
+
+def report_attachment(filename, report):
+    """The full report as a base64 text attachment of the email API.
+
+    The API limits the whole message to 25 MiB, so a report beyond
+    ATTACHMENT_TEXT_LIMIT bytes is cut between characters and ends with a note
+    that says so. Only the first ATTACHMENT_TEXT_LIMIT characters are encoded:
+    a character is at least one byte, so that prefix already covers the cap
+    and a huge report is never encoded whole.
+    """
+    limit = ATTACHMENT_TEXT_LIMIT
+    note = (f"\n\n[report truncated at {limit} bytes in the attachment; "
+            f"see the workflow run]\n")
+    data = (report[:limit] if len(report) > limit else report).encode("utf-8")
+    if len(report) > limit or len(data) > limit:
+        data = data[:limit - len(note.encode("utf-8"))]
+        text = data.decode("utf-8", "ignore") + note
+    else:
+        text = report
+    return {"content": base64.b64encode(text.encode("utf-8")).decode("ascii"),
+            "filename": filename, "type": "text/plain", "disposition": "attachment"}
+
+
+def email_config_problems(env):
+    """The email settings that are missing or malformed, with the reason.
+
+    Every setting is required. The sender is an outbound-only address that
+    cannot receive mail, so a report sent without a Reply-To loses any reply,
+    and the API takes exactly one sender. A recipient entry that is not an
+    address rejects the whole list rather than dropping an operator silently.
+    Only setting names and generic reasons are returned, never values, because
+    the values hold addresses.
+    """
+    problems = []
+    if not env.get("CF_ACCOUNT_ID"):
+        problems.append("CF_ACCOUNT_ID is not set")
+    if not env.get("CF_EMAIL_TOKEN"):
+        problems.append("CF_EMAIL_TOKEN is not set")
+    senders = configured_addresses(env.get("OPS_EMAIL_FROM"))
+    if not senders:
+        problems.append("OPS_EMAIL_FROM is not set or is not an address")
+    elif len(senders) != 1:
+        problems.append("OPS_EMAIL_FROM must hold exactly one address")
+    recipients = configured_addresses(env.get("OPS_EMAIL_TO"))
+    if not recipients:
+        problems.append("OPS_EMAIL_TO is not set or is not an address list")
+    elif len(recipients) > MAX_EMAIL_RECIPIENTS:
+        problems.append(f"OPS_EMAIL_TO holds more than {MAX_EMAIL_RECIPIENTS} addresses")
+    reply_to = configured_addresses(env.get("OPS_EMAIL_REPLY_TO"))
+    if not reply_to:
+        problems.append("OPS_EMAIL_REPLY_TO is not set or is not an address")
+    elif len(reply_to) != 1:
+        problems.append("OPS_EMAIL_REPLY_TO must hold exactly one address")
+    return problems
+
+
+def email_configured(env):
+    """True when the Cloudflare Email settings hold one sender, one valid
+    Reply-To and a usable recipient list."""
+    return not email_config_problems(env)
+
+
+def report_email_required(env):
+    """True when the run is a real report job, so a failed send fails it.
+
+    Any non-empty marker means required so a misspelling fails closed; only
+    REPORT_EMAIL_OPT_OUTS and an unset or empty marker stay soft.
+    """
+    marker = env.get("REPORT_EMAIL_REQUIRED", "").strip().lower()
+    return bool(marker) and marker not in REPORT_EMAIL_OPT_OUTS
+
+
+def send_email(subject, body, env, attachment=None, timeout=EMAIL_TIMEOUT):
+    """Send the report through the Cloudflare Email Service REST API.
+
+    The API takes to as an array of plain address strings, and from and
+    reply_to as plain address strings, so the configured values are parsed to
+    their bare addresses once and the same set is sent and verified. The case
+    is kept on the wire, where the local part may be case-sensitive, and
+    ignored only when matching the API's reply. An attachment, built by
+    report_attachment, carries the full report as base64 text. A send
+    succeeds when the response lists every recipient under queued or
+    delivered. A non-2xx status, success: false, a permanent bounce or a
+    suppressed recipient is a failed send, and a redirect is refused rather
+    than followed so the token is not forwarded. OPS_EMAIL_REPLY_TO is
+    required: the sender is an outbound address that cannot receive mail,
+    so without it a reply is lost. A message the API's size limit would
+    reject is a failed send and sends nothing. Nothing from the settings or
+    the response is logged, because both may hold addresses.
+
+    A configuration problem is a plain notice that names the setting and
+    sends nothing. A failed send is an error annotation on the run, and it
+    fails the step only when the run is a real report job
+    (REPORT_EMAIL_REQUIRED), after the summary and the failure tracking have
+    run. A 429, a 5xx status or a network
+    error is retried once with a short backoff, so a single transient blip
+    does not turn a passing run red; the retry may duplicate a report whose
+    first response was lost. The account id is percent-encoded into the
+    path.
+    """
+    problems = email_config_problems(env)
+    if problems:
+        problem = "; ".join(problems)
+        print(f"Cloudflare Email is not configured correctly ({problem}); "
+              "the report is not emailed.", file=sys.stderr)
+        note_in_summary(env, f"Cloudflare Email is not configured correctly ({problem}).")
+        return False
+    account, token = env["CF_ACCOUNT_ID"], env["CF_EMAIL_TOKEN"]
+    senders = configured_addresses(env["OPS_EMAIL_FROM"])
+    recipients = configured_addresses(env["OPS_EMAIL_TO"])
+    reply_to = configured_addresses(env["OPS_EMAIL_REPLY_TO"])
+    payload = {"to": recipients, "from": senders[0], "subject": subject, "text": body,
+               "reply_to": reply_to[0]}
+    if attachment is not None:
+        payload["attachments"] = [attachment]
+    message = json.dumps(payload).encode()
+    if len(message) > EMAIL_MAX_BYTES:
+        # The attachment cap keeps a real report well under this; the guard
+        # only rejects a message the API would refuse.
+        print(f"::error::Email delivery failed (the message exceeds the "
+              f"{EMAIL_MAX_BYTES // (1024 * 1024)} MiB API limit).", file=sys.stderr)
+        return False
+    request = urllib.request.Request(
+        EMAIL_API.format(account=urllib.parse.quote(account, safe="")), method="POST",
+        data=message,
+        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"})
+    reply = None
+    for attempt in range(EMAIL_RETRIES + 1):
+        retry = attempt < EMAIL_RETRIES
+        try:
+            with open_no_redirect(request, timeout=timeout) as response:
+                reply = json.loads(response.read() or b"{}")
+            break
+        except urllib.error.HTTPError as error:
+            # The response body and the URL are not logged: both may hold addresses.
+            error.close()
+            if not retry or error.code not in RETRYABLE_STATUS:
+                print(f"::error::Email delivery failed (HTTP {error.code}).", file=sys.stderr)
+                return False
+        except (urllib.error.URLError, OSError, http.client.HTTPException) as error:
+            if not retry:
+                print(f"::error::Email delivery failed ({type(error).__name__}).", file=sys.stderr)
+                return False
+        except ValueError as error:
+            # An unreadable response body will not fix itself on a retry.
+            print(f"::error::Email delivery failed ({type(error).__name__}).", file=sys.stderr)
+            return False
+        if retry:
+            time.sleep(EMAIL_RETRY_DELAY)
+    if not isinstance(reply, dict) or reply.get("success") is not True:
+        print("::error::Email delivery failed (the API did not report success).", file=sys.stderr)
+        return False
+    result = reply.get("result")
+    if not isinstance(result, dict):
+        print("::error::Email delivery failed (the API returned no result).", file=sys.stderr)
+        return False
+    wanted = {address.lower() for address in recipients}
+    for key in ("permanent_bounces", "suppressed_recipients"):
+        if wanted & set(addresses(result.get(key))):
+            print(f"::error::Email delivery failed (a recipient is listed in {key}).", file=sys.stderr)
+            return False
+    confirmed = set(addresses(result.get("queued"))) | set(addresses(result.get("delivered")))
+    if not wanted <= confirmed:
+        print("::error::Email delivery failed (the API did not confirm every recipient).", file=sys.stderr)
         return False
     return True
 
@@ -356,7 +559,7 @@ class GitHub:
             data=json.dumps(data).encode() if data is not None else None,
             headers={"Authorization": f"Bearer {self.token}", "Accept": "application/vnd.github+json",
                      "X-GitHub-Api-Version": "2022-11-28", "Content-Type": "application/json"})
-        with urllib.request.urlopen(request, timeout=60) as response:
+        with open_no_redirect(request, timeout=60) as response:
             return json.loads(response.read() or b"null")
 
     def open_issues(self):
@@ -474,8 +677,18 @@ def main(argv=None, env=os.environ):
                             performance_section(directories), skips)
     if ok and policy["quiet_on_pass"]:
         if args.summary_file:
-            Path(args.summary_file).write_text(summary)
+            Path(args.summary_file).write_text(summary, encoding="utf-8")
         print(summary)
+        # A quiet-on-pass report job sends nothing, but it is still a real
+        # report job: a missing or malformed setting must fail it now rather
+        # than stay hidden until a failing run needs the notification.
+        problems = email_config_problems(env) if report_email_required(env) else []
+        if problems:
+            problem = "; ".join(problems)
+            note_in_summary(env, f"Cloudflare Email is not configured correctly ({problem}).")
+            print(f"::error::The report email is not configured correctly ({problem}); "
+                  "failing the report job.", file=sys.stderr)
+            return 1
         return 0
 
     analysis = None
@@ -485,14 +698,21 @@ def main(argv=None, env=os.environ):
     report = (f"{analysis}\n\n----\n\n" if analysis else
               "(Ark analysis unavailable; raw results follow.)\n\n") + summary
     if args.summary_file:
-        Path(args.summary_file).write_text(report)
+        Path(args.summary_file).write_text(report, encoding="utf-8")
 
-    if policy["mail"]:
-        subject = f"[Speedle {policy['title']}] {'PASSED' if ok else 'FAILED'}"
-        try:
-            send_mail(subject, report, env)
-        except (smtplib.SMTPException, OSError) as error:
-            print(f"::warning::Mail delivery failed ({type(error).__name__}).", file=sys.stderr)
+    subject = f"[Speedle {policy['title']}] {'PASSED' if ok else 'FAILED'}"
+    email_failed = False
+    try:
+        # Build the attachment only when a send can happen: a local or test run
+        # without the settings must not encode the report.
+        attachment = (report_attachment(REPORT_FILENAME.format(kind=args.kind), report)
+                      if email_configured(env) else None)
+        email_failed = not send_email(subject, email_text(report, run_url), env, attachment=attachment)
+    except Exception as error:
+        # A notification bug must not skip the summary and failure tracking.
+        email_failed = True
+        note_in_summary(env, f"Email delivery failed ({type(error).__name__}).")
+        print(f"::error::Email delivery failed ({type(error).__name__}).", file=sys.stderr)
 
     tracked = failures + [{"package": "check", "test": c["name"], "output": c["output"]}
                           for c in checks if not c["passed"]]
@@ -504,12 +724,15 @@ def main(argv=None, env=os.environ):
             print(f"Tracked failures: {created} issues opened, {commented} comments added.")
         except (urllib.error.URLError, OSError, ValueError) as error:
             print(f"::warning::Failure issues not updated ({type(error).__name__}).", file=sys.stderr)
-    failed = [issue_title(f).removeprefix("Test failure: ") for f in dedupe_failures(tracked)]
-    repository = env.get("GITHUB_REPOSITORY")
-    issues_url = (f"https://github.com/{repository}/issues?q=is%3Aopen+label%3A{ISSUE_LABEL}"
-                  if repository else "")
-    send_feishu(feishu_card(args.kind, ok, packages, failed, analysis, run_url, issues_url, skips), env)
     print(summary)
+    # A real report job must not go green when its only notification channel
+    # did not deliver, whether it is misconfigured or the send failed.
+    if email_failed and report_email_required(env):
+        problems = email_config_problems(env)
+        reason = (f"is not configured correctly ({'; '.join(problems)})" if problems
+                  else "could not be sent")
+        print(f"::error::The report email {reason}; failing the report job.", file=sys.stderr)
+        return 1
     return 0
 
 
