@@ -212,32 +212,32 @@ PMS は `SELECT`、`INSERT`、`UPDATE`、`DELETE` で実行され、ADS は読�
 
 MySQL は `ALTER TABLE` を単独でコミットするため、移行はアトミックではありません。カラムの追加後、バージョン更新の前に中断することがあります。以下の手順は、中断した場合でも最初からやり直せます。
 
-1. 新しいカラムのうち既に存在するものを確認します。
+**手順 1:** 新しいカラムのうち既に存在するものを確認します。
 
-   ```sql
-   SELECT COLUMN_NAME FROM information_schema.COLUMNS
-   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'speedle_functions'
-     AND COLUMN_NAME IN ('param_types', 'result_type');
-   ```
+```sql
+SELECT COLUMN_NAME FROM information_schema.COLUMNS
+WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'speedle_functions'
+  AND COLUMN_NAME IN ('param_types', 'result_type');
+```
 
-2. 手順 1 で表示されなかったカラムだけを追加します。どちらも存在しない場合:
+**手順 2:** 手順 1 で表示されなかったカラムだけを追加します。どちらも存在しない場合:
 
-   ```sql
-   ALTER TABLE speedle_functions
-     ADD COLUMN param_types JSON NULL,
-     ADD COLUMN result_type LONGTEXT NULL;
-   ```
+```sql
+ALTER TABLE speedle_functions
+  ADD COLUMN param_types JSON NULL,
+  ADD COLUMN result_type LONGTEXT NULL;
+```
 
-   一方だけが表示された場合は、もう一方だけを追加します。両方が表示された場合は、この手順を省略します。
+一方だけが表示された場合は、もう一方だけを追加します。両方が表示された場合は、この手順を省略します。
 
-3. 新しいバージョンを記録し、確認します。
+**手順 3:** 新しいバージョンを記録し、確認します。
 
-   ```sql
-   UPDATE speedle_store_meta SET schema_version = 2 WHERE id = 1;
-   SELECT schema_version FROM speedle_store_meta WHERE id = 1;
-   ```
+```sql
+UPDATE speedle_store_meta SET schema_version = 2 WHERE id = 1;
+SELECT schema_version FROM speedle_store_meta WHERE id = 1;
+```
 
-   クエリは `2` を返す必要があります。行が返らない場合、そのデータベースは Speedle が作成したものではないため、完全なスキーマが必要です。
+クエリは `2` を返す必要があります。行が返らない場合、そのデータベースは Speedle が作成したものではないため、完全なスキーマが必要です。
 
 新しいカラムはカスタム関数の省略可能な型宣言を保持します。既存の関数行は `NULL` のままで、宣言なしを意味します。
 

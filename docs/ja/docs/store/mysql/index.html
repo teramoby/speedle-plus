@@ -23,7 +23,7 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/store/mysql/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/store/mysql/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-10-31T22:36:36&#43;08:00">
+<meta property="article:modified_time" content="2026-11-17T10:00:00&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="MySQL セットアップ · Speedle Engine">
 <meta property="og:description" content="PMS および ADS 向けの MySQL 8.4 ポリシーストアの設定手順">
@@ -39,7 +39,7 @@
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/store/mysql/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-10-31T22:36:36+08:00","description":"PMS および ADS 向けの MySQL 8.4 ポリシーストアの設定手順","headline":"MySQL セットアップ","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ja","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ja/docs/store/mysql/","@type":"WebPage"},"name":"MySQL セットアップ","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ja/docs/store/mysql/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/store/mysql/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-17T10:00:00+08:00","description":"PMS および ADS 向けの MySQL 8.4 ポリシーストアの設定手順","headline":"MySQL セットアップ","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ja","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ja/docs/store/mysql/","@type":"WebPage"},"name":"MySQL セットアップ","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ja/docs/store/mysql/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/store/mysql/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/ja/","name":"ホーム","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/","name":"ドキュメント","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/store/","name":"プラグイン可能なストレージ","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/store/mysql/","name":"MySQL セットアップ","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -380,10 +380,24 @@ chmod <span style="color:#bd93f9">600</span> mysql-demo/pms.json mysql-demo/ads.
 <p>PMS は <code>SELECT</code>、<code>INSERT</code>、<code>UPDATE</code>、<code>DELETE</code> で実行され、ADS は読み取り専用のままになります。構成を変更した後は両方のサービスを再起動してください。スキーマ初期化は既存のテーブルを移行しません。サポートされていないスキーマバージョンは起動に失敗します。</p>
 
 <p>現在のスキーマバージョンは 2 です。アップグレードしたリリースを開始する前に、両方のサービスを停止してバージョン 1 のデータベースを移行してください。起動時に古いバージョンは拒否されます。</p>
+
+<p>MySQL は <code>ALTER TABLE</code> を単独でコミットするため、移行はアトミックではありません。カラムの追加後、バージョン更新の前に中断することがあります。以下の手順は、中断した場合でも最初からやり直せます。</p>
+
+<p><strong>手順 1:</strong> 新しいカラムのうち既に存在するものを確認します。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#ff79c6">SELECT</span> <span style="color:#ff79c6">COLUMN_NAME</span> <span style="color:#ff79c6">FROM</span> information_schema.COLUMNS
+<span style="color:#ff79c6">WHERE</span> TABLE_SCHEMA <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">DATABASE</span>() <span style="color:#ff79c6">AND</span> <span style="color:#ff79c6">TABLE_NAME</span> <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#39;speedle_functions&#39;</span>
+  <span style="color:#ff79c6">AND</span> <span style="color:#ff79c6">COLUMN_NAME</span> <span style="color:#ff79c6">IN</span> (<span style="color:#f1fa8c">&#39;param_types&#39;</span>, <span style="color:#f1fa8c">&#39;result_type&#39;</span>);</code></pre></div>
+<p><strong>手順 2:</strong> 手順 1 で表示されなかったカラムだけを追加します。どちらも存在しない場合:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#ff79c6">ALTER</span> <span style="color:#ff79c6">TABLE</span> speedle_functions
   <span style="color:#ff79c6">ADD</span> <span style="color:#ff79c6">COLUMN</span> param_types JSON <span style="color:#ff79c6">NULL</span>,
-  <span style="color:#ff79c6">ADD</span> <span style="color:#ff79c6">COLUMN</span> result_type LONGTEXT <span style="color:#ff79c6">NULL</span>;
-<span style="color:#ff79c6">UPDATE</span> speedle_store_meta <span style="color:#ff79c6">SET</span> schema_version <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">2</span> <span style="color:#ff79c6">WHERE</span> id <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">1</span>;</code></pre></div>
+  <span style="color:#ff79c6">ADD</span> <span style="color:#ff79c6">COLUMN</span> result_type LONGTEXT <span style="color:#ff79c6">NULL</span>;</code></pre></div>
+<p>一方だけが表示された場合は、もう一方だけを追加します。両方が表示された場合は、この手順を省略します。</p>
+
+<p><strong>手順 3:</strong> 新しいバージョンを記録し、確認します。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#ff79c6">UPDATE</span> speedle_store_meta <span style="color:#ff79c6">SET</span> schema_version <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">2</span> <span style="color:#ff79c6">WHERE</span> id <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">1</span>;
+<span style="color:#ff79c6">SELECT</span> schema_version <span style="color:#ff79c6">FROM</span> speedle_store_meta <span style="color:#ff79c6">WHERE</span> id <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">1</span>;</code></pre></div>
+<p>クエリは <code>2</code> を返す必要があります。行が返らない場合、そのデータベースは Speedle が作成したものではないため、完全なスキーマが必要です。</p>
+
 <p>新しいカラムはカスタム関数の省略可能な型宣言を保持します。既存の関数行は <code>NULL</code> のままで、宣言なしを意味します。</p>
 
 <h2 id="構成リファレンスとトラブルシューティング">構成リファレンスとトラブルシューティング</h2>

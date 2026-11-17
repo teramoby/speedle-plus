@@ -195,32 +195,32 @@ PMS는 `SELECT`, `INSERT`, `UPDATE`, `DELETE` 권한으로 실행되며 ADS는 �
 
 MySQL은 `ALTER TABLE`을 별도로 커밋하므로 마이그레이션은 원자적이지 않습니다. 컬럼을 추가한 뒤 버전을 갱신하기 전에 중단될 수 있습니다. 아래 단계는 중단된 뒤에도 처음부터 다시 실행할 수 있습니다.
 
-1. 새 컬럼 중 이미 있는 컬럼을 확인합니다.
+**1단계:** 새 컬럼 중 이미 있는 컬럼을 확인합니다.
 
-   ```sql
-   SELECT COLUMN_NAME FROM information_schema.COLUMNS
-   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'speedle_functions'
-     AND COLUMN_NAME IN ('param_types', 'result_type');
-   ```
+```sql
+SELECT COLUMN_NAME FROM information_schema.COLUMNS
+WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'speedle_functions'
+  AND COLUMN_NAME IN ('param_types', 'result_type');
+```
 
-2. 1단계에서 표시되지 않은 컬럼만 추가합니다. 두 컬럼이 모두 없으면:
+**2단계:** 1단계에서 표시되지 않은 컬럼만 추가합니다. 두 컬럼이 모두 없으면:
 
-   ```sql
-   ALTER TABLE speedle_functions
-     ADD COLUMN param_types JSON NULL,
-     ADD COLUMN result_type LONGTEXT NULL;
-   ```
+```sql
+ALTER TABLE speedle_functions
+  ADD COLUMN param_types JSON NULL,
+  ADD COLUMN result_type LONGTEXT NULL;
+```
 
-   한 컬럼만 표시되면 나머지 컬럼만 추가합니다. 두 컬럼이 모두 표시되면 이 단계를 건너뜁니다.
+한 컬럼만 표시되면 나머지 컬럼만 추가합니다. 두 컬럼이 모두 표시되면 이 단계를 건너뜁니다.
 
-3. 새 버전을 기록한 뒤 확인합니다.
+**3단계:** 새 버전을 기록한 뒤 확인합니다.
 
-   ```sql
-   UPDATE speedle_store_meta SET schema_version = 2 WHERE id = 1;
-   SELECT schema_version FROM speedle_store_meta WHERE id = 1;
-   ```
+```sql
+UPDATE speedle_store_meta SET schema_version = 2 WHERE id = 1;
+SELECT schema_version FROM speedle_store_meta WHERE id = 1;
+```
 
-   쿼리는 `2`를 반환해야 합니다. 행이 반환되지 않으면 Speedle이 만든 데이터베이스가 아니므로 전체 스키마가 필요합니다.
+쿼리는 `2`를 반환해야 합니다. 행이 반환되지 않으면 Speedle이 만든 데이터베이스가 아니므로 전체 스키마가 필요합니다.
 
 새 컬럼은 사용자 정의 함수의 선택적 타입 선언을 저장합니다. 기존 함수 행은 `NULL`로 유지되며, 이는 선언이 없음을 뜻합니다.
 

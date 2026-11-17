@@ -23,7 +23,7 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/store/mysql/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/store/mysql/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-10-31T22:36:36&#43;08:00">
+<meta property="article:modified_time" content="2026-11-17T10:00:00&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="MySQL Setup · Speedle Engine">
 <meta property="og:description" content="Configure MySQL 8.4 policy storage for PMS and ADS, step by step.">
@@ -39,7 +39,7 @@
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/store/mysql/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-10-31T22:36:36+08:00","description":"Configure MySQL 8.4 policy storage for PMS and ADS, step by step.","headline":"MySQL Setup","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/store/mysql/","@type":"WebPage"},"name":"MySQL Setup","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/store/mysql/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/store/mysql/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-17T10:00:00+08:00","description":"Configure MySQL 8.4 policy storage for PMS and ADS, step by step.","headline":"MySQL Setup","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/store/mysql/","@type":"WebPage"},"name":"MySQL Setup","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/store/mysql/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/store/mysql/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/","name":"Home","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/docs/","name":"Documentation","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/docs/store/","name":"Pluggable Storage","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/docs/store/mysql/","name":"MySQL Setup","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -417,10 +417,24 @@ Restart both services after changing their configuration. Schema initialization
 does not migrate existing tables; unsupported schema versions fail startup.</p>
 
 <p>The current schema version is 2. Stop both services and migrate a version 1 database before starting the upgraded release; startup rejects the old version.</p>
+
+<p>MySQL commits <code>ALTER TABLE</code> on its own, so the migration is not atomic: it can stop after the columns are added and before the version is updated. The steps below can be rerun from the start after any interruption.</p>
+
+<p><strong>Step 1.</strong> Check which of the new columns already exist:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#ff79c6">SELECT</span> <span style="color:#ff79c6">COLUMN_NAME</span> <span style="color:#ff79c6">FROM</span> information_schema.COLUMNS
+<span style="color:#ff79c6">WHERE</span> TABLE_SCHEMA <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">DATABASE</span>() <span style="color:#ff79c6">AND</span> <span style="color:#ff79c6">TABLE_NAME</span> <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#39;speedle_functions&#39;</span>
+  <span style="color:#ff79c6">AND</span> <span style="color:#ff79c6">COLUMN_NAME</span> <span style="color:#ff79c6">IN</span> (<span style="color:#f1fa8c">&#39;param_types&#39;</span>, <span style="color:#f1fa8c">&#39;result_type&#39;</span>);</code></pre></div>
+<p><strong>Step 2.</strong> Add only the columns that step 1 did not list. With neither column present:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#ff79c6">ALTER</span> <span style="color:#ff79c6">TABLE</span> speedle_functions
   <span style="color:#ff79c6">ADD</span> <span style="color:#ff79c6">COLUMN</span> param_types JSON <span style="color:#ff79c6">NULL</span>,
-  <span style="color:#ff79c6">ADD</span> <span style="color:#ff79c6">COLUMN</span> result_type LONGTEXT <span style="color:#ff79c6">NULL</span>;
-<span style="color:#ff79c6">UPDATE</span> speedle_store_meta <span style="color:#ff79c6">SET</span> schema_version <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">2</span> <span style="color:#ff79c6">WHERE</span> id <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">1</span>;</code></pre></div>
+  <span style="color:#ff79c6">ADD</span> <span style="color:#ff79c6">COLUMN</span> result_type LONGTEXT <span style="color:#ff79c6">NULL</span>;</code></pre></div>
+<p>If only one is listed, add the other one alone. If both are listed, skip this step.</p>
+
+<p><strong>Step 3.</strong> Record the new version, then check it:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#ff79c6">UPDATE</span> speedle_store_meta <span style="color:#ff79c6">SET</span> schema_version <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">2</span> <span style="color:#ff79c6">WHERE</span> id <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">1</span>;
+<span style="color:#ff79c6">SELECT</span> schema_version <span style="color:#ff79c6">FROM</span> speedle_store_meta <span style="color:#ff79c6">WHERE</span> id <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">1</span>;</code></pre></div>
+<p>The query must return <code>2</code>. If it returns no row, the database was not created by Speedle and needs the full schema instead.</p>
+
 <p>The new columns hold the optional custom-function type declarations; existing function rows stay <code>NULL</code>, which means no declaration.</p>
 
 <h2 id="configuration-reference-and-troubleshooting">Configuration reference and troubleshooting</h2>

@@ -23,7 +23,7 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/store/mysql/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/store/mysql/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-10-31T22:36:36&#43;08:00">
+<meta property="article:modified_time" content="2026-11-17T10:00:00&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="MySQL 配置指南 · Speedle Engine">
 <meta property="og:description" content="逐步配置 MySQL 8.4 策略存储，启动 PMS 与 ADS，并验证策略同步。">
@@ -39,7 +39,7 @@
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-zh.png">
 <meta name="twitter:image:alt" content="Speedle Engine — 快速、简单的权限控制">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/store/mysql/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-10-31T22:36:36+08:00","description":"逐步配置 MySQL 8.4 策略存储，启动 PMS 与 ADS，并验证策略同步。","headline":"MySQL 配置指南","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/store/mysql/","@type":"WebPage"},"name":"MySQL 配置指南","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/store/mysql/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/store/mysql/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-17T10:00:00+08:00","description":"逐步配置 MySQL 8.4 策略存储，启动 PMS 与 ADS，并验证策略同步。","headline":"MySQL 配置指南","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/store/mysql/","@type":"WebPage"},"name":"MySQL 配置指南","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/store/mysql/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/store/mysql/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/zh/","name":"首页","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/","name":"文档","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/store/","name":"存储扩展","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/store/mysql/","name":"MySQL 配置指南","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -380,10 +380,24 @@ chmod <span style="color:#bd93f9">600</span> mysql-demo/pms.json mysql-demo/ads.
 <p>此后 PMS 仅需 <code>SELECT</code>、<code>INSERT</code>、<code>UPDATE</code>、<code>DELETE</code>，ADS 保持只读。修改配置后重启两个服务。初始化 SQL 不会迁移已有表；不支持的结构版本会导致启动失败。</p>
 
 <p>当前结构版本为 2。升级前先停止两个服务，并对版本 1 的数据库执行一次性迁移；启动时会拒绝旧版本。</p>
+
+<p>MySQL 会单独提交 <code>ALTER TABLE</code>，因此迁移不是原子操作：可能在新增列之后、更新版本之前中断。以下步骤在任何中断后都可以从头重新执行。</p>
+
+<p><strong>第 1 步：</strong> 检查哪些新列已经存在：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#ff79c6">SELECT</span> <span style="color:#ff79c6">COLUMN_NAME</span> <span style="color:#ff79c6">FROM</span> information_schema.COLUMNS
+<span style="color:#ff79c6">WHERE</span> TABLE_SCHEMA <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">DATABASE</span>() <span style="color:#ff79c6">AND</span> <span style="color:#ff79c6">TABLE_NAME</span> <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#39;speedle_functions&#39;</span>
+  <span style="color:#ff79c6">AND</span> <span style="color:#ff79c6">COLUMN_NAME</span> <span style="color:#ff79c6">IN</span> (<span style="color:#f1fa8c">&#39;param_types&#39;</span>, <span style="color:#f1fa8c">&#39;result_type&#39;</span>);</code></pre></div>
+<p><strong>第 2 步：</strong> 只添加第 1 步未列出的列。两列都不存在时：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#ff79c6">ALTER</span> <span style="color:#ff79c6">TABLE</span> speedle_functions
   <span style="color:#ff79c6">ADD</span> <span style="color:#ff79c6">COLUMN</span> param_types JSON <span style="color:#ff79c6">NULL</span>,
-  <span style="color:#ff79c6">ADD</span> <span style="color:#ff79c6">COLUMN</span> result_type LONGTEXT <span style="color:#ff79c6">NULL</span>;
-<span style="color:#ff79c6">UPDATE</span> speedle_store_meta <span style="color:#ff79c6">SET</span> schema_version <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">2</span> <span style="color:#ff79c6">WHERE</span> id <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">1</span>;</code></pre></div>
+  <span style="color:#ff79c6">ADD</span> <span style="color:#ff79c6">COLUMN</span> result_type LONGTEXT <span style="color:#ff79c6">NULL</span>;</code></pre></div>
+<p>如果只列出了一列，单独添加另一列；两列都已列出时跳过此步。</p>
+
+<p><strong>第 3 步：</strong> 记录新版本，然后检查：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#ff79c6">UPDATE</span> speedle_store_meta <span style="color:#ff79c6">SET</span> schema_version <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">2</span> <span style="color:#ff79c6">WHERE</span> id <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">1</span>;
+<span style="color:#ff79c6">SELECT</span> schema_version <span style="color:#ff79c6">FROM</span> speedle_store_meta <span style="color:#ff79c6">WHERE</span> id <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">1</span>;</code></pre></div>
+<p>查询必须返回 <code>2</code>。如果没有返回任何行，说明该数据库不是由 Speedle 创建的，需要改用完整的结构初始化。</p>
+
 <p>新增列保存可选的函数类型声明；已有函数行保持 <code>NULL</code>，表示未声明。</p>
 
 <h2 id="配置速查与故障排查">配置速查与故障排查</h2>
