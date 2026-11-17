@@ -10,7 +10,7 @@ tocheading = "h2"
 tags = ["storage", "pluggable"]
 categories = ["docs"]
 bref = "Speedle includes file, etcd, MongoDB and MySQL policy stores. This document describes their configuration and how to implement or register a different store."
-lastmod = 2026-10-31T22:36:36+08:00
+lastmod = 2026-11-17T10:00:00+08:00
 +++
 
 ## Built-in stores and extension contracts
@@ -95,7 +95,7 @@ Environment variables use the same mapping, for example `SPDL_MYSQLSTORE_DSN`. D
 
 One database is one policy store, using five fixed InnoDB tables: `speedle_services`, `speedle_policies`, `speedle_role_policies`, `speedle_functions`, and `speedle_store_meta`. Complex arrays and metadata use JSON columns. Policy tables reference the service with cascading deletion. Service/function names and policy IDs use case-sensitive, non-padding comparisons and support up to 255 Unicode characters; policy names need not be unique.
 
-By default, startup creates missing tables using [schema.sql](https://github.com/teramoby/speedle-plus/blob/master/pkg/store/mysql/schema.sql). It does not create a database or alter an existing schema. For a prebuilt deployment, run that same SQL against the selected database using a provisioning account, then set `MySQLInitSchema` to `false`. Startup checks the schema version, required columns and InnoDB engines. An unsupported schema version fails startup; future upgrades require an explicit migration.
+By default, startup creates missing tables using [schema.sql](https://github.com/teramoby/speedle-plus/blob/master/pkg/store/mysql/schema.sql). It does not create a database or alter an existing schema. For a prebuilt deployment, run that same SQL against the selected database using a provisioning account, then set `MySQLInitSchema` to `false`. Startup checks the schema version, required columns and InnoDB engines. An unsupported schema version fails startup; future upgrades require an explicit migration. The current schema version is 2; the [MySQL setup guide](/docs/store/mysql/) includes the one-time migration for a version 1 database.
 
 Provisioning requires table-creation and initialization privileges. With a prebuilt schema, the PMS account needs `SELECT`, `INSERT`, `UPDATE`, and `DELETE` on the policy database; ADS can use a separate account with only `SELECT` and automatic schema creation disabled. Use driver DSN TLS options for remote databases. Do not put production passwords in committed configuration or command-line history.
 

@@ -9,7 +9,7 @@ toc = true
 tocheading = "h2"
 tocsidebar = false
 categories = ["docs"]
-lastmod = 2026-11-07T01:07:23+08:00
+lastmod = 2026-11-17T10:00:00+08:00
 +++
 
 ## 사용자 정의 함수를 사용하는 이유
@@ -133,3 +133,23 @@ curl --fail --silent --show-error --header 'Content-Type: application/json' --da
 ```bash
 curl --fail --silent --show-error --header 'Content-Type: application/json' --data '{"subject":{"principals":[{"type":"user","name":"user1"}]},"serviceName":"bookstore","resource":"book","action":"read","attributes":[{"name":"amount","type":"numeric","value":500}]}' http://127.0.0.1:6734/authz-check/v1/is-allowed
 ```
+
+## 함수 실패
+
+사용자 정의 함수 호출은 실패할 수 있습니다. 시간 초과나 연결 실패, 2xx가 아닌 상태나 읽을 수 없는 응답, `{"error":"..."}`가 포함된 응답, 또는 선언된 타입과 일치하지 않는 값입니다. 이러한 경우는 모두 평가 오류이며 조건이 거짓이 된 것이 아닙니다.
+
+`is-allowed`, `all-granted-roles`, `all-granted-permissions`는 결정 대신 오류를 반환합니다. REST 엔드포인트는 `{"error":"..."}` 본문과 함께 `500 Internal Server Error`를 반환하고, gRPC 메서드는 OK가 아닌 상태를 반환합니다. `diagnose` 엔드포인트는 오류 응답에 실패한 호출을 보고하며, Go `Diagnose` API는 평가 결과도 함께 반환합니다(이유는 `ERROR_IN_EVALUATION`). 실패한 호출은 캐시되지 않으므로 캐시 가능한 함수는 다음 요청에서 다시 호출됩니다.
+
+그 밖의 동작은 바뀌지 않습니다. 특히 요청에 없는 속성을 참조하는 조건은 여전히 일치하지 않으며, 그런 조건을 가진 조건부 `deny`는 적용되지 않습니다.
+
+## 선언된 매개변수 타입과 결과 타입
+
+함수 정의는 인수와 결과의 타입을 선언할 수 있습니다:
+
+```json
+{"name":"isValid","funcURL":"http://127.0.0.1:23456/func/isValid","params":["numeric"],"result":"bool"}
+```
+
+`params`는 호출 순서대로 인수 타입을 나열하고 `result`는 반환 값의 타입입니다. 두 필드 모두 선택 사항입니다. 타입은 `string`, `numeric`, `bool`, `datetime` 또는 목록 형식인 `string[]`, `numeric[]`, `bool[]`, `datetime[]`입니다. PMS는 그 밖의 값을 거부합니다.
+
+선언하면 Speedle은 호출 전에 인수를, 호출 후에 결과를 검사하며 불일치는 함수 실패입니다. `numeric`은 정수와 부동 소수점 값을 받고, `datetime`은 Unix 타임스탬프 또는 RFC 3339 문자열을 받습니다. 목록 매개변수는 목록 값 자체 또는 조건이 개별 인수로 함수에 전달하는 목록 값의 각 요소를 받습니다. 두 필드를 모두 선언하지 않은 함수는 이러한 검사 없이 호출됩니다.

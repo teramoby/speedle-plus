@@ -832,6 +832,32 @@ definitions:
         type: string
       funcURL:
         type: string
+      params:
+        description: Declared argument types in call order. Accepted values are string, numeric, bool and datetime, and their list forms.
+        items:
+          enum:
+            - string
+            - numeric
+            - bool
+            - datetime
+            - string[]
+            - numeric[]
+            - bool[]
+            - datetime[]
+          type: string
+        type: array
+      result:
+        description: Declared result type. Accepted values are string, numeric, bool and datetime, and their list forms.
+        enum:
+          - string
+          - numeric
+          - bool
+          - datetime
+          - string[]
+          - numeric[]
+          - bool[]
+          - datetime[]
+        type: string
       ca:
         type: string
       resultCachable:

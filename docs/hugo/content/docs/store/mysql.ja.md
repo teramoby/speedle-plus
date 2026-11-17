@@ -8,7 +8,7 @@ tocheading = "h2"
 tags = ["storage", "mysql"]
 categories = ["docs"]
 bref = "データベースを作成し、PMS と ADS を構成して、認可と自動ポリシー同期を確認します。"
-lastmod = 2026-10-31T22:36:36+08:00
+lastmod = 2026-11-17T10:00:00+08:00
 +++
 
 このガイドでは、**MySQL 8.4 LTS** と 2 つのネイティブ Speedle プロセスを使用します。PMS はポリシーを書き込み、ADS は個別の読み取り専用アカウントで同じデータベースを読み取ります。ローカルの例では Docker とループバック上の平文 HTTP を使用します。リモートデプロイの場合は、既存の MySQL サーバーと [セキュリティガイド](/ja/docs/security/) を使用してください。
@@ -207,6 +207,39 @@ docker exec speedle-mysql mysql --user=root --password=SpeedleDemoRoot84 -e "REV
 ```
 
 PMS は `SELECT`、`INSERT`、`UPDATE`、`DELETE` で実行され、ADS は読み取り専用のままになります。構成を変更した後は両方のサービスを再起動してください。スキーマ初期化は既存のテーブルを移行しません。サポートされていないスキーマバージョンは起動に失敗します。
+
+現在のスキーマバージョンは 2 です。アップグレードしたリリースを開始する前に、両方のサービスを停止してバージョン 1 のデータベースを移行してください。起動時に古いバージョンは拒否されます。
+
+MySQL は `ALTER TABLE` を単独でコミットするため、移行はアトミックではありません。カラムの追加後、バージョン更新の前に中断することがあります。以下の手順は、中断した場合でも最初からやり直せます。
+
+**手順 1:** 新しいカラムのうち既に存在するものを確認します。
+
+```sql
+SELECT COLUMN_NAME FROM information_schema.COLUMNS
+WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'speedle_functions'
+  AND COLUMN_NAME IN ('param_types', 'result_type');
+```
+
+**手順 2:** 手順 1 で表示されなかったカラムだけを追加します。どちらも存在しない場合:
+
+```sql
+ALTER TABLE speedle_functions
+  ADD COLUMN param_types JSON NULL,
+  ADD COLUMN result_type LONGTEXT NULL;
+```
+
+一方だけが表示された場合は、もう一方だけを追加します。両方が表示された場合は、この手順を省略します。
+
+**手順 3:** 新しいバージョンを記録し、確認します。
+
+```sql
+UPDATE speedle_store_meta SET schema_version = 2 WHERE id = 1;
+SELECT schema_version FROM speedle_store_meta WHERE id = 1;
+```
+
+クエリは `2` を返す必要があります。行が返らない場合、そのデータベースは Speedle が作成したものではないため、完全なスキーマが必要です。
+
+新しいカラムはカスタム関数の省略可能な型宣言を保持します。既存の関数行は `NULL` のままで、宣言なしを意味します。
 
 ## 構成リファレンスとトラブルシューティング
 

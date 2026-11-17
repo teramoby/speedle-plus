@@ -10,6 +10,7 @@ import (
 
 	"github.com/teramoby/speedle-plus/api/ext"
 	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/pkg/errors"
 )
 
 const (
@@ -108,6 +109,44 @@ func (frc *FuncResultCache) CleanExpiredResult() {
 			delete(frc.Results, key)
 		}
 	}
+}
+
+// callCustomFunction runs one custom function call: it checks the declared
+// argument types, consults the result cache, invokes call when the cache has no
+// usable entry, and caches a successful result after checking its declared
+// type. Every error it returns is a *CustomFunctionError, and a failed call is
+// never cached.
+func (frc *FuncResultCache) callCustomFunction(cf *pms.Function, arguments []interface{}, call func(*ext.CustomerFunctionRequest) (interface{}, error)) (interface{}, error) {
+	// A call without arguments keeps sending an empty JSON array, not null: a
+	// function endpoint may require the array form.
+	params := arguments
+	if params == nil {
+		params = []interface{}{}
+	}
+	if err := checkCustomFunctionArguments(cf, params); err != nil {
+		return nil, err
+	}
+	key, err := getKey(cf.Name, params)
+	if err != nil {
+		return nil, newCustomFunctionError(cf.Name, errors.Wrapf(err, errors.CustomerFuncError, "failed to encode parameters for customer function %q", cf.Name))
+	}
+	if result := frc.ReadFromCache(key, cf); result != nil {
+		// A cached value may precede a declaration change or come from an
+		// embedder's AddToCache, so its declared type is checked again.
+		if err := checkCustomFunctionResult(cf, result); err != nil {
+			return nil, err
+		}
+		return result, nil
+	}
+	result, err := call(&ext.CustomerFunctionRequest{Params: params})
+	if err != nil {
+		return nil, newCustomFunctionError(cf.Name, err)
+	}
+	if err := checkCustomFunctionResult(cf, result); err != nil {
+		return nil, err
+	}
+	frc.AddToCache(key, cf, result)
+	return result, nil
 }
 
 func getKey(funcName string, arguments []interface{}) (string, error) {

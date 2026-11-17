@@ -76,7 +76,7 @@ func expectSchema(m sqlmock.Sqlmock, create bool, version, engines int) {
 		m.ExpectExec("INSERT IGNORE").WillReturnResult(sqlmock.NewResult(0, 1))
 	}
 	m.ExpectQuery("SELECT schema_version").WillReturnRows(sqlmock.NewRows([]string{"schema_version"}).AddRow(version))
-	if version != 1 {
+	if version != 2 {
 		return
 	}
 	for i := 0; i < 5; i++ {
@@ -88,7 +88,7 @@ func TestSchemaInitialization(t *testing.T) {
 	for _, create := range []bool{true, false} {
 		t.Run(map[bool]string{true: "automatic", false: "no-ddl"}[create], func(t *testing.T) {
 			s, m := mockStore(t)
-			expectSchema(m, create, 1, 5)
+			expectSchema(m, create, 2, 5)
 			if err := s.initialize(create); err != nil {
 				t.Fatal(err)
 			}
@@ -96,14 +96,14 @@ func TestSchemaInitialization(t *testing.T) {
 	}
 	t.Run("version", func(t *testing.T) {
 		s, m := mockStore(t)
-		expectSchema(m, false, 2, 5)
+		expectSchema(m, false, 3, 5)
 		if errors.Code(s.initialize(false)) != errors.ConfigError {
 			t.Fatal("accepted future schema")
 		}
 	})
 	t.Run("engine", func(t *testing.T) {
 		s, m := mockStore(t)
-		expectSchema(m, false, 1, 4)
+		expectSchema(m, false, 2, 4)
 		if errors.Code(s.initialize(false)) != errors.ConfigError {
 			t.Fatal("accepted nontransactional table")
 		}
@@ -319,5 +319,14 @@ func TestNameFiltersAndKeys(t *testing.T) {
 	var target []string
 	if jsonInto(&target).Scan(`[]`) != nil || jsonInto(&target).Scan([]byte(`null`)) != nil || jsonInto(&target).Scan(1) == nil || jsonInto(&target).Scan(`broken`) == nil {
 		t.Fatal("JSON scanning")
+	}
+	// SQL NULL is accepted only for optional columns: a required JSON field
+	// such as principals must not read as an empty list.
+	if jsonInto(&target).Scan(nil) == nil {
+		t.Fatal("SQL NULL accepted for a required JSON column")
+	}
+	target = []string{"kept"}
+	if nullableJSONInto(&target).Scan(nil) != nil || len(target) != 1 {
+		t.Fatal("SQL NULL rejected or altered for an optional JSON column")
 	}
 }

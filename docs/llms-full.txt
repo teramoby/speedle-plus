@@ -1660,6 +1660,36 @@ curl --fail --silent --show-error -H 'Content-Type: application/json' \
 ```
 
 
+### Function failures
+
+A custom function call can fail: it times out or cannot connect, the endpoint returns a non-2xx status or a response that cannot be read, the response contains `{"error":"..."}`, or a value does not match the declared types (see below). Any of these is an evaluation error, not a false condition.
+
+The same function rejects a string parameter with an HTTP error, so the decision is an error response (`500`), not a denial:
+
+
+```bash
+test "$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' -H 'Content-Type: application/json' \
+  -d '{"subject":{"principals":[{"type":"user","name":"Ally"}]},"serviceName":"service1","resource":"library","action":"access","attributes":[{"name":"attr1","type":"string","value":"invalid"}]}' \
+  http://127.0.0.1:6734/authz-check/v1/is-allowed)" = 500
+```
+
+
+The `is-allowed`, `all-granted-roles` and `all-granted-permissions` operations return an error instead of a decision. The REST endpoints answer `500 Internal Server Error` with an `{"error":"..."}` body, and the gRPC methods return a non-OK status. The `diagnose` endpoint reports the failed call in its error response; the Go `Diagnose` API also returns its evaluation result, with reason `ERROR_IN_EVALUATION`. A failed call is never cached, so a cacheable function is called again on the next request.
+
+Everything else is unchanged. In particular, a condition on an attribute that the request does not carry still does not match, and a conditional `deny` with such a condition does not apply.
+
+### Declared parameter and result types
+
+A function definition can declare the argument and result types:
+
+```json
+{"name":"isValid","funcURL":"http://127.0.0.1:23456/func/isValid","params":["numeric"],"result":"bool"}
+```
+
+`params` lists the argument types in call order, and `result` is the returned value's type. Both fields are optional. Each type is `string`, `numeric`, `bool`, `datetime`, or a list form: `string[]`, `numeric[]`, `bool[]` or `datetime[]`. PMS rejects any other value.
+
+When a function declares them, Speedle checks the arguments before the call and the result after it, and a mismatch is a function failure. `numeric` accepts integer and floating-point values; `datetime` accepts a Unix timestamp or an RFC 3339 string. A list parameter accepts either one list value or the elements of a list value, which a condition passes to the function as separate arguments. A function that declares neither field is called without these checks.
+
 ### TLS and caching
 
 For a TLS endpoint, generate fresh [local test certificates](https://engine.speedle.io/docs/security/), then start the function with `go run ./website/tests/examples/custom-function --cert ./tls/server.crt --key ./tls/server.key`. Register `funcURL` as `https://localhost:23456/func/isValid` and set `ca` to the **PEM certificate contents** from `tls/ca.crt`, not its file path. Production certificates must cover the actual host. No expired hard-coded certificate or private key is required.
@@ -3601,7 +3631,7 @@ Environment variables use the same mapping, for example `SPDL_MYSQLSTORE_DSN`. D
 
 One database is one policy store, using five fixed InnoDB tables: `speedle_services`, `speedle_policies`, `speedle_role_policies`, `speedle_functions`, and `speedle_store_meta`. Complex arrays and metadata use JSON columns. Policy tables reference the service with cascading deletion. Service/function names and policy IDs use case-sensitive, non-padding comparisons and support up to 255 Unicode characters; policy names need not be unique.
 
-By default, startup creates missing tables using [schema.sql](https://github.com/teramoby/speedle-plus/blob/master/pkg/store/mysql/schema.sql). It does not create a database or alter an existing schema. For a prebuilt deployment, run that same SQL against the selected database using a provisioning account, then set `MySQLInitSchema` to `false`. Startup checks the schema version, required columns and InnoDB engines. An unsupported schema version fails startup; future upgrades require an explicit migration.
+By default, startup creates missing tables using [schema.sql](https://github.com/teramoby/speedle-plus/blob/master/pkg/store/mysql/schema.sql). It does not create a database or alter an existing schema. For a prebuilt deployment, run that same SQL against the selected database using a provisioning account, then set `MySQLInitSchema` to `false`. Startup checks the schema version, required columns and InnoDB engines. An unsupported schema version fails startup; future upgrades require an explicit migration. The current schema version is 2; the [MySQL setup guide](https://engine.speedle.io/docs/store/mysql/) includes the one-time migration for a version 1 database.
 
 Provisioning requires table-creation and initialization privileges. With a prebuilt schema, the PMS account needs `SELECT`, `INSERT`, `UPDATE`, and `DELETE` on the policy database; ADS can use a separate account with only `SELECT` and automatic schema creation disabled. Use driver DSN TLS options for remote databases. Do not put production passwords in committed configuration or command-line history.
 
@@ -3935,6 +3965,39 @@ docker exec speedle-mysql mysql --user=root --password=SpeedleDemoRoot84 -e "REV
 PMS then runs with `SELECT`, `INSERT`, `UPDATE`, `DELETE`; ADS stays read-only.
 Restart both services after changing their configuration. Schema initialization
 does not migrate existing tables; unsupported schema versions fail startup.
+
+The current schema version is 2. Stop both services and migrate a version 1 database before starting the upgraded release; startup rejects the old version.
+
+MySQL commits `ALTER TABLE` on its own, so the migration is not atomic: it can stop after the columns are added and before the version is updated. The steps below can be rerun from the start after any interruption.
+
+**Step 1.** Check which of the new columns already exist:
+
+```sql
+SELECT COLUMN_NAME FROM information_schema.COLUMNS
+WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'speedle_functions'
+  AND COLUMN_NAME IN ('param_types', 'result_type');
+```
+
+**Step 2.** Add only the columns that step 1 did not list. With neither column present:
+
+```sql
+ALTER TABLE speedle_functions
+  ADD COLUMN param_types JSON NULL,
+  ADD COLUMN result_type LONGTEXT NULL;
+```
+
+If only one is listed, add the other one alone. If both are listed, skip this step.
+
+**Step 3.** Record the new version, then check it:
+
+```sql
+UPDATE speedle_store_meta SET schema_version = 2 WHERE id = 1;
+SELECT schema_version FROM speedle_store_meta WHERE id = 1;
+```
+
+The query must return `2`. If it returns no row, the database was not created by Speedle and needs the full schema instead.
+
+The new columns hold the optional custom-function type declarations; existing function rows stay `NULL`, which means no declaration.
 
 ### Configuration reference and troubleshooting
 

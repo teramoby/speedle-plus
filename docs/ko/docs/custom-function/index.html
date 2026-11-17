@@ -24,7 +24,7 @@
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/custom-function/">
 <meta property="og:type" content="article">
 <meta property="article:published_time" content="2019-01-21T10:43:02&#43;08:00">
-<meta property="article:modified_time" content="2026-11-07T01:07:23&#43;08:00">
+<meta property="article:modified_time" content="2026-11-17T10:00:00&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="사용자 정의 함수 · Speedle Engine">
 <meta property="og:description" content="SPDL 조건에서 사용자 정의 함수를 호출하여 인가 규칙의 계산 기능 확장">
@@ -40,7 +40,7 @@
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ko/docs/custom-function/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-07T01:07:23+08:00","datePublished":"2019-01-21T10:43:02+08:00","description":"SPDL 조건에서 사용자 정의 함수를 호출하여 인가 규칙의 계산 기능 확장","headline":"사용자 정의 함수","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ko","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ko/docs/custom-function/","@type":"WebPage"},"name":"사용자 정의 함수","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ko/docs/custom-function/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ko/docs/custom-function/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-17T10:00:00+08:00","datePublished":"2019-01-21T10:43:02+08:00","description":"SPDL 조건에서 사용자 정의 함수를 호출하여 인가 규칙의 계산 기능 확장","headline":"사용자 정의 함수","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ko","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ko/docs/custom-function/","@type":"WebPage"},"name":"사용자 정의 함수","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ko/docs/custom-function/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ko/docs/custom-function/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/ko/","name":"홈","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/ko/docs/","name":"문서","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/ko/docs/custom-function/","name":"사용자 정의 함수","position":3}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -294,7 +294,23 @@
 <p>금액이 1000 이하이면 거부됩니다:</p>
 
 <!-- docs-check: function-deny -->
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --header <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> --data <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user1&#34;}]},&#34;serviceName&#34;:&#34;bookstore&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;,&#34;attributes&#34;:[{&#34;name&#34;:&#34;amount&#34;,&#34;type&#34;:&#34;numeric&#34;,&#34;value&#34;:500}]}&#39;</span> http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --header <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> --data <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user1&#34;}]},&#34;serviceName&#34;:&#34;bookstore&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;,&#34;attributes&#34;:[{&#34;name&#34;:&#34;amount&#34;,&#34;type&#34;:&#34;numeric&#34;,&#34;value&#34;:500}]}&#39;</span> http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<h2 id="함수-실패">함수 실패</h2>
+
+<p>사용자 정의 함수 호출은 실패할 수 있습니다. 시간 초과나 연결 실패, 2xx가 아닌 상태나 읽을 수 없는 응답, <code>{&quot;error&quot;:&quot;...&quot;}</code>가 포함된 응답, 또는 선언된 타입과 일치하지 않는 값입니다. 이러한 경우는 모두 평가 오류이며 조건이 거짓이 된 것이 아닙니다.</p>
+
+<p><code>is-allowed</code>, <code>all-granted-roles</code>, <code>all-granted-permissions</code>는 결정 대신 오류를 반환합니다. REST 엔드포인트는 <code>{&quot;error&quot;:&quot;...&quot;}</code> 본문과 함께 <code>500 Internal Server Error</code>를 반환하고, gRPC 메서드는 OK가 아닌 상태를 반환합니다. <code>diagnose</code> 엔드포인트는 오류 응답에 실패한 호출을 보고하며, Go <code>Diagnose</code> API는 평가 결과도 함께 반환합니다(이유는 <code>ERROR_IN_EVALUATION</code>). 실패한 호출은 캐시되지 않으므로 캐시 가능한 함수는 다음 요청에서 다시 호출됩니다.</p>
+
+<p>그 밖의 동작은 바뀌지 않습니다. 특히 요청에 없는 속성을 참조하는 조건은 여전히 일치하지 않으며, 그런 조건을 가진 조건부 <code>deny</code>는 적용되지 않습니다.</p>
+
+<h2 id="선언된-매개변수-타입과-결과-타입">선언된 매개변수 타입과 결과 타입</h2>
+
+<p>함수 정의는 인수와 결과의 타입을 선언할 수 있습니다:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{<span style="color:#ff79c6">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;isValid&#34;</span>,<span style="color:#ff79c6">&#34;funcURL&#34;</span>:<span style="color:#f1fa8c">&#34;http://127.0.0.1:23456/func/isValid&#34;</span>,<span style="color:#ff79c6">&#34;params&#34;</span>:[<span style="color:#f1fa8c">&#34;numeric&#34;</span>],<span style="color:#ff79c6">&#34;result&#34;</span>:<span style="color:#f1fa8c">&#34;bool&#34;</span>}</code></pre></div>
+<p><code>params</code>는 호출 순서대로 인수 타입을 나열하고 <code>result</code>는 반환 값의 타입입니다. 두 필드 모두 선택 사항입니다. 타입은 <code>string</code>, <code>numeric</code>, <code>bool</code>, <code>datetime</code> 또는 목록 형식인 <code>string[]</code>, <code>numeric[]</code>, <code>bool[]</code>, <code>datetime[]</code>입니다. PMS는 그 밖의 값을 거부합니다.</p>
+
+<p>선언하면 Speedle은 호출 전에 인수를, 호출 후에 결과를 검사하며 불일치는 함수 실패입니다. <code>numeric</code>은 정수와 부동 소수점 값을 받고, <code>datetime</code>은 Unix 타임스탬프 또는 RFC 3339 문자열을 받습니다. 목록 매개변수는 목록 값 자체 또는 조건이 개별 인수로 함수에 전달하는 목록 값의 각 요소를 받습니다. 두 필드를 모두 선언하지 않은 함수는 이러한 검사 없이 호출됩니다.</p>
+</div>
 </div>
 </main>
         </div>

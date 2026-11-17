@@ -587,7 +587,11 @@ func (p *PolicyEvalImpl) getDirectRolePolicesInService(principals []string,
 				}
 			}
 			if condition != nil {
-				result, _ = evaluateCondition(condition, attributes)
+				var condErr error
+				result, condErr = evaluateCondition(condition, attributes)
+				if IsCustomFunctionError(condErr) {
+					return nil, nil, condErr
+				}
 			}
 
 			if evaluationResult != nil {
@@ -1094,7 +1098,11 @@ func (p *PolicyEvalImpl) getPolicyList(ctx *internalRequestContext, matchResourc
 					}
 				}
 				if condition != nil {
-					result, _ = evaluateCondition(condition, ctx.Attributes)
+					var condErr error
+					result, condErr = evaluateCondition(condition, ctx.Attributes)
+					if IsCustomFunctionError(condErr) {
+						return nil, nil, condErr
+					}
 				}
 
 				if result {

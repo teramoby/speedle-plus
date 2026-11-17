@@ -23,7 +23,7 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/store/mysql/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/store/mysql/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-10-31T22:36:36&#43;08:00">
+<meta property="article:modified_time" content="2026-11-17T10:00:00&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Configuración de MySQL · Speedle Engine">
 <meta property="og:description" content="Configure el almacenamiento de políticas en MySQL 8.4 para PMS y ADS paso a paso.">
@@ -39,7 +39,7 @@
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/store/mysql/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-10-31T22:36:36+08:00","description":"Configure el almacenamiento de políticas en MySQL 8.4 para PMS y ADS paso a paso.","headline":"Configuración de MySQL","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"es","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/es/docs/store/mysql/","@type":"WebPage"},"name":"Configuración de MySQL","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/es/docs/store/mysql/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/store/mysql/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-17T10:00:00+08:00","description":"Configure el almacenamiento de políticas en MySQL 8.4 para PMS y ADS paso a paso.","headline":"Configuración de MySQL","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"es","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/es/docs/store/mysql/","@type":"WebPage"},"name":"Configuración de MySQL","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/es/docs/store/mysql/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/store/mysql/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/es/","name":"Inicio","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/","name":"Documentación","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/store/","name":"Almacenamiento conectable","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/store/mysql/","name":"Configuración de MySQL","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -378,6 +378,27 @@ chmod <span style="color:#bd93f9">600</span> mysql-demo/pms.json mysql-demo/ads.
 <!-- mysql-step: revoke-ddl -->
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker <span style="color:#8be9fd;font-style:italic">exec</span> speedle-mysql mysql --user<span style="color:#ff79c6">=</span>root --password<span style="color:#ff79c6">=</span>SpeedleDemoRoot84 -e <span style="color:#f1fa8c">&#34;REVOKE CREATE, REFERENCES ON speedle.* FROM &#39;speedle_pms&#39;@&#39;%&#39;;&#34;</span></code></pre></div>
 <p>PMS luego se ejecuta con permisos <code>SELECT</code>, <code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code>; ADS permanece en solo lectura. Reinicie ambos servicios tras cambiar su configuración. La inicialización del esquema no migra tablas existentes; las versiones de esquema no compatibles impiden el inicio.</p>
+
+<p>La versión actual del esquema es la 2. Detenga ambos servicios y migre una base de datos de versión 1 antes de iniciar la versión actualizada; el inicio rechaza la versión anterior.</p>
+
+<p>MySQL confirma <code>ALTER TABLE</code> por separado, así que la migración no es atómica: puede detenerse después de añadir las columnas y antes de actualizar la versión. Los pasos siguientes pueden repetirse desde el principio tras cualquier interrupción.</p>
+
+<p><strong>Paso 1.</strong> Compruebe cuáles de las columnas nuevas ya existen:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#ff79c6">SELECT</span> <span style="color:#ff79c6">COLUMN_NAME</span> <span style="color:#ff79c6">FROM</span> information_schema.COLUMNS
+<span style="color:#ff79c6">WHERE</span> TABLE_SCHEMA <span style="color:#ff79c6">=</span> <span style="color:#ff79c6">DATABASE</span>() <span style="color:#ff79c6">AND</span> <span style="color:#ff79c6">TABLE_NAME</span> <span style="color:#ff79c6">=</span> <span style="color:#f1fa8c">&#39;speedle_functions&#39;</span>
+  <span style="color:#ff79c6">AND</span> <span style="color:#ff79c6">COLUMN_NAME</span> <span style="color:#ff79c6">IN</span> (<span style="color:#f1fa8c">&#39;param_types&#39;</span>, <span style="color:#f1fa8c">&#39;result_type&#39;</span>);</code></pre></div>
+<p><strong>Paso 2.</strong> Añada solo las columnas que el paso 1 no mostró. Si no existe ninguna de las dos:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#ff79c6">ALTER</span> <span style="color:#ff79c6">TABLE</span> speedle_functions
+  <span style="color:#ff79c6">ADD</span> <span style="color:#ff79c6">COLUMN</span> param_types JSON <span style="color:#ff79c6">NULL</span>,
+  <span style="color:#ff79c6">ADD</span> <span style="color:#ff79c6">COLUMN</span> result_type LONGTEXT <span style="color:#ff79c6">NULL</span>;</code></pre></div>
+<p>Si solo aparece una, añada la otra por separado. Si aparecen las dos, omita este paso.</p>
+
+<p><strong>Paso 3.</strong> Registre la nueva versión y compruébela:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#ff79c6">UPDATE</span> speedle_store_meta <span style="color:#ff79c6">SET</span> schema_version <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">2</span> <span style="color:#ff79c6">WHERE</span> id <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">1</span>;
+<span style="color:#ff79c6">SELECT</span> schema_version <span style="color:#ff79c6">FROM</span> speedle_store_meta <span style="color:#ff79c6">WHERE</span> id <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">1</span>;</code></pre></div>
+<p>La consulta debe devolver <code>2</code>. Si no devuelve ninguna fila, la base de datos no la creó Speedle y necesita el esquema completo.</p>
+
+<p>Las nuevas columnas almacenan las declaraciones opcionales de tipos de las funciones personalizadas; las filas de funciones existentes permanecen en <code>NULL</code>, lo que significa que no hay declaración.</p>
 
 <h2 id="referencia-de-configuración-y-resolución-de-problemas">Referencia de configuración y resolución de problemas</h2>
 

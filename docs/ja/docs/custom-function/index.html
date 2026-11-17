@@ -24,7 +24,7 @@
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/custom-function/">
 <meta property="og:type" content="article">
 <meta property="article:published_time" content="2019-01-21T10:43:02&#43;08:00">
-<meta property="article:modified_time" content="2026-11-07T01:07:23&#43;08:00">
+<meta property="article:modified_time" content="2026-11-17T10:00:00&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="カスタム関数 · Speedle Engine">
 <meta property="og:description" content="SPDL 条件でカスタム関数を呼び出し、認可ルールの計算能力を拡張。">
@@ -40,7 +40,7 @@
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/custom-function/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-07T01:07:23+08:00","datePublished":"2019-01-21T10:43:02+08:00","description":"SPDL 条件でカスタム関数を呼び出し、認可ルールの計算能力を拡張。","headline":"カスタム関数","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ja","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ja/docs/custom-function/","@type":"WebPage"},"name":"カスタム関数","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ja/docs/custom-function/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/custom-function/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-17T10:00:00+08:00","datePublished":"2019-01-21T10:43:02+08:00","description":"SPDL 条件でカスタム関数を呼び出し、認可ルールの計算能力を拡張。","headline":"カスタム関数","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ja","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ja/docs/custom-function/","@type":"WebPage"},"name":"カスタム関数","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ja/docs/custom-function/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/custom-function/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/ja/","name":"ホーム","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/","name":"ドキュメント","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/custom-function/","name":"カスタム関数","position":3}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -294,7 +294,23 @@
 <p>金額が 1000 以下の場合は拒否されます:</p>
 
 <!-- docs-check: function-deny -->
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --header <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> --data <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user1&#34;}]},&#34;serviceName&#34;:&#34;bookstore&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;,&#34;attributes&#34;:[{&#34;name&#34;:&#34;amount&#34;,&#34;type&#34;:&#34;numeric&#34;,&#34;value&#34;:500}]}&#39;</span> http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --header <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> --data <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;user1&#34;}]},&#34;serviceName&#34;:&#34;bookstore&#34;,&#34;resource&#34;:&#34;book&#34;,&#34;action&#34;:&#34;read&#34;,&#34;attributes&#34;:[{&#34;name&#34;:&#34;amount&#34;,&#34;type&#34;:&#34;numeric&#34;,&#34;value&#34;:500}]}&#39;</span> http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<h2 id="関数の失敗">関数の失敗</h2>
+
+<p>カスタム関数の呼び出しは失敗する場合があります。タイムアウトや接続エラー、2xx 以外のステータスや読み取れない応答、<code>{&quot;error&quot;:&quot;...&quot;}</code> を含む応答、または宣言した型と一致しない値です。これらはいずれも評価エラーであり、条件が偽になったのではありません。</p>
+
+<p><code>is-allowed</code>、<code>all-granted-roles</code>、<code>all-granted-permissions</code> は判定結果ではなくエラーを返します。REST エンドポイントは <code>{&quot;error&quot;:&quot;...&quot;}</code> を伴う <code>500 Internal Server Error</code> を返し、gRPC メソッドは OK 以外のステータスを返します。<code>diagnose</code> エンドポイントはエラー応答で失敗した呼び出しを報告し、Go の <code>Diagnose</code> API は評価結果も返します（理由は <code>ERROR_IN_EVALUATION</code>）。失敗した呼び出しはキャッシュされないため、キャッシュ可能な関数は次のリクエストで再度呼び出されます。</p>
+
+<p>その他の動作は変わりません。特に、リクエストに含まれない属性を参照する条件は引き続き一致せず、その条件を持つ条件付き <code>deny</code> は適用されません。</p>
+
+<h2 id="宣言されたパラメータ型と結果型">宣言されたパラメータ型と結果型</h2>
+
+<p>関数定義では引数と結果の型を宣言できます:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{<span style="color:#ff79c6">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;isValid&#34;</span>,<span style="color:#ff79c6">&#34;funcURL&#34;</span>:<span style="color:#f1fa8c">&#34;http://127.0.0.1:23456/func/isValid&#34;</span>,<span style="color:#ff79c6">&#34;params&#34;</span>:[<span style="color:#f1fa8c">&#34;numeric&#34;</span>],<span style="color:#ff79c6">&#34;result&#34;</span>:<span style="color:#f1fa8c">&#34;bool&#34;</span>}</code></pre></div>
+<p><code>params</code> は呼び出し順に引数の型を列挙し、<code>result</code> は戻り値の型です。どちらも省略可能です。型は <code>string</code>、<code>numeric</code>、<code>bool</code>、<code>datetime</code>、またはリスト形式の <code>string[]</code>、<code>numeric[]</code>、<code>bool[]</code>、<code>datetime[]</code> です。PMS はそれ以外の値を拒否します。</p>
+
+<p>宣言すると、Speedle は呼び出し前に引数を、呼び出し後に結果を検査し、不一致は関数の失敗となります。<code>numeric</code> は整数と浮動小数点値を受け付け、<code>datetime</code> は Unix タイムスタンプまたは RFC 3339 文字列を受け付けます。リストパラメータは、リスト値そのもの、または条件が個別の引数として関数に渡すリスト値の各要素を受け付けます。どちらのフィールドも宣言しない関数は、これらの検査なしで呼び出されます。</p>
+</div>
 </div>
 </main>
         </div>

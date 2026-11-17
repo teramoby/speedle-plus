@@ -55,6 +55,32 @@ definitions:
         type: string
       name:
         type: string
+      params:
+        description: 按调用顺序声明的参数类型。取值可以是 string、numeric、bool、datetime 及其列表形式。
+        items:
+          enum:
+            - string
+            - numeric
+            - bool
+            - datetime
+            - string[]
+            - numeric[]
+            - bool[]
+            - datetime[]
+          type: string
+        type: array
+      result:
+        description: 声明的返回类型。取值可以是 string、numeric、bool、datetime 及其列表形式。
+        enum:
+          - string
+          - numeric
+          - bool
+          - datetime
+          - string[]
+          - numeric[]
+          - bool[]
+          - datetime[]
+        type: string
       resultCachable:
         type: boolean
       resultTTL:

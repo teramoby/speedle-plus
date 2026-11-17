@@ -38,7 +38,7 @@
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ko/docs/store/#webpage","@type":"WebPage","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-10-31T22:36:36+08:00","description":"파일, etcd, MySQL 또는 MongoDB를 사용하여 정책을 저장하거나 인터페이스를 구현하여 사용자 정의 저장소 백엔드 연결","headline":"플러그형 저장소","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ko","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ko/docs/store/","@type":"WebPage"},"name":"플러그형 저장소","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ko/docs/store/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ko/docs/store/#webpage","@type":"WebPage","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-17T10:00:00+08:00","description":"파일, etcd, MySQL 또는 MongoDB를 사용하여 정책을 저장하거나 인터페이스를 구현하여 사용자 정의 저장소 백엔드 연결","headline":"플러그형 저장소","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ko","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ko/docs/store/","@type":"WebPage"},"name":"플러그형 저장소","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ko/docs/store/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ko/docs/store/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/ko/","name":"홈","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/ko/docs/","name":"문서","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/ko/docs/store/","name":"플러그형 저장소","position":3}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -218,6 +218,8 @@
 <h2 id="mysql-8-4-정책-저장소">MySQL 8.4 정책 저장소</h2>
 
 <p><a href="/ko/docs/store/mysql/">단계별 MySQL 설정 가이드</a>에 따라 데이터베이스를 생성하고, 개별 PMS/ADS 계정을 구성하며, 정책 동기화를 확인하십시오.</p>
+
+<p>현재 스키마 버전은 2이며, 버전 1 데이터베이스용 일회성 마이그레이션은 <a href="/ko/docs/store/mysql/">MySQL 설정 가이드</a>에 있습니다.</p>
 
 <p>운영 배포 시에는 고정 스키마, 최소 권한 원칙(PMS에만 쓰기 권한, ADS에는 읽기 전용 권한 부여), 풀 크기 조정, TLS 암호화 연결 및 복제 지연 모니터링을 적용하십시오. 감시(watch) 기능은 폴링과 행 버전 번호를 사용하여 변경 사항을 감지합니다. 버전 번호가 증가하지 않고 데이터베이스에 직접 변경된 사항은 자동으로 감지되지 않을 수 있습니다. 정책을 수정할 때는 항상 PMS API를 사용하십시오.</p>
 

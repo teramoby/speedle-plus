@@ -8,7 +8,7 @@ tocheading = "h2"
 tags = ["storage", "mysql"]
 categories = ["docs"]
 bref = "从建库、创建账号到配置 PMS/ADS，再验证授权、策略自动同步与持久化。"
-lastmod = 2026-10-31T22:36:36+08:00
+lastmod = 2026-11-17T10:00:00+08:00
 +++
 
 本指南使用 **MySQL 8.4 LTS**，分别启动 PMS 和 ADS：PMS 写入策略，ADS 使用独立的只读账号读取同一个数据库。本地演示使用 Docker，HTTP 服务只监听本机回环地址。远程部署可使用已有的 MySQL，并参考[安全配置](/docs/security/)。
@@ -207,6 +207,39 @@ docker exec speedle-mysql mysql --user=root --password=SpeedleDemoRoot84 -e "REV
 ```
 
 此后 PMS 仅需 `SELECT`、`INSERT`、`UPDATE`、`DELETE`，ADS 保持只读。修改配置后重启两个服务。初始化 SQL 不会迁移已有表；不支持的结构版本会导致启动失败。
+
+当前结构版本为 2。升级前先停止两个服务，并对版本 1 的数据库执行一次性迁移；启动时会拒绝旧版本。
+
+MySQL 会单独提交 `ALTER TABLE`，因此迁移不是原子操作：可能在新增列之后、更新版本之前中断。以下步骤在任何中断后都可以从头重新执行。
+
+**第 1 步：** 检查哪些新列已经存在：
+
+```sql
+SELECT COLUMN_NAME FROM information_schema.COLUMNS
+WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'speedle_functions'
+  AND COLUMN_NAME IN ('param_types', 'result_type');
+```
+
+**第 2 步：** 只添加第 1 步未列出的列。两列都不存在时：
+
+```sql
+ALTER TABLE speedle_functions
+  ADD COLUMN param_types JSON NULL,
+  ADD COLUMN result_type LONGTEXT NULL;
+```
+
+如果只列出了一列，单独添加另一列；两列都已列出时跳过此步。
+
+**第 3 步：** 记录新版本，然后检查：
+
+```sql
+UPDATE speedle_store_meta SET schema_version = 2 WHERE id = 1;
+SELECT schema_version FROM speedle_store_meta WHERE id = 1;
+```
+
+查询必须返回 `2`。如果没有返回任何行，说明该数据库不是由 Speedle 创建的，需要改用完整的结构初始化。
+
+新增列保存可选的函数类型声明；已有函数行保持 `NULL`，表示未声明。
 
 ## 配置速查与故障排查
 

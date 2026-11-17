@@ -8,7 +8,7 @@ tocheading = "h2"
 tags = ["storage", "mysql"]
 categories = ["docs"]
 bref = "Create a database, configure PMS and ADS, then verify authorization and automatic policy synchronization."
-lastmod = 2026-10-31T22:36:36+08:00
+lastmod = 2026-11-17T10:00:00+08:00
 +++
 
 This guide uses **MySQL 8.4 LTS** and two native Speedle processes: PMS writes
@@ -244,6 +244,39 @@ docker exec speedle-mysql mysql --user=root --password=SpeedleDemoRoot84 -e "REV
 PMS then runs with `SELECT`, `INSERT`, `UPDATE`, `DELETE`; ADS stays read-only.
 Restart both services after changing their configuration. Schema initialization
 does not migrate existing tables; unsupported schema versions fail startup.
+
+The current schema version is 2. Stop both services and migrate a version 1 database before starting the upgraded release; startup rejects the old version.
+
+MySQL commits `ALTER TABLE` on its own, so the migration is not atomic: it can stop after the columns are added and before the version is updated. The steps below can be rerun from the start after any interruption.
+
+**Step 1.** Check which of the new columns already exist:
+
+```sql
+SELECT COLUMN_NAME FROM information_schema.COLUMNS
+WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'speedle_functions'
+  AND COLUMN_NAME IN ('param_types', 'result_type');
+```
+
+**Step 2.** Add only the columns that step 1 did not list. With neither column present:
+
+```sql
+ALTER TABLE speedle_functions
+  ADD COLUMN param_types JSON NULL,
+  ADD COLUMN result_type LONGTEXT NULL;
+```
+
+If only one is listed, add the other one alone. If both are listed, skip this step.
+
+**Step 3.** Record the new version, then check it:
+
+```sql
+UPDATE speedle_store_meta SET schema_version = 2 WHERE id = 1;
+SELECT schema_version FROM speedle_store_meta WHERE id = 1;
+```
+
+The query must return `2`. If it returns no row, the database was not created by Speedle and needs the full schema instead.
+
+The new columns hold the optional custom-function type declarations; existing function rows stay `NULL`, which means no declaration.
 
 ## Configuration reference and troubleshooting
 

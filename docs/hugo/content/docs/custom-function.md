@@ -2,7 +2,7 @@
 title = "Custom Function"
 description = "Write policy condition with your own functions"
 date = 2019-01-21T10:43:02+08:00
-lastmod = 2026-11-07T01:07:23+08:00
+lastmod = 2026-11-17T10:00:00+08:00
 weight = 600
 draft = false
 bref = "When the condition in a policy or role policy is too complicated to draft using an expression and built-in functions, you can write your own functions to include in the condition instead"
@@ -161,6 +161,36 @@ curl --fail --silent --show-error -H 'Content-Type: application/json' \
   http://127.0.0.1:6734/authz-check/v1/is-allowed
 ```
 
+
+## Function failures
+
+A custom function call can fail: it times out or cannot connect, the endpoint returns a non-2xx status or a response that cannot be read, the response contains `{"error":"..."}`, or a value does not match the declared types (see below). Any of these is an evaluation error, not a false condition.
+
+The same function rejects a string parameter with an HTTP error, so the decision is an error response (`500`), not a denial:
+
+<!-- docs-check: function-failure -->
+```bash
+test "$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' -H 'Content-Type: application/json' \
+  -d '{"subject":{"principals":[{"type":"user","name":"Ally"}]},"serviceName":"service1","resource":"library","action":"access","attributes":[{"name":"attr1","type":"string","value":"invalid"}]}' \
+  http://127.0.0.1:6734/authz-check/v1/is-allowed)" = 500
+```
+
+
+The `is-allowed`, `all-granted-roles` and `all-granted-permissions` operations return an error instead of a decision. The REST endpoints answer `500 Internal Server Error` with an `{"error":"..."}` body, and the gRPC methods return a non-OK status. The `diagnose` endpoint reports the failed call in its error response; the Go `Diagnose` API also returns its evaluation result, with reason `ERROR_IN_EVALUATION`. A failed call is never cached, so a cacheable function is called again on the next request.
+
+Everything else is unchanged. In particular, a condition on an attribute that the request does not carry still does not match, and a conditional `deny` with such a condition does not apply.
+
+## Declared parameter and result types
+
+A function definition can declare the argument and result types:
+
+```json
+{"name":"isValid","funcURL":"http://127.0.0.1:23456/func/isValid","params":["numeric"],"result":"bool"}
+```
+
+`params` lists the argument types in call order, and `result` is the returned value's type. Both fields are optional. Each type is `string`, `numeric`, `bool`, `datetime`, or a list form: `string[]`, `numeric[]`, `bool[]` or `datetime[]`. PMS rejects any other value.
+
+When a function declares them, Speedle checks the arguments before the call and the result after it, and a mismatch is a function failure. `numeric` accepts integer and floating-point values; `datetime` accepts a Unix timestamp or an RFC 3339 string. A list parameter accepts either one list value or the elements of a list value, which a condition passes to the function as separate arguments. A function that declares neither field is called without these checks.
 
 ## TLS and caching
 

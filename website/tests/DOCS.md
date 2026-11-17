@@ -11,7 +11,7 @@ python3 website/tests/check_embedded.py --toolchain go1.26.10 --candidate
 
 The current docs inventory is 82 Markdown pages (41 English/Chinese pairs). Historical snapshot directories are unchanged. No shared stylesheet, template, logo or homepage design changes are part of this repair.
 
-`check_docs.py` executes 132 Bash blocks against owned native PMS/ADS, mock assertion and custom-function services, including Allow/Deny, diagnosis, discovery/import/enforcement, TLS/mTLS and rejected credentials. Two deployment clone/build blocks are identical to the Quick Start build sequence, which the release check executes separately. Linux uses private user/network/PID namespaces and the documented ports; macOS remaps only the owned fixture ports. All fixture processes and temporary policy/certificate files are cleaned up.
+`check_docs.py` executes 134 Bash blocks against owned native PMS/ADS, mock assertion and custom-function services, including Allow/Deny, diagnosis, discovery/import/enforcement, TLS/mTLS and rejected credentials. Two deployment clone/build blocks are identical to the Quick Start build sequence, which the release check executes separately. Linux uses private user/network/PID namespaces and the documented ports; macOS remaps only the owned fixture ports. All fixture processes and temporary policy/certificate files are cleaned up.
 
 Go contract tests check the published OpenAPI methods against native routers/responses, bilingual schema parity, webhook JSON, SPDL conditions, overview RBAC/ABAC/PBAC/IDD examples, and the inline Kubernetes manifest against current `apps/v1` and core `v1` types. Public proto files are checked byte-for-byte against the current server source.
 
@@ -29,7 +29,7 @@ Container image pulls and Kubernetes admission/rollout require a target registry
 | `deployment/docker` | Moved from `sdks/docker` in both languages | Commands were run against the published `docker.io/speedle/speedle:1.7.0` image. `ghcr.io/teramoby/speedle:1.7.0` was pulled and inspected; its index digest matches |
 | `architecture` | Reviewed; retained | Source review; no obsolete build/API example found |
 | `assertor` | Updated in both languages | Paired native commands and API results |
-| `custom-function` | Updated in both languages | Paired native commands and API results |
+| `custom-function` | Updated in both languages | Paired native commands and API results, including a failed custom function |
 | `decisions` | Updated in both languages | Paired native commands and API results |
 | `deployment/embedded` | Moved from `deployment-embeded` in both languages | Public-module and candidate-library walkthrough checks |
 | `deployment/_index` | Section landing; content retained from `deployment` | Shared Quick Start build, native services, typed manifest; image pulls and cluster rollout excluded |

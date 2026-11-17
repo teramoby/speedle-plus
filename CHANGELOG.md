@@ -2,6 +2,30 @@
 
 ## Unreleased
 
+- **Behavior change:** custom function failures now fail the decision. A
+  timeout, a connection or TLS error, a non-2xx status, an invalid or error
+  response, or a value that does not match the function's declared types is an
+  evaluation error instead of a false condition. `IsAllowed`,
+  `GetAllGrantedRoles`, `GetAllGrantedPermissions`, `Diagnose` and the
+  corresponding REST and gRPC endpoints report it; `Diagnose` still returns its
+  evaluation result. A failed call is never cached. Conditions that do not call
+  custom functions are unchanged, in particular a condition on an attribute the
+  request does not carry still does not match.
+
+- `pms.Function` accepts optional `params` and `result` type declarations:
+  `string`, `numeric`, `bool`, `datetime` and their `[]` list forms. PMS rejects
+  any other value, and a call whose arguments or result do not match the
+  declaration is a function failure. A function that declares neither field is
+  called as before.
+
+- The MySQL store schema moves to version 2, which adds the declaration columns
+  to `speedle_functions`. Startup rejects a version 1 database; run the one-time
+  migration in the MySQL setup guide before upgrading.
+
+- The js/wasm build accepts a host custom-function caller registered with
+  `eval.RegisterCustomFunctionCaller`. Without a registered caller, custom
+  functions are rejected exactly as before.
+
 - Migrated Engine application and audit logging to Go `log/slog`, with the
   existing flags, environment variables, JSON configuration keys and rotation
   settings. Trace maps to debug (selecting debug now includes former trace

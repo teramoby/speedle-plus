@@ -8,7 +8,7 @@ tocheading = "h2"
 tags = ["storage", "mysql"]
 categories = ["docs"]
 bref = "데이터베이스를 생성하고 PMS와 ADS를 구성하여 인가 및 자동 정책 동기화를 확인합니다."
-lastmod = 2026-10-31T22:36:36+08:00
+lastmod = 2026-11-17T10:00:00+08:00
 +++
 
 이 가이드에서는 **MySQL 8.4 LTS**와 두 개의 네이티브 Speedle 프로세스를 사용합니다. PMS는 정책을 작성하고 ADS는 별도의 읽기 전용 계정으로 동일한 데이터베이스를 읽습니다. 로컬 예제에서는 Docker와 루프백 주소의 일반 텍스트 HTTP를 사용합니다. 원격 배포의 경우 기존 MySQL 서버와 [보안 가이드](/docs/security/)를 참조하십시오.
@@ -190,6 +190,39 @@ docker exec speedle-mysql mysql --user=root --password=SpeedleDemoRoot84 -e "REV
 ```
 
 PMS는 `SELECT`, `INSERT`, `UPDATE`, `DELETE` 권한으로 실행되며 ADS는 읽기 전용으로 유지됩니다. 구성을 변경한 후에는 두 서비스를 모두 다시 시작하십시오. 스키마 초기화는 기존 테이블을 마이그레이션하지 않습니다. 지원되지 않는 스키마 버전은 시작 시 실패합니다.
+
+현재 스키마 버전은 2입니다. 업그레이드된 릴리스를 시작하기 전에 두 서비스를 모두 중지하고 버전 1 데이터베이스를 마이그레이션하십시오. 시작 시 이전 버전은 거부됩니다.
+
+MySQL은 `ALTER TABLE`을 별도로 커밋하므로 마이그레이션은 원자적이지 않습니다. 컬럼을 추가한 뒤 버전을 갱신하기 전에 중단될 수 있습니다. 아래 단계는 중단된 뒤에도 처음부터 다시 실행할 수 있습니다.
+
+**1단계:** 새 컬럼 중 이미 있는 컬럼을 확인합니다.
+
+```sql
+SELECT COLUMN_NAME FROM information_schema.COLUMNS
+WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'speedle_functions'
+  AND COLUMN_NAME IN ('param_types', 'result_type');
+```
+
+**2단계:** 1단계에서 표시되지 않은 컬럼만 추가합니다. 두 컬럼이 모두 없으면:
+
+```sql
+ALTER TABLE speedle_functions
+  ADD COLUMN param_types JSON NULL,
+  ADD COLUMN result_type LONGTEXT NULL;
+```
+
+한 컬럼만 표시되면 나머지 컬럼만 추가합니다. 두 컬럼이 모두 표시되면 이 단계를 건너뜁니다.
+
+**3단계:** 새 버전을 기록한 뒤 확인합니다.
+
+```sql
+UPDATE speedle_store_meta SET schema_version = 2 WHERE id = 1;
+SELECT schema_version FROM speedle_store_meta WHERE id = 1;
+```
+
+쿼리는 `2`를 반환해야 합니다. 행이 반환되지 않으면 Speedle이 만든 데이터베이스가 아니므로 전체 스키마가 필요합니다.
+
+새 컬럼은 사용자 정의 함수의 선택적 타입 선언을 저장합니다. 기존 함수 행은 `NULL`로 유지되며, 이는 선언이 없음을 뜻합니다.
 
 ## 구성 참조 및 문제 해결
 

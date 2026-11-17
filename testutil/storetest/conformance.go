@@ -4,6 +4,7 @@
 package storetest
 
 import (
+	"reflect"
 	"sort"
 	"testing"
 
@@ -205,7 +206,8 @@ func testRolePolicies(t *testing.T, s pms.PolicyStoreManager) {
 
 func testFunctions(t *testing.T, s pms.PolicyStoreManager) {
 	for _, name := range []string{"f1", "f2"} {
-		created, err := s.CreateFunction(&pms.Function{Name: name, FuncURL: "https://f/" + name, ResultCachable: true, ResultTTL: 5})
+		created, err := s.CreateFunction(&pms.Function{Name: name, FuncURL: "https://f/" + name, ResultCachable: true, ResultTTL: 5,
+			Params: []string{"numeric", "string[]"}, Result: "bool"})
 		must(t, err)
 		if created.Name != name {
 			t.Errorf("created %+v", created)
@@ -215,10 +217,20 @@ func testFunctions(t *testing.T, s pms.PolicyStoreManager) {
 	wantCode(t, "duplicate function", err, errors.EntityAlreadyExists)
 	_, err = s.CreateFunction(&pms.Function{Name: "nourl"})
 	wantCode(t, "function without URL", err, errors.InvalidRequest)
+	for _, invalid := range []*pms.Function{
+		{Name: "bad-param", FuncURL: "https://f/bad", Params: []string{"numeric", "integer"}},
+		{Name: "bad-result", FuncURL: "https://f/bad", Result: "object"},
+		{Name: "nested-list", FuncURL: "https://f/bad", Result: "string[][]"},
+	} {
+		if _, err := s.CreateFunction(invalid); errors.Code(err) != errors.InvalidRequest {
+			t.Errorf("invalid declaration %+v: error %v", invalid, err)
+		}
+	}
 
 	got, err := s.GetFunction("f2")
 	must(t, err)
-	if got.FuncURL != "https://f/f2" || !got.ResultCachable || got.ResultTTL != 5 {
+	if got.FuncURL != "https://f/f2" || !got.ResultCachable || got.ResultTTL != 5 ||
+		!reflect.DeepEqual(got.Params, []string{"numeric", "string[]"}) || got.Result != "bool" {
 		t.Errorf("function %+v", got)
 	}
 	_, err = s.GetFunction("nope")
@@ -246,18 +258,25 @@ func testPolicyStore(t *testing.T, s pms.PolicyStoreManager) {
 		Services: []*pms.Service{{Name: "app", Type: pms.TypeApplication,
 			Policies:     []*pms.Policy{{ID: "p1", Name: "p1", Effect: pms.Deny}},
 			RolePolicies: []*pms.RolePolicy{{ID: "rp1", Name: "rp1", Effect: pms.Grant}}}},
-		Functions: []*pms.Function{{Name: "f", FuncURL: "https://f"}},
+		Functions: []*pms.Function{{Name: "f", FuncURL: "https://f", Params: []string{"bool"}, Result: "string[]"}},
 	}
 	must(t, s.WritePolicyStore(in))
 	out, err := s.ReadPolicyStore()
 	must(t, err)
 	if len(out.Services) != 1 || out.Services[0].Policies[0].ID != "p1" || out.Services[0].RolePolicies[0].ID != "rp1" ||
-		len(out.Functions) != 1 || out.Functions[0].Name != "f" {
+		len(out.Functions) != 1 || out.Functions[0].Name != "f" ||
+		!reflect.DeepEqual(out.Functions[0].Params, []string{"bool"}) || out.Functions[0].Result != "string[]" {
 		t.Errorf("read back %+v", out)
 	}
 	if policy, err := s.GetPolicy("app", "p1"); err != nil || policy.Effect != pms.Deny {
 		t.Errorf("written policy %+v, %v", policy, err)
 	}
+	// Checked last: a store may write part of the snapshot before it rejects
+	// the function declaration.
+	invalid := &pms.PolicyStore{Functions: []*pms.Function{{Name: "f", FuncURL: "https://f", Result: "number"}}}
+	wantCode(t, "invalid declaration in a whole-store write", s.WritePolicyStore(invalid), errors.InvalidRequest)
+	nilFunction := &pms.PolicyStore{Functions: []*pms.Function{nil}}
+	wantCode(t, "nil function in a whole-store write", s.WritePolicyStore(nilFunction), errors.InvalidRequest)
 }
 
 func request(service, resource, user string) *ads.RequestContext {

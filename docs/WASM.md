@@ -4,9 +4,11 @@
 
 ## Custom-function behavior
 
-Custom functions are unsupported on js/wasm. Direct, delegated and expression calls return `custom_function_unsupported`; expression calls do so before argument serialization or cache lookup.
+The js/wasm build has no custom-function HTTP transport. An embedding host can serve custom function calls itself with `eval.RegisterCustomFunctionCaller(func(*pms.Function, *ext.CustomerFunctionRequest) (interface{}, error))`. Register the caller before creating an evaluator or refreshing its snapshot: registration is read when a function is loaded. Calls then use the caller with the same result cache, declared parameter and result type checks, and failure propagation as the native build.
 
-Evaluator construction and snapshot reloads validate every authorization-policy and role-policy condition before loading it. If any condition calls a custom function, the entire snapshot is rejected with `custom_function_unsupported`. This includes calls in short-circuited branches and applies equally to GRANT and DENY policies. A rejected initial load returns no evaluator.
+Without a registered caller, custom functions are unsupported. Direct, delegated and expression calls return `custom_function_unsupported`; expression calls do so before argument serialization or cache lookup.
+
+Evaluator construction and snapshot reloads validate every authorization-policy and role-policy condition before loading it while no caller is registered. If any condition calls a custom function, the entire snapshot is rejected with `custom_function_unsupported`. This includes calls in short-circuited branches and applies equally to GRANT and DENY policies. A rejected initial load returns no evaluator.
 
 Incremental service, policy, role-policy and custom-function additions use the same validation. Adding a function also checks existing conditions that the function could resolve. A rejected mutation is not activated. A rejected reload or mutation suspends authorization until a valid snapshot loads successfully.
 

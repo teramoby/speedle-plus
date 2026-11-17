@@ -21,7 +21,7 @@ const (
 	serviceColumns  = "name,service_type,metadata"
 	policyColumns   = "id,name,effect,permissions,principals,condition_expr,metadata"
 	roleColumns     = "id,name,effect,roles,principals,resources,resource_expressions,condition_expr,metadata"
-	functionColumns = "name,description,func_url,local_func_url,ca,result_cachable,result_ttl,metadata"
+	functionColumns = "name,description,func_url,local_func_url,ca,result_cachable,result_ttl,param_types,result_type,metadata"
 	revisionSQL     = "SELECT revision FROM speedle_store_meta WHERE id = 1"
 )
 
@@ -120,11 +120,24 @@ func validKey(value string) error {
 // always JSON-serializable. JSON null deliberately preserves nil slices/maps.
 func jsonText(value interface{}) string { b, _ := json.Marshal(value); return string(b) }
 
-type jsonTarget[T any] struct{ value *T }
+// jsonTarget scans a JSON column. SQL NULL is rejected unless the column is
+// optional: a required field such as principals must never read as empty,
+// because an empty principal list applies to every user.
+type jsonTarget[T any] struct {
+	value    *T
+	nullable bool
+}
 
 func (j jsonTarget[T]) Scan(src interface{}) error {
 	var raw []byte
 	switch v := src.(type) {
+	case nil:
+		if !j.nullable {
+			return errors.New(errors.SerializationError, "invalid MySQL JSON field")
+		}
+		// A NULL optional column leaves the target at its zero value, which
+		// represents "not declared".
+		return nil
 	case []byte:
 		raw = v
 	case string:
@@ -137,7 +150,12 @@ func (j jsonTarget[T]) Scan(src interface{}) error {
 	}
 	return nil
 }
-func jsonInto[T any](target *T) jsonTarget[T] { return jsonTarget[T]{target} }
+func jsonInto[T any](target *T) jsonTarget[T] { return jsonTarget[T]{value: target} }
+
+// nullableJSONInto is jsonInto for an optional column that may be SQL NULL.
+func nullableJSONInto[T any](target *T) jsonTarget[T] {
+	return jsonTarget[T]{value: target, nullable: true}
+}
 
 func query[T any](ctx context.Context, tx *sql.Tx, sqlText string, args []interface{}, scan func(*sql.Rows) (*T, error)) ([]*T, error) {
 	rows, err := tx.QueryContext(ctx, sqlText, args...)
@@ -173,8 +191,13 @@ func scanRole(rows *sql.Rows) (*pms.RolePolicy, error) {
 }
 func scanFunction(rows *sql.Rows) (*pms.Function, error) {
 	v := &pms.Function{}
-	err := rows.Scan(&v.Name, &v.Description, &v.FuncURL, &v.LocalFuncURL, &v.CA, &v.ResultCachable, &v.ResultTTL, jsonInto(&v.Metadata))
-	return v, err
+	var result sql.NullString
+	if err := rows.Scan(&v.Name, &v.Description, &v.FuncURL, &v.LocalFuncURL, &v.CA, &v.ResultCachable, &v.ResultTTL, nullableJSONInto(&v.Params), &result, jsonInto(&v.Metadata)); err != nil {
+		return nil, err
+	}
+	// NULL means the row predates the type declaration columns.
+	v.Result = result.String
+	return v, nil
 }
 
 func policies(ctx context.Context, tx *sql.Tx, name string) ([]*pms.Policy, error) {
@@ -294,15 +317,27 @@ func insertService(ctx context.Context, tx *sql.Tx, v *pms.Service, preserve boo
 	}
 	return nil
 }
-func insertFunction(ctx context.Context, tx *sql.Tx, v *pms.Function) error {
+
+// validateFunctionInput rejects a function definition before it is written.
+func validateFunctionInput(v *pms.Function) error {
 	if v == nil || v.FuncURL == "" {
 		return errors.New(errors.InvalidRequest, "function name and funcURL are required")
 	}
 	if err := validKey(v.Name); err != nil {
 		return err
 	}
-	_, err := tx.ExecContext(ctx, "INSERT INTO speedle_functions ("+functionColumns+") VALUES (?,?,?,?,?,?,?,?)",
-		v.Name, v.Description, v.FuncURL, v.LocalFuncURL, v.CA, v.ResultCachable, v.ResultTTL, jsonText(v.Metadata))
+	if err := v.ValidateTypeDeclarations(); err != nil {
+		return errors.Wrap(err, errors.InvalidRequest, "invalid type declaration in function definition")
+	}
+	return nil
+}
+
+func insertFunction(ctx context.Context, tx *sql.Tx, v *pms.Function) error {
+	if err := validateFunctionInput(v); err != nil {
+		return err
+	}
+	_, err := tx.ExecContext(ctx, "INSERT INTO speedle_functions ("+functionColumns+") VALUES (?,?,?,?,?,?,?,?,?,?)",
+		v.Name, v.Description, v.FuncURL, v.LocalFuncURL, v.CA, v.ResultCachable, v.ResultTTL, jsonText(v.Params), v.Result, jsonText(v.Metadata))
 	return err
 }
 
@@ -390,6 +425,9 @@ func (s *Store) CreateRolePolicy(name string, p *pms.RolePolicy) (*pms.RolePolic
 	return result, nil
 }
 func (s *Store) CreateFunction(v *pms.Function) (*pms.Function, error) {
+	if err := validateFunctionInput(v); err != nil {
+		return nil, err
+	}
 	err := s.write(func(ctx context.Context, tx *sql.Tx) error { return insertFunction(ctx, tx, v) })
 	if err != nil {
 		return nil, err
