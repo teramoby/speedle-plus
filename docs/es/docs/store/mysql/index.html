@@ -379,6 +379,13 @@ chmod <span style="color:#bd93f9">600</span> mysql-demo/pms.json mysql-demo/ads.
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker <span style="color:#8be9fd;font-style:italic">exec</span> speedle-mysql mysql --user<span style="color:#ff79c6">=</span>root --password<span style="color:#ff79c6">=</span>SpeedleDemoRoot84 -e <span style="color:#f1fa8c">&#34;REVOKE CREATE, REFERENCES ON speedle.* FROM &#39;speedle_pms&#39;@&#39;%&#39;;&#34;</span></code></pre></div>
 <p>PMS luego se ejecuta con permisos <code>SELECT</code>, <code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code>; ADS permanece en solo lectura. Reinicie ambos servicios tras cambiar su configuración. La inicialización del esquema no migra tablas existentes; las versiones de esquema no compatibles impiden el inicio.</p>
 
+<p>La versión actual del esquema es la 2. Detenga ambos servicios y migre una base de datos de versión 1 antes de iniciar la versión actualizada; el inicio rechaza la versión anterior.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#ff79c6">ALTER</span> <span style="color:#ff79c6">TABLE</span> speedle_functions
+  <span style="color:#ff79c6">ADD</span> <span style="color:#ff79c6">COLUMN</span> param_types JSON <span style="color:#ff79c6">NULL</span>,
+  <span style="color:#ff79c6">ADD</span> <span style="color:#ff79c6">COLUMN</span> result_type LONGTEXT <span style="color:#ff79c6">NULL</span>;
+<span style="color:#ff79c6">UPDATE</span> speedle_store_meta <span style="color:#ff79c6">SET</span> schema_version <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">2</span> <span style="color:#ff79c6">WHERE</span> id <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">1</span>;</code></pre></div>
+<p>Las nuevas columnas almacenan las declaraciones opcionales de tipos de las funciones personalizadas; las filas de funciones existentes permanecen en <code>NULL</code>, lo que significa que no hay declaración.</p>
+
 <h2 id="referencia-de-configuración-y-resolución-de-problemas">Referencia de configuración y resolución de problemas</h2>
 
 <table>

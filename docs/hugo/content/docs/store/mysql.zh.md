@@ -8,7 +8,7 @@ tocheading = "h2"
 tags = ["storage", "mysql"]
 categories = ["docs"]
 bref = "从建库、创建账号到配置 PMS/ADS，再验证授权、策略自动同步与持久化。"
-lastmod = 2026-10-31T22:36:36+08:00
+lastmod = 2026-11-17T10:00:00+08:00
 +++
 
 本指南使用 **MySQL 8.4 LTS**，分别启动 PMS 和 ADS：PMS 写入策略，ADS 使用独立的只读账号读取同一个数据库。本地演示使用 Docker，HTTP 服务只监听本机回环地址。远程部署可使用已有的 MySQL，并参考[安全配置](/docs/security/)。
@@ -207,6 +207,17 @@ docker exec speedle-mysql mysql --user=root --password=SpeedleDemoRoot84 -e "REV
 ```
 
 此后 PMS 仅需 `SELECT`、`INSERT`、`UPDATE`、`DELETE`，ADS 保持只读。修改配置后重启两个服务。初始化 SQL 不会迁移已有表；不支持的结构版本会导致启动失败。
+
+当前结构版本为 2。升级前先停止两个服务，并对版本 1 的数据库执行一次性迁移；启动时会拒绝旧版本。
+
+```sql
+ALTER TABLE speedle_functions
+  ADD COLUMN param_types JSON NULL,
+  ADD COLUMN result_type LONGTEXT NULL;
+UPDATE speedle_store_meta SET schema_version = 2 WHERE id = 1;
+```
+
+新增列保存可选的函数类型声明；已有函数行保持 `NULL`，表示未声明。
 
 ## 配置速查与故障排查
 

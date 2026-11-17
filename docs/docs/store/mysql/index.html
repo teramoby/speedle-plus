@@ -416,6 +416,13 @@ the demo above, remove the extra initialization privileges:</p>
 Restart both services after changing their configuration. Schema initialization
 does not migrate existing tables; unsupported schema versions fail startup.</p>
 
+<p>The current schema version is 2. Stop both services and migrate a version 1 database before starting the upgraded release; startup rejects the old version.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#ff79c6">ALTER</span> <span style="color:#ff79c6">TABLE</span> speedle_functions
+  <span style="color:#ff79c6">ADD</span> <span style="color:#ff79c6">COLUMN</span> param_types JSON <span style="color:#ff79c6">NULL</span>,
+  <span style="color:#ff79c6">ADD</span> <span style="color:#ff79c6">COLUMN</span> result_type LONGTEXT <span style="color:#ff79c6">NULL</span>;
+<span style="color:#ff79c6">UPDATE</span> speedle_store_meta <span style="color:#ff79c6">SET</span> schema_version <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">2</span> <span style="color:#ff79c6">WHERE</span> id <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">1</span>;</code></pre></div>
+<p>The new columns hold the optional custom-function type declarations; existing function rows stay <code>NULL</code>, which means no declaration.</p>
+
 <h2 id="configuration-reference-and-troubleshooting">Configuration reference and troubleshooting</h2>
 
 <table>

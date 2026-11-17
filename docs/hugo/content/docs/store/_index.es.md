@@ -10,7 +10,7 @@ tocheading = "h2"
 tags = ["storage", "pluggable"]
 categories = ["docs"]
 bref = "Speedle incluye almacenes de políticas basados en archivos, etcd, MongoDB y MySQL. Este documento describe su configuración y cómo implementar o registrar un almacenamiento diferente."
-lastmod = 2026-10-31T22:36:36+08:00
+lastmod = 2026-11-17T10:00:00+08:00
 +++
 
 ## Almacenes integrados y contratos de extensión
@@ -65,7 +65,7 @@ Las variables de entorno utilizan el mismo mapeo, por ejemplo `SPDL_MYSQLSTORE_D
 
 Una base de datos corresponde a un almacén de políticas, utilizando cinco tablas InnoDB fijas: `speedle_services`, `speedle_policies`, `speedle_role_policies`, `speedle_functions` y `speedle_store_meta`. Las matrices complejas y los metadatos utilizan columnas JSON. Las tablas de políticas hacen referencia al servicio con eliminación en cascada. Los nombres de servicios/funciones y los IDs de políticas utilizan comparaciones que distinguen mayúsculas y minúsculas sin relleno (non-padding) y admiten hasta 255 caracteres Unicode; los nombres de políticas no necesitan ser únicos.
 
-De forma predeterminada, el inicio crea las tablas ausentes utilizando [schema.sql](https://github.com/teramoby/speedle-plus/blob/master/pkg/store/mysql/schema.sql). No crea una base de datos ni altera un esquema existente. Para un despliegue preconstruido, ejecute ese mismo SQL en la base de datos seleccionada utilizando una cuenta de aprovisionamiento y luego establezca `MySQLInitSchema` en `false`. El inicio verifica la versión del esquema, las columnas requeridas y los motores InnoDB. Una versión de esquema no compatible impedirá el inicio; las actualizaciones futuras requieren una migración explícita.
+De forma predeterminada, el inicio crea las tablas ausentes utilizando [schema.sql](https://github.com/teramoby/speedle-plus/blob/master/pkg/store/mysql/schema.sql). No crea una base de datos ni altera un esquema existente. Para un despliegue preconstruido, ejecute ese mismo SQL en la base de datos seleccionada utilizando una cuenta de aprovisionamiento y luego establezca `MySQLInitSchema` en `false`. El inicio verifica la versión del esquema, las columnas requeridas y los motores InnoDB. Una versión de esquema no compatible impedirá el inicio; las actualizaciones futuras requieren una migración explícita. La versión actual del esquema es la 2; la [guía de configuración de MySQL](/es/docs/store/mysql/) incluye la migración única para una base de datos de versión 1.
 
 El aprovisionamiento requiere privilegios de creación e inicialización de tablas. Con un esquema preconstruido, la cuenta de PMS necesita `SELECT`, `INSERT`, `UPDATE` y `DELETE` en la base de datos de políticas; ADS puede utilizar una cuenta independiente que solo tenga `SELECT` y con la creación automática de esquema deshabilitada. Utilice las opciones TLS del DSN del controlador para bases de datos remotas. No coloque contraseñas de producción en configuraciones confirmadas o en el historial de la línea de comandos.
 

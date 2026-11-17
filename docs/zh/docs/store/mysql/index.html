@@ -379,6 +379,13 @@ chmod <span style="color:#bd93f9">600</span> mysql-demo/pms.json mysql-demo/ads.
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker <span style="color:#8be9fd;font-style:italic">exec</span> speedle-mysql mysql --user<span style="color:#ff79c6">=</span>root --password<span style="color:#ff79c6">=</span>SpeedleDemoRoot84 -e <span style="color:#f1fa8c">&#34;REVOKE CREATE, REFERENCES ON speedle.* FROM &#39;speedle_pms&#39;@&#39;%&#39;;&#34;</span></code></pre></div>
 <p>此后 PMS 仅需 <code>SELECT</code>、<code>INSERT</code>、<code>UPDATE</code>、<code>DELETE</code>，ADS 保持只读。修改配置后重启两个服务。初始化 SQL 不会迁移已有表；不支持的结构版本会导致启动失败。</p>
 
+<p>当前结构版本为 2。升级前先停止两个服务，并对版本 1 的数据库执行一次性迁移；启动时会拒绝旧版本。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#ff79c6">ALTER</span> <span style="color:#ff79c6">TABLE</span> speedle_functions
+  <span style="color:#ff79c6">ADD</span> <span style="color:#ff79c6">COLUMN</span> param_types JSON <span style="color:#ff79c6">NULL</span>,
+  <span style="color:#ff79c6">ADD</span> <span style="color:#ff79c6">COLUMN</span> result_type LONGTEXT <span style="color:#ff79c6">NULL</span>;
+<span style="color:#ff79c6">UPDATE</span> speedle_store_meta <span style="color:#ff79c6">SET</span> schema_version <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">2</span> <span style="color:#ff79c6">WHERE</span> id <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">1</span>;</code></pre></div>
+<p>新增列保存可选的函数类型声明；已有函数行保持 <code>NULL</code>，表示未声明。</p>
+
 <h2 id="配置速查与故障排查">配置速查与故障排查</h2>
 
 <table>

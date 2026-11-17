@@ -9,7 +9,7 @@ toc = true
 tocheading = "h2"
 tocsidebar = false
 categories = ["docs"]
-lastmod = 2026-11-07T01:07:23+08:00
+lastmod = 2026-11-17T10:00:00+08:00
 +++
 
 ## ¿Por qué utilizar una función personalizada?
@@ -158,6 +158,36 @@ curl --fail --silent --show-error -H 'Content-Type: application/json' \
   -d '{"subject":{"principals":[{"type":"user","name":"Ally"}]},"serviceName":"service1","resource":"library","action":"access","attributes":[{"name":"attr1","type":"numeric","value":50}]}' \
   http://127.0.0.1:6734/authz-check/v1/is-allowed
 ```
+
+## Fallos de la función
+
+Una llamada a una función personalizada puede fallar: agota el tiempo de espera o no puede conectarse, el endpoint devuelve un estado que no es 2xx o una respuesta ilegible, la respuesta contiene `{"error":"..."}`, o un valor no coincide con los tipos declarados (ver más abajo). Cualquiera de estos casos es un error de evaluación, no una condición falsa.
+
+La misma función rechaza un parámetro de tipo string con un error HTTP, por lo que la decisión es una respuesta de error (`500`), no una denegación:
+
+<!-- docs-check: function-failure -->
+```bash
+test "$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' -H 'Content-Type: application/json' \
+  -d '{"subject":{"principals":[{"type":"user","name":"Ally"}]},"serviceName":"service1","resource":"library","action":"access","attributes":[{"name":"attr1","type":"string","value":"invalid"}]}' \
+  http://127.0.0.1:6734/authz-check/v1/is-allowed)" = 500
+```
+
+
+Las operaciones `is-allowed`, `all-granted-roles` y `all-granted-permissions` devuelven un error en lugar de una decisión. Los endpoints REST responden `500 Internal Server Error` con un cuerpo `{"error":"..."}`, y los métodos gRPC devuelven un estado distinto de OK. El endpoint `diagnose` informa la llamada fallida en su respuesta de error; la API `Diagnose` de Go también devuelve su resultado de evaluación, con el motivo `ERROR_IN_EVALUATION`. Una llamada fallida nunca se almacena en caché, por lo que una función cacheable se vuelve a llamar en la siguiente solicitud.
+
+El resto no cambia. En particular, una condición sobre un atributo que la solicitud no incluye sigue sin coincidir, y una política `deny` condicional con esa condición no se aplica.
+
+## Tipos de parámetro y de resultado declarados
+
+Una definición de función puede declarar los tipos de sus argumentos y de su resultado:
+
+```json
+{"name":"isValid","funcURL":"http://127.0.0.1:23456/func/isValid","params":["numeric"],"result":"bool"}
+```
+
+`params` enumera los tipos de los argumentos en orden de llamada, y `result` es el tipo del valor devuelto. Ambos campos son opcionales. Cada tipo es `string`, `numeric`, `bool`, `datetime`, o una forma de lista: `string[]`, `numeric[]`, `bool[]` o `datetime[]`. PMS rechaza cualquier otro valor.
+
+Cuando se declaran, Speedle comprueba los argumentos antes de la llamada y el resultado después, y una discrepancia es un fallo de la función. `numeric` acepta valores enteros y de punto flotante; `datetime` acepta una marca de tiempo Unix o una cadena RFC 3339. Un parámetro de lista acepta un valor de lista o los elementos de un valor de lista, que una condición pasa a la función como argumentos separados. Una función que no declara ninguno de los dos campos se llama sin estas comprobaciones.
 
 ## TLS y almacenamiento en caché
 

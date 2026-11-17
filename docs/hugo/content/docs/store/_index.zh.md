@@ -10,7 +10,7 @@ tocheading = "h2"
 tags = ["storage", "pluggable"]
 categories = ["docs"]
 bref = ""
-lastmod = 2026-11-08T11:21:16+08:00
+lastmod = 2026-11-17T10:00:00+08:00
 +++
 
 ## 内置存储与扩展接口
@@ -84,7 +84,7 @@ file 存储的 PMS 写入先完整序列化并同步临时文件，再在同一�
 
 一个数据库对应一个策略存储，使用五张固定名称的 InnoDB 表：`speedle_services`、`speedle_policies`、`speedle_role_policies`、`speedle_functions` 和 `speedle_store_meta`。复杂数组与 metadata 使用 JSON 字段。两张策略表通过外键关联服务，并随服务级联删除。服务名、函数名和策略 ID 区分大小写、保留尾部空格，最长 255 个 Unicode 字符；策略名称允许重复。
 
-默认启动时使用 [schema.sql](https://github.com/teramoby/speedle-plus/blob/master/pkg/store/mysql/schema.sql) 创建缺失的表，不创建数据库，也不修改已有表结构。预建表部署时，先使用初始化账号对选定数据库执行同一份 SQL，再将 `MySQLInitSchema` 设置为 `false`。启动会检查结构版本、必要字段与 InnoDB 引擎；不支持的结构版本会导致启动失败，未来升级需要显式执行迁移。
+默认启动时使用 [schema.sql](https://github.com/teramoby/speedle-plus/blob/master/pkg/store/mysql/schema.sql) 创建缺失的表，不创建数据库，也不修改已有表结构。预建表部署时，先使用初始化账号对选定数据库执行同一份 SQL，再将 `MySQLInitSchema` 设置为 `false`。启动会检查结构版本、必要字段与 InnoDB 引擎；不支持的结构版本会导致启动失败，未来升级需要显式执行迁移。当前结构版本为 2；版本 1 数据库的一次性迁移见 [MySQL 配置指南](/docs/store/mysql/)。
 
 初始化需要建表和写入初始数据的权限。预建表后，PMS 运行账号需要策略数据库上的 `SELECT`、`INSERT`、`UPDATE`、`DELETE` 权限；ADS 可使用独立的只读 `SELECT` 账号，并关闭自动建表。远程数据库连接通过驱动 DSN 配置 TLS。生产密码不要提交到配置仓库或写入命令行历史。
 

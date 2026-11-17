@@ -125,6 +125,10 @@ type jsonTarget[T any] struct{ value *T }
 func (j jsonTarget[T]) Scan(src interface{}) error {
 	var raw []byte
 	switch v := src.(type) {
+	case nil:
+		// A NULL column leaves the target at its zero value, which represents
+		// "not declared" for optional columns.
+		return nil
 	case []byte:
 		raw = v
 	case string:
@@ -173,8 +177,13 @@ func scanRole(rows *sql.Rows) (*pms.RolePolicy, error) {
 }
 func scanFunction(rows *sql.Rows) (*pms.Function, error) {
 	v := &pms.Function{}
-	err := rows.Scan(&v.Name, &v.Description, &v.FuncURL, &v.LocalFuncURL, &v.CA, &v.ResultCachable, &v.ResultTTL, jsonInto(&v.Params), &v.Result, jsonInto(&v.Metadata))
-	return v, err
+	var result sql.NullString
+	if err := rows.Scan(&v.Name, &v.Description, &v.FuncURL, &v.LocalFuncURL, &v.CA, &v.ResultCachable, &v.ResultTTL, jsonInto(&v.Params), &result, jsonInto(&v.Metadata)); err != nil {
+		return nil, err
+	}
+	// NULL means the row predates the type declaration columns.
+	v.Result = result.String
+	return v, nil
 }
 
 func policies(ctx context.Context, tx *sql.Tx, name string) ([]*pms.Policy, error) {
@@ -294,7 +303,8 @@ func insertService(ctx context.Context, tx *sql.Tx, v *pms.Service, preserve boo
 	}
 	return nil
 }
-func insertFunction(ctx context.Context, tx *sql.Tx, v *pms.Function) error {
+// validateFunctionInput rejects a function definition before it is written.
+func validateFunctionInput(v *pms.Function) error {
 	if v == nil || v.FuncURL == "" {
 		return errors.New(errors.InvalidRequest, "function name and funcURL are required")
 	}
@@ -303,6 +313,13 @@ func insertFunction(ctx context.Context, tx *sql.Tx, v *pms.Function) error {
 	}
 	if err := v.ValidateTypeDeclarations(); err != nil {
 		return errors.Wrap(err, errors.InvalidRequest, "invalid type declaration in function definition")
+	}
+	return nil
+}
+
+func insertFunction(ctx context.Context, tx *sql.Tx, v *pms.Function) error {
+	if err := validateFunctionInput(v); err != nil {
+		return err
 	}
 	_, err := tx.ExecContext(ctx, "INSERT INTO speedle_functions ("+functionColumns+") VALUES (?,?,?,?,?,?,?,?,?,?)",
 		v.Name, v.Description, v.FuncURL, v.LocalFuncURL, v.CA, v.ResultCachable, v.ResultTTL, jsonText(v.Params), v.Result, jsonText(v.Metadata))
@@ -393,6 +410,9 @@ func (s *Store) CreateRolePolicy(name string, p *pms.RolePolicy) (*pms.RolePolic
 	return result, nil
 }
 func (s *Store) CreateFunction(v *pms.Function) (*pms.Function, error) {
+	if err := validateFunctionInput(v); err != nil {
+		return nil, err
+	}
 	err := s.write(func(ctx context.Context, tx *sql.Tx) error { return insertFunction(ctx, tx, v) })
 	if err != nil {
 		return nil, err

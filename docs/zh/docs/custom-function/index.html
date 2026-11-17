@@ -319,6 +319,28 @@
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;Ally&#34;}]},&#34;serviceName&#34;:&#34;service1&#34;,&#34;resource&#34;:&#34;library&#34;,&#34;action&#34;:&#34;access&#34;,&#34;attributes&#34;:[{&#34;name&#34;:&#34;attr1&#34;,&#34;type&#34;:&#34;numeric&#34;,&#34;value&#34;:50}]}&#39;</span> <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/authz-check/v1/is-allowed</code></pre></div>
+<h2 id="函数失败">函数失败</h2>
+
+<p>自定义函数调用可能失败：请求超时或无法连接，端点返回非 2xx 状态或无法读取的响应，响应包含 <code>{&quot;error&quot;:&quot;...&quot;}</code>，或者值不符合声明的类型（见下文）。这些情况都是评估错误，而不是条件不成立。</p>
+
+<p>同一函数收到字符串参数时返回 HTTP 错误，因此决策返回错误响应（<code>500</code>），而不是拒绝：</p>
+
+<!-- docs-check: function-failure -->
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">test</span> <span style="color:#f1fa8c">&#34;</span><span style="color:#ff79c6">$(</span>curl --silent --show-error --output /dev/null --write-out <span style="color:#f1fa8c">&#39;%{http_code}&#39;</span> -H <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  -d <span style="color:#f1fa8c">&#39;{&#34;subject&#34;:{&#34;principals&#34;:[{&#34;type&#34;:&#34;user&#34;,&#34;name&#34;:&#34;Ally&#34;}]},&#34;serviceName&#34;:&#34;service1&#34;,&#34;resource&#34;:&#34;library&#34;,&#34;action&#34;:&#34;access&#34;,&#34;attributes&#34;:[{&#34;name&#34;:&#34;attr1&#34;,&#34;type&#34;:&#34;string&#34;,&#34;value&#34;:&#34;invalid&#34;}]}&#39;</span> <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  http://127.0.0.1:6734/authz-check/v1/is-allowed<span style="color:#ff79c6">)</span><span style="color:#f1fa8c">&#34;</span> <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">500</span></code></pre></div>
+<p><code>is-allowed</code>、<code>all-granted-roles</code> 和 <code>all-granted-permissions</code> 返回错误而不是决策结果。REST 端点返回 <code>500 Internal Server Error</code> 和 <code>{&quot;error&quot;:&quot;...&quot;}</code> 响应体，gRPC 方法返回非 OK 状态。<code>diagnose</code> 端点在错误响应中报告失败的调用；Go 的 <code>Diagnose</code> API 同时返回评估结果，原因为 <code>ERROR_IN_EVALUATION</code>。失败的调用不会写入缓存，可缓存函数会在下次请求时重新调用。</p>
+
+<p>其他行为保持不变。特别是，请求未携带某属性时，引用该属性的条件仍然不匹配，带此条件的 <code>deny</code> 策略不生效。</p>
+
+<h2 id="声明的参数类型和返回类型">声明的参数类型和返回类型</h2>
+
+<p>函数定义可以声明参数类型和返回类型：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{<span style="color:#ff79c6">&#34;name&#34;</span>:<span style="color:#f1fa8c">&#34;isValid&#34;</span>,<span style="color:#ff79c6">&#34;funcURL&#34;</span>:<span style="color:#f1fa8c">&#34;http://127.0.0.1:23456/func/isValid&#34;</span>,<span style="color:#ff79c6">&#34;params&#34;</span>:[<span style="color:#f1fa8c">&#34;numeric&#34;</span>],<span style="color:#ff79c6">&#34;result&#34;</span>:<span style="color:#f1fa8c">&#34;bool&#34;</span>}</code></pre></div>
+<p><code>params</code> 按调用顺序列出参数类型，<code>result</code> 是返回值类型，两个字段都是可选的。类型取值为 <code>string</code>、<code>numeric</code>、<code>bool</code>、<code>datetime</code>，或列表形式 <code>string[]</code>、<code>numeric[]</code>、<code>bool[]</code>、<code>datetime[]</code>。PMS 拒绝其他取值。</p>
+
+<p>声明后，Speedle 在调用前检查参数、调用后检查返回值，不匹配即为函数失败。<code>numeric</code> 接受整数和浮点数；<code>datetime</code> 接受 Unix 时间戳或 RFC 3339 字符串。列表参数既接受一个列表值，也接受列表值的各个元素——条件把列表值作为多个独立参数传给函数。未声明这两个字段的函数不做这些检查。</p>
+
 <h2 id="tls-与缓存">TLS 与缓存</h2>
 
 <p>TLS 端点先生成新的<a href="/zh/docs/security/">本地测试证书</a>，然后运行 <code>go run ./website/tests/examples/custom-function --cert ./tls/server.crt --key ./tls/server.key</code>。注册时 <code>funcURL</code> 为 <code>https://localhost:23456/func/isValid</code>，<code>ca</code> 填写 <code>tls/ca.crt</code> 中的 <strong>PEM 证书内容</strong>，不是文件路径。生产证书必须覆盖实际主机。无需使用过期的硬编码证书或私钥。</p>

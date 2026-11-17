@@ -9,7 +9,7 @@ toc = true
 tocheading = "h2"
 tocsidebar = false
 categories = ["docs"]
-lastmod = 2026-11-07T01:07:23+08:00
+lastmod = 2026-11-17T10:00:00+08:00
 +++
 
 ## なぜカスタム関数を使用するのか？
@@ -133,3 +133,23 @@ curl --fail --silent --show-error --header 'Content-Type: application/json' --da
 ```bash
 curl --fail --silent --show-error --header 'Content-Type: application/json' --data '{"subject":{"principals":[{"type":"user","name":"user1"}]},"serviceName":"bookstore","resource":"book","action":"read","attributes":[{"name":"amount","type":"numeric","value":500}]}' http://127.0.0.1:6734/authz-check/v1/is-allowed
 ```
+
+## 関数の失敗
+
+カスタム関数の呼び出しは失敗する場合があります。タイムアウトや接続エラー、2xx 以外のステータスや読み取れない応答、`{"error":"..."}` を含む応答、または宣言した型と一致しない値です。これらはいずれも評価エラーであり、条件が偽になったのではありません。
+
+`is-allowed`、`all-granted-roles`、`all-granted-permissions` は判定結果ではなくエラーを返します。REST エンドポイントは `{"error":"..."}` を伴う `500 Internal Server Error` を返し、gRPC メソッドは OK 以外のステータスを返します。`diagnose` エンドポイントはエラー応答で失敗した呼び出しを報告し、Go の `Diagnose` API は評価結果も返します（理由は `ERROR_IN_EVALUATION`）。失敗した呼び出しはキャッシュされないため、キャッシュ可能な関数は次のリクエストで再度呼び出されます。
+
+その他の動作は変わりません。特に、リクエストに含まれない属性を参照する条件は引き続き一致せず、その条件を持つ条件付き `deny` は適用されません。
+
+## 宣言されたパラメータ型と結果型
+
+関数定義では引数と結果の型を宣言できます:
+
+```json
+{"name":"isValid","funcURL":"http://127.0.0.1:23456/func/isValid","params":["numeric"],"result":"bool"}
+```
+
+`params` は呼び出し順に引数の型を列挙し、`result` は戻り値の型です。どちらも省略可能です。型は `string`、`numeric`、`bool`、`datetime`、またはリスト形式の `string[]`、`numeric[]`、`bool[]`、`datetime[]` です。PMS はそれ以外の値を拒否します。
+
+宣言すると、Speedle は呼び出し前に引数を、呼び出し後に結果を検査し、不一致は関数の失敗となります。`numeric` は整数と浮動小数点値を受け付け、`datetime` は Unix タイムスタンプまたは RFC 3339 文字列を受け付けます。リストパラメータは、リスト値そのもの、または条件が個別の引数として関数に渡すリスト値の各要素を受け付けます。どちらのフィールドも宣言しない関数は、これらの検査なしで呼び出されます。

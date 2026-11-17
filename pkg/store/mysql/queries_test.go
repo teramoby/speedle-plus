@@ -3,10 +3,12 @@ package mysql
 import (
 	"database/sql"
 	stderrors "errors"
+	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/errors"
 )
 
@@ -21,6 +23,35 @@ func sampleRole() *sqlmock.Rows {
 }
 func sampleFunction() *sqlmock.Rows {
 	return sqlmock.NewRows(strings.Split(functionColumns, ",")).AddRow("f", "desc", "https://f", "", "", true, 5, `["numeric","string"]`, "bool", `null`)
+}
+
+// TestFunctionWithoutDeclarations checks a row written before the declaration
+// columns existed: NULL means no declaration.
+func TestFunctionWithoutDeclarations(t *testing.T) {
+	s, m := mockStore(t)
+	m.ExpectBegin()
+	rows := sqlmock.NewRows(strings.Split(functionColumns, ",")).AddRow("f", "desc", "https://f", "", "", false, 0, nil, nil, `null`)
+	m.ExpectQuery("SELECT .* FROM speedle_functions").WithArgs("f").WillReturnRows(rows)
+	m.ExpectCommit()
+	f, err := s.GetFunction("f")
+	if err != nil || f.Params != nil || f.Result != "" {
+		t.Fatalf("function %+v, %v", f, err)
+	}
+}
+
+func TestCreateFunctionDeclarations(t *testing.T) {
+	s, m := mockStore(t)
+	if _, err := s.CreateFunction(&pms.Function{Name: "f", FuncURL: "https://f", Params: []string{"integer"}}); errors.Code(err) != errors.InvalidRequest {
+		t.Fatalf("invalid declaration: %v", err)
+	}
+	expectLock(m)
+	m.ExpectExec("INSERT INTO speedle_functions").WillReturnResult(sqlmock.NewResult(0, 1))
+	m.ExpectExec("UPDATE speedle_store_meta").WillReturnResult(sqlmock.NewResult(0, 1))
+	m.ExpectCommit()
+	created, err := s.CreateFunction(&pms.Function{Name: "f", FuncURL: "https://f", Params: []string{"numeric"}, Result: "bool"})
+	if err != nil || !reflect.DeepEqual(created.Params, []string{"numeric"}) || created.Result != "bool" {
+		t.Fatalf("created %+v, %v", created, err)
+	}
 }
 
 func TestSnapshotIsReadInOneTransaction(t *testing.T) {

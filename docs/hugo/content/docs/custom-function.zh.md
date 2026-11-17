@@ -2,7 +2,7 @@
 title = "自定义函数"
 description = "在 SPDL 条件中调用自定义函数，扩展授权规则的计算能力。"
 date = 2019-01-21T10:43:02+08:00
-lastmod = 2026-11-08T11:21:16+08:00
+lastmod = 2026-11-17T10:00:00+08:00
 weight = 600
 draft = false
 bref = ""
@@ -161,6 +161,36 @@ curl --fail --silent --show-error -H 'Content-Type: application/json' \
   http://127.0.0.1:6734/authz-check/v1/is-allowed
 ```
 
+
+## 函数失败
+
+自定义函数调用可能失败：请求超时或无法连接，端点返回非 2xx 状态或无法读取的响应，响应包含 `{"error":"..."}`，或者值不符合声明的类型（见下文）。这些情况都是评估错误，而不是条件不成立。
+
+同一函数收到字符串参数时返回 HTTP 错误，因此决策返回错误响应（`500`），而不是拒绝：
+
+<!-- docs-check: function-failure -->
+```bash
+test "$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' -H 'Content-Type: application/json' \
+  -d '{"subject":{"principals":[{"type":"user","name":"Ally"}]},"serviceName":"service1","resource":"library","action":"access","attributes":[{"name":"attr1","type":"string","value":"invalid"}]}' \
+  http://127.0.0.1:6734/authz-check/v1/is-allowed)" = 500
+```
+
+
+`is-allowed`、`all-granted-roles` 和 `all-granted-permissions` 返回错误而不是决策结果。REST 端点返回 `500 Internal Server Error` 和 `{"error":"..."}` 响应体，gRPC 方法返回非 OK 状态。`diagnose` 端点在错误响应中报告失败的调用；Go 的 `Diagnose` API 同时返回评估结果，原因为 `ERROR_IN_EVALUATION`。失败的调用不会写入缓存，可缓存函数会在下次请求时重新调用。
+
+其他行为保持不变。特别是，请求未携带某属性时，引用该属性的条件仍然不匹配，带此条件的 `deny` 策略不生效。
+
+## 声明的参数类型和返回类型
+
+函数定义可以声明参数类型和返回类型：
+
+```json
+{"name":"isValid","funcURL":"http://127.0.0.1:23456/func/isValid","params":["numeric"],"result":"bool"}
+```
+
+`params` 按调用顺序列出参数类型，`result` 是返回值类型，两个字段都是可选的。类型取值为 `string`、`numeric`、`bool`、`datetime`，或列表形式 `string[]`、`numeric[]`、`bool[]`、`datetime[]`。PMS 拒绝其他取值。
+
+声明后，Speedle 在调用前检查参数、调用后检查返回值，不匹配即为函数失败。`numeric` 接受整数和浮点数；`datetime` 接受 Unix 时间戳或 RFC 3339 字符串。列表参数既接受一个列表值，也接受列表值的各个元素——条件把列表值作为多个独立参数传给函数。未声明这两个字段的函数不做这些检查。
 
 ## TLS 与缓存
 

@@ -49,8 +49,8 @@ CREATE TABLE IF NOT EXISTS speedle_functions (
   ca LONGTEXT NOT NULL,
   result_cachable BOOLEAN NOT NULL,
   result_ttl BIGINT NOT NULL,
-  param_types JSON NOT NULL,
-  result_type LONGTEXT NOT NULL,
+  param_types JSON NULL,
+  result_type LONGTEXT NULL,
   metadata JSON NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_bin;
 

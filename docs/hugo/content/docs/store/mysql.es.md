@@ -8,7 +8,7 @@ tocheading = "h2"
 tags = ["storage", "mysql"]
 categories = ["docs"]
 bref = "Cree una base de datos, configure PMS y ADS, luego verifique la autorización y la sincronización automática de políticas."
-lastmod = 2026-10-31T22:36:36+08:00
+lastmod = 2026-11-17T10:00:00+08:00
 +++
 
 Esta guía utiliza **MySQL 8.4 LTS** y dos procesos nativos de Speedle: PMS escribe políticas y ADS lee la misma base de datos con una cuenta independiente de solo lectura. El ejemplo local utiliza Docker y HTTP en texto plano en la interfaz de bucle invertido (loopback). Para un despliegue remoto, utilice su servidor MySQL existente y consulte la [guía de Seguridad](/es/docs/security/).
@@ -207,6 +207,17 @@ docker exec speedle-mysql mysql --user=root --password=SpeedleDemoRoot84 -e "REV
 ```
 
 PMS luego se ejecuta con permisos `SELECT`, `INSERT`, `UPDATE`, `DELETE`; ADS permanece en solo lectura. Reinicie ambos servicios tras cambiar su configuración. La inicialización del esquema no migra tablas existentes; las versiones de esquema no compatibles impiden el inicio.
+
+La versión actual del esquema es la 2. Detenga ambos servicios y migre una base de datos de versión 1 antes de iniciar la versión actualizada; el inicio rechaza la versión anterior.
+
+```sql
+ALTER TABLE speedle_functions
+  ADD COLUMN param_types JSON NULL,
+  ADD COLUMN result_type LONGTEXT NULL;
+UPDATE speedle_store_meta SET schema_version = 2 WHERE id = 1;
+```
+
+Las nuevas columnas almacenan las declaraciones opcionales de tipos de las funciones personalizadas; las filas de funciones existentes permanecen en `NULL`, lo que significa que no hay declaración.
 
 ## Referencia de configuración y resolución de problemas
 

@@ -8,7 +8,7 @@ tocheading = "h2"
 tags = ["storage", "mysql"]
 categories = ["docs"]
 bref = "Create a database, configure PMS and ADS, then verify authorization and automatic policy synchronization."
-lastmod = 2026-10-31T22:36:36+08:00
+lastmod = 2026-11-17T10:00:00+08:00
 +++
 
 This guide uses **MySQL 8.4 LTS** and two native Speedle processes: PMS writes
@@ -244,6 +244,17 @@ docker exec speedle-mysql mysql --user=root --password=SpeedleDemoRoot84 -e "REV
 PMS then runs with `SELECT`, `INSERT`, `UPDATE`, `DELETE`; ADS stays read-only.
 Restart both services after changing their configuration. Schema initialization
 does not migrate existing tables; unsupported schema versions fail startup.
+
+The current schema version is 2. Stop both services and migrate a version 1 database before starting the upgraded release; startup rejects the old version.
+
+```sql
+ALTER TABLE speedle_functions
+  ADD COLUMN param_types JSON NULL,
+  ADD COLUMN result_type LONGTEXT NULL;
+UPDATE speedle_store_meta SET schema_version = 2 WHERE id = 1;
+```
+
+The new columns hold the optional custom-function type declarations; existing function rows stay `NULL`, which means no declaration.
 
 ## Configuration reference and troubleshooting
 

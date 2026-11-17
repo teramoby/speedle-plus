@@ -379,6 +379,13 @@ chmod <span style="color:#bd93f9">600</span> mysql-demo/pms.json mysql-demo/ads.
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker <span style="color:#8be9fd;font-style:italic">exec</span> speedle-mysql mysql --user<span style="color:#ff79c6">=</span>root --password<span style="color:#ff79c6">=</span>SpeedleDemoRoot84 -e <span style="color:#f1fa8c">&#34;REVOKE CREATE, REFERENCES ON speedle.* FROM &#39;speedle_pms&#39;@&#39;%&#39;;&#34;</span></code></pre></div>
 <p>PMS は <code>SELECT</code>、<code>INSERT</code>、<code>UPDATE</code>、<code>DELETE</code> で実行され、ADS は読み取り専用のままになります。構成を変更した後は両方のサービスを再起動してください。スキーマ初期化は既存のテーブルを移行しません。サポートされていないスキーマバージョンは起動に失敗します。</p>
 
+<p>現在のスキーマバージョンは 2 です。アップグレードしたリリースを開始する前に、両方のサービスを停止してバージョン 1 のデータベースを移行してください。起動時に古いバージョンは拒否されます。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sql" data-lang="sql"><span style="color:#ff79c6">ALTER</span> <span style="color:#ff79c6">TABLE</span> speedle_functions
+  <span style="color:#ff79c6">ADD</span> <span style="color:#ff79c6">COLUMN</span> param_types JSON <span style="color:#ff79c6">NULL</span>,
+  <span style="color:#ff79c6">ADD</span> <span style="color:#ff79c6">COLUMN</span> result_type LONGTEXT <span style="color:#ff79c6">NULL</span>;
+<span style="color:#ff79c6">UPDATE</span> speedle_store_meta <span style="color:#ff79c6">SET</span> schema_version <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">2</span> <span style="color:#ff79c6">WHERE</span> id <span style="color:#ff79c6">=</span> <span style="color:#bd93f9">1</span>;</code></pre></div>
+<p>新しいカラムはカスタム関数の省略可能な型宣言を保持します。既存の関数行は <code>NULL</code> のままで、宣言なしを意味します。</p>
+
 <h2 id="構成リファレンスとトラブルシューティング">構成リファレンスとトラブルシューティング</h2>
 
 <table>
