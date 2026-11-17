@@ -10,7 +10,7 @@ customcssfile = "command-copy.css"
 tocheading = "h2"
 bref = "Install Speedle with go install or build it from source, create policies with SPDL and spctl, and test authorization decisions using the REST API. This guide uses a local file store."
 icon = "9. Getting Started.svg"
-lastmod = 2026-11-14T21:41:19+00:00
+lastmod = 2026-11-17T08:36:36+00:00
 +++
 
 ## Try Speedle in the Playground first
@@ -40,11 +40,11 @@ Choose one route: route A installs the latest release, route B builds the curren
 
 <!-- quick-start: install -->
 ```bash
-GOBIN="$PWD/bin" go install github.com/teramoby/speedle-plus/cmd/...@v1.8.0
+GOBIN="$PWD/bin" go install github.com/teramoby/speedle-plus/cmd/...@v1.9.0
 ls bin
 ```
 
-`GOBIN` keeps the executables in this directory's `bin` folder; without it, Go writes them to `$(go env GOPATH)/bin`. `v1.8.0` is the latest release tag at the time of writing; `go install` builds it from the tagged source and verifies it against the Go checksum database.
+`GOBIN` keeps the executables in this directory's `bin` folder; without it, Go writes them to `$(go env GOPATH)/bin`. `v1.9.0` is the latest release tag at the time of writing; `go install` builds it from the tagged source and verifies it against the Go checksum database.
 
 ### Route B: clone and build
 

@@ -13,23 +13,23 @@ class Spctl < Formula
 
   on_macos do
     on_arm do
-      url "https://github.com/teramoby/speedle-plus/releases/download/v1.8.0/spctl_darwin_arm64"
-      sha256 "9f162a9eef2f3b02bb05b3d75b405db56d73b3756010d25da8ac827b6857c453"
+      url "https://github.com/teramoby/speedle-plus/releases/download/v1.9.0/spctl_darwin_arm64"
+      sha256 "f142af6768105e1d0c571aa272baf9a87ba5673df11c82dbc0bc5e3698c7d332"
     end
     on_intel do
-      url "https://github.com/teramoby/speedle-plus/releases/download/v1.8.0/spctl_darwin_amd64"
-      sha256 "1e4932895abb55d49d677089223e823a0895b0ed6ab294cecd62d6a7c1cd6d46"
+      url "https://github.com/teramoby/speedle-plus/releases/download/v1.9.0/spctl_darwin_amd64"
+      sha256 "5c6846695842f832fe01f58dac253532b4107f8915ac801c77b123f3b42e318c"
     end
   end
 
   on_linux do
     on_arm do
-      url "https://github.com/teramoby/speedle-plus/releases/download/v1.8.0/spctl_linux_arm64"
-      sha256 "713ac1cd2fc4bc48f3b2ebec1fc7f1d08112dae8851abc476c9e5e743e663a9d"
+      url "https://github.com/teramoby/speedle-plus/releases/download/v1.9.0/spctl_linux_arm64"
+      sha256 "f78b6a2b4700a362fc50d520649cdb40ca00ec50969658815e25487fc1491b83"
     end
     on_intel do
-      url "https://github.com/teramoby/speedle-plus/releases/download/v1.8.0/spctl_linux_amd64"
-      sha256 "362b6859494c197bd90b2c7f1660e61f609330b2737bcd2769f9192735080bb4"
+      url "https://github.com/teramoby/speedle-plus/releases/download/v1.9.0/spctl_linux_amd64"
+      sha256 "23377d10b03c7bfef095631487e95f9c43ad66d7b24f9e2eeb372e0549cb1305"
     end
   end
 

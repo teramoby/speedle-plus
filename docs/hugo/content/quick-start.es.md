@@ -10,7 +10,7 @@ customcssfile = "command-copy.css"
 tocheading = "h2"
 bref = "Instale Speedle con go install o compílelo desde el código fuente, cree políticas con SPDL y spctl, y pruebe decisiones de autorización mediante la API REST. Esta guía utiliza un almacenamiento de archivos local."
 icon = "9. Getting Started.svg"
-lastmod = 2026-11-14T21:41:19+00:00
+lastmod = 2026-11-17T08:36:36+00:00
 +++
 
 ## Pruebe primero Speedle en el Playground
@@ -40,11 +40,11 @@ Elija una ruta: la ruta A instala la última versión y la ruta B compila el có
 
 <!-- quick-start: install -->
 ```bash
-GOBIN="$PWD/bin" go install github.com/teramoby/speedle-plus/cmd/...@v1.8.0
+GOBIN="$PWD/bin" go install github.com/teramoby/speedle-plus/cmd/...@v1.9.0
 ls bin
 ```
 
-`GOBIN` deja los ejecutables en la carpeta `bin` de este directorio; sin él, Go los escribe en `$(go env GOPATH)/bin`. `v1.8.0` es la etiqueta de la última versión en el momento de escribir esta guía; `go install` la compila a partir del código etiquetado y la verifica con la base de sumas de comprobación de Go.
+`GOBIN` deja los ejecutables en la carpeta `bin` de este directorio; sin él, Go los escribe en `$(go env GOPATH)/bin`. `v1.9.0` es la etiqueta de la última versión en el momento de escribir esta guía; `go install` la compila a partir del código etiquetado y la verifica con la base de sumas de comprobación de Go.
 
 ### Ruta B: clonar y compilar
 
