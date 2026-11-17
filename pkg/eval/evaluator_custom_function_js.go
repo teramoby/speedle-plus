@@ -4,6 +4,7 @@
 package eval
 
 import (
+	"sync"
 	"unicode"
 
 	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
@@ -12,9 +13,38 @@ import (
 	"github.com/teramoby/speedle-plus/pkg/errors"
 )
 
-// CallCustomerFunction returns custom_function_unsupported on js/wasm.
-// Evaluator construction, snapshot reloads and incremental cache mutations
-// reject policies that would call this stub before activating them.
+// CustomFunctionCaller serves custom function calls for an embedding host on
+// js/wasm, where no HTTP transport is built in. It returns the function result
+// or the error the call reports.
+type CustomFunctionCaller func(*pms.Function, *ext.CustomerFunctionRequest) (interface{}, error)
+
+var (
+	customFunctionCallerMu sync.RWMutex
+	customFunctionCaller   CustomFunctionCaller
+)
+
+// RegisterCustomFunctionCaller installs the host implementation of custom
+// function calls. Without a registered caller the js/wasm build rejects custom
+// function calls and every snapshot that contains one. Registration is read
+// when a function is loaded, so register before creating an evaluator or
+// refreshing its snapshot. Passing nil removes the registration.
+func RegisterCustomFunctionCaller(caller CustomFunctionCaller) {
+	customFunctionCallerMu.Lock()
+	defer customFunctionCallerMu.Unlock()
+	customFunctionCaller = caller
+}
+
+func registeredCustomFunctionCaller() CustomFunctionCaller {
+	customFunctionCallerMu.RLock()
+	defer customFunctionCallerMu.RUnlock()
+	return customFunctionCaller
+}
+
+// CallCustomerFunction returns custom_function_unsupported on js/wasm: the
+// transport is unavailable even when a host caller is registered, which serves
+// condition evaluation instead. Evaluator construction, snapshot reloads and
+// incremental cache mutations reject policies that would call this stub before
+// activating them while no caller is registered.
 func CallCustomerFunction(_ *pms.Function, _ *ext.CustomerFunctionRequest) (interface{}, error) {
 	return nil, errors.New(errors.EvalEngineError, "custom_function_unsupported: custom functions are unavailable in js/wasm")
 }
@@ -53,7 +83,12 @@ func validateServiceCustomFunctions(service *pms.Service, customFunctions map[st
 	return nil
 }
 
+// Every custom function validation runs through this check, so a registered
+// host caller makes condition evaluation possible and the snapshot loadable.
 func validateConditionCustomFunctions(policyKind, serviceName, policyID, expression string, customFunctions map[string]struct{}) error {
+	if registeredCustomFunctionCaller() != nil {
+		return nil
+	}
 	if name := calledCustomFunction(expression, customFunctions); name != "" {
 		return errors.Errorf(errors.EvalEngineError, "custom_function_unsupported: %s %q in service %q calls custom function %q on js/wasm", policyKind, policyID, serviceName, name)
 	}
@@ -130,11 +165,21 @@ func calledCustomFunction(expression string, customFunctions map[string]struct{}
 	return ""
 }
 
-// generateCustomerExpressionFunction rejects every call before copying or
-// marshalling arguments and before consulting the cache.
-func (frc *FuncResultCache) generateCustomerExpressionFunction(_ *string, _ *pms.Function) (govaluate.ExpressionFunction, error) {
-	return func(_ ...interface{}) (interface{}, error) {
-		return CallCustomerFunction(nil, nil)
+// generateCustomerExpressionFunction calls the registered host caller, with the
+// same caching and declared-type checks as the native adapters. Without a
+// registered caller it rejects every call before copying or marshalling
+// arguments and before consulting the cache.
+func (frc *FuncResultCache) generateCustomerExpressionFunction(_ *string, cf *pms.Function) (govaluate.ExpressionFunction, error) {
+	caller := registeredCustomFunctionCaller()
+	if caller == nil {
+		return func(_ ...interface{}) (interface{}, error) {
+			return CallCustomerFunction(nil, nil)
+		}, nil
+	}
+	return func(arguments ...interface{}) (interface{}, error) {
+		return frc.callCustomFunction(cf, arguments, func(request *ext.CustomerFunctionRequest) (interface{}, error) {
+			return caller(cf, request)
+		})
 	}, nil
 }
 
