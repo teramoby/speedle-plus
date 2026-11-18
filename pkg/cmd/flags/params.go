@@ -634,7 +634,16 @@ func (k *Parameters) Param2Config(storeParamsMap map[string]string) (*cfg.Config
 			return nil, errors.New(errors.ConfigError, "store-failure-grace-period must be a finite nonnegative duration")
 		}
 	}
-	dropConditionTokens, _ := strconv.ParseBool(k.DropConditionTokens.Value)
+	// An unset value keeps the option off, as its flag default does. Anything
+	// else must parse: a typo must not silently leave token retention on.
+	dropConditionTokens := false
+	if k.DropConditionTokens.Value != "" {
+		var err error
+		dropConditionTokens, err = strconv.ParseBool(k.DropConditionTokens.Value)
+		if err != nil {
+			return nil, errors.Errorf(errors.ConfigError, "drop-condition-tokens must be a boolean, got %q", k.DropConditionTokens.Value)
+		}
+	}
 	conf.DropConditionTokens = dropConditionTokens
 
 	// Log Configuration
