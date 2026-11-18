@@ -117,15 +117,15 @@ class ConditionCoverageReportTest(unittest.TestCase):
                 self.assertTrue(failed)
                 self.assertIn(f'audited source changed; re-audit required: {reporter.FORK}{file}', output)
 
-    def test_executed_sql_exclusions_require_reaudit(self):
-        for file in reporter.UNUSED_FILES:
+    def test_off_path_sql_blocks_may_be_unit_tested(self):
+        for file in reporter.OFF_PATH_FILES:
             for count in (0, 1):
                 with self.subTest(file=file, count=count):
                     failed, output = self.run_report(
                         f'github.com/teramoby/speedle-plus/{file}:1.1,1.2 1 {count}\n')
-                    self.assertEqual(failed, bool(count), output)
-                    if count:
-                        self.assertIn(f'stale unreachable annotation: {file}:1.1,1.2', output)
+                    self.assertFalse(failed, output)
+                    if not count:
+                        self.assertIn(f'| `{file}:1.1,1.2` | 1 |', output)
 
     def test_toolchain_version_is_informational_for_both_layouts(self):
         for version in ('go1.27.4', 'go1.28.0', 'go1.28rc1', 'devel go1.29-abcdef'):

@@ -87,10 +87,36 @@ func NewEvaluableExpressionFromTokens(tokens []ExpressionToken) (*EvaluableExpre
 }
 
 /*
+	CompileOptions controls optional behaviour when an expression is compiled.
+	The zero value keeps the default behaviour.
+*/
+type CompileOptions struct {
+
+	/*
+		DropTokensAfterPlan releases the parsed token slice once the stage tree
+		is built, together with the token values and token text that it keeps
+		alive. Evaluation, String and the type checks are unchanged.
+
+		When it is set, the expression keeps no token metadata: Tokens and Vars
+		return nil, and ToSQLQuery returns an empty query. It is off by default,
+		so a zero CompileOptions keeps the public token result.
+	*/
+	DropTokensAfterPlan bool
+}
+
+/*
 	Similar to [NewEvaluableExpression], except enables the use of user-defined functions.
 	Functions passed into this will be available to the expression.
 */
 func NewEvaluableExpressionWithFunctions(expression string, functions map[string]ExpressionFunction) (*EvaluableExpression, error) {
+
+	return NewEvaluableExpressionWithFunctionsAndOptions(expression, functions, CompileOptions{})
+}
+
+/*
+	Similar to [NewEvaluableExpressionWithFunctions], with compile-time options.
+*/
+func NewEvaluableExpressionWithFunctionsAndOptions(expression string, functions map[string]ExpressionFunction, options CompileOptions) (*EvaluableExpression, error) {
 
 	var ret *EvaluableExpression
 	var err error
@@ -125,6 +151,10 @@ func NewEvaluableExpressionWithFunctions(expression string, functions map[string
 	ret.evaluationStages, err = planStages(ret.tokens, newStageInterner())
 	if err != nil {
 		return nil, err
+	}
+
+	if options.DropTokensAfterPlan {
+		ret.tokens = nil
 	}
 
 	ret.ChecksTypes = true
@@ -254,6 +284,7 @@ func typeCheck(check stageTypeCheck, value interface{}, symbol OperatorSymbol, f
 
 /*
 	Returns an array representing the ExpressionTokens that make up this expression.
+	It returns nil when the expression was compiled with DropTokensAfterPlan.
 */
 func (this EvaluableExpression) Tokens() []ExpressionToken {
 
@@ -270,6 +301,8 @@ func (this EvaluableExpression) String() string {
 
 /*
 	Returns an array representing the variables contained in this EvaluableExpression.
+	It returns nil when the expression was compiled with DropTokensAfterPlan,
+	since the variables are derived from the released tokens.
 */
 func (this EvaluableExpression) Vars() []string {
 	var varlist []string

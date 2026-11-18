@@ -25,6 +25,10 @@ func (this EvaluableExpression) ToSQLQuery() (string, error) {
 	var transaction string
 	var err error
 
+	if len(this.tokens) == 0 {
+		return "", nil
+	}
+
 	stream = newTokenStream(this.tokens)
 	transactions = new(expressionOutputStream)
 

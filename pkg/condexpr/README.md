@@ -224,10 +224,22 @@ BenchmarkConstantRegexExpression-12              1000000              1392 ns/op
 ok
 ```
 
+Speedle extensions
+--
+
+`NewEvaluableExpressionWithFunctionsAndOptions` accepts `CompileOptions`. With
+`DropTokensAfterPlan` set, the parsed token slice is released as soon as the
+execution plan is built: `Tokens()` and `Vars()` then return nil, and
+`ToSQLQuery()` returns an empty query. Evaluation and `String()` are unchanged.
+The zero `CompileOptions` keeps the default behaviour. Repeated attributes and
+literals share one operator closure within a compile; that is always on and
+does not change results. `BenchmarkRetainedBytesPerExpression` reports the live
+heap retained per compiled expression for both token settings.
+
 API Breaks
 --
 
-While this library has very few cases which will ever result in an API break, it can (and [has](https://github.com/Knetic/govaluate/releases/tag/v2.0.0)) happened. If you are using this in production, vendor the commit you've tested against, or use gopkg.in to redirect your import (e.g., `import "gopkg.in/Knetic/condexpr.v2"`). Master branch (while infrequent) _may_ at some point contain API breaking changes, and the author will have no way to communicate these to downstreams, other than creating a new major release.
+While this library has very few cases which will ever result in an API break, it can (and [has](https://github.com/Knetic/govaluate/releases/tag/v2.0.0)) happened. If you are using this in production, vendor the commit you've tested against, or use gopkg.in to redirect your import (e.g., `import "gopkg.in/Knetic/govaluate.v2"`). Master branch (while infrequent) _may_ at some point contain API breaking changes, and the author will have no way to communicate these to downstreams, other than creating a new major release.
 
 Releases will explicitly state when an API break happens, and if they do not specify an API break it should be safe to upgrade.
 
