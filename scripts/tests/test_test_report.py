@@ -1,5 +1,6 @@
 """Offline tests for scripts/ci/test_report.py. No Ark, email or GitHub calls."""
 import base64
+import email.errors
 import http.client
 import io
 import json
@@ -152,6 +153,39 @@ class ArkTest(unittest.TestCase):
     def test_unreachable_ark_returns_none(self):
         with mock.patch("test_report.open_no_redirect", side_effect=OSError("down")):
             self.assertIsNone(test_report.ark_analyze("summary", "k", "m"))
+
+
+class MailAddressTest(unittest.TestCase):
+    def test_invalid_bare_addresses_return_false(self):
+        for address in ("", " ", "\t", "@example.com", " \t@example.com",
+                        "ops@", "a@b@example.com", "ops@localhost", "ops@example..com"):
+            with self.subTest(address=address):
+                self.assertFalse(test_report.is_mail_address(address))
+
+    def test_parser_exceptions_return_false(self):
+        for error in (ValueError, email.errors.HeaderParseError, IndexError,
+                      TypeError, RuntimeError):
+            with self.subTest(error=error.__name__):
+                with mock.patch.object(test_report, "Address", side_effect=error):
+                    self.assertFalse(test_report.is_mail_address("ops@example.com"))
+
+    def test_valid_bare_addresses_are_unchanged(self):
+        for address in ("Ops@Example.com", "ops+nightly@example.co.uk",
+                        '"ops team"@example.com', '"ops;nightly"@example.com'):
+            with self.subTest(address=address):
+                self.assertTrue(test_report.is_mail_address(address))
+
+    def test_an_empty_parsed_entry_rejects_the_whole_setting(self):
+        with mock.patch.object(test_report.email.utils, "getaddresses",
+                               return_value=[("", ""), ("", "ops@example.com")]), \
+                mock.patch.object(test_report, "is_mail_address") as validate:
+            self.assertIsNone(test_report.configured_addresses("bad; ops@example.com"))
+        validate.assert_not_called()
+
+    def test_valid_configured_addresses_keep_names_quotes_and_case(self):
+        self.assertEqual(test_report.configured_addresses(
+            '"Ops; Nightly" <Ops@Example.com>, "ops;nightly"@example.com'),
+            ["Ops@Example.com", '"ops;nightly"@example.com'])
 
 
 class EmailTest(unittest.TestCase):

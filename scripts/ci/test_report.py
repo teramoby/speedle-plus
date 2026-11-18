@@ -14,7 +14,6 @@ non-zero on bad input and on such a failure.
 """
 import argparse
 import base64
-import email.errors
 import email.utils
 import http.client
 import json
@@ -331,7 +330,7 @@ def configured_addresses(value):
     if not isinstance(value, str):
         return None
     entries = email.utils.getaddresses([value])
-    if not entries or not all(is_mail_address(address) for _, address in entries):
+    if not entries or not all(address and is_mail_address(address) for _, address in entries):
         return None
     return [address for _, address in entries]
 
@@ -341,7 +340,9 @@ def is_mail_address(address):
     name, so that a send to it can be delivered."""
     try:
         parsed = Address(addr_spec=address)
-    except (ValueError, email.errors.HeaderParseError):
+    except Exception:
+        # Malformed input can also trigger parser bugs (for example,
+        # IndexError on an empty local part in Python 3.12).
         return False
     labels = parsed.domain.split(".")
     return bool(parsed.username) and len(labels) > 1 and all(labels)
