@@ -169,7 +169,7 @@ def verify_page(page,locale,binaries,env,parent,isolated):
             while chosen in ports.values():chosen=fresh_port()
             ports[port]=chosen
         # A disposable module view permits literal go run commands without editing source.
-        for name in ['go.mod','go.sum','api','pkg','cmd','3rdparty','samples','website']:(work/name).symlink_to(ROOT/name,target_is_directory=(ROOT/name).is_dir())
+        for name in ['go.mod','go.sum','api','pkg','cmd','samples','website']:(work/name).symlink_to(ROOT/name,target_is_directory=(ROOT/name).is_dir())
         (work/'bin').symlink_to(binaries,target_is_directory=True)
         commands=steps(page,locale);secure=page=='security';tlsclient=None
         def local(command):

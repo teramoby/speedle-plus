@@ -1,4 +1,4 @@
-package govaluate
+package condexpr
 
 import (
 	"errors"
@@ -11,8 +11,8 @@ const shortCircuitHolder int = -1
 var DUMMY_PARAMETERS = MapParameters(map[string]interface{}{})
 
 /*
-	EvaluableExpression represents a set of ExpressionTokens which, taken together,
-	are an expression that can be evaluated down into a single value.
+EvaluableExpression represents a set of ExpressionTokens which, taken together,
+are an expression that can be evaluated down into a single value.
 */
 type EvaluableExpression struct {
 
@@ -38,8 +38,8 @@ type EvaluableExpression struct {
 }
 
 /*
-	Parses a new EvaluableExpression from the given [expression] string.
-	Returns an error if the given expression has invalid syntax.
+Parses a new EvaluableExpression from the given [expression] string.
+Returns an error if the given expression has invalid syntax.
 */
 func NewEvaluableExpression(expression string) (*EvaluableExpression, error) {
 
@@ -48,10 +48,15 @@ func NewEvaluableExpression(expression string) (*EvaluableExpression, error) {
 }
 
 /*
-	Similar to [NewEvaluableExpression], except that instead of a string, an already-tokenized expression is given.
-	This is useful in cases where you may be generating an expression automatically, or using some other parser (e.g., to parse from a query language)
+Similar to [NewEvaluableExpression], except that instead of a string, an already-tokenized expression is given.
+This is useful in cases where you may be generating an expression automatically, or using some other parser (e.g., to parse from a query language)
 */
 func NewEvaluableExpressionFromTokens(tokens []ExpressionToken) (*EvaluableExpression, error) {
+
+	return newEvaluableExpressionFromTokens(tokens, true)
+}
+
+func newEvaluableExpressionFromTokens(tokens []ExpressionToken, interning bool) (*EvaluableExpression, error) {
 
 	var ret *EvaluableExpression
 	var err error
@@ -77,7 +82,7 @@ func NewEvaluableExpressionFromTokens(tokens []ExpressionToken) (*EvaluableExpre
 		return nil, err
 	}
 
-	ret.evaluationStages, err = planStages(ret.tokens)
+	ret.evaluationStages, err = planStages(ret.tokens, stageInternerFor(interning))
 	if err != nil {
 		return nil, err
 	}
@@ -86,11 +91,55 @@ func NewEvaluableExpressionFromTokens(tokens []ExpressionToken) (*EvaluableExpre
 	return ret, nil
 }
 
+// stageInternerFor returns the interner for one compile. A nil interner
+// disables closure interning; production compiles always intern.
+func stageInternerFor(interning bool) *stageInterner {
+	if !interning {
+		return nil
+	}
+	return newStageInterner()
+}
+
 /*
-	Similar to [NewEvaluableExpression], except enables the use of user-defined functions.
-	Functions passed into this will be available to the expression.
+CompileOptions controls optional behaviour when an expression is compiled.
+The zero value keeps the default behaviour.
+*/
+type CompileOptions struct {
+
+	/*
+		DropTokensAfterPlan releases the parsed token slice once the stage tree
+		is built, together with the token values and token text that it keeps
+		alive. Evaluation, String and the type checks are unchanged.
+
+		When it is set, the expression keeps no token metadata: Tokens and Vars
+		return nil, and ToSQLQuery returns an empty query. It is off by default,
+		so a zero CompileOptions keeps the public token result.
+	*/
+	DropTokensAfterPlan bool
+}
+
+/*
+Similar to [NewEvaluableExpression], except enables the use of user-defined functions.
+Functions passed into this will be available to the expression.
 */
 func NewEvaluableExpressionWithFunctions(expression string, functions map[string]ExpressionFunction) (*EvaluableExpression, error) {
+
+	return NewEvaluableExpressionWithFunctionsAndOptions(expression, functions, CompileOptions{})
+}
+
+/*
+Similar to [NewEvaluableExpressionWithFunctions], with compile-time options.
+*/
+func NewEvaluableExpressionWithFunctionsAndOptions(expression string, functions map[string]ExpressionFunction, options CompileOptions) (*EvaluableExpression, error) {
+
+	return newEvaluableExpressionWithFunctionsAndOptions(expression, functions, options, true)
+}
+
+// newEvaluableExpressionWithFunctionsAndOptions compiles expression with the
+// requested options. interning is true for every public constructor; package
+// tests pass false to reproduce the pre-interning closure layout and prove
+// that both layouts decide identically.
+func newEvaluableExpressionWithFunctionsAndOptions(expression string, functions map[string]ExpressionFunction, options CompileOptions, interning bool) (*EvaluableExpression, error) {
 
 	var ret *EvaluableExpression
 	var err error
@@ -122,9 +171,13 @@ func NewEvaluableExpressionWithFunctions(expression string, functions map[string
 		return nil, err
 	}
 
-	ret.evaluationStages, err = planStages(ret.tokens)
+	ret.evaluationStages, err = planStages(ret.tokens, stageInternerFor(interning))
 	if err != nil {
 		return nil, err
+	}
+
+	if options.DropTokensAfterPlan {
+		ret.tokens = nil
 	}
 
 	ret.ChecksTypes = true
@@ -132,7 +185,7 @@ func NewEvaluableExpressionWithFunctions(expression string, functions map[string
 }
 
 /*
-	Same as `Eval`, but automatically wraps a map of parameters into a `govalute.Parameters` structure.
+Same as `Eval`, but automatically wraps a map of parameters into a `govalute.Parameters` structure.
 */
 func (this EvaluableExpression) Evaluate(parameters map[string]interface{}) (interface{}, error) {
 
@@ -144,15 +197,15 @@ func (this EvaluableExpression) Evaluate(parameters map[string]interface{}) (int
 }
 
 /*
-	Runs the entire expression using the given [parameters].
-	e.g., If the expression contains a reference to the variable "foo", it will be taken from `parameters.Get("foo")`.
+Runs the entire expression using the given [parameters].
+e.g., If the expression contains a reference to the variable "foo", it will be taken from `parameters.Get("foo")`.
 
-	This function returns errors if the combination of expression and parameters cannot be run,
-	such as if a variable in the expression is not present in [parameters].
+This function returns errors if the combination of expression and parameters cannot be run,
+such as if a variable in the expression is not present in [parameters].
 
-	In all non-error circumstances, this returns the single value result of the expression and parameters given.
-	e.g., if the expression is "1 + 1", this will return 2.0.
-	e.g., if the expression is "foo + 1" and parameters contains "foo" = 2, this will return 3.0
+In all non-error circumstances, this returns the single value result of the expression and parameters given.
+e.g., if the expression is "1 + 1", this will return 2.0.
+e.g., if the expression is "foo + 1" and parameters contains "foo" = 2, this will return 3.0
 */
 func (this EvaluableExpression) Eval(parameters Parameters) (interface{}, error) {
 
@@ -253,7 +306,8 @@ func typeCheck(check stageTypeCheck, value interface{}, symbol OperatorSymbol, f
 }
 
 /*
-	Returns an array representing the ExpressionTokens that make up this expression.
+Returns an array representing the ExpressionTokens that make up this expression.
+It returns nil when the expression was compiled with DropTokensAfterPlan.
 */
 func (this EvaluableExpression) Tokens() []ExpressionToken {
 
@@ -261,7 +315,7 @@ func (this EvaluableExpression) Tokens() []ExpressionToken {
 }
 
 /*
-	Returns the original expression used to create this EvaluableExpression.
+Returns the original expression used to create this EvaluableExpression.
 */
 func (this EvaluableExpression) String() string {
 
@@ -269,7 +323,9 @@ func (this EvaluableExpression) String() string {
 }
 
 /*
-	Returns an array representing the variables contained in this EvaluableExpression.
+Returns an array representing the variables contained in this EvaluableExpression.
+It returns nil when the expression was compiled with DropTokensAfterPlan,
+since the variables are derived from the released tokens.
 */
 func (this EvaluableExpression) Vars() []string {
 	var varlist []string

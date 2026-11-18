@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
 	adsapi "github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/pkg/condexpr"
 	"github.com/teramoby/speedle-plus/pkg/logging"
 )
 
@@ -176,7 +176,7 @@ func calculatePermissions(expressions *ExpressionCache, grantedPermissions, deni
 
 }
 
-func evaluateCondition(condition *govaluate.EvaluableExpression, attributes map[string]interface{}) (bool, error) {
+func evaluateCondition(condition *condexpr.EvaluableExpression, attributes map[string]interface{}) (bool, error) {
 	res, err := condition.Evaluate(attributes)
 	if err != nil || res != true {
 		if err != nil {

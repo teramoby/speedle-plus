@@ -107,7 +107,7 @@ func Avg(args ...interface{}) (interface{}, error) {
 }
 
 // IsSubSet accepts two scalar slices, or the flattened first slice supplied by
-// govaluate. Empty sets retain the historical false result. Duplicates do not
+// condexpr. Empty sets retain the historical false result. Duplicates do not
 // change membership. Unsupported/mixed element types return BuiltInFuncError.
 func IsSubSet(args ...interface{}) (interface{}, error) {
 	err := errors.New(errors.BuiltInFuncError, "Usage: IsSubSet(S1, S2) - homogeneous scalar sets required")

@@ -1,4 +1,4 @@
-package govaluate
+package condexpr
 
 type tokenStream struct {
 	tokens      []ExpressionToken

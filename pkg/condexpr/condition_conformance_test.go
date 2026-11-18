@@ -1,5 +1,5 @@
 // Licensed under the Universal Permissive License (UPL) Version 1.0.
-package govaluate
+package condexpr
 
 import (
 	"errors"

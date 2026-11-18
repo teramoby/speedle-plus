@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
+	"github.com/teramoby/speedle-plus/pkg/condexpr"
 )
 
 func TestConformanceEscapedFunctionDiscoveryKnownLimitation(t *testing.T) {
@@ -31,7 +31,7 @@ func TestConformanceEscapedFunctionDiscoveryKnownLimitation(t *testing.T) {
 		// Unknown calls are pinned as explicit evaluation errors on both authorization paths
 		// in TestConditionConformance, while these registered calls evaluate.
 		identity := func(args ...interface{}) (interface{}, error) { return args[0], nil }
-		compiled, err := govaluate.NewEvaluableExpressionWithFunctions(expression, map[string]govaluate.ExpressionFunction{"foo": identity, "bar": identity})
+		compiled, err := condexpr.NewEvaluableExpressionWithFunctions(expression, map[string]condexpr.ExpressionFunction{"foo": identity, "bar": identity})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -53,7 +53,7 @@ func TestConformanceEscapedFunctionDiagnosticRecovery(t *testing.T) {
 		{`f\oo(x) && b\ar(y)`, []string{"foo", "bar"}},
 	} {
 		t.Run(c.expression, func(t *testing.T) {
-			functions := map[string]govaluate.ExpressionFunction{}
+			functions := map[string]condexpr.ExpressionFunction{}
 			for _, name := range calledNames(c.expression) {
 				functions[name] = anyFunction
 			}
@@ -61,14 +61,14 @@ func TestConformanceEscapedFunctionDiagnosticRecovery(t *testing.T) {
 			// must supply the full escaped name, in order; only registering that
 			// full name may advance to the next unknown call or a successful parse.
 			for _, name := range c.resolved {
-				_, err := govaluate.NewEvaluableExpressionWithFunctions(c.expression, functions)
-				var diagnostic *govaluate.ExpressionError
+				_, err := condexpr.NewEvaluableExpressionWithFunctions(c.expression, functions)
+				var diagnostic *condexpr.ExpressionError
 				if !errors.As(err, &diagnostic) || diagnostic.Message != "Undefined function "+name {
 					t.Fatalf("parser diagnostic = %v, want full name %q", err, name)
 				}
 				functions[name] = anyFunction
 			}
-			if _, err := govaluate.NewEvaluableExpressionWithFunctions(c.expression, functions); err != nil {
+			if _, err := condexpr.NewEvaluableExpressionWithFunctions(c.expression, functions); err != nil {
 				t.Fatalf("resolved names %v did not compile: %v", c.resolved, err)
 			}
 			if err := Check(c.expression); err != nil {

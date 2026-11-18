@@ -49,6 +49,7 @@ type Parameters struct {
 	StoreType               StrParamDetail
 	StoreWatchEnabled       StrParamDetail
 	StoreFailureGracePeriod StrParamDetail
+	DropConditionTokens     StrParamDetail
 
 	////////Log config/////////////////////
 	LogConf      LogParameters // normal log configuration
@@ -264,6 +265,8 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 	params = append(params, &k.StoreWatchEnabled)
 	k.StoreFailureGracePeriod = StrParamDetail{Name: "store-failure-grace-period", DefaultValue: "0s", Usage: "Evaluator config: how long a complete cached snapshot may be used after a store failure; 0s denies immediately."}
 	params = append(params, &k.StoreFailureGracePeriod)
+	k.DropConditionTokens = StrParamDetail{Name: "drop-condition-tokens", DefaultValue: "false", Usage: "Evaluator config: release compiled condition tokens after planning to reduce memory; condition Tokens and Vars metadata is then unavailable."}
+	params = append(params, &k.DropConditionTokens)
 
 	// Log configurations
 	k.LogConf.LogLevel = StrParamDetail{Name: "log-level", Usage: "Log config: log level, available levels are panic, fatal, error, warn, info and debug."}
@@ -404,6 +407,10 @@ func (k *Parameters) ParseFlags(defaultEndpoint string, printVersionInfoFun func
 				case k.StoreFailureGracePeriod.Name:
 					if conf != nil && conf.StoreFailureGracePeriod != "" {
 						f.Value.Set(conf.StoreFailureGracePeriod)
+					}
+				case k.DropConditionTokens.Name:
+					if conf != nil {
+						f.Value.Set(strconv.FormatBool(conf.DropConditionTokens))
 					}
 				// Log configurations
 				case k.LogConf.LogLevel.Name:
@@ -627,6 +634,17 @@ func (k *Parameters) Param2Config(storeParamsMap map[string]string) (*cfg.Config
 			return nil, errors.New(errors.ConfigError, "store-failure-grace-period must be a finite nonnegative duration")
 		}
 	}
+	// An unset value keeps the option off, as its flag default does. Anything
+	// else must parse: a typo must not silently leave token retention on.
+	dropConditionTokens := false
+	if k.DropConditionTokens.Value != "" {
+		var err error
+		dropConditionTokens, err = strconv.ParseBool(k.DropConditionTokens.Value)
+		if err != nil {
+			return nil, errors.Errorf(errors.ConfigError, "drop-condition-tokens must be a boolean, got %q", k.DropConditionTokens.Value)
+		}
+	}
+	conf.DropConditionTokens = dropConditionTokens
 
 	// Log Configuration
 	if len(k.LogConf.LogLevel.Value) != 0 ||

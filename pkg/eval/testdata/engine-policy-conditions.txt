@@ -1,0 +1,99 @@
+!(a=~'^get.*')
+!a
+'2017-01-02T00:00:00-00:00' in a
+'a' in a
+'manager' IN request_groups
+'x' in arr && a in (1, 2, 3)
+(a & 2) == 2 && (a | 1) == 3 && (a ^ 3) == 1 && (a << 1) == 4 && (a >> 1) == 1 && (~a) == -3
+(missing ?? a) == 2
+1 + 2 == 3
+1 in a
+IsSubSet(('BJ', 'SZ'), s)
+IsSubSet(('BJ', 'TJ'), s)
+IsSubSet((1,3),a) && (b==c || d==3) && IsSubSet(e, ('s1','s2','s3'))
+IsSubSet(s,('BJ','SH','GZ','SZ'))
+IsSubSet(s1,s2)
+Max(-3, x, 5) > y
+Max(a, 2) == 3 && Sqrt(9) == 3
+Sqrt(64) > x
+Sqrt(x) > 7.99
+Sqrt(x) > 8.01
+a
+a !~ '.+@oracle.com'
+a && b
+a && flag
+a + 2 * 3 == 8 && b > 1
+a < '2030-01-01'
+a < 0
+a <'2017-01-03T00:00:00-00:00'
+a <='2017-01-03T00:00:00-00:00'
+a == false
+a == true
+a =~ '.+@oracle.com'
+a > 1 ? flag : !flag
+a >'2017-01-02T00:00:00-00:00'
+a >='2017-01-02T00:00:00-00:00'
+a IN ('BJ', 'SH', 'GZ', 'SZ')
+a IN (1,3,5)
+a in ('2017-01-02T00:00:00-00:00', '2018-01-02T00:00:00-00:00')
+a in ('a','b','c')
+a in (1, 2, 3)
+a in (1, 2, 3) && (b==c || d==3)
+a in (1,2,3) && (b==c || d==3) && 's1' in e
+a in (1,2,3) && (b==c || d==3) && IsSubSet(e, ('s1','s2','s3'))
+a in (true,false)
+a || b
+a!='2017-01-02T00:00:00-00:00'
+a!='abc'
+a!=123
+a!~'^delete.*'
+a%b==2
+a&&b&&c
+a*(b+c)**2==d
+a*b==8
+a+b=='ab'
+a+b==246
+a-b==0
+a/b==2
+a<'abc'
+a<123
+a<='abc'
+a<=123
+a=='2017-01-02'
+a=='2017-01-02T00:00:00-00:00'
+a=='abc'
+a==1.5
+a==123
+a==b
+a==true
+a=~'^get.*'
+a=~'get.*'
+a>'abc'
+a>123
+a>='abc'
+a>=123
+a>b
+a||b&&c
+a||b||c
+boom() == 1
+f() == 'via delegator'
+f() == 1
+flag
+isOpen()
+missing == 'x'
+missing == 1
+request_action =~'^get*?'
+request_day == 13
+request_hour == 14
+request_month == 11
+request_resource =~ '^/node1/*?'
+request_time > '2017-09-04 12:00:00'
+request_user == 'admin'
+request_user =~'al*?'
+request_weekday == 'Monday'
+request_year==2017
+rt_str_attr=='abc'
+s =~ '^ab' && s !~ 'z$'
+testsum(1,2) <4
+testsum1(1,2) <4
+true in a

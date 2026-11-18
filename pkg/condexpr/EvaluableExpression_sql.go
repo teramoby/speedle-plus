@@ -1,4 +1,4 @@
-package govaluate
+package condexpr
 
 import (
 	"errors"
@@ -8,15 +8,15 @@ import (
 )
 
 /*
-	Returns a string representing this expression as if it were written in SQL.
-	This function assumes that all parameters exist within the same table, and that the table essentially represents
-	a serialized object of some sort (e.g., hibernate).
-	If your data model is more normalized, you may need to consider iterating through each actual token given by `Tokens()`
-	to create your query.
+Returns a string representing this expression as if it were written in SQL.
+This function assumes that all parameters exist within the same table, and that the table essentially represents
+a serialized object of some sort (e.g., hibernate).
+If your data model is more normalized, you may need to consider iterating through each actual token given by `Tokens()`
+to create your query.
 
-	Boolean values are considered to be "1" for true, "0" for false.
+Boolean values are considered to be "1" for true, "0" for false.
 
-	Times are formatted according to this.QueryDateFormat.
+Times are formatted according to this.QueryDateFormat.
 */
 func (this EvaluableExpression) ToSQLQuery() (string, error) {
 
@@ -24,6 +24,10 @@ func (this EvaluableExpression) ToSQLQuery() (string, error) {
 	var transactions *expressionOutputStream
 	var transaction string
 	var err error
+
+	if len(this.tokens) == 0 {
+		return "", nil
+	}
 
 	stream = newTokenStream(this.tokens)
 	transactions = new(expressionOutputStream)

@@ -10,8 +10,9 @@ The production `docs/playground/speedle.wasm` compiles the **actual Speedle Go
 parser and evaluation library**, not a JavaScript decision implementation.
 `docs/playground/engine.js` and `engine-worker.js` provide transport and worker
 lifecycle only. The adapter here calls `pkg/pdl.ParsePolicy/ParseRolePolicy`,
-`pkg/eval.PolicyEvalImpl.Diagnose`, upstream role resolution, `govaluate` and the
-upstream deny-overrides combiner. It uses a single ephemeral service for each run.
+`pkg/eval.PolicyEvalImpl.Diagnose`, upstream role resolution, the `pkg/condexpr`
+expression evaluator and the upstream deny-overrides combiner. It uses a single
+ephemeral service for each run.
 
 ## Rebuild the checked-in artifacts
 
@@ -25,8 +26,8 @@ GO_BIN=/path/to/go website/playground-engine/build.sh
 ```
 
 `go.mod` replaces the Speedle dependency with this repository's root. The
-underlying engine source (`api/`, `pkg/`, `3rdparty/`, `go.mod`, `go.sum`) is pinned
-to commit `c14ee1b2d625778cf78812db69f26784968bf79c`. The checked-in
+underlying engine source (`api/`, `pkg/`, `go.mod`, `go.sum`) is pinned
+to commit `7d2f08e5fd25a58c6e62983c4a9ac2797048a18c`. The checked-in
 `engine-source.pack` contains that Git commit, its trees and the selected source
 blobs. The build checks `engine-source.sha256`, unpacks into an isolated temporary
 Git object database, and exports the exact commit's source tree. Git's object

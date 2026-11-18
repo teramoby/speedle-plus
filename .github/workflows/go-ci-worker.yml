@@ -254,7 +254,7 @@ jobs:
           root = Path.cwd()
           changed = output('git', 'diff', '--name-only', '-z', os.environ['PR_BASE'], os.environ['GITHUB_SHA'], '--').split('\0')
           # Shared test fixtures and module changes can affect every package.
-          all_packages = any(p in ('go.mod', 'go.sum') or p.startswith(('testutil/', '3rdparty/')) for p in changed)
+          all_packages = any(p in ('go.mod', 'go.sum') or p.startswith(('testutil/', 'pkg/condexpr/')) for p in changed)
           directories = output('go', 'list', '-f', '{{.Dir}}', './pkg/...', './cmd/...', './api/...', './deployment/...').splitlines()
           package_dirs = [Path(d).resolve().relative_to(root).as_posix() for d in directories]
           selected = set(package_dirs) if all_packages else set()
@@ -266,7 +266,7 @@ jobs:
                   selected.add(max(owners, key=len))
           packages = ['./' + d for d in sorted(selected)]
           Path('quick-packages.txt').write_text(''.join(p + '\n' for p in packages))
-          files = [p for p in changed if p.endswith('.go') and Path(p).is_file() and not p.startswith(('3rdparty/', 'docs/'))]
+          files = [p for p in changed if p.endswith('.go') and Path(p).is_file() and not p.startswith(('pkg/condexpr/', 'docs/'))]
           Path('quick-go-files.txt').write_text(''.join(p + '\0' for p in files))
           print('Changed packages:', packages)
           PYTHON

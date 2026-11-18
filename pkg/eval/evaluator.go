@@ -13,16 +13,16 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
 	adsapi "github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/pkg/condexpr"
 	"github.com/teramoby/speedle-plus/pkg/errors"
 	"github.com/teramoby/speedle-plus/pkg/eval/function"
 	"github.com/teramoby/speedle-plus/pkg/logging"
 	"github.com/teramoby/speedle-plus/pkg/subjectutils"
 )
 
-var builtinFunctions = map[string]govaluate.ExpressionFunction{
+var builtinFunctions = map[string]condexpr.ExpressionFunction{
 	"Sqrt":     function.Sqrt,
 	"Max":      function.Max,
 	"Min":      function.Min,

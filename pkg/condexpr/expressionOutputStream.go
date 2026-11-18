@@ -1,13 +1,13 @@
-package govaluate
+package condexpr
 
 import (
 	"bytes"
 )
 
 /*
-	Holds a series of "transactions" which represent each token as it is output by an outputter (such as ToSQLQuery()).
-	Some outputs (such as SQL) require a function call or non-c-like syntax to represent an expression.
-	To accomplish this, this struct keeps track of each translated token as it is output, and can return and rollback those transactions.
+Holds a series of "transactions" which represent each token as it is output by an outputter (such as ToSQLQuery()).
+Some outputs (such as SQL) require a function call or non-c-like syntax to represent an expression.
+To accomplish this, this struct keeps track of each translated token as it is output, and can return and rollback those transactions.
 */
 type expressionOutputStream struct {
 	transactions []string

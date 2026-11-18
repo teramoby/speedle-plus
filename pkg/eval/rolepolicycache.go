@@ -6,8 +6,8 @@ package eval
 import (
 	"fmt"
 
-	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
 	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/pkg/condexpr"
 	"github.com/teramoby/speedle-plus/pkg/logging"
 )
 
@@ -21,7 +21,7 @@ func NewRolePolicyCacheData() (p *RolePolicyCacheData) {
 		BasePolicyCacheData: BasePolicyCacheData{
 			PrincipalToPolicies:    make(map[string]*ResourceToPolicyMap),
 			NilPrincipalToPolicies: &ResourceToPolicyMap{},
-			Conditions:             make(map[string]*govaluate.EvaluableExpression),
+			Conditions:             make(map[string]*condexpr.EvaluableExpression),
 		},
 		PolicyMap: make(map[string]*pms.RolePolicy),
 	}
@@ -31,7 +31,7 @@ func nilPrincipalRolePolicy(rolePolicy *pms.RolePolicy) (result bool) {
 	return len(rolePolicy.Principals) == 0
 }
 
-func (p *RolePolicyCacheData) AddRolePolicyToCache(policy *pms.RolePolicy, condition *govaluate.EvaluableExpression) {
+func (p *RolePolicyCacheData) AddRolePolicyToCache(policy *pms.RolePolicy, condition *condexpr.EvaluableExpression) {
 	//A role policy added again under its ID gives up the expressions of the old one.
 	if old := p.PolicyMap[policy.ID]; old != nil {
 		p.releaseExpressions(old)

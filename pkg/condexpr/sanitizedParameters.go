@@ -1,4 +1,4 @@
-package govaluate
+package condexpr
 
 // sanitizedParameters is a wrapper for Parameters that does sanitization as
 // parameters are accessed.

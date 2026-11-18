@@ -299,6 +299,67 @@ func TestParam2ConfigWithoutOptionalSettings(t *testing.T) {
 	}
 }
 
+func TestDropConditionTokensOption(t *testing.T) {
+	configFile := writeFile(t, "drop-condition-tokens.json", `{"dropConditionTokens":true}`)
+	for _, c := range []struct {
+		name string
+		args []string
+		env  string
+		want bool
+	}{
+		{"default", nil, "", false},
+		{"config file", []string{"--config-file", configFile}, "", true},
+		{"flag", []string{"--drop-condition-tokens=true"}, "", true},
+		{"flag overrides file", []string{"--config-file", configFile, "--drop-condition-tokens=false"}, "", false},
+		{"environment", nil, "true", true},
+		{"environment overrides file", []string{"--config-file", configFile}, "false", false},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			if c.env != "" {
+				t.Setenv("SPDL_DROP_CONDITION_TOKENS", c.env)
+			}
+			params, code := parse(t, c.args, nil)
+			if code != -1 {
+				t.Fatalf("exit %d", code)
+			}
+			configuration, err := params.Param2Config(nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if configuration.DropConditionTokens != c.want {
+				t.Fatalf("DropConditionTokens = %t, want %t", configuration.DropConditionTokens, c.want)
+			}
+		})
+	}
+}
+
+func TestDropConditionTokensRejectsInvalidValue(t *testing.T) {
+	for _, c := range []struct {
+		name string
+		args []string
+		env  string
+		bad  string
+	}{
+		{"flag", []string{"--drop-condition-tokens=ture"}, "", "ture"},
+		{"environment", nil, "1true", "1true"},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			if c.env != "" {
+				t.Setenv("SPDL_DROP_CONDITION_TOKENS", c.env)
+			}
+			params, code := parse(t, c.args, nil)
+			if code != -1 {
+				t.Fatalf("exit %d", code)
+			}
+			if _, err := params.Param2Config(nil); err == nil {
+				t.Fatal("invalid value was accepted")
+			} else if !strings.Contains(err.Error(), "drop-condition-tokens") || !strings.Contains(err.Error(), c.bad) {
+				t.Fatalf("error %q does not name the option and value", err)
+			}
+		})
+	}
+}
+
 func TestParseFlagsBadConfigFileExits(t *testing.T) {
 	if _, code := parse(t, []string{"--config-file", writeFile(t, "bad.json", "{")}, nil); code != 1 {
 		t.Fatalf("exit %d, want 1", code)

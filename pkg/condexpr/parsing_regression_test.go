@@ -1,4 +1,4 @@
-package govaluate
+package condexpr
 
 import "testing"
 

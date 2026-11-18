@@ -1,0 +1,429 @@
+!(!false && -2 * -3 == 6)
+!(!x)
+!((1+2)*3 == 9)
+!(1+2 == 3 && 2 < 3)
+!(10-3-2 == 5 && 1+2*3 == 7)
+!(72/2/3 == 12 && 10%4*2 == 4)
+!(Sqrt(4)+1 == 3)
+!(false || false || true)
+!(missing == 1)
+!(true || false && false)
+!(true || missing)
+!(x + x)
+!f\oo(1)
+!false && -2 * -3 == 6
+!missing
+!x
+"a" == 'a'
+"a" == 'b'
+'a' =~ pattern
+'absent' in request_groups
+'staff' in request_groups
+((request_day + 1) - request_day) == (1)
+((request_day + 1) - request_day) == -1
+((request_hour + 1) - request_hour) == (1)
+((request_hour + 1) - request_hour) == -1
+((request_month + 1) - request_month) == (1)
+((request_month + 1) - request_month) == -1
+((request_year + 1) - request_year) == (1)
+((request_year + 1) - request_year) == -1
+(1+2)*3 == 9
+(5 & 3) == 0
+(5 & 3) == 1 && (5 | 2) == 7 && (5 ^ 1) == 4 && (1 << 2) == 4 && (4 >> 1) == 2 && ~1 == -2
+(5 ?? 6) == 5
+(5 ?? 6) == 6
+(false ? 1 : 2) == 1
+(request_day % 1) == (0)
+(request_day % 1) == -1
+(request_day * 0) == (0)
+(request_day * 0) == -1
+(request_day - request_day) == (0)
+(request_day - request_day) == -1
+(request_day / 1 - request_day) == (0)
+(request_day / 1 - request_day) == -1
+(request_hour % 1) == (0)
+(request_hour % 1) == -1
+(request_hour * 0) == (0)
+(request_hour * 0) == -1
+(request_hour - request_hour) == (0)
+(request_hour - request_hour) == -1
+(request_hour / 1 - request_hour) == (0)
+(request_hour / 1 - request_hour) == -1
+(request_month % 1) == (0)
+(request_month % 1) == -1
+(request_month * 0) == (0)
+(request_month * 0) == -1
+(request_month - request_month) == (0)
+(request_month - request_month) == -1
+(request_month / 1 - request_month) == (0)
+(request_month / 1 - request_month) == -1
+(request_year % 1) == (0)
+(request_year % 1) == -1
+(request_year * 0) == (0)
+(request_year * 0) == -1
+(request_year - request_year) == (0)
+(request_year - request_year) == -1
+(request_year / 1 - request_year) == (0)
+(request_year / 1 - request_year) == -1
+(true ? 1 : 2) == 1
+1+2 == 3 && 2 < 3
+10-3-2 == 5 && 1+2*3 == 7
+2 ** 3 ** 2 == 64
+2 ** 3 == 9
+5 in x
+6 in x
+72/2/3 == 12 && 10%4*2 == 4
+Avg('a') == 0
+Avg((1,2)) == 1.5
+Avg() == 0
+Avg(-1/0) == 0
+Avg(0/0) == 0
+Avg(1) == 1
+Avg(1,(1,2)) == 0
+Avg(1,2) == 2
+Avg(1,2,3,2) == 2
+Avg(1/0) == 0
+Avg(huge,-huge,1) == 1/3
+Avg(huge,huge) == huge
+Avg(huge,huge,huge,huge,huge,huge,huge,huge,huge,huge,huge) > 0
+Avg(true) == 0
+IsSubSet(('2006-01-02T22:04:05Z','2006-01-03T22:04:05Z'),('2006-01-02T22:04:05Z','2006-01-03T22:04:05Z'))
+IsSubSet(('a','b'),('a','b','c'))
+IsSubSet((0/0,1),(1,2))
+IsSubSet((1,'a'),(1,2))
+IsSubSet((1,1,2),(1,2,3))
+IsSubSet((1,2),(1,'a'))
+IsSubSet((1,2),(1,1/0))
+IsSubSet((1,2),(1,2),(1,2))
+IsSubSet((1,2),empty)
+IsSubSet((1,4),(1,2,3))
+IsSubSet((true,false),(true,false))
+IsSubSet()
+IsSubSet(1)
+IsSubSet(1,2)
+IsSubSet(1,2,(1,2))
+IsSubSet(empty,(1,2))
+IsSubSet(empty,empty)
+Max('a') == 0
+Max((1,2)) == 2
+Max() == 0
+Max(-1/0) == 0
+Max(0/0) == 0
+Max(1) == 1
+Max(1,(1,2)) == 0
+Max(1,4) == 1
+Max(1,4,2,4) == 4
+Max(1/0) == 0
+Max(true) == 0
+Min('a') == 0
+Min((1,2)) == 1
+Min() == 0
+Min(-1/0) == 0
+Min(0/0) == 0
+Min(1) == 1
+Min(1,(1,2)) == 0
+Min(1,-4,2,-4) == -4
+Min(1,4) == 4
+Min(1/0) == 0
+Min(true) == 0
+Sqrt('a') == 0
+Sqrt() == 0
+Sqrt(-1) == 0
+Sqrt(-1/0) == 0
+Sqrt(0) == 0
+Sqrt(0/0) == 0
+Sqrt(1,(1,2)) == 0
+Sqrt(1,2) == 1
+Sqrt(1/0) == 0
+Sqrt(4) == 2
+Sqrt(4) == 3
+Sqrt(4)+1 == 3
+Sqrt(9) == 3
+Sqrt(9) == 4
+Sqrt(true) == 0
+Sum('a') == 0
+Sum((1,2)) == 3
+Sum() == 0
+Sum(-1/0) == 0
+Sum(0/0) == 0
+Sum(1) == 1
+Sum(1,(1,2)) == 0
+Sum(1,2) == 4
+Sum(1,2,2) == 5
+Sum(1/0) == 0
+Sum(huge,huge) > 0
+Sum(true) == 0
+[hyphen-name] == 5
+[hyphen-name] == 6
+f\oo(1)
+false && missing
+false || !x
+false || false || true
+false || missing
+grant == 5
+grant == 6
+missing
+missing && false
+missing && true
+missing == 1
+missing || false
+missing || true
+n in (5)
+n in nums
+request_action != ''
+request_action != request_action
+request_action + '!' == request_action
+request_action + '' == request_action
+request_action < 'zzzzzzzzzz'
+request_action < request_action
+request_action <= ''
+request_action <= request_action
+request_action == ''
+request_action == request_action
+request_action =~ '^$'
+request_action =~ '^.+$'
+request_action > ''
+request_action > request_action
+request_action >= 'zzzzzzzzzz'
+request_action >= request_action
+request_action in ('', 'absent')
+request_action in (request_action, '')
+request_day != -1
+request_day != request_day
+request_day < 99999999999
+request_day < request_day
+request_day <= -1
+request_day <= request_day
+request_day == -1
+request_day == request_day
+request_day > -1
+request_day > request_day
+request_day >= 99999999999
+request_day >= request_day
+request_day in (-1, -2)
+request_day in (request_day, -1)
+request_entity != ''
+request_entity != request_entity
+request_entity + '!' == request_entity
+request_entity + '' == request_entity
+request_entity < 'zzzzzzzzzz'
+request_entity < request_entity
+request_entity <= ''
+request_entity <= request_entity
+request_entity == ''
+request_entity == request_entity
+request_entity =~ '^$'
+request_entity =~ '^.+$'
+request_entity > ''
+request_entity > request_entity
+request_entity >= 'zzzzzzzzzz'
+request_entity >= request_entity
+request_entity in ('', 'absent')
+request_entity in (request_entity, '')
+request_hour != -1
+request_hour != request_hour
+request_hour < 99999999999
+request_hour < request_hour
+request_hour <= -1
+request_hour <= request_hour
+request_hour == -1
+request_hour == request_hour
+request_hour > -1
+request_hour > request_hour
+request_hour >= 99999999999
+request_hour >= request_hour
+request_hour in (-1, -2)
+request_hour in (request_hour, -1)
+request_month != -1
+request_month != request_month
+request_month < 99999999999
+request_month < request_month
+request_month <= -1
+request_month <= request_month
+request_month == -1
+request_month == request_month
+request_month > -1
+request_month > request_month
+request_month >= 99999999999
+request_month >= request_month
+request_month in (-1, -2)
+request_month in (request_month, -1)
+request_resource != ''
+request_resource != request_resource
+request_resource + '!' == request_resource
+request_resource + '' == request_resource
+request_resource < 'zzzzzzzzzz'
+request_resource < request_resource
+request_resource <= ''
+request_resource <= request_resource
+request_resource == ''
+request_resource == request_resource
+request_resource =~ '^$'
+request_resource =~ '^.+$'
+request_resource > ''
+request_resource > request_resource
+request_resource >= 'zzzzzzzzzz'
+request_resource >= request_resource
+request_resource in ('', 'absent')
+request_resource in (request_resource, '')
+request_time != -1
+request_time != request_time
+request_time < 99999999999
+request_time < request_time
+request_time <= -1
+request_time <= request_time
+request_time == -1
+request_time == request_time
+request_time > -1
+request_time > request_time
+request_time >= 99999999999
+request_time >= request_time
+request_time in (-1, -2)
+request_time in (request_time, -1)
+request_user != ''
+request_user != request_user
+request_user + '!' == request_user
+request_user + '' == request_user
+request_user < 'zzzzzzzzzz'
+request_user < request_user
+request_user <= ''
+request_user <= request_user
+request_user == ''
+request_user == request_user
+request_user =~ '^$'
+request_user =~ '^.+$'
+request_user > ''
+request_user > request_user
+request_user >= 'zzzzzzzzzz'
+request_user >= request_user
+request_user in ('', 'absent')
+request_user in (request_user, '')
+request_weekday != ''
+request_weekday != request_weekday
+request_weekday + '!' == request_weekday
+request_weekday + '' == request_weekday
+request_weekday < 'zzzzzzzzzz'
+request_weekday < request_weekday
+request_weekday <= ''
+request_weekday <= request_weekday
+request_weekday == ''
+request_weekday == request_weekday
+request_weekday =~ '^$'
+request_weekday =~ '^.+$'
+request_weekday > ''
+request_weekday > request_weekday
+request_weekday >= 'zzzzzzzzzz'
+request_weekday >= request_weekday
+request_weekday in ('', 'absent')
+request_weekday in (request_weekday, '')
+request_year != -1
+request_year != request_year
+request_year < 99999999999
+request_year < request_year
+request_year <= -1
+request_year <= request_year
+request_year == -1
+request_year == request_year
+request_year > -1
+request_year > request_year
+request_year >= 99999999999
+request_year >= request_year
+request_year in (-1, -2)
+request_year in (request_year, -1)
+s != 5
+s == 5
+true && missing
+true || false && false
+true || missing
+x != 'a'
+x != 'b'
+x != 5
+x != 6
+x != false
+x != true
+x != x
+x != y
+x % 2 == 0
+x % 2 == 1
+x % other
+x % x
+x && false
+x && other
+x && true
+x && x
+x && y
+x * 2 == 10
+x * 2 == 11
+x * other
+x * x
+x + 'b' == 'ab'
+x + 'b' == 'ac'
+x + 1 == 2
+x + 2 == 7
+x + 2 == 8
+x + other
+x + x
+x - 2 == 3
+x - 2 == 4
+x - other
+x - x
+x / 2 == 2.5
+x / 2 == 3
+x / other
+x / x
+x < 'a'
+x < 'b'
+x < 5
+x < 6
+x < other
+x < x
+x < y
+x <= 'A'
+x <= 'a'
+x <= 4
+x <= 5
+x <= other
+x <= x
+x <= y
+x == '2006-01-02T15:04:05-07:00'
+x == '2006-01-02T22:04:05.9Z'
+x == '2006-01-02T22:04:05Z'
+x == '2006-01-03T22:04:05Z'
+x == 'a'
+x == 'b'
+x == 5
+x == 6
+x == false
+x == true
+x == x
+x == y
+x =~ '^a$'
+x =~ '^b$'
+x =~ other
+x =~ x
+x =~ y
+x > 'A'
+x > 'b'
+x > 4
+x > 5
+x > other
+x > x
+x > y
+x >= 'a'
+x >= 'b'
+x >= 5
+x >= 6
+x >= other
+x >= x
+x >= y
+x in ('2006-01-02T22:04:05Z','2006-01-03T22:04:05Z')
+x in ('a', 'b')
+x in ('b', 'c')
+x in (4, 5)
+x in (4, 6)
+x in (false, false)
+x in (true, false)
+x || false
+x || other
+x || x
+x || y

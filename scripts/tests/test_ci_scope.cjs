@@ -540,7 +540,7 @@ test('actual package selector includes nested fixtures/deletions and module-wide
     assert.deepEqual(execute(['pkg/a/testdata/policy.json', 'pkg/a/sub/deleted.go'], packages), ['./pkg/a', './pkg/a/sub']);
     assert.deepEqual(execute(['pkg/a/sub/file.go'], packages), ['./pkg/a/sub']);
     assert.deepEqual(execute(['docs/change.md', '.github/workflows/ci.yml'], packages), []);
-    for (const file of ['go.mod', 'go.sum', 'testutil/storetest/fixture.go', '3rdparty/example/x.go']) {
+    for (const file of ['go.mod', 'go.sum', 'testutil/storetest/fixture.go', 'pkg/condexpr/example/x.go']) {
       assert.deepEqual(execute([file], packages), ['./cmd/b', './deployment/container/dispatch', './pkg/a', './pkg/a/sub']);
     }
   } finally { fs.rmSync(dir, {recursive: true, force: true}); }
@@ -679,7 +679,7 @@ test('Helm pull requests and pushes select every candidate image input', () => {
   for (const event of ['pull_request', 'push']) {
     const block = helm.split(`  ${event}:\n`)[1].split(/\n  [a-z_]+:|\npermissions:/)[0];
     const paths = [...block.matchAll(/^      - (.+)$/gm)].map(match => match[1]);
-    for (const input of ['deployment/helm/**', 'deployment/container/**', 'cmd/**', 'pkg/**', 'api/**', '3rdparty/**', 'go.mod', 'go.sum']) {
+    for (const input of ['deployment/helm/**', 'deployment/container/**', 'cmd/**', 'pkg/**', 'api/**', 'go.mod', 'go.sum']) {
       assert.ok(paths.includes(input), `${event} must select ${input}`);
     }
   }

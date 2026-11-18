@@ -2,7 +2,7 @@
 """Report the SPDL condition path, keeping raw and scoped coverage separate.
 
 Run from the repository root (profile uses covermode=count or atomic as well):
-  go test -count=1 -coverpkg=./pkg/eval/condition,./pkg/eval/function,./3rdparty/github.com/Knetic/govaluate -coverprofile=condition.out ./pkg/eval/... ./pkg/svcs/adsrest/... ./3rdparty/github.com/Knetic/govaluate
+  go test -count=1 -coverpkg=./pkg/eval/condition,./pkg/eval/function,./pkg/condexpr -coverprofile=condition.out ./pkg/eval/... ./pkg/svcs/adsrest/... ./pkg/condexpr
   go test -count=1 -v ./pkg/eval -run '^TestConditionConformanceMatrix$' > condition-matrix.log
   python3 scripts/ci/condition-conformance-report.py --go-version "$(go env GOVERSION)" condition.out condition-matrix.log
 
@@ -17,21 +17,23 @@ from pathlib import Path
 import re
 
 ROOT = Path(__file__).resolve().parents[2]
-FORK = '3rdparty/github.com/Knetic/govaluate/'
+FORK = 'pkg/condexpr/'
 # These files implement SQL output only; neither the condition validator nor
-# the evaluator invokes ToSQLQuery or its stream. Report their raw coverage too.
-UNUSED_FILES = {
+# the evaluator invokes ToSQLQuery or its stream. Package unit tests may execute
+# some of their blocks (for example the empty-token guard); covered blocks are
+# counted normally, and uncovered blocks are excluded for this reason.
+OFF_PATH_FILES = {
     FORK + 'EvaluableExpression_sql.go': 'SQL serialization is not called by the Engine condition path.',
     FORK + 'expressionOutputStream.go': 'Output stream is used only by SQL serialization, not condition evaluation.',
 }
 # Exact coverage spans and statement counts, not broad function exclusions. A new uncovered block
 # fails the report, requiring either a test or a fresh reachability audit.
-UNREACHABLE = {'EvaluableExpression.go': {('82.3,83.1', 1): 'Validated token kinds always produce a stage; the '
+UNREACHABLE = {'EvaluableExpression.go': {('87.3,88.1', 1): 'Validated token kinds always produce a stage; the '
                                               'token-constructor planner error cannot follow successful syntax '
                                               'validation.',
-                            ('112.3,113.1', 1): 'parseTokens already checked balance and returned its error; the '
+                            ('161.3,162.1', 1): 'parseTokens already checked balance and returned its error; the '
                                                 'repeated balance check cannot fail.',
-                            ('127.3,128.1', 1): 'The text parser and syntax validator reject unplannable tokens '
+                            ('176.3,177.1', 1): 'The text parser and syntax validator reject unplannable tokens '
                                                 'before stage planning.'},
  'lexerState.go': {('346.4,347.1', 1): 'canTransitionTo accepted this kind, which necessarily has an entry in '
                                        'validLexerStates.'},
@@ -44,37 +46,37 @@ UNREACHABLE = {'EvaluableExpression.go': {('82.3,83.1', 1): 'Validated token kin
                                      'a leading whitespace reader.',
                 ('443.2,444.1', 1): 'isDigit has no callers in the fork or Engine (numeric and hex readers use '
                                     'unicode.IsDigit directly).'},
- 'stagePlanner.go': {('187.3,188.1', 1): 'planTokens can error only through unplannable token kinds, already '
+ 'stagePlanner.go': {('257.3,258.1', 1): 'planTokens can error only through unplannable token kinds, already '
                                          'rejected by syntax validation.',
-                     ('201.3,202.1', 1): 'Nonempty validated expressions reach planTokens; token streams consumed '
+                     ('271.3,272.1', 1): 'Nonempty validated expressions reach planTokens; token streams consumed '
                                          'within clauses are handled by planValue CLAUSE_CLOSE.',
-                     ('230.4,231.1', 1): 'Left precedence planner error propagation; all validated kinds have '
+                     ('301.4,302.1', 1): 'Left precedence planner error propagation; all validated kinds have '
                                          'value planners.',
-                     ('256.5,256.10', 1): 'The valid-symbol tables receive only string operator tokens from the '
+                     ('327.5,327.10', 1): 'The valid-symbol tables receive only string operator tokens from the '
                                           'lexer and syntax validator.',
-                     ('268.5,269.1', 1): 'Right precedence planner error propagation; all validated kinds have '
+                     ('339.5,340.1', 1): 'Right precedence planner error propagation; all validated kinds have '
                                          'value planners.',
-                     ('310.3,311.1', 1): 'Function argument planner error propagation after successful syntax '
+                     ('381.3,382.1', 1): 'Function argument planner error propagation after successful syntax '
                                          'validation.',
-                     ('329.3,330.1', 1): 'A validated FUNCTION always has a following clause, so planAccessor '
+                     ('400.3,401.1', 1): 'A validated FUNCTION always has a following clause, so planAccessor '
                                          'cannot receive an exhausted stream.',
-                     ('351.5,352.1', 1): 'Accessor argument planner error propagation after successful syntax '
+                     ('422.5,423.1', 1): 'Accessor argument planner error propagation after successful syntax '
                                          'validation.',
-                     ('380.3,381.1', 1): 'A validated expression or prefix always has a following value or '
+                     ('451.3,452.1', 1): 'A validated expression or prefix always has a following value or '
                                          'clause-close token.',
-                     ('391.4,392.1', 1): 'Clause planner error propagation; invalid contents have already failed '
+                     ('462.4,463.1', 1): 'Clause planner error propagation; invalid contents have already failed '
                                          'syntax validation.',
-                     ('437.3,439.1', 2): 'All value token kinds accepted by syntax validation have an operator; '
+                     ('508.3,510.1', 2): 'All value token kinds accepted by syntax validation have an operator; '
                                          'this rejects malformed internal token streams only.',
-                     ('595.3,596.1', 1): 'A planned operator chain ends at an operand with distinct precedence; '
+                     ('666.3,667.1', 1): 'A planned operator chain ends at an operand with distinct precedence; '
                                          'matching chains are mirrored at the precedence break, not after the '
                                          'final leaf.',
-                     ('692.3,693.1', 1): 'LITERAL stages use makeLiteralStage, whose closure always returns a '
+                     ('763.3,764.1', 1): 'LITERAL stages use makeLiteralStage, whose closure always returns a '
                                          'value with nil error.',
-                     ('697.3,698.1', 1): 'LITERAL stages use makeLiteralStage, whose closure always returns a '
+                     ('768.3,769.1', 1): 'LITERAL stages use makeLiteralStage, whose closure always returns a '
                                          'value with nil error.',
-                     ('718.3,719.1', 1): 'This is the root.operator error return after the elideStage type '
-                                         'checks at lines 701-713. Literal type errors such as true+false '
+                     ('789.3,790.1', 1): 'This is the root.operator error return after the elideStage type '
+                                         'checks at lines 711-723. Literal type errors such as true+false '
                                          'exit at those earlier checks and are later reported by Evaluate; '
                                          'they never reach this return. Pure well-typed operators return nil '
                                          'errors; literal regex errors were rejected by optimizeTokens. '
@@ -82,12 +84,12 @@ UNREACHABLE = {'EvaluableExpression.go': {('82.3,83.1', 1): 'Validated token kin
 
 # Bind the audit to source contents as well as coverage spans. A source edit
 # requires an explicit reachability re-audit even if its line numbers survive.
-AUDITED_SOURCE_SHA256 = {'EvaluableExpression.go': '8402d0eadf149b6bf511e992e89ef9fb8f9e29d78e3a433ac09b59edf29f2555',
- 'EvaluableExpression_sql.go': '5d6a75e21e68fdd19ee4aafa92e0bc15f14c76ee7d488d36647f541db3300699',
- 'expressionOutputStream.go': 'd8fee24cc6d334bbfe5880b382bb9a659ffffeca0f3ed917b12f2594bdde47d2',
- 'lexerState.go': '5071044819e265850070b61495692e9fb78f97785cafb829c1296a43b51790e0',
- 'parsing.go': 'c77b0949ff985d2a5683c06824eb8529ad4b830c6bab1b166f97d0df6e35fab6',
- 'stagePlanner.go': 'e46fc41044ec3b2e6ea66b5bb570de68cce3360e494d5e05e4ebb72187948650'}
+AUDITED_SOURCE_SHA256 = {'EvaluableExpression.go': '74536aabf0bd17a0ae73eb1143d9fc6532a4ee7182b8a101546e67a8b89584dc',
+ 'EvaluableExpression_sql.go': '5e1066d5c85f91105b7dbd457571da1835966f09389f58ebe183bb81a90e8188',
+ 'expressionOutputStream.go': '300d9803ed5b07eee5c1af16fa81d3cb7c39b38e4d784a4fa6ef376b079bc8c5',
+ 'lexerState.go': '664c31b50bddfc18bdfbf188dd1b064cdce783e6a467335af3182a55670bac95',
+ 'parsing.go': 'e7444af3bf0687f426573534f2d8d07c2f995d3db750669db6656578c9eaf988',
+ 'stagePlanner.go': 'f2a3447f41e154d627b0762c86501af7d72017df31cbda8ba425c52d97c8b442'}
 
 
 # Go 1.26 records the enclosing control-flow boundary; Go 1.27 starts at
@@ -95,29 +97,29 @@ AUDITED_SOURCE_SHA256 = {'EvaluableExpression.go': '8402d0eadf149b6bf511e992e89e
 # source hashes above. Unexplained blocks still fail closed, independently of
 # the reported toolchain version. Values identify the
 # canonical annotation, so every annotation must match in either layout.
-GO126_SPANS = {('EvaluableExpression.go', '81.16,83.3', 1): ('82.3,83.1', 1),
- ('EvaluableExpression.go', '111.16,113.3', 1): ('112.3,113.1', 1),
- ('EvaluableExpression.go', '126.16,128.3', 1): ('127.3,128.1', 1),
+GO126_SPANS = {('EvaluableExpression.go', '86.16,88.3', 1): ('87.3,88.1', 1),
+ ('EvaluableExpression.go', '160.16,162.3', 1): ('161.3,162.1', 1),
+ ('EvaluableExpression.go', '175.16,177.3', 1): ('176.3,177.1', 1),
  ('lexerState.go', '345.17,347.4', 1): ('346.4,347.1', 1),
  ('parsing.go', '48.17,50.4', 1): ('49.4,50.1', 1),
  ('parsing.go', '87.33,88.12', 1): ('88.4,88.12', 1),
  ('parsing.go', '343.26,344.13', 1): ('344.5,344.13', 1),
  ('parsing.go', '442.35,444.2', 1): ('443.2,444.1', 1),
- ('stagePlanner.go', '186.16,188.3', 1): ('187.3,188.1', 1),
- ('stagePlanner.go', '200.23,202.3', 1): ('201.3,202.1', 1),
- ('stagePlanner.go', '229.17,231.4', 1): ('230.4,231.1', 1),
- ('stagePlanner.go', '255.30,256.10', 1): ('256.5,256.10', 1),
- ('stagePlanner.go', '267.18,269.5', 1): ('268.5,269.1', 1),
- ('stagePlanner.go', '309.16,311.3', 1): ('310.3,311.1', 1),
- ('stagePlanner.go', '328.23,330.3', 1): ('329.3,330.1', 1),
- ('stagePlanner.go', '350.18,352.5', 1): ('351.5,352.1', 1),
- ('stagePlanner.go', '379.23,381.3', 1): ('380.3,381.1', 1),
- ('stagePlanner.go', '390.17,392.4', 1): ('391.4,392.1', 1),
- ('stagePlanner.go', '436.21,439.3', 2): ('437.3,439.1', 2),
- ('stagePlanner.go', '594.35,596.3', 1): ('595.3,596.1', 1),
- ('stagePlanner.go', '691.16,693.3', 1): ('692.3,693.1', 1),
- ('stagePlanner.go', '696.16,698.3', 1): ('697.3,698.1', 1),
- ('stagePlanner.go', '717.16,719.3', 1): ('718.3,719.1', 1)}
+ ('stagePlanner.go', '256.16,258.3', 1): ('257.3,258.1', 1),
+ ('stagePlanner.go', '270.23,272.3', 1): ('271.3,272.1', 1),
+ ('stagePlanner.go', '300.17,302.4', 1): ('301.4,302.1', 1),
+ ('stagePlanner.go', '326.30,327.10', 1): ('327.5,327.10', 1),
+ ('stagePlanner.go', '338.18,340.5', 1): ('339.5,340.1', 1),
+ ('stagePlanner.go', '380.16,382.3', 1): ('381.3,382.1', 1),
+ ('stagePlanner.go', '399.23,401.3', 1): ('400.3,401.1', 1),
+ ('stagePlanner.go', '421.18,423.5', 1): ('422.5,423.1', 1),
+ ('stagePlanner.go', '450.23,452.3', 1): ('451.3,452.1', 1),
+ ('stagePlanner.go', '461.17,463.4', 1): ('462.4,463.1', 1),
+ ('stagePlanner.go', '507.21,510.3', 2): ('508.3,510.1', 2),
+ ('stagePlanner.go', '665.35,667.3', 1): ('666.3,667.1', 1),
+ ('stagePlanner.go', '762.16,764.3', 1): ('763.3,764.1', 1),
+ ('stagePlanner.go', '767.16,769.3', 1): ('768.3,769.1', 1),
+ ('stagePlanner.go', '788.16,790.3', 1): ('789.3,790.1', 1)}
 
 def report(profile, matrix, *, go_version):
     # GOVERSION is provenance, not an allow-list for the merge gate. Match the
@@ -154,7 +156,8 @@ def report(profile, matrix, *, go_version):
         totals[file][0] += n
         if count:
             totals[file][1] += n
-        reason = UNUSED_FILES.get(file)
+        reason = OFF_PATH_FILES.get(file)
+        off_path = reason is not None
         if reason is None and file.startswith(FORK):
             short_file = file[len(FORK):]
             canonical = GO126_SPANS.get((short_file, span, n), (span, n))
@@ -164,8 +167,10 @@ def report(profile, matrix, *, go_version):
                 if annotation in consumed and consumed[annotation] != span:
                     failures.append(f'mixed coverage layouts for one annotation: {file}:{span}')
                 consumed[annotation] = span
-        # An unreachable annotation becoming covered signals a stale audit.
-        if count and reason:
+        # An unreachable annotation becoming covered signals a stale audit. An
+        # off-path file may be covered by its package unit tests; that does not
+        # put it on the condition path.
+        if count and reason and not off_path:
             failures.append(f'stale unreachable annotation: {file}:{span}')
         if not count and reason:
             totals[file][2] += n
