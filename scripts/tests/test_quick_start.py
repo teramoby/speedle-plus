@@ -49,7 +49,7 @@ class LatestInstallVersionTest(unittest.TestCase):
                 "github.com/teramoby/speedle-plus", "v1.6.0", {}
             )
         self.assertEqual(run.call_count, 3)
-        self.assertEqual(sleep.call_args_list, [mock.call(5.0), mock.call(10.0)])
+        self.assertEqual(sleep.call_args_list, [mock.call(5), mock.call(15)])
 
     def test_rejects_a_stale_pin_and_names_the_replacement(self):
         listing = "a\trefs/tags/v1.6.0\nb\trefs/tags/v1.7.0\n"
@@ -92,21 +92,35 @@ class NetworkRetryTest(unittest.TestCase):
             command, attempts = self.fake_command(work, succeed_on=3)
             result = QUICK_START.run_with_retry(
                 lambda: QUICK_START.run(command, work, dict(os.environ), timeout=10),
-                delay=0,
+                delays=(0, 0, 0, 0),
             )
             self.assertEqual(result, "")
             self.assertEqual(attempts.read_text(), "xxx")
 
-    def test_gives_up_after_three_attempts_and_reraises_the_failure(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            work = Path(temporary)
-            command, attempts = self.fake_command(work, succeed_on=4)
-            with self.assertRaisesRegex(RuntimeError, r"Command failed \(1\)"):
-                QUICK_START.run_with_retry(
-                    lambda: QUICK_START.run(command, work, dict(os.environ), timeout=10),
-                    delay=0,
-                )
-            self.assertEqual(attempts.read_text(), "xxx")
+    def test_succeeds_on_the_fifth_attempt_with_bounded_backoff(self):
+        action = mock.Mock(side_effect=[RuntimeError("network failure")] * 4 + ["ok"])
+        with mock.patch.object(QUICK_START.time, "sleep") as sleep:
+            self.assertEqual(QUICK_START.run_with_retry(action), "ok")
+        self.assertEqual(action.call_count, 5)
+        self.assertEqual(sleep.call_args_list,
+                         [mock.call(5), mock.call(15), mock.call(30), mock.call(60)])
+
+    def test_gives_up_after_five_attempts_and_reraises_the_last_failure(self):
+        failures = [RuntimeError(f"network failure {attempt}") for attempt in range(5)]
+        action = mock.Mock(side_effect=failures)
+        output = io.StringIO()
+        with mock.patch.object(QUICK_START.time, "sleep") as sleep, \
+                contextlib.redirect_stdout(output), \
+                self.assertRaises(RuntimeError) as raised:
+            QUICK_START.run_with_retry(action)
+        self.assertIs(raised.exception, failures[-1])
+        self.assertEqual(action.call_count, 5)
+        self.assertEqual(sleep.call_args_list,
+                         [mock.call(5), mock.call(15), mock.call(30), mock.call(60)])
+        self.assertEqual(output.getvalue().splitlines(), [
+            f"Command failed (attempt {attempt}/5); retrying in {delay}s: network failure {attempt - 1}"
+            for attempt, delay in enumerate((5, 15, 30, 60), start=1)
+        ])
 
     def test_does_not_retry_a_timeout(self):
         # A hung command must not multiply the per-command timeout.
@@ -142,7 +156,7 @@ class NetworkRetryTest(unittest.TestCase):
             QUICK_START.run_with_retry(action)
         self.assertEqual(
             output.getvalue().splitlines(),
-            ["Command failed (attempt 1/3); retrying in 5s: Command failed (128): git clone"],
+            ["Command failed (attempt 1/5); retrying in 5s: Command failed (128): git clone"],
         )
 
 
@@ -336,7 +350,7 @@ class DocumentedBuildTest(unittest.TestCase):
                 return ""
             raise AssertionError(f"unexpected command: {command}")
 
-        def retry(action, reset=None, attempts=3, delay=5.0):
+        def retry(action, reset=None, delays=(5, 15, 30, 60)):
             start = len(calls)
             result = action()
             retried.extend(calls[start:])

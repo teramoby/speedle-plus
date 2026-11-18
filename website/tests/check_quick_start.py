@@ -5,12 +5,12 @@ The documented `go install` route runs once into a temporary GOBIN, its module
 path and version pattern are checked against the checkout, and its pinned version
 must match the highest full semantic tag on the public remote. The installed
 binaries must accept the flags used by the guide, and one documented walkthrough
-runs with those installed binaries. Network steps (the public clone, the
-module download and the install) retry up to three times with exponential
-backoff, because a transient TLS or connection reset must not fail the
-walkthrough; a step that hits its timeout fails at once instead of multiplying
-the limit. The documented build runs once after a checker-added `go mod
-download`, so a real defect in the guide fails on the first attempt instead of
+runs with those installed binaries. Network steps (the tag listing, public
+clone, module download and install) retry up to five times with 5, 15, 30
+and 60 seconds of backoff, because a transient TLS or connection reset must not
+fail the walkthrough; a step that hits its timeout fails at once instead of
+multiplying the limit. The documented build runs once after a checker-added
+`go mod download`, so a real defect in the guide fails on the first attempt instead of
 looking like a flaky download. The documented commands themselves stay byte
 for byte unchanged. A public shallow clone verifies the download step; CI then
 checks out the captured candidate revision before compiling. Linux
@@ -105,11 +105,11 @@ def split_network_command(block, command):
     return "\n".join(lines[:index]), lines[index], "\n".join(lines[index + 1:])
 
 
-def run_with_retry(action, reset=None, attempts=3, delay=5.0):
-    """Retry a network command up to `attempts` times with exponential backoff.
+def run_with_retry(action, reset=None, delays=(5, 15, 30, 60)):
+    """Retry a network command with 110 seconds of backoff by default.
 
     Only command failures are retried: they cover the transient TLS and
-    connection resets of the clone, module download and install steps. A
+    connection resets of the tag listing, clone, module download and install. A
     timeout is not retried, because a hung command would multiply the
     per-command limit across attempts and hide the underlying error.
     Assertions about the result are never retried, and neither is any
@@ -124,6 +124,7 @@ def run_with_retry(action, reset=None, attempts=3, delay=5.0):
     bare sibling import is unavailable; the workflow Python isolation guard
     (scripts/tests/test_workflow_python_isolation.cjs) enforces that.
     """
+    attempts = len(delays) + 1
     for attempt in range(1, attempts + 1):
         try:
             return action()
@@ -136,9 +137,9 @@ def run_with_retry(action, reset=None, attempts=3, delay=5.0):
                 except OSError as cleanup:
                     raise cleanup from error
             detail = str(error).splitlines()[0]
+            delay = delays[attempt - 1]
             print(f"Command failed (attempt {attempt}/{attempts}); retrying in {delay:.0f}s: {detail}", flush=True)
             time.sleep(delay)
-            delay *= 2
 
 
 def help_text(path, cwd, env):
