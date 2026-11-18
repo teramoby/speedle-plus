@@ -12,9 +12,10 @@ const source = fs.readFileSync(path.resolve(__dirname, '../../.github/workflows/
 const pool = ['self-hosted', 'Linux', 'X64', 'speedle-linux'];
 const anyRunner = ['self-hosted', 'speedle-runner'];
 const fiona = ['self-hosted', 'fiona-speedle'];
-// Build needs the Linux pool and weekly uses the macOS-only label to reduce
-// benchmark noise; its macOS ARM64 requirement is a runtime identity check.
-const routeFor = mode => mode === 'quick' ? 'ubuntu-latest' : mode === 'build' ? pool : mode === 'weekly' ? fiona : anyRunner;
+// Nightly needs Docker; build and post-merge regression also use Linux.
+// Weekly uses the macOS-only label and a runtime macOS ARM64 identity check.
+const linuxModes = ['build', 'nightly', 'regression'];
+const routeFor = mode => mode === 'quick' ? 'ubuntu-latest' : linuxModes.includes(mode) ? pool : mode === 'weekly' ? fiona : anyRunner;
 const repository = 'teramoby/speedle-plus';
 function step(name) {
   const parts = source.split(`      - name: ${name}\n`);
@@ -441,7 +442,7 @@ test('workflow steps keep their keys and block scalars inside the sequence entry
     }
   }
 });
-test('trusted events send weekly to fiona, build to Linux and other tasks to any Speedle runner', () => {
+test('trusted events send weekly to fiona, build/nightly/regression to Linux and lint/test to any Speedle runner', () => {
   const push = context('push'), dispatch = context('workflow_dispatch');
   push.event = {sender: {type: 'User'}}; dispatch.event = {sender: {type: 'User'}};
   const merged = context('push'); merged.ref = 'refs/heads/master'; merged.event = {sender: {type: 'Bot'}};
@@ -485,8 +486,12 @@ test('identity check accepts the Speedle runners for the tasks each may run', ()
       });
       const host = `${RUNNER_NAME}/${RUNNER_OS}/${RUNNER_ARCH}`;
       const allowed = (['charming-speedle-2/Linux/X64', 'donkey-speedle/Linux/X64'].includes(host) && CI_TASK !== 'weekly') ||
-        (host === 'fiona/macOS/ARM64' && CI_TASK !== 'build');
+        (host === 'fiona/macOS/ARM64' && !linuxModes.includes(CI_TASK));
       assert.equal(result.status === 0, allowed, `${host}/${CI_TASK}: ${result.stderr}`);
+      if (linuxModes.includes(CI_TASK) && host === 'fiona/macOS/ARM64') {
+        assert.equal(result.status, 1, `${host}/${CI_TASK}`);
+        assert.match(result.stderr, new RegExp(`Task ${CI_TASK} needs a Linux runner\\.`));
+      }
       // Weekly's label is unique, but its platform requirement is a runtime
       // check: an identity-accepted Linux host that later carries the label
       // must fail red with the platform message, not the identity message.

@@ -10,8 +10,8 @@ unsupported response; the supported backends retain their Discover tests.
 (01:00 Asia/Shanghai). GitHub schedules execute the workflow on the default
 branch, so a workflow change in an unmerged PR does not activate the schedule.
 
-Trusted nightly jobs use any Speedle runner via `speedle-runner`, including the
-macOS ARM64 runner with Docker Desktop. The worker holds a host-wide `flock`
+Trusted nightly jobs use `[self-hosted, Linux, X64, speedle-linux]`, the Linux
+pool with Docker. The worker holds a host-wide `flock`
 before checking legacy fixed test ports and running tests, to serialize their
 use across the runner processes. It refuses occupied ports without stopping
 host services.

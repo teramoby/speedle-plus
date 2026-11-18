@@ -17,9 +17,10 @@ jobs:
     # derive runner eligibility or checkout revision from caller inputs.
     # Quick uses QUICK_RUNS_ON (hosted Ubuntu by default). It starts no
     # integration services and supports Linux x64 and macOS ARM64.
-    # Every other task but build and weekly goes to any Speedle runner
-    # (speedle-runner: charming-speedle-2, donkey-speedle and fiona). Build needs
-    # the Linux Hugo release, so its default is the Linux pool. Weekly selects
+    # Build, nightly and post-merge regression use the Linux x64 pool
+    # (speedle-linux: charming-speedle-2 and donkey-speedle). Nightly needs
+    # Docker for MySQL and the storage guides; build needs the Linux Hugo
+    # release. Lint and test use any Speedle runner via speedle-runner. Weekly selects
     # the unique fiona-speedle scheduling label to reduce timing noise in its
     # benchmark comparison; the identity step also rejects weekly on any OS or
     # architecture other than macOS ARM64, so a host that later carries that
@@ -28,13 +29,13 @@ jobs:
     # fiona-speedle scheduling label used by weekly and MongoDB runs.
     # merge-head may reserve HEAD_RUNS_ON (a JSON string or labels array)
     # for full jobs, including build. That pool must supply an approved Linux
-    # runner; identity checks still reject build on macOS. Scheduled weekly
+    # runner; identity checks still reject Linux-only tasks on macOS. Scheduled weekly
     # jobs never use the PR-only override.
     # Without it, retain the existing task pools. Labels only select scheduling;
     # the trusted-event predicate and runner identity checks still apply.
     # The host lock below keeps fixed-port tests from overlapping on shared hosts.
     runs-on: >-
-      ${{ github.repository == 'teramoby/speedle-plus' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && github.ref == 'refs/heads/master') || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.event.sender.type == 'User' || github.event.sender.type == 'Bot')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.user.type == 'User' || github.event.pull_request.user.type == 'Bot'))) && fromJSON(inputs.mode == 'quick' && (vars.QUICK_RUNS_ON || '"ubuntu-latest"') || github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'merge-head') && vars.HEAD_RUNS_ON || inputs.mode == 'build' && '["self-hosted","Linux","X64","speedle-linux"]' || inputs.mode == 'weekly' && '["self-hosted","fiona-speedle"]' || '["self-hosted","speedle-runner"]') || 'ubuntu-latest' }}
+      ${{ github.repository == 'teramoby/speedle-plus' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && github.ref == 'refs/heads/master') || (github.event_name == 'push' && (github.ref == 'refs/heads/master' || github.event.sender.type == 'User' || github.event.sender.type == 'Bot')) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && (github.event.pull_request.user.type == 'User' || github.event.pull_request.user.type == 'Bot'))) && fromJSON(inputs.mode == 'quick' && (vars.QUICK_RUNS_ON || '"ubuntu-latest"') || github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'merge-head') && vars.HEAD_RUNS_ON || (inputs.mode == 'build' || inputs.mode == 'nightly' || inputs.mode == 'regression') && '["self-hosted","Linux","X64","speedle-linux"]' || inputs.mode == 'weekly' && '["self-hosted","fiona-speedle"]' || '["self-hosted","speedle-runner"]') || 'ubuntu-latest' }}
     # test can wait on the host lock behind a nightly on the same host.
     timeout-minutes: ${{ (inputs.mode == 'nightly' || inputs.mode == 'weekly' || inputs.mode == 'regression' || inputs.mode == 'test') && 150 || 30 }}
     # Never let a later go command pick another toolchain than the installed
@@ -73,7 +74,7 @@ jobs:
             echo "Task ${CI_TASK} requires a macOS ARM64 runner; refusing ${RUNNER_OS}/${RUNNER_ARCH}." >&2
             exit 1
           fi
-          if [[ "${CI_TASK}" == build && "${RUNNER_OS}/${RUNNER_ARCH}" != Linux/X64 ]]; then
+          if [[ ( "${CI_TASK}" == build || "${CI_TASK}" == nightly || "${CI_TASK}" == regression ) && "${RUNNER_OS}/${RUNNER_ARCH}" != Linux/X64 ]]; then
             echo "Task ${CI_TASK} needs a Linux runner." >&2
             exit 1
           fi

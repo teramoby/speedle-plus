@@ -395,6 +395,12 @@ test('every self-hosted Go task can only land on runners the identity guard acce
         assert.deepEqual(candidates.map(runner => runner.name), ['fiona'],
           'weekly must schedule only on the macOS runner');
       }
+      if (['build', 'nightly', 'regression'].includes(mode)) {
+        assert.deepEqual(routed, ['self-hosted', 'Linux', 'X64', 'speedle-linux'], mode);
+        assert.deepEqual(candidates.map(runner => runner.name), ['charming-speedle-2', 'donkey-speedle'],
+          `${mode} must schedule only on the Linux pool`);
+      }
+      if (['lint', 'test'].includes(mode)) assert.deepEqual(routed, labels, mode);
     }
   }
 });
@@ -418,9 +424,9 @@ test('configured runner overrides can only land on runners the identity guard ac
   const scheduled = {...github('schedule'), ref: 'refs/heads/master'};
   assert.deepEqual(route(job.worker.execute, scheduled, overrides, {mode: 'weekly'}),
     ['self-hosted', 'fiona-speedle']);
-  assert.deepEqual(route(job.worker.execute, scheduled, overrides, {mode: 'nightly'}), labels);
+  assert.deepEqual(route(job.worker.execute, scheduled, overrides, {mode: 'nightly'}), JSON.parse(pool));
   assert.deepEqual(route(job.worker.execute, {...github('push'), ref: 'refs/heads/master'}, overrides,
-    {mode: 'regression'}), labels);
+    {mode: 'regression'}), JSON.parse(pool));
 });
 // Extract the name/OS/arch alternatives from the case arms of a guard script.
 function acceptedIdentities(guard) {
