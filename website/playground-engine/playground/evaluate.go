@@ -24,7 +24,7 @@ import (
 	"log/slog"
 )
 
-const Revision = "c14ee1b2d625778cf78812db69f26784968bf79c"
+const Revision = "7d2f08e5fd25a58c6e62983c4a9ac2797048a18c"
 const MaxInputBytes = 256 * 1024
 const MaxStatements = 500
 

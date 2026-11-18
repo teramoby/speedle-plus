@@ -2,7 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 ROOT=$(git rev-parse --show-toplevel)
-REVISION=c14ee1b2d625778cf78812db69f26784968bf79c
+REVISION=7d2f08e5fd25a58c6e62983c4a9ac2797048a18c
 GO_BIN="${GO_BIN:-go}"
 # Select the pinned toolchain even when the trusted worker preinstalls an
 # older Playground Go. This does not alter the worker or host configuration.
