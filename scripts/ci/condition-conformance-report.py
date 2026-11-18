@@ -84,12 +84,12 @@ UNREACHABLE = {'EvaluableExpression.go': {('82.3,83.1', 1): 'Validated token kin
 
 # Bind the audit to source contents as well as coverage spans. A source edit
 # requires an explicit reachability re-audit even if its line numbers survive.
-AUDITED_SOURCE_SHA256 = {'EvaluableExpression.go': 'c9b34b92f3e2b58f1472934b508ad9c6bce6d57b653410efb466f1b948a68e68',
- 'EvaluableExpression_sql.go': 'efc65a167f796c945f9e1300daea975e6f7e5dbb330d4da8032ab504c797c1ce',
- 'expressionOutputStream.go': '47c2f40f57bb0b14f8adcbcf2a2538e5c3f55ea0dccbdf1884ffc4b7532426ec',
+AUDITED_SOURCE_SHA256 = {'EvaluableExpression.go': '760a1e90c2695a6f1a8cbb5ca65aef15f5eab130100d4e514bd04045b829e487',
+ 'EvaluableExpression_sql.go': '5e1066d5c85f91105b7dbd457571da1835966f09389f58ebe183bb81a90e8188',
+ 'expressionOutputStream.go': '300d9803ed5b07eee5c1af16fa81d3cb7c39b38e4d784a4fa6ef376b079bc8c5',
  'lexerState.go': '664c31b50bddfc18bdfbf188dd1b064cdce783e6a467335af3182a55670bac95',
  'parsing.go': 'e7444af3bf0687f426573534f2d8d07c2f995d3db750669db6656578c9eaf988',
- 'stagePlanner.go': '0e3768169e47163cae539845d233c761b6b45e9b5d3d4f3dd271f2c46398dde0'}
+ 'stagePlanner.go': '8776137a25c488fd041bb0835883fe31fa191b30be1d5d41fd9604e007bec6f6'}
 
 
 # Go 1.26 records the enclosing control-flow boundary; Go 1.27 starts at
