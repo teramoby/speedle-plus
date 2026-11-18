@@ -1,5 +1,8 @@
-govaluate
-====
+condexpr
+========
+
+This document is the upstream govaluate manual for the expression language
+implemented by this package.
 
 This library contains quite a lot of functionality, this document is meant to be formal documentation on the operators and features of it.
 Some of this documentation may duplicate what's in README.md, but should never conflict.
@@ -147,17 +150,17 @@ At no point is the parameter structure, or any value thereof, modified by this l
 
 The default form of parameters as a map may not serve your use case. You may have parameters in some other structure, you may want to change the no-parameter-found behavior, or maybe even just have some debugging print statements invoked when a parameter is accessed.
 
-To do this, define a type that implements the `govaluate.Parameters` interface. When you want to evaluate, instead call `EvaluableExpression.Eval` and pass your parameter structure.
+To do this, define a type that implements the `condexpr.Parameters` interface. When you want to evaluate, instead call `EvaluableExpression.Eval` and pass your parameter structure.
 
 # Functions
 
-During expression parsing (_not_ evaluation), a map of functions can be given to `govaluate.NewEvaluableExpressionWithFunctions` (the lengthiest and finest of function names). The resultant expression will be able to invoke those functions during evaluation. Once parsed, an expression cannot have functions added or removed - a new expression will need to be created if you want to change the functions, or behavior of said functions.
+During expression parsing (_not_ evaluation), a map of functions can be given to `condexpr.NewEvaluableExpressionWithFunctions` (the lengthiest and finest of function names). The resultant expression will be able to invoke those functions during evaluation. Once parsed, an expression cannot have functions added or removed - a new expression will need to be created if you want to change the functions, or behavior of said functions.
 
 Functions always take the form `<name>(<parameters>)`, including parens. Functions can have an empty list of parameters, like `<name>()`, but still must have parens.
 
 If the expression contains something that looks like it ought to be a function (such as `foo()`), but no such function was given to it, it will error on parsing.
 
-Functions must be of type `map[string]govaluate.ExpressionFunction`. `ExpressionFunction`, for brevity, has the following signature:
+Functions must be of type `map[string]condexpr.ExpressionFunction`. `ExpressionFunction`, for brevity, has the following signature:
 
 `func(args ...interface{}) (interface{}, error)`
 
@@ -171,6 +174,6 @@ Every use case of this library is different, and even in simple use cases (such 
 
 # Equality
 
-The `==` and `!=` operators involve a moderately complex workflow. They use [`reflect.DeepEqual`](https://golang.org/pkg/reflect/#DeepEqual). This is for complicated reasons, but there are some types in Go that cannot be compared with the native `==` operator. Arrays, in particular, cannot be compared - Go will panic if you try. One might assume this could be handled with the type checking system in `govaluate`, but unfortunately without reflection there is no way to know if a variable is a slice/array. Worse, structs can be incomparable if they _contain incomparable types_.
+The `==` and `!=` operators involve a moderately complex workflow. They use [`reflect.DeepEqual`](https://golang.org/pkg/reflect/#DeepEqual). This is for complicated reasons, but there are some types in Go that cannot be compared with the native `==` operator. Arrays, in particular, cannot be compared - Go will panic if you try. One might assume this could be handled with the type checking system in `condexpr`, but unfortunately without reflection there is no way to know if a variable is a slice/array. Worse, structs can be incomparable if they _contain incomparable types_.
 
-It's all very complicated. Fortunately, Go includes the `reflect.DeepEqual` function to handle all the edge cases. Currently, `govaluate` uses that for all equality/inequality.
+It's all very complicated. Fortunately, Go includes the `reflect.DeepEqual` function to handle all the edge cases. Currently, `condexpr` uses that for all equality/inequality.

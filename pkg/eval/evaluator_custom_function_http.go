@@ -14,9 +14,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
 	"github.com/teramoby/speedle-plus/api/ext"
 	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/pkg/condexpr"
 	"github.com/teramoby/speedle-plus/pkg/errors"
 	"github.com/teramoby/speedle-plus/pkg/logging"
 )
@@ -33,7 +33,7 @@ func validateFunctionAdditionCustomFunctions(_ *RuntimePolicyStore, _ *pms.Funct
 	return nil
 }
 
-func (frc *FuncResultCache) generateCustomerExpressionFunction(cfdUrl *string, cf *pms.Function) (govaluate.ExpressionFunction, error) {
+func (frc *FuncResultCache) generateCustomerExpressionFunction(cfdUrl *string, cf *pms.Function) (condexpr.ExpressionFunction, error) {
 	return func(arguments ...interface{}) (interface{}, error) {
 		return frc.callCustomFunction(cf, arguments, func(request *ext.CustomerFunctionRequest) (interface{}, error) {
 			if *cfdUrl == "" { //no delegator configured, request goes directly to customer function service

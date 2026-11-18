@@ -127,7 +127,7 @@ package. Re-running an older commit does not publish a chart.
 
 Pull requests that change the chart, its Helm/kind installer scripts, the
 chart or release workflow, or the candidate image inputs (`deployment/container/`,
-`cmd/`, `pkg/`, `api/`, `3rdparty/`, `go.mod` and `go.sum`) run `helm lint`, `helm template` for the file, etcd and MongoDB
+`cmd/`, `pkg/`, `api/`, `go.mod` and `go.sum`) run `helm lint`, `helm template` for the file, etcd and MongoDB
 stores, and an install on a throwaway kind cluster. CI builds the candidate
 commit with the release Dockerfile and loads it into kind under the chart
 appVersion, so preparation does not require an already-published image.

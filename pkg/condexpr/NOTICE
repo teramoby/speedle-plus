@@ -1,0 +1,5 @@
+condexpr
+
+This package is derived from github.com/Knetic/govaluate, revision
+9aa49832a739dcd78a5542ff189fb82c3e423116, Copyright (c) 2014-2016 George Lester.
+It is distributed under the MIT license in the LICENSE file next to this notice.

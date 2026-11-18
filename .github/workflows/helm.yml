@@ -12,7 +12,6 @@ on:
       - cmd/**
       - pkg/**
       - api/**
-      - 3rdparty/**
       - go.mod
       - go.sum
       - scripts/ci/install-helm.sh
@@ -27,7 +26,6 @@ on:
       - cmd/**
       - pkg/**
       - api/**
-      - 3rdparty/**
       - go.mod
       - go.sum
       - scripts/ci/install-helm.sh

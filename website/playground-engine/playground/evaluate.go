@@ -14,9 +14,9 @@ import (
 	"time"
 
 	"context"
-	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
 	"github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/pkg/condexpr"
 	"github.com/teramoby/speedle-plus/pkg/eval"
 	"github.com/teramoby/speedle-plus/pkg/eval/function"
 	"github.com/teramoby/speedle-plus/pkg/logging"
@@ -28,7 +28,7 @@ const Revision = "c14ee1b2d625778cf78812db69f26784968bf79c"
 const MaxInputBytes = 256 * 1024
 const MaxStatements = 500
 
-var builtinFunctions = map[string]govaluate.ExpressionFunction{
+var builtinFunctions = map[string]condexpr.ExpressionFunction{
 	"Sqrt": function.Sqrt, "Max": function.Max, "Min": function.Min,
 	"Sum": function.Sum, "Avg": function.Avg, "IsSubSet": function.IsSubSet,
 }
@@ -148,7 +148,7 @@ func EvaluateJSON(data []byte) (out Result) {
 	}
 	service := &pms.Service{Name: ctx.ServiceName, Type: pms.TypeApplication}
 	statements := []Statement{}
-	compiled := map[string]*govaluate.EvaluableExpression{}
+	compiled := map[string]*condexpr.EvaluableExpression{}
 	for index, rawLine := range strings.Split(strings.ReplaceAll(input.Policies, "\r\n", "\n"), "\n") {
 		line := strings.TrimSpace(rawLine)
 		if line == "" || strings.HasPrefix(line, "#") || strings.HasPrefix(line, "//") {
@@ -198,7 +198,7 @@ func EvaluateJSON(data []byte) (out Result) {
 			if len(condition) > 4096 {
 				return fail("condition", "Condition exceeds the playground's 4096-byte limit.", index+1)
 			}
-			expression, err := govaluate.NewEvaluableExpressionWithFunctions(condition, builtinFunctions)
+			expression, err := condexpr.NewEvaluableExpressionWithFunctions(condition, builtinFunctions)
 			if err != nil {
 				return fail("condition", err.Error()+" (Only Speedle built-in functions are available in this browser playground.)", index+1)
 			}

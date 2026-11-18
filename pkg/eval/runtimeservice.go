@@ -7,15 +7,15 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
 	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/pkg/condexpr"
 	"github.com/teramoby/speedle-plus/pkg/errors"
 	"github.com/teramoby/speedle-plus/pkg/logging"
 )
 
 type RuntimePolicyStore struct {
 	sync.RWMutex
-	Functions           map[string]govaluate.ExpressionFunction
+	Functions           map[string]condexpr.ExpressionFunction
 	customFunctionNames map[string]struct{}
 	RuntimeServices     map[string]*RuntimeService
 	FunctionResultCache *FuncResultCache
@@ -38,7 +38,7 @@ type RuntimeService struct {
 	Type              string
 	PoliciesCache     *PolicyCacheData
 	RolePoliciesCache *RolePolicyCacheData
-	Functions         map[string]govaluate.ExpressionFunction
+	Functions         map[string]condexpr.ExpressionFunction
 }
 
 func (rtps *RuntimePolicyStore) init(ps *pms.PolicyStore, funcSvcEndpoint string) error {
@@ -100,7 +100,7 @@ func (rtps *RuntimePolicyStore) deleteService(serviceName string) {
 	delete(rtps.RuntimeServices, serviceName)
 }
 
-func (rtps *RuntimePolicyStore) recompilePolicyConditionAtRuntime(serviceName string, policy *pms.Policy) (*govaluate.EvaluableExpression, error) {
+func (rtps *RuntimePolicyStore) recompilePolicyConditionAtRuntime(serviceName string, policy *pms.Policy) (*condexpr.EvaluableExpression, error) {
 	logging.Default().Debug(fmt.Sprintf("Recompiling the condition of policy %q in service %q", policy.ID, serviceName))
 	condition, err := compileCondition(policy.Condition, rtps.Functions)
 	if err == nil {
@@ -110,7 +110,7 @@ func (rtps *RuntimePolicyStore) recompilePolicyConditionAtRuntime(serviceName st
 	return condition, err
 }
 
-func updatePolicyCondition(rtps *RuntimePolicyStore, serviceName string, policy *pms.Policy, condition *govaluate.EvaluableExpression) {
+func updatePolicyCondition(rtps *RuntimePolicyStore, serviceName string, policy *pms.Policy, condition *condexpr.EvaluableExpression) {
 	var err error
 	defer recoverEvaluation("PolicyConditionCache", &err)
 	rtps.RLock()
@@ -126,7 +126,7 @@ func updatePolicyCondition(rtps *RuntimePolicyStore, serviceName string, policy 
 	rtService.PoliciesCache.Conditions[policy.ID] = condition
 }
 
-func (rtps *RuntimePolicyStore) recompileRolePolicyConditionAtRuntime(serviceName string, policy *pms.RolePolicy) (*govaluate.EvaluableExpression, error) {
+func (rtps *RuntimePolicyStore) recompileRolePolicyConditionAtRuntime(serviceName string, policy *pms.RolePolicy) (*condexpr.EvaluableExpression, error) {
 	logging.Default().Debug(fmt.Sprintf("Recompiling the condition of role policy %q in service %q", policy.ID, serviceName))
 	condition, err := compileCondition(policy.Condition, rtps.Functions)
 	if err == nil {
@@ -136,7 +136,7 @@ func (rtps *RuntimePolicyStore) recompileRolePolicyConditionAtRuntime(serviceNam
 	return condition, err
 }
 
-func updateRolePolicyCondition(rtps *RuntimePolicyStore, serviceName string, policy *pms.RolePolicy, condition *govaluate.EvaluableExpression) {
+func updateRolePolicyCondition(rtps *RuntimePolicyStore, serviceName string, policy *pms.RolePolicy, condition *condexpr.EvaluableExpression) {
 	var err error
 	defer recoverEvaluation("RoleConditionCache", &err)
 	rtps.RLock()
@@ -278,15 +278,15 @@ func (rtps *RuntimePolicyStore) expireFunctionResultCache() {
 	rtps.FunctionResultCache.CleanExpiredResult()
 }
 
-func compileCondition(condition string, functions map[string]govaluate.ExpressionFunction) (*govaluate.EvaluableExpression, error) {
+func compileCondition(condition string, functions map[string]condexpr.ExpressionFunction) (*condexpr.EvaluableExpression, error) {
 	if len(condition) == 0 {
 		return nil, nil
 	}
 
-	exp, err := govaluate.NewEvaluableExpressionWithFunctions(condition, functions)
+	exp, err := condexpr.NewEvaluableExpressionWithFunctions(condition, functions)
 	if err != nil {
 		logging.Default().Error(fmt.Sprintf("Error parsing policy condition: %v", err))
-		if _, limited := err.(*govaluate.ComplexityError); limited {
+		if _, limited := err.(*condexpr.ComplexityError); limited {
 			return nil, errors.Wrap(err, errors.EvalEngineError, "policy condition exceeds evaluation limits")
 		}
 		return nil, err
@@ -295,7 +295,7 @@ func compileCondition(condition string, functions map[string]govaluate.Expressio
 }
 
 func convertService(service *pms.Service,
-	functions map[string]govaluate.ExpressionFunction) *RuntimeService {
+	functions map[string]condexpr.ExpressionFunction) *RuntimeService {
 	rtService := RuntimeService{
 		Name:              service.Name,
 		Type:              service.Type,
@@ -325,8 +325,8 @@ func getCustomFunctionNames(functions []*pms.Function) map[string]struct{} {
 	return names
 }
 
-func convertFunctions(functions []*pms.Function, resultCache *FuncResultCache, funcSvcEndpoint *string) map[string]govaluate.ExpressionFunction {
-	funcs := map[string]govaluate.ExpressionFunction{}
+func convertFunctions(functions []*pms.Function, resultCache *FuncResultCache, funcSvcEndpoint *string) map[string]condexpr.ExpressionFunction {
+	funcs := map[string]condexpr.ExpressionFunction{}
 
 	//loading builtin functions
 	for key, value := range builtinFunctions {

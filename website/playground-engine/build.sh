@@ -35,7 +35,7 @@ chmod 0644 "$OUT/speedle.wasm"
 install -m 0644 "$GOROOT/lib/wasm/wasm_exec.js" "$OUT/wasm_exec.js"
 install -m 0644 "$GOROOT/LICENSE" "$OUT/licenses/Go-BSD-3-Clause.txt"
 install -m 0644 "$BUILD_ROOT/LICENSE" "$OUT/licenses/Speedle-UPL-1.0.txt"
-install -m 0644 "$BUILD_ROOT/3rdparty/github.com/Knetic/govaluate/LICENSE" "$OUT/licenses/govaluate-MIT.txt"
+install -m 0644 "$BUILD_ROOT/pkg/condexpr/LICENSE" "$OUT/licenses/govaluate-MIT.txt"
 install -m 0644 "$BUILD_ROOT/THIRD_PARTY_LICENSES.txt" "$OUT/licenses/Speedle-upstream-third-party.txt"
 GOOS=js GOARCH=wasm "$GO_BIN" list -mod=readonly -deps -f '{{with .Module}}{{.Path}}|{{.Dir}}{{end}}' ./cmd/wasm | sort -u | while IFS='|' read -r module directory; do
   [[ -n "$module" && "$module" != speedle-playground && "$module" != github.com/teramoby/speedle-plus ]] || continue

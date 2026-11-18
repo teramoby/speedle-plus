@@ -1,4 +1,4 @@
-package govaluate
+package condexpr
 
 /*
 	Represents a function that can be called from within an expression.

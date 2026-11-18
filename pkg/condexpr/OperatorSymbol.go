@@ -1,4 +1,4 @@
-package govaluate
+package condexpr
 
 /*
 	Represents the valid symbols for operators.

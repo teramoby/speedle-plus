@@ -11,7 +11,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
+	"github.com/teramoby/speedle-plus/pkg/condexpr"
 )
 
 const (
@@ -43,19 +43,19 @@ func Check(condition string) error {
 	if strings.TrimSpace(condition) == "" {
 		return nil
 	}
-	functions := map[string]govaluate.ExpressionFunction{}
+	functions := map[string]condexpr.ExpressionFunction{}
 	for _, name := range calledNames(condition) {
 		functions[name] = anyFunction
 	}
 	// calledNames finds the calls, so this loop should not need to retry; the
 	// bound keeps the work linear if it does.
 	for retries := 0; ; retries++ {
-		_, err := govaluate.NewEvaluableExpressionWithFunctions(condition, functions)
+		_, err := condexpr.NewEvaluableExpressionWithFunctions(condition, functions)
 		if err == nil {
 			return nil
 		}
 		position := -1
-		var expErr *govaluate.ExpressionError
+		var expErr *condexpr.ExpressionError
 		if errors.As(err, &expErr) {
 			if name := strings.TrimPrefix(expErr.Message, undefinedFunction); name != expErr.Message && functions[name] == nil && retries < maxRetries {
 				functions[name] = anyFunction

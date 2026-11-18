@@ -2,7 +2,7 @@
 """Report the SPDL condition path, keeping raw and scoped coverage separate.
 
 Run from the repository root (profile uses covermode=count or atomic as well):
-  go test -count=1 -coverpkg=./pkg/eval/condition,./pkg/eval/function,./3rdparty/github.com/Knetic/govaluate -coverprofile=condition.out ./pkg/eval/... ./pkg/svcs/adsrest/... ./3rdparty/github.com/Knetic/govaluate
+  go test -count=1 -coverpkg=./pkg/eval/condition,./pkg/eval/function,./pkg/condexpr -coverprofile=condition.out ./pkg/eval/... ./pkg/svcs/adsrest/... ./pkg/condexpr
   go test -count=1 -v ./pkg/eval -run '^TestConditionConformanceMatrix$' > condition-matrix.log
   python3 scripts/ci/condition-conformance-report.py --go-version "$(go env GOVERSION)" condition.out condition-matrix.log
 
@@ -17,7 +17,7 @@ from pathlib import Path
 import re
 
 ROOT = Path(__file__).resolve().parents[2]
-FORK = '3rdparty/github.com/Knetic/govaluate/'
+FORK = 'pkg/condexpr/'
 # These files implement SQL output only; neither the condition validator nor
 # the evaluator invokes ToSQLQuery or its stream. Report their raw coverage too.
 UNUSED_FILES = {

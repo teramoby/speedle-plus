@@ -19,7 +19,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 PACK = HERE / "engine-source.pack"
 CHECKSUM = HERE / "engine-source.sha256"
-PATHS = ["api", "pkg", "3rdparty", "go.mod", "go.sum", "LICENSE", "THIRD_PARTY_LICENSES.txt"]
+PATHS = ["api", "pkg", "go.mod", "go.sum", "LICENSE", "THIRD_PARTY_LICENSES.txt"]
 # A partial proof must never borrow objects from the caller's Git repository.
 GIT_ENV = {key: value for key, value in os.environ.items() if not key.startswith("GIT_")}
 GIT_ENV.update(GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=os.devnull)

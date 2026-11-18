@@ -665,10 +665,10 @@ test('gate runs every package once, only store-dependent packages again with etc
   for (const record of [coverage, matrix]) {
     assert.equal(record.env.STORE_TYPE, 'file');
     assert.deepEqual(record.args.slice(0, 7), ['test', '-p', '1', '-count=1', '-timeout', '300s',
-      record === coverage ? '-coverpkg=./pkg/eval/condition,./pkg/eval/function,./3rdparty/github.com/Knetic/govaluate' : '-v']);
+      record === coverage ? '-coverpkg=./pkg/eval/condition,./pkg/eval/function,./pkg/condexpr' : '-v']);
   }
   const profile = coverage.args.find(a => a.startsWith('-coverprofile=')).slice('-coverprofile='.length);
-  assert.deepEqual(coverage.args.slice(-3), ['./pkg/eval/...', './pkg/svcs/adsrest/...', './3rdparty/github.com/Knetic/govaluate']);
+  assert.deepEqual(coverage.args.slice(-3), ['./pkg/eval/...', './pkg/svcs/adsrest/...', './pkg/condexpr']);
   assert.deepEqual(matrix.args.slice(-3), ['./pkg/eval', '-run', '^TestConditionConformanceMatrix$']);
   assert.deepEqual(docs.args, ['test', '-count=1', './website/tests/docscheck']);
   assert.deepEqual(conditionReports.map(r => r.args), [

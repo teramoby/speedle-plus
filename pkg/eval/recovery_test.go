@@ -12,10 +12,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
 	ads "github.com/teramoby/speedle-plus/api/ads"
 	"github.com/teramoby/speedle-plus/api/pms"
 	"github.com/teramoby/speedle-plus/pkg/cfg"
+	"github.com/teramoby/speedle-plus/pkg/condexpr"
 	"github.com/teramoby/speedle-plus/pkg/errors"
 	"github.com/teramoby/speedle-plus/pkg/logging"
 	"github.com/teramoby/speedle-plus/testutil/logcapture"
@@ -82,7 +82,7 @@ func TestFeatureEvaluationPanicFailClosed(t *testing.T) {
 			broken := recoveryGrant("broken")
 			broken.Effect, broken.Condition = effect, "Crash(x)"
 			e := featureEvaluator(t, &pms.PolicyStore{Services: []*pms.Service{{Name: "app", Policies: []*pms.Policy{recoveryGrant("fallback"), broken}}}})
-			expression, err := govaluate.NewEvaluableExpressionWithFunctions("Crash(x)", map[string]govaluate.ExpressionFunction{
+			expression, err := condexpr.NewEvaluableExpressionWithFunctions("Crash(x)", map[string]condexpr.ExpressionFunction{
 				"Crash": func(...interface{}) (interface{}, error) { panic("secret-panic-payload") },
 			})
 			if err != nil {
@@ -283,7 +283,7 @@ func TestFeatureStartupPanicRecovery(t *testing.T) {
 func TestFeatureRoleConditionPanicRecovery(t *testing.T) {
 	role := &pms.RolePolicy{ID: "role", Effect: pms.Grant, Principals: []string{"user:alice"}, Roles: []string{"reader"}, Condition: "Crash(x)"}
 	e := featureEvaluator(t, &pms.PolicyStore{Services: []*pms.Service{{Name: "app", Policies: []*pms.Policy{recoveryGrant("grant")}, RolePolicies: []*pms.RolePolicy{role}}}})
-	expression, err := govaluate.NewEvaluableExpressionWithFunctions("Crash(x)", map[string]govaluate.ExpressionFunction{"Crash": func(...interface{}) (interface{}, error) { panic("role condition") }})
+	expression, err := condexpr.NewEvaluableExpressionWithFunctions("Crash(x)", map[string]condexpr.ExpressionFunction{"Crash": func(...interface{}) (interface{}, error) { panic("role condition") }})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -343,7 +343,7 @@ func TestFeatureBackgroundRecovery(t *testing.T) {
 	service := rt.RuntimeServices["app"]
 	service.PoliciesCache.Conditions = nil
 	service.RolePoliciesCache.Conditions = nil
-	expression, err := govaluate.NewEvaluableExpression("true")
+	expression, err := condexpr.NewEvaluableExpression("true")
 	if err != nil {
 		t.Fatal(err)
 	}

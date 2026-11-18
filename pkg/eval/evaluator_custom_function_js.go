@@ -7,9 +7,9 @@ import (
 	"sync"
 	"unicode"
 
-	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
 	"github.com/teramoby/speedle-plus/api/ext"
 	"github.com/teramoby/speedle-plus/api/pms"
+	"github.com/teramoby/speedle-plus/pkg/condexpr"
 	"github.com/teramoby/speedle-plus/pkg/errors"
 )
 
@@ -169,7 +169,7 @@ func calledCustomFunction(expression string, customFunctions map[string]struct{}
 // same caching and declared-type checks as the native adapters. Without a
 // registered caller it rejects every call before copying or marshalling
 // arguments and before consulting the cache.
-func (frc *FuncResultCache) generateCustomerExpressionFunction(_ *string, cf *pms.Function) (govaluate.ExpressionFunction, error) {
+func (frc *FuncResultCache) generateCustomerExpressionFunction(_ *string, cf *pms.Function) (condexpr.ExpressionFunction, error) {
 	caller := registeredCustomFunctionCaller()
 	if caller == nil {
 		return func(_ ...interface{}) (interface{}, error) {

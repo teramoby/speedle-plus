@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
 	"github.com/teramoby/speedle-plus/api/ads"
+	"github.com/teramoby/speedle-plus/pkg/condexpr"
 	"github.com/teramoby/speedle-plus/pkg/eval"
 	"github.com/teramoby/speedle-plus/pkg/eval/function"
 	"github.com/teramoby/speedle-plus/pkg/pdl"
@@ -124,7 +124,7 @@ func TestConditionsExtractedFromBothSPDLReferences(t *testing.T) {
 		"a in (1, 2, 3) && (b==c || d==3) && IsSubSet(e, ('s1', 's2', 's3'))": {"a": float64(2), "b": float64(1), "c": float64(1), "d": float64(0), "e": []interface{}{"s1"}},
 		"request_year==2019 && request_month==12":                             {"request_year": float64(2019), "request_month": float64(12)},
 	}
-	funcs := map[string]govaluate.ExpressionFunction{"IsSubSet": function.IsSubSet}
+	funcs := map[string]condexpr.ExpressionFunction{"IsSubSet": function.IsSubSet}
 	for _, locale := range []string{"", ".zh"} {
 		raw, err := os.ReadFile(filepath.Join(root(), "docs/hugo/content/docs", "spdl"+locale+".md"))
 		if err != nil {
@@ -145,7 +145,7 @@ func TestConditionsExtractedFromBothSPDLReferences(t *testing.T) {
 			if !ok {
 				t.Fatalf("unverified documentation condition %q", condition)
 			}
-			expression, err := govaluate.NewEvaluableExpressionWithFunctions(condition, funcs)
+			expression, err := condexpr.NewEvaluableExpressionWithFunctions(condition, funcs)
 			if err != nil {
 				t.Fatalf("%s: %v", condition, err)
 			}

@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	radix "github.com/armon/go-radix"
-	"github.com/teramoby/speedle-plus/3rdparty/github.com/Knetic/govaluate"
+	"github.com/teramoby/speedle-plus/pkg/condexpr"
 )
 
 // Patterns used to match resource expression.
@@ -68,7 +68,7 @@ type BasePolicyCacheData struct {
 	PrincipalToPolicies map[string]*ResourceToPolicyMap
 	//No principal defined in policy, mean match any principal
 	NilPrincipalToPolicies *ResourceToPolicyMap
-	Conditions             map[string]*govaluate.EvaluableExpression
+	Conditions             map[string]*condexpr.EvaluableExpression
 	// The compiled resource expressions of the policies in this cache.
 	Expressions ExpressionCache
 }
@@ -88,7 +88,7 @@ func (p *BasePolicyCacheData) isEmpty() bool {
 }
 
 func (p *BasePolicyCacheData) clearConditions() {
-	p.Conditions = make(map[string]*govaluate.EvaluableExpression)
+	p.Conditions = make(map[string]*condexpr.EvaluableExpression)
 }
 
 func ReverseString(s string) string {
