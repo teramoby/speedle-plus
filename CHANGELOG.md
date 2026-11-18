@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- The vendored expression evaluator moved from
+  `3rdparty/github.com/Knetic/govaluate` to `pkg/condexpr`, with package name
+  `condexpr`. Update imports that used the old path; the expression language
+  and decisions are unchanged. The MIT license and a NOTICE now sit beside the
+  code.
+
+- Compiled conditions share identical leaf closures within one compile, which
+  lowers the memory retained per cached policy without changing results.
+
+- ADS accepts `"dropConditionTokens": true` at the top level of its JSON
+  configuration, `--drop-condition-tokens`, or `SPDL_DROP_CONDITION_TOKENS` to
+  release the parsed token slice of each compiled condition after planning.
+  Decisions are unchanged, but `Tokens()` and `Vars()` return nothing for
+  those conditions and `ToSQLQuery()` returns an empty query. Off by default.
+
 ## v1.9.0
 
 - **Behavior change:** custom function failures now fail the decision. A

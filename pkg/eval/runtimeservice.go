@@ -20,6 +20,11 @@ type RuntimePolicyStore struct {
 	RuntimeServices     map[string]*RuntimeService
 	FunctionResultCache *FuncResultCache
 	FuncSvcEndpoint     string //endpoint in sphinx side to call external customer function
+	// DropConditionTokens releases the token slice of every compiled policy
+	// condition once its execution plan is built. Set it before policies are
+	// loaded. Decisions are unchanged; the condition Tokens and Vars metadata
+	// is then unavailable.
+	DropConditionTokens bool
 }
 
 func NewRuntimePolicyStore() *RuntimePolicyStore {
@@ -52,7 +57,7 @@ func (rtps *RuntimePolicyStore) init(ps *pms.PolicyStore, funcSvcEndpoint string
 	rtps.customFunctionNames = getCustomFunctionNames(ps.Functions)
 	rtps.Functions = convertFunctions(ps.Functions, rtps.FunctionResultCache, &rtps.FuncSvcEndpoint)
 	for _, service := range ps.Services {
-		rtps.RuntimeServices[service.Name] = convertService(service, rtps.Functions)
+		rtps.RuntimeServices[service.Name] = convertService(service, rtps.Functions, rtps.DropConditionTokens)
 	}
 	return nil
 }
@@ -70,7 +75,7 @@ func (rtps *RuntimePolicyStore) reloadPolicyStore(ps *pms.PolicyStore) error {
 	services := make(map[string]*RuntimeService)
 
 	for _, service := range ps.Services {
-		services[service.Name] = convertService(service, functions)
+		services[service.Name] = convertService(service, functions, rtps.DropConditionTokens)
 	}
 
 	// New cache items are ready here, replace all the caches.
@@ -89,7 +94,7 @@ func (rtps *RuntimePolicyStore) addService(service *pms.Service) error {
 	if err := validateServiceCustomFunctions(service, rtps.customFunctionNames); err != nil {
 		return err
 	}
-	rtService := convertService(service, rtps.Functions)
+	rtService := convertService(service, rtps.Functions, rtps.DropConditionTokens)
 	rtps.RuntimeServices[service.Name] = rtService
 	return nil
 }
@@ -102,7 +107,7 @@ func (rtps *RuntimePolicyStore) deleteService(serviceName string) {
 
 func (rtps *RuntimePolicyStore) recompilePolicyConditionAtRuntime(serviceName string, policy *pms.Policy) (*condexpr.EvaluableExpression, error) {
 	logging.Default().Debug(fmt.Sprintf("Recompiling the condition of policy %q in service %q", policy.ID, serviceName))
-	condition, err := compileCondition(policy.Condition, rtps.Functions)
+	condition, err := compileCondition(policy.Condition, rtps.Functions, rtps.DropConditionTokens)
 	if err == nil {
 		logging.Default().Debug(fmt.Sprintf("Updating the condition of policy %q in service %q", policy.ID, serviceName))
 		go updatePolicyCondition(rtps, serviceName, policy, condition)
@@ -128,7 +133,7 @@ func updatePolicyCondition(rtps *RuntimePolicyStore, serviceName string, policy 
 
 func (rtps *RuntimePolicyStore) recompileRolePolicyConditionAtRuntime(serviceName string, policy *pms.RolePolicy) (*condexpr.EvaluableExpression, error) {
 	logging.Default().Debug(fmt.Sprintf("Recompiling the condition of role policy %q in service %q", policy.ID, serviceName))
-	condition, err := compileCondition(policy.Condition, rtps.Functions)
+	condition, err := compileCondition(policy.Condition, rtps.Functions, rtps.DropConditionTokens)
 	if err == nil {
 		logging.Default().Debug(fmt.Sprintf("Updating the condition of role policy %q in service %q", policy.ID, serviceName))
 		go updateRolePolicyCondition(rtps, serviceName, policy, condition)
@@ -159,7 +164,7 @@ func (rtps *RuntimePolicyStore) addPolicy(serviceName string, policy *pms.Policy
 	if err := validateConditionCustomFunctions("policy", serviceName, policy.ID, policy.Condition, rtps.customFunctionNames); err != nil {
 		return err
 	}
-	condition, _ := compileCondition(policy.Condition, rtps.Functions)
+	condition, _ := compileCondition(policy.Condition, rtps.Functions, rtps.DropConditionTokens)
 	rtService, ok := rtps.RuntimeServices[serviceName]
 	if !ok {
 		// Service is not found
@@ -198,7 +203,7 @@ func (rtps *RuntimePolicyStore) addRolePolicy(serviceName string, rolePolicy *pm
 	if err := validateConditionCustomFunctions("role policy", serviceName, rolePolicy.ID, rolePolicy.Condition, rtps.customFunctionNames); err != nil {
 		return err
 	}
-	condition, _ := compileCondition(rolePolicy.Condition, rtps.Functions)
+	condition, _ := compileCondition(rolePolicy.Condition, rtps.Functions, rtps.DropConditionTokens)
 	rtService, ok := rtps.RuntimeServices[serviceName]
 	if !ok {
 		// Service is not found
@@ -278,12 +283,12 @@ func (rtps *RuntimePolicyStore) expireFunctionResultCache() {
 	rtps.FunctionResultCache.CleanExpiredResult()
 }
 
-func compileCondition(condition string, functions map[string]condexpr.ExpressionFunction) (*condexpr.EvaluableExpression, error) {
+func compileCondition(condition string, functions map[string]condexpr.ExpressionFunction, dropTokens bool) (*condexpr.EvaluableExpression, error) {
 	if len(condition) == 0 {
 		return nil, nil
 	}
 
-	exp, err := condexpr.NewEvaluableExpressionWithFunctions(condition, functions)
+	exp, err := condexpr.NewEvaluableExpressionWithFunctionsAndOptions(condition, functions, condexpr.CompileOptions{DropTokensAfterPlan: dropTokens})
 	if err != nil {
 		logging.Default().Error(fmt.Sprintf("Error parsing policy condition: %v", err))
 		if _, limited := err.(*condexpr.ComplexityError); limited {
@@ -295,7 +300,8 @@ func compileCondition(condition string, functions map[string]condexpr.Expression
 }
 
 func convertService(service *pms.Service,
-	functions map[string]condexpr.ExpressionFunction) *RuntimeService {
+	functions map[string]condexpr.ExpressionFunction,
+	dropConditionTokens bool) *RuntimeService {
 	rtService := RuntimeService{
 		Name:              service.Name,
 		Type:              service.Type,
@@ -304,11 +310,11 @@ func convertService(service *pms.Service,
 		Functions:         functions,
 	}
 	for _, policy := range service.Policies {
-		condition, _ := compileCondition(policy.Condition, functions)
+		condition, _ := compileCondition(policy.Condition, functions, dropConditionTokens)
 		rtService.PoliciesCache.AddPolicyToCache(policy, condition)
 	}
 	for _, rolePolicy := range service.RolePolicies {
-		condition, _ := compileCondition(rolePolicy.Condition, functions)
+		condition, _ := compileCondition(rolePolicy.Condition, functions, dropConditionTokens)
 		rtService.RolePoliciesCache.AddRolePolicyToCache(rolePolicy, condition)
 	}
 

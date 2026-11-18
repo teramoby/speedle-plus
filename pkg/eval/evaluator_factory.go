@@ -107,6 +107,7 @@ func NewWithStore(conf *cfg.Config, s pms.PolicyStoreManagerADS) (evaluator Inte
 	}
 
 	runtimePolicyStore := NewRuntimePolicyStore()
+	runtimePolicyStore.DropConditionTokens = conf.DropConditionTokens
 	if err := runtimePolicyStore.init(ps, conf.FuncsvcEndpoint); err != nil {
 		return nil, err
 	}

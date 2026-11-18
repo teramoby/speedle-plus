@@ -37,9 +37,14 @@ type Config struct {
 	StoreFailureGracePeriod string                 `json:"storeFailureGracePeriod,omitempty"`
 	AsserterWebhookConfig   *config.AsserterConfig `json:"asserterWebhookConfig,omitempty"`
 	FuncsvcEndpoint         string                 `json:"funcsvcEndpoint,omitempty"`
-	ServerConfig            *ServerConfig          `json:"serverConfig,omitempty"`
-	LogConfig               *logging.LogConfig     `json:"logConfig,omitempty"`
-	AuditLogConfig          *logging.LogConfig     `json:"auditLogConfig,omitempty"`
+	// DropConditionTokens releases the token slice of each compiled policy
+	// condition after its execution plan is built. Decisions are unchanged;
+	// the condition token metadata (Tokens, Vars) is then unavailable. Off
+	// by default.
+	DropConditionTokens bool               `json:"dropConditionTokens,omitempty"`
+	ServerConfig        *ServerConfig      `json:"serverConfig,omitempty"`
+	LogConfig           *logging.LogConfig `json:"logConfig,omitempty"`
+	AuditLogConfig      *logging.LogConfig `json:"auditLogConfig,omitempty"`
 }
 
 func ReadConfig(configFileLocation string) (*Config, error) {

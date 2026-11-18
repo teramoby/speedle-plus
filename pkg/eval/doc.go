@@ -18,4 +18,10 @@
 // js/wasm. AddToCache remains available, expired entries are removed when the
 // same key is read or CleanExpiredResult is called explicitly, and entries
 // without a TTL remain until explicit deletion or cache replacement.
+//
+// Setting cfg.Config.DropConditionTokens releases the parsed token slice of
+// every compiled policy condition once its execution plan is built. Decisions
+// are unchanged, but the condition token metadata (the condexpr Tokens and
+// Vars results) is then unavailable and SQL serialization is empty. It is off
+// by default; an unconfigured evaluator keeps the token metadata.
 package eval
