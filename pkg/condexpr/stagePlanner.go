@@ -3,6 +3,7 @@ package condexpr
 import (
 	"errors"
 	"fmt"
+	"math"
 	"reflect"
 	"time"
 )
@@ -55,12 +56,14 @@ expressions and needs no locking.
 */
 type stageInterner struct {
 	parameters map[string]evaluationOperator
+	numbers    map[uint64]evaluationOperator
 	literals   map[interface{}]evaluationOperator
 }
 
 func newStageInterner() *stageInterner {
 	return &stageInterner{
 		parameters: make(map[string]evaluationOperator),
+		numbers:    make(map[uint64]evaluationOperator),
 		literals:   make(map[interface{}]evaluationOperator),
 	}
 }
@@ -75,9 +78,21 @@ func (i *stageInterner) parameter(name string) evaluationOperator {
 }
 
 func (i *stageInterner) literal(value interface{}) evaluationOperator {
-	// A map key must be comparable. Parser-produced literals are (float64,
-	// string, bool and *regexp.Regexp), but NewEvaluableExpressionFromTokens
-	// accepts arbitrary token values.
+	// Interface map keys compare floats by value, so +0 and -0 would share a
+	// closure even though division distinguishes them. Key float64 literals by
+	// their bit representation instead.
+	if number, ok := value.(float64); ok {
+		bits := math.Float64bits(number)
+		if operator, ok := i.numbers[bits]; ok {
+			return operator
+		}
+		operator := makeLiteralStage(number)
+		i.numbers[bits] = operator
+		return operator
+	}
+	// A map key must be comparable. Parser-produced literals are (string,
+	// bool and *regexp.Regexp), but NewEvaluableExpressionFromTokens accepts
+	// arbitrary token values.
 	if value != nil && reflect.TypeOf(value).Comparable() {
 		if operator, ok := i.literals[value]; ok {
 			return operator

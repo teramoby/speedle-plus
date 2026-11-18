@@ -1,6 +1,7 @@
 package condexpr
 
 import (
+	"math"
 	"reflect"
 	"testing"
 )
@@ -25,8 +26,52 @@ func TestStageInternerReusesLeafOperators(t *testing.T) {
 			t.Fatalf("literal %v returned %v, %v", literal, got, err)
 		}
 	}
-	if len(interner.literals) != 3 {
-		t.Fatalf("literal entries = %d, want 3", len(interner.literals))
+	if len(interner.numbers) != 1 || len(interner.literals) != 2 {
+		t.Fatalf("number and literal entries = %d and %d, want 1 and 2",
+			len(interner.numbers), len(interner.literals))
+	}
+}
+
+func TestStageInternerKeepsSignedZero(t *testing.T) {
+	interner := newStageInterner()
+	negativeZero := math.Copysign(0, -1)
+	positive := interner.literal(0.0)
+	negative := interner.literal(negativeZero)
+	positiveValue, err := positive(nil, nil, nil)
+	if err != nil || math.Signbit(positiveValue.(float64)) {
+		t.Fatalf("positive zero returned %v, %v", positiveValue, err)
+	}
+	negativeValue, err := negative(nil, nil, nil)
+	if err != nil || !math.Signbit(negativeValue.(float64)) {
+		t.Fatalf("negative zero returned %v, %v", negativeValue, err)
+	}
+	if len(interner.numbers) != 2 {
+		t.Fatalf("number entries = %d, want 2", len(interner.numbers))
+	}
+	if repeated := interner.literal(0.0); repeated == nil || len(interner.numbers) != 2 {
+		t.Fatal("repeated positive zero was not reused")
+	}
+}
+
+func TestSignedZeroElision(t *testing.T) {
+	// Interning must not replace the negative zero produced by elision with
+	// the earlier positive-zero closure.
+	for _, c := range []struct {
+		expression string
+		want       interface{}
+	}{
+		{"1 / (0 * (0 - 1)) < 0", true},
+		{"1 / (0 - 0) > 0", true},
+		{"1 / (0 - 0) > 0 && 1 / (0 * (0 - 1)) < 0", true},
+		{"0 == 0 && 1 / -0 < 0", true},
+	} {
+		expression, err := NewEvaluableExpression(c.expression)
+		if err != nil {
+			t.Fatalf("%s: %v", c.expression, err)
+		}
+		if got, err := expression.Evaluate(nil); err != nil || got != c.want {
+			t.Fatalf("%s = %v, %v, want %v", c.expression, got, err, c.want)
+		}
 	}
 }
 
@@ -54,8 +99,8 @@ func TestPlanStagesInternsRepeatedLeaves(t *testing.T) {
 	if _, err := planStages(tokens, interner); err != nil {
 		t.Fatal(err)
 	}
-	if len(interner.parameters) != 2 || len(interner.literals) != 4 {
-		t.Fatalf("interned %d parameters and %d literals, want 2 and 4",
-			len(interner.parameters), len(interner.literals))
+	if len(interner.parameters) != 2 || len(interner.numbers) != 3 || len(interner.literals) != 1 {
+		t.Fatalf("interned %d parameters, %d numbers and %d literals, want 2, 3 and 1",
+			len(interner.parameters), len(interner.numbers), len(interner.literals))
 	}
 }

@@ -51,6 +51,7 @@ func TestDropTokensAfterPlanDifferential(t *testing.T) {
 		// Arithmetic and precedence.
 		"a + 2 * 3 - 4 / 2", "(a + b) * 2 == 6", "a % 2 == 0", "2 ** 3 == 8", "2 ** 3 ** 2 == 512",
 		"-a == -2", "-(a + 1) == -3", "1 + 2 == 3", "0x10 == 16",
+		"1 / (0 * (0 - 1)) < 0",
 		// Comparisons over numbers and strings.
 		"a > 1", "a >= 2", "a < 3", "a <= 2", "a == 2", "a != 3",
 		"s + 'x' == 'abx'", "s > 'a'", "s >= 'ab'", "s < 'b'", "s <= 'ab'",

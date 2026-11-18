@@ -46,36 +46,36 @@ UNREACHABLE = {'EvaluableExpression.go': {('82.3,83.1', 1): 'Validated token kin
                                      'a leading whitespace reader.',
                 ('443.2,444.1', 1): 'isDigit has no callers in the fork or Engine (numeric and hex readers use '
                                     'unicode.IsDigit directly).'},
- 'stagePlanner.go': {('232.3,233.1', 1): 'planTokens can error only through unplannable token kinds, already '
+ 'stagePlanner.go': {('247.3,248.1', 1): 'planTokens can error only through unplannable token kinds, already '
                                          'rejected by syntax validation.',
-                     ('246.3,247.1', 1): 'Nonempty validated expressions reach planTokens; token streams consumed '
+                     ('261.3,262.1', 1): 'Nonempty validated expressions reach planTokens; token streams consumed '
                                          'within clauses are handled by planValue CLAUSE_CLOSE.',
-                     ('276.4,277.1', 1): 'Left precedence planner error propagation; all validated kinds have '
+                     ('291.4,292.1', 1): 'Left precedence planner error propagation; all validated kinds have '
                                          'value planners.',
-                     ('302.5,302.10', 1): 'The valid-symbol tables receive only string operator tokens from the '
+                     ('317.5,317.10', 1): 'The valid-symbol tables receive only string operator tokens from the '
                                           'lexer and syntax validator.',
-                     ('314.5,315.1', 1): 'Right precedence planner error propagation; all validated kinds have '
+                     ('329.5,330.1', 1): 'Right precedence planner error propagation; all validated kinds have '
                                          'value planners.',
-                     ('356.3,357.1', 1): 'Function argument planner error propagation after successful syntax '
+                     ('371.3,372.1', 1): 'Function argument planner error propagation after successful syntax '
                                          'validation.',
-                     ('375.3,376.1', 1): 'A validated FUNCTION always has a following clause, so planAccessor '
+                     ('390.3,391.1', 1): 'A validated FUNCTION always has a following clause, so planAccessor '
                                          'cannot receive an exhausted stream.',
-                     ('397.5,398.1', 1): 'Accessor argument planner error propagation after successful syntax '
+                     ('412.5,413.1', 1): 'Accessor argument planner error propagation after successful syntax '
                                          'validation.',
-                     ('426.3,427.1', 1): 'A validated expression or prefix always has a following value or '
+                     ('441.3,442.1', 1): 'A validated expression or prefix always has a following value or '
                                          'clause-close token.',
-                     ('437.4,438.1', 1): 'Clause planner error propagation; invalid contents have already failed '
+                     ('452.4,453.1', 1): 'Clause planner error propagation; invalid contents have already failed '
                                          'syntax validation.',
-                     ('483.3,485.1', 2): 'All value token kinds accepted by syntax validation have an operator; '
+                     ('498.3,500.1', 2): 'All value token kinds accepted by syntax validation have an operator; '
                                          'this rejects malformed internal token streams only.',
-                     ('641.3,642.1', 1): 'A planned operator chain ends at an operand with distinct precedence; '
+                     ('656.3,657.1', 1): 'A planned operator chain ends at an operand with distinct precedence; '
                                          'matching chains are mirrored at the precedence break, not after the '
                                          'final leaf.',
-                     ('738.3,739.1', 1): 'LITERAL stages use makeLiteralStage, whose closure always returns a '
+                     ('753.3,754.1', 1): 'LITERAL stages use makeLiteralStage, whose closure always returns a '
                                          'value with nil error.',
-                     ('743.3,744.1', 1): 'LITERAL stages use makeLiteralStage, whose closure always returns a '
+                     ('758.3,759.1', 1): 'LITERAL stages use makeLiteralStage, whose closure always returns a '
                                          'value with nil error.',
-                     ('764.3,765.1', 1): 'This is the root.operator error return after the elideStage type '
+                     ('779.3,780.1', 1): 'This is the root.operator error return after the elideStage type '
                                          'checks at lines 701-713. Literal type errors such as true+false '
                                          'exit at those earlier checks and are later reported by Evaluate; '
                                          'they never reach this return. Pure well-typed operators return nil '
@@ -89,7 +89,7 @@ AUDITED_SOURCE_SHA256 = {'EvaluableExpression.go': '760a1e90c2695a6f1a8cbb5ca65a
  'expressionOutputStream.go': '300d9803ed5b07eee5c1af16fa81d3cb7c39b38e4d784a4fa6ef376b079bc8c5',
  'lexerState.go': '664c31b50bddfc18bdfbf188dd1b064cdce783e6a467335af3182a55670bac95',
  'parsing.go': 'e7444af3bf0687f426573534f2d8d07c2f995d3db750669db6656578c9eaf988',
- 'stagePlanner.go': '8776137a25c488fd041bb0835883fe31fa191b30be1d5d41fd9604e007bec6f6'}
+ 'stagePlanner.go': 'bb085ebaad414696b4d049122f34e71410985f630320bc06d70e449aa9ef1ac7'}
 
 
 # Go 1.26 records the enclosing control-flow boundary; Go 1.27 starts at
@@ -98,28 +98,28 @@ AUDITED_SOURCE_SHA256 = {'EvaluableExpression.go': '760a1e90c2695a6f1a8cbb5ca65a
 # the reported toolchain version. Values identify the
 # canonical annotation, so every annotation must match in either layout.
 GO126_SPANS = {('EvaluableExpression.go', '81.16,83.3', 1): ('82.3,83.1', 1),
- ('EvaluableExpression.go', '111.16,113.3', 1): ('138.3,139.1', 1),
- ('EvaluableExpression.go', '126.16,128.3', 1): ('153.3,154.1', 1),
+ ('EvaluableExpression.go', '137.16,139.3', 1): ('138.3,139.1', 1),
+ ('EvaluableExpression.go', '152.16,154.3', 1): ('153.3,154.1', 1),
  ('lexerState.go', '345.17,347.4', 1): ('346.4,347.1', 1),
  ('parsing.go', '48.17,50.4', 1): ('49.4,50.1', 1),
  ('parsing.go', '87.33,88.12', 1): ('88.4,88.12', 1),
  ('parsing.go', '343.26,344.13', 1): ('344.5,344.13', 1),
  ('parsing.go', '442.35,444.2', 1): ('443.2,444.1', 1),
- ('stagePlanner.go', '186.16,188.3', 1): ('232.3,233.1', 1),
- ('stagePlanner.go', '200.23,202.3', 1): ('246.3,247.1', 1),
- ('stagePlanner.go', '229.17,231.4', 1): ('276.4,277.1', 1),
- ('stagePlanner.go', '255.30,256.10', 1): ('302.5,302.10', 1),
- ('stagePlanner.go', '267.18,269.5', 1): ('314.5,315.1', 1),
- ('stagePlanner.go', '309.16,311.3', 1): ('356.3,357.1', 1),
- ('stagePlanner.go', '328.23,330.3', 1): ('375.3,376.1', 1),
- ('stagePlanner.go', '350.18,352.5', 1): ('397.5,398.1', 1),
- ('stagePlanner.go', '379.23,381.3', 1): ('426.3,427.1', 1),
- ('stagePlanner.go', '390.17,392.4', 1): ('437.4,438.1', 1),
- ('stagePlanner.go', '436.21,439.3', 2): ('483.3,485.1', 2),
- ('stagePlanner.go', '594.35,596.3', 1): ('641.3,642.1', 1),
- ('stagePlanner.go', '691.16,693.3', 1): ('738.3,739.1', 1),
- ('stagePlanner.go', '696.16,698.3', 1): ('743.3,744.1', 1),
- ('stagePlanner.go', '717.16,719.3', 1): ('764.3,765.1', 1)}
+ ('stagePlanner.go', '246.16,248.3', 1): ('247.3,248.1', 1),
+ ('stagePlanner.go', '260.23,262.3', 1): ('261.3,262.1', 1),
+ ('stagePlanner.go', '290.17,292.4', 1): ('291.4,292.1', 1),
+ ('stagePlanner.go', '316.30,317.10', 1): ('317.5,317.10', 1),
+ ('stagePlanner.go', '328.18,330.5', 1): ('329.5,330.1', 1),
+ ('stagePlanner.go', '370.16,372.3', 1): ('371.3,372.1', 1),
+ ('stagePlanner.go', '389.23,391.3', 1): ('390.3,391.1', 1),
+ ('stagePlanner.go', '411.18,413.5', 1): ('412.5,413.1', 1),
+ ('stagePlanner.go', '440.23,442.3', 1): ('441.3,442.1', 1),
+ ('stagePlanner.go', '451.17,453.4', 1): ('452.4,453.1', 1),
+ ('stagePlanner.go', '497.21,500.3', 2): ('498.3,500.1', 2),
+ ('stagePlanner.go', '655.35,657.3', 1): ('656.3,657.1', 1),
+ ('stagePlanner.go', '752.16,754.3', 1): ('753.3,754.1', 1),
+ ('stagePlanner.go', '757.16,759.3', 1): ('758.3,759.1', 1),
+ ('stagePlanner.go', '778.16,780.3', 1): ('779.3,780.1', 1)}
 
 def report(profile, matrix, *, go_version):
     # GOVERSION is provenance, not an allow-list for the merge gate. Match the
