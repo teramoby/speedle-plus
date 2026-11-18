@@ -53,6 +53,10 @@ A condition commonly repeats the same attribute or literal, and a closure
 per leaf would capture the same value again for each occurrence. The
 interner lives for one planStages call, so it never caches between
 expressions and needs no locking.
+
+A nil interner disables interning: every leaf gets its own closure, which is
+the layout used before interning existed. Production compiles always pass an
+interner; the package tests use nil to compare both layouts.
 */
 type stageInterner struct {
 	parameters map[string]evaluationOperator
@@ -69,6 +73,9 @@ func newStageInterner() *stageInterner {
 }
 
 func (i *stageInterner) parameter(name string) evaluationOperator {
+	if i == nil {
+		return makeParameterStage(name)
+	}
 	if operator, ok := i.parameters[name]; ok {
 		return operator
 	}
@@ -78,6 +85,9 @@ func (i *stageInterner) parameter(name string) evaluationOperator {
 }
 
 func (i *stageInterner) literal(value interface{}) evaluationOperator {
+	if i == nil {
+		return makeLiteralStage(value)
+	}
 	// Interface map keys compare floats by value, so +0 and -0 would share a
 	// closure even though division distinguishes them. Key float64 literals by
 	// their bit representation instead.

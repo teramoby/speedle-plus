@@ -53,6 +53,11 @@ This is useful in cases where you may be generating an expression automatically,
 */
 func NewEvaluableExpressionFromTokens(tokens []ExpressionToken) (*EvaluableExpression, error) {
 
+	return newEvaluableExpressionFromTokens(tokens, true)
+}
+
+func newEvaluableExpressionFromTokens(tokens []ExpressionToken, interning bool) (*EvaluableExpression, error) {
+
 	var ret *EvaluableExpression
 	var err error
 
@@ -77,13 +82,22 @@ func NewEvaluableExpressionFromTokens(tokens []ExpressionToken) (*EvaluableExpre
 		return nil, err
 	}
 
-	ret.evaluationStages, err = planStages(ret.tokens, newStageInterner())
+	ret.evaluationStages, err = planStages(ret.tokens, stageInternerFor(interning))
 	if err != nil {
 		return nil, err
 	}
 
 	ret.ChecksTypes = true
 	return ret, nil
+}
+
+// stageInternerFor returns the interner for one compile. A nil interner
+// disables closure interning; production compiles always intern.
+func stageInternerFor(interning bool) *stageInterner {
+	if !interning {
+		return nil
+	}
+	return newStageInterner()
 }
 
 /*
@@ -118,6 +132,15 @@ Similar to [NewEvaluableExpressionWithFunctions], with compile-time options.
 */
 func NewEvaluableExpressionWithFunctionsAndOptions(expression string, functions map[string]ExpressionFunction, options CompileOptions) (*EvaluableExpression, error) {
 
+	return newEvaluableExpressionWithFunctionsAndOptions(expression, functions, options, true)
+}
+
+// newEvaluableExpressionWithFunctionsAndOptions compiles expression with the
+// requested options. interning is true for every public constructor; package
+// tests pass false to reproduce the pre-interning closure layout and prove
+// that both layouts decide identically.
+func newEvaluableExpressionWithFunctionsAndOptions(expression string, functions map[string]ExpressionFunction, options CompileOptions, interning bool) (*EvaluableExpression, error) {
+
 	var ret *EvaluableExpression
 	var err error
 
@@ -148,7 +171,7 @@ func NewEvaluableExpressionWithFunctionsAndOptions(expression string, functions 
 		return nil, err
 	}
 
-	ret.evaluationStages, err = planStages(ret.tokens, newStageInterner())
+	ret.evaluationStages, err = planStages(ret.tokens, stageInternerFor(interning))
 	if err != nil {
 		return nil, err
 	}
