@@ -77,7 +77,7 @@ func NewEvaluableExpressionFromTokens(tokens []ExpressionToken) (*EvaluableExpre
 		return nil, err
 	}
 
-	ret.evaluationStages, err = planStages(ret.tokens)
+	ret.evaluationStages, err = planStages(ret.tokens, newStageInterner())
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +122,7 @@ func NewEvaluableExpressionWithFunctions(expression string, functions map[string
 		return nil, err
 	}
 
-	ret.evaluationStages, err = planStages(ret.tokens)
+	ret.evaluationStages, err = planStages(ret.tokens, newStageInterner())
 	if err != nil {
 		return nil, err
 	}

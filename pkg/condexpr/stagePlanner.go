@@ -3,6 +3,7 @@ package condexpr
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"time"
 )
 
@@ -43,7 +44,50 @@ var stageSymbolMap = map[OperatorSymbol]evaluationOperator{
 	It's called a `precedent` because it is expected to handle exactly what precedence of operator,
 	and defer to other `precedent`s for other operators.
 */
-type precedent func(stream *tokenStream) (*evaluationStage, error)
+type precedent func(interner *stageInterner, stream *tokenStream) (*evaluationStage, error)
+
+/*
+	Reuses the operator closures of identical leaf stages within one compile.
+	A condition commonly repeats the same attribute or literal, and a closure
+	per leaf would capture the same value again for each occurrence. The
+	interner lives for one planStages call, so it never caches between
+	expressions and needs no locking.
+*/
+type stageInterner struct {
+	parameters map[string]evaluationOperator
+	literals   map[interface{}]evaluationOperator
+}
+
+func newStageInterner() *stageInterner {
+	return &stageInterner{
+		parameters: make(map[string]evaluationOperator),
+		literals:   make(map[interface{}]evaluationOperator),
+	}
+}
+
+func (i *stageInterner) parameter(name string) evaluationOperator {
+	if operator, ok := i.parameters[name]; ok {
+		return operator
+	}
+	operator := makeParameterStage(name)
+	i.parameters[name] = operator
+	return operator
+}
+
+func (i *stageInterner) literal(value interface{}) evaluationOperator {
+	// A map key must be comparable. Parser-produced literals are (float64,
+	// string, bool and *regexp.Regexp), but NewEvaluableExpressionFromTokens
+	// accepts arbitrary token values.
+	if value != nil && reflect.TypeOf(value).Comparable() {
+		if operator, ok := i.literals[value]; ok {
+			return operator
+		}
+		operator := makeLiteralStage(value)
+		i.literals[value] = operator
+		return operator
+	}
+	return makeLiteralStage(value)
+}
 
 /*
 	A convenience function for specifying the behavior of a `precedent`.
@@ -153,8 +197,9 @@ func makePrecedentFromPlanner(planner *precedencePlanner) precedent {
 	var generated precedent
 	var nextRight precedent
 
-	generated = func(stream *tokenStream) (*evaluationStage, error) {
+	generated = func(interner *stageInterner, stream *tokenStream) (*evaluationStage, error) {
 		return planPrecedenceLevel(
+			interner,
 			stream,
 			planner.typeErrorFormat,
 			planner.validSymbols,
@@ -178,11 +223,11 @@ func makePrecedentFromPlanner(planner *precedencePlanner) precedent {
 	which is used to completely evaluate a set of tokens at evaluation-time.
 	The three stages of evaluation can be thought of as parsing strings to tokens, then tokens to a stage list, then evaluation with parameters.
 */
-func planStages(tokens []ExpressionToken) (*evaluationStage, error) {
+func planStages(tokens []ExpressionToken, interner *stageInterner) (*evaluationStage, error) {
 
 	stream := newTokenStream(tokens)
 
-	stage, err := planTokens(stream)
+	stage, err := planTokens(interner, stream)
 	if err != nil {
 		return nil, err
 	}
@@ -191,17 +236,17 @@ func planStages(tokens []ExpressionToken) (*evaluationStage, error) {
 	// this could probably be avoided with a different planning method
 	reorderStages(stage)
 
-	stage = elideLiterals(stage)
+	stage = elideLiterals(stage, interner)
 	return stage, nil
 }
 
-func planTokens(stream *tokenStream) (*evaluationStage, error) {
+func planTokens(interner *stageInterner, stream *tokenStream) (*evaluationStage, error) {
 
 	if !stream.hasNext() {
 		return nil, nil
 	}
 
-	return planSeparator(stream)
+	return planSeparator(interner, stream)
 }
 
 /*
@@ -209,6 +254,7 @@ func planTokens(stream *tokenStream) (*evaluationStage, error) {
 	Most stages use the same logic
 */
 func planPrecedenceLevel(
+	interner *stageInterner,
 	stream *tokenStream,
 	typeErrorFormat string,
 	validSymbols map[string]OperatorSymbol,
@@ -225,7 +271,7 @@ func planPrecedenceLevel(
 
 	if leftPrecedent != nil {
 
-		leftStage, err = leftPrecedent(stream)
+		leftStage, err = leftPrecedent(interner, stream)
 		if err != nil {
 			return nil, err
 		}
@@ -263,7 +309,7 @@ func planPrecedenceLevel(
 		}
 
 		if rightPrecedent != nil {
-			rightStage, err = rightPrecedent(stream)
+			rightStage, err = rightPrecedent(interner, stream)
 			if err != nil {
 				return nil, err
 			}
@@ -292,7 +338,7 @@ func planPrecedenceLevel(
 /*
 	A special case where functions need to be of higher precedence than values, and need a special wrapped execution stage operator.
 */
-func planFunction(stream *tokenStream) (*evaluationStage, error) {
+func planFunction(interner *stageInterner, stream *tokenStream) (*evaluationStage, error) {
 
 	var token ExpressionToken
 	var rightStage *evaluationStage
@@ -302,10 +348,10 @@ func planFunction(stream *tokenStream) (*evaluationStage, error) {
 
 	if token.Kind != FUNCTION {
 		stream.rewind()
-		return planAccessor(stream)
+		return planAccessor(interner, stream)
 	}
 
-	rightStage, err = planAccessor(stream)
+	rightStage, err = planAccessor(interner, stream)
 	if err != nil {
 		return nil, err
 	}
@@ -319,7 +365,7 @@ func planFunction(stream *tokenStream) (*evaluationStage, error) {
 	}, nil
 }
 
-func planAccessor(stream *tokenStream) (*evaluationStage, error) {
+func planAccessor(interner *stageInterner, stream *tokenStream) (*evaluationStage, error) {
 
 	var token, otherToken ExpressionToken
 	var rightStage *evaluationStage
@@ -333,7 +379,7 @@ func planAccessor(stream *tokenStream) (*evaluationStage, error) {
 
 	if token.Kind != ACCESSOR {
 		stream.rewind()
-		return planValue(stream)
+		return planValue(interner, stream)
 	}
 
 	// check if this is meant to be a function or a field.
@@ -346,7 +392,7 @@ func planAccessor(stream *tokenStream) (*evaluationStage, error) {
 
 			stream.rewind()
 
-			rightStage, err = planTokens(stream)
+			rightStage, err = planTokens(interner, stream)
 			if err != nil {
 				return nil, err
 			}
@@ -368,7 +414,7 @@ func planAccessor(stream *tokenStream) (*evaluationStage, error) {
 	A truly special precedence function, this handles all the "lowest-case" errata of the process, including literals, parmeters,
 	clauses, and prefixes.
 */
-func planValue(stream *tokenStream) (*evaluationStage, error) {
+func planValue(interner *stageInterner, stream *tokenStream) (*evaluationStage, error) {
 
 	var token ExpressionToken
 	var symbol OperatorSymbol
@@ -386,7 +432,7 @@ func planValue(stream *tokenStream) (*evaluationStage, error) {
 
 	case CLAUSE:
 
-		ret, err = planTokens(stream)
+		ret, err = planTokens(interner, stream)
 		if err != nil {
 			return nil, err
 		}
@@ -413,7 +459,7 @@ func planValue(stream *tokenStream) (*evaluationStage, error) {
 		return nil, nil
 
 	case VARIABLE:
-		operator = makeParameterStage(token.Value.(string))
+		operator = interner.parameter(token.Value.(string))
 
 	case NUMERIC:
 		fallthrough
@@ -423,14 +469,14 @@ func planValue(stream *tokenStream) (*evaluationStage, error) {
 		fallthrough
 	case BOOLEAN:
 		symbol = LITERAL
-		operator = makeLiteralStage(token.Value)
+		operator = interner.literal(token.Value)
 	case TIME:
 		symbol = LITERAL
-		operator = makeLiteralStage(float64(token.Value.(time.Time).Unix()))
+		operator = interner.literal(float64(token.Value.(time.Time).Unix()))
 
 	case PREFIX:
 		stream.rewind()
-		return planPrefix(stream)
+		return planPrefix(interner, stream)
 	}
 
 	if operator == nil {
@@ -646,17 +692,17 @@ func mirrorStageSubtree(stages []*evaluationStage) {
 /*
 	Recurses through all operators in the entire tree, eliding operators where both sides are literals.
 */
-func elideLiterals(root *evaluationStage) *evaluationStage {
+func elideLiterals(root *evaluationStage, interner *stageInterner) *evaluationStage {
 
 	if root.leftStage != nil {
-		root.leftStage = elideLiterals(root.leftStage)
+		root.leftStage = elideLiterals(root.leftStage, interner)
 	}
 
 	if root.rightStage != nil {
-		root.rightStage = elideLiterals(root.rightStage)
+		root.rightStage = elideLiterals(root.rightStage, interner)
 	}
 
-	return elideStage(root)
+	return elideStage(root, interner)
 }
 
 /*
@@ -664,7 +710,7 @@ func elideLiterals(root *evaluationStage) *evaluationStage {
 	Returns the unmodified [root] stage if it cannot or should not be elided.
 	Otherwise, returns a new stage representing the condensed value from the elided stages.
 */
-func elideStage(root *evaluationStage) *evaluationStage {
+func elideStage(root *evaluationStage, interner *stageInterner) *evaluationStage {
 
 	var leftValue, rightValue, result interface{}
 	var err error
@@ -720,6 +766,6 @@ func elideStage(root *evaluationStage) *evaluationStage {
 
 	return &evaluationStage{
 		symbol:   LITERAL,
-		operator: makeLiteralStage(result),
+		operator: interner.literal(result),
 	}
 }
