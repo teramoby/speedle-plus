@@ -9,13 +9,13 @@
 #            runtime/cache suites against native PMS/ADS) with file, etcd,
 #            MySQL and MongoDB, each on a store this run owns; the etcd and
 #            MongoDB setup guides, the quick start with every supported Go
-#            release, govulncheck and the CI script tests
+#            release, govulncheck and the CI script tests; on Linux with Docker
 #   weekly   every package with the newest supported Go release
 #            (the gate uses the go.mod/CI release), the evaluation benchmarks
 #            against master as of May 2026, and staticcheck; on the macOS runner
 #   regression
 #            after every merge to master: race-detector run of every package
-#            with the file store and the executable guides from docs/
+#            with the file store and the executable guides from docs/; on Linux
 #
 # nightly, weekly and regression never stop at the first failure: each suite
 # writes its results to RESULTS_DIR (go test -json streams plus checks.txt
@@ -58,7 +58,7 @@ weekly_toolchains=(go1.27.4)
 all_toolchains=(go1.27.4)
 
 packages() {
-  # MongoDB runs in the nightly hosted job; generated protobuf packages,
+  # MongoDB runs in the nightly Linux job; generated protobuf packages,
   # samples and demos are not product code.
   local listed
   # Checked explicitly: errexit does not reach into command substitutions.

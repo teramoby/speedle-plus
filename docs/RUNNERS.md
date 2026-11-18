@@ -21,10 +21,11 @@ publishes the accepted set as the job output they route on, so an unapproved
 override fails the run before a provider key reaches a runner. The allowlist
 comparison is case-sensitive: a value that differs in case from an approved
 set is rejected.
-Go lint, test, post-merge regression and the nightly use the same label,
-and the Go CI worker accepts both Linux runners and the macOS runner for those
-tasks. Go build (it needs the Linux Hugo release and `sha256sum`) selects
-`[self-hosted, Linux, X64, speedle-linux]`. The weekly selects the macOS
+Go lint and test use the same label, and the Go CI worker accepts both Linux
+runners and the macOS runner for those tasks. Go build, post-merge regression
+and the nightly select `[self-hosted, Linux, X64, speedle-linux]`; their identity
+check also requires Linux x64. Nightly needs Docker for MySQL and the storage
+guides; build needs the Linux Hugo release and `sha256sum`. The weekly selects the macOS
 runner's dedicated scheduling label to reduce timing noise in its benchmark
 check, and its identity step fails any run on an OS or architecture other than
 macOS ARM64, so a host that later carries that label elsewhere cannot silently
@@ -73,8 +74,9 @@ directly select this runner or change the trusted worker's routing policy.
 | Go lint for repository human/bot pushes, manual dispatch and human/bot same-repository PRs | Any runner via `speedle-runner` |
 | Go build (including the site checks in `verify.sh`) for those trusted events | Either Linux runner via `speedle-linux` |
 | Go tests for those trusted events, both file/etcd modes | Any runner via `speedle-runner`, serialized by the host test lock |
+| Nightly four-store regression and Docker storage guides (`nightly.yml`) | Either Linux runner via `speedle-linux`, serialized by the host test lock; its report job is GitHub-hosted |
 | Go CI fork PRs, unknown actors or other events | GitHub-hosted |
-| Post-merge file-store regression (`post-merge.yml`, every push to master) | Any runner via `speedle-runner`, serialized by the host test lock; its report job is GitHub-hosted |
+| Post-merge file-store regression (`post-merge.yml`, every push to master) | Either Linux runner via `speedle-linux`, serialized by the host test lock; its report job is GitHub-hosted |
 | Weekly tests and benchmark comparison (`weekly.yml`) | The macOS runner via its dedicated scheduling label, serialized by the host test lock; its report job is GitHub-hosted |
 | ReviewBot human/bot same-repository PR analysis/publication | Any runner via `speedle-runner` |
 | ReviewBot fork PRs or unknown authors | GitHub-hosted |
@@ -151,9 +153,9 @@ gh workflow run ci.yml --ref master
 ```
 
 Inspect each run's jobs and confirm `runner_name` is one of the registered
-Speedle runners for `speedle-runner` jobs (including the nightly): either Linux
-runner or the macOS runner. The weekly runs on the macOS runner and build runs
-on a Linux runner.
+Speedle runners for `speedle-runner` jobs: either Linux runner or the macOS runner.
+The weekly runs on the macOS runner; build, nightly and post-merge regression
+run on a Linux runner.
 The regression job prints its workspace and temp paths; verify every
 registration has a distinct path. An online/idle runner listing alone does not prove checkout,
 tool setup, tests or model connectivity work. The dedicated routing regression
@@ -176,7 +178,7 @@ scheduling labels for workflow validation.
 Every test runs on these runners; only the `changes` file classification and
 the token-holding `report` jobs are GitHub-hosted. The nightly worker runs the
 same full regression, `scripts/ci/store_regression.py` (full Go and native
-PMS/ADS runtime stages), once per backend on any Speedle runner: file directly,
+PMS/ADS runtime stages), once per backend on the Linux pool with Docker: file directly,
 etcd on a temporary etcd from `validate-etcd.sh`, MySQL on an owned Docker
 container from `run-mysql-tests.py`, and MongoDB on a temporary native replica
 set from `validate-mongodb.sh`. Its results reach the nightly report.
@@ -234,8 +236,8 @@ including all four stores, executable guides, supported Go releases and CI
 script checks. It uses the nightly host lock, port preflight and sanitized test
 environment; results are uploaded as a trial-results artifact. Its concurrency
 group remains `nightly-tests`. Use `install_flock: true` if the existing macOS
-host lacks `flock`. The nightly moved to `speedle-runner` after this trial
-passed on the macOS runner with Docker Desktop running. On macOS,
+host lacks `flock`. This explicit trial requires Docker Desktop running;
+the normal nightly uses the Linux pool with Docker. On macOS,
 `run-go-tests.sh` gives Docker a copy of the user's config without its keychain
 credential store, which a runner service cannot open; the test images are
 public.
@@ -248,7 +250,8 @@ check), `test` (the merge gate, `run-go-tests.sh gate`), `regression` (the
 post-merge regression), `weekly` (`run-go-tests.sh weekly`) or `reviewbot`
 (ReviewBot's tool and Ark reachability checks and its fixture suites, with no
 credentials). `test`, `regression` and `weekly` hold the host test lock. Lint,
-test, regression and reviewbot run on any Speedle runner; weekly trials and the
+test and reviewbot run on any Speedle runner; normal post-merge regression runs
+on Linux. Weekly trials and the
 scheduled weekly both stay on the macOS runner for lower-noise benchmark
 comparisons.
 `build` stays on Linux because it needs the Linux Hugo release and `sha256sum`.
