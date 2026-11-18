@@ -163,11 +163,14 @@ class MailAddressTest(unittest.TestCase):
                 self.assertFalse(test_report.is_mail_address(address))
 
     def test_parser_exceptions_return_false(self):
-        for error in (ValueError, email.errors.HeaderParseError, IndexError,
-                      TypeError, RuntimeError):
+        for error in (ValueError, email.errors.HeaderParseError, IndexError):
             with self.subTest(error=error.__name__):
                 with mock.patch.object(test_report, "Address", side_effect=error):
                     self.assertFalse(test_report.is_mail_address("ops@example.com"))
+
+    def test_non_string_input_still_raises(self):
+        with self.assertRaises(TypeError):
+            test_report.is_mail_address(42)
 
     def test_valid_bare_addresses_are_unchanged(self):
         for address in ("Ops@Example.com", "ops+nightly@example.co.uk",

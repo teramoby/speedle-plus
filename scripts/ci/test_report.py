@@ -14,6 +14,7 @@ non-zero on bad input and on such a failure.
 """
 import argparse
 import base64
+import email.errors
 import email.utils
 import http.client
 import json
@@ -340,7 +341,7 @@ def is_mail_address(address):
     name, so that a send to it can be delivered."""
     try:
         parsed = Address(addr_spec=address)
-    except Exception:
+    except (ValueError, IndexError, email.errors.HeaderParseError):
         # Malformed input can also trigger parser bugs (for example,
         # IndexError on an empty local part in Python 3.12).
         return False
