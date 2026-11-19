@@ -9,6 +9,7 @@ tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
 bref = "用 pip 或 uv 安装 speedle 1.9.0，再向本地 Speedle 调用 is_allowed 与 check。"
+summary = "用 pip 或 uv 安装 speedle 1.9.0，再向本地 Speedle 调用 is_allowed 与 check。"
 lastmod = 2026-11-08T11:21:16+08:00
 +++
 

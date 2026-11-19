@@ -17,8 +17,9 @@
       <pubDate>Tue, 10 Nov 2026 14:45:43 +0800</pubDate>
       
       <guid>https://engine.speedle.io/ko/docs/api/</guid>
-      
-      <description>Open API 사양 문서. API를 사용하여 단순하거나 복잡한 정책을 선언적으로 모델링하고, 결정을 쿼리하며, 정책을 동적으로 발견하고 정책 평가를 디버깅합니다.</description>
+      <description>Java, Python, Go, .NET, Rust, Node.js/TypeScript용 클라이언트 라이브러리는 SDK에서 제공됩니다.
+REST API 이는 구성된 PMS/ADS 또는 어서터(Asserter) 엔드포인트의 참조 사양입니다. speedle.io는 문서와 브라우저 플레이그라운드를 제공하며 호스팅형 PMS/ADS 서비스를 제공하지 않습니다. Content-Type: application/json으로 JSON을 제공하고 TLS/mTLS 및 접근 제어를 구성하십시오.
+ 정책 관리 API 인가 결정 API 토큰 어설션 웹훅  정책 및 역할 정책 ID는 문자열입니다. PMS 응답은 플랫 객체이며 인가 권한에는 permissions(복수형)를 사용합니다. REST 결정 요청은 형식화된 속성 배열을 사용하지만 진단 응답 속성 및 웹훅 속성은 객체입니다.</description>
     </item>
     
     <item>
@@ -27,7 +28,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ko/docs/sdks/dotnet/</guid>
-      
       <description>dotnet add package로 Speedle.Sdk 1.9.0을 추가하고 로컬 Speedle에 대해 IsAllowedAsync 및 CheckAsync를 호출합니다.</description>
     </item>
     
@@ -37,7 +37,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ko/docs/sdks/go/</guid>
-      
       <description>go get으로 github.com/teramoby/speedle-sdk/go v1.9.0을 추가하고 로컬 Speedle에 대해 IsAllowed 및 Check를 호출합니다.</description>
     </item>
     
@@ -47,7 +46,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ko/docs/sdks/java/</guid>
-      
       <description>Maven 또는 Gradle로 io.speedle:speedle-sdk 1.9.0을 추가하고 로컬 Speedle에 대해 isAllowed 및 check를 호출합니다.</description>
     </item>
     
@@ -57,7 +55,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ko/docs/sdks/node/</guid>
-      
       <description>npm으로 @speedle/sdk를 설치하고 로컬 Speedle에 대해 isAllowed 및 check를 호출합니다.</description>
     </item>
     
@@ -67,7 +64,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ko/docs/sdks/python/</guid>
-      
       <description>pip 또는 uv로 speedle 1.9.0을 설치하고 로컬 Speedle에 대해 is_allowed 및 check를 호출합니다.</description>
     </item>
     
@@ -77,7 +73,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ko/docs/sdks/rust/</guid>
-      
       <description>cargo add로 speedle 1.9.0 크레이트를 추가하고 로컬 Speedle에 대해 is_allowed 및 check를 호출합니다.</description>
     </item>
     
@@ -87,8 +82,7 @@
       <pubDate>Wed, 28 Oct 2026 13:16:58 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ko/docs/pms/</guid>
-      
-      <description>정책 생성 및 관리, 액세스 패턴 발견, 인가 평가 진단</description>
+      <description> 정책 관리 글로벌 정책 정책 발견 인가 진단  </description>
     </item>
     
     <item>
@@ -97,7 +91,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ko/docs/api/decision_api/</guid>
-      
       <description>구성된 ADS 인터페이스 참조 사양입니다. 요청 속성은 형식화된 배열이고 진단 응답 속성은 객체입니다.
 보안 및 엔드포인트 구성. 이 문서는 인터페이스 사양을 설명하며 speedle.io는 호스팅형 백엔드를 제공하지 않습니다. Try it out은 꺼져 있습니다. 사양에 서버 호스트가 없어서, 켜 두면 요청이 이 문서 사이트로 갑니다.
    document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/swagger/policy-check.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;</description>
@@ -109,7 +102,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ko/docs/api/management_api/</guid>
-      
       <description>구성된 PMS 인터페이스 참조 사양입니다. 요청과 응답은 JSON을 사용하고 정책 ID는 문자열이며 응답은 플랫 객체입니다.
 보안 및 엔드포인트 구성. 이 문서는 인터페이스 사양을 설명하며 speedle.io는 호스팅형 백엔드를 제공하지 않습니다. Try it out은 꺼져 있습니다. 사양에 서버 호스트가 없어서, 켜 두면 요청이 이 문서 사이트로 갑니다.
    document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/swagger/policy-manage.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;</description>
@@ -121,7 +113,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ko/docs/api/asserter_api/</guid>
-      
       <description>토큰 어설션 웹훅 참조 사양입니다. errCode는 정수이고 attributes는 객체입니다. 실제 엔드포인트는 ADS 어서터 구성에 지정됩니다.
 보안 및 엔드포인트 구성. 이 문서는 인터페이스 사양을 설명하며 speedle.io는 호스팅형 백엔드를 제공하지 않습니다. Try it out은 꺼져 있습니다. 사양에 서버 호스트가 없어서, 켜 두면 요청이 이 문서 사이트로 갑니다.
    document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/swagger/asserter.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;</description>

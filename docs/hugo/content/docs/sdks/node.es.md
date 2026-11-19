@@ -9,6 +9,7 @@ tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
 bref = "Instale @speedle/sdk con npm, y luego llame a isAllowed y check frente a un Speedle local."
+summary = "Instale @speedle/sdk con npm, y luego llame a isAllowed y check frente a un Speedle local."
 lastmod = 2026-11-10T09:48:45+08:00
 +++
 

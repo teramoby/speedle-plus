@@ -17,8 +17,7 @@
       <pubDate>Mon, 21 Jan 2019 09:28:30 +0800</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/assertor/</guid>
-      
-      <description>Las solicitudes de evaluación pueden contener un token de identidad que representa a un usuario. En este caso, el motor de evaluación puede invocar el servicio de aserción para obtener las identidades explícitas del usuario</description>
+      <description>¿Qué hace un asertor de tokens? Un asertor configurado valida un token y devuelve entidades principales explícitas, incluidos sus dominios de identidad. A continuación, Speedle evalúa las políticas utilizando esas identidades. Una implementación en producción debe validar la firma del token o el resultado de introspección, el emisor, la audiencia, la expiración y cualquier requisito específico del proveedor. La interfaz webhook por sí sola no establece compatibilidad automática con tokens OAuth/OIDC arbitrarios.</description>
     </item>
     
   </channel>

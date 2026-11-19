@@ -17,8 +17,8 @@
       <pubDate>Tue, 17 Nov 2026 10:00:00 +0800</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/store/</guid>
-      
-      <description>Speedle incluye almacenes de políticas basados en archivos, etcd, MongoDB y MySQL. Este documento describe su configuración y cómo implementar o registrar un almacenamiento diferente.</description>
+      <description>Almacenes integrados y contratos de extensión Los binarios independientes registran implementaciones de archivo, etcd, MongoDB y MySQL bajo pkg/store. Su disponibilidad no implica garantías operativas idénticas; revise la autenticación del backend, persistencia, transacciones y el comportamiento de observación (watch) para su despliegue. La configuración a continuación ilustra los nombres de propiedades; la ejecución de despliegues de etcd/MongoDB queda fuera de este ejemplo local.
+Un backend completo implementa pms.PolicyStoreManager: gestión de servicios, políticas de autorización, políticas de roles y funciones, lecturas de instantáneas y watch/stop.</description>
     </item>
     
     <item>
@@ -27,8 +27,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/store/mongodb/</guid>
-      
-      <description>Ejecute un conjunto de réplicas de MongoDB, conecte PMS y ADS, verifique las actualizaciones de políticas en tiempo real y guarde una copia de seguridad.</description>
+      <description>Esta guía paso a paso utiliza MongoDB 7.0.16 como un conjunto de réplicas (replica set) de nodo único con un volumen persistente de Docker. PMS escribe políticas y ADS sigue la misma base de datos a través de un flujo de cambios (change stream). El ejemplo escucha en la interfaz de bucle invertido (loopback) sin autenticación para desarrollo local. La autenticación para producción, TLS y la configuración del conjunto de réplicas se detallan más adelante.</description>
     </item>
     
     <item>
@@ -37,8 +36,8 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/store/mysql/</guid>
-      
-      <description>Cree una base de datos, configure PMS y ADS, luego verifique la autorización y la sincronización automática de políticas.</description>
+      <description>Esta guía utiliza MySQL 8.4 LTS y dos procesos nativos de Speedle: PMS escribe políticas y ADS lee la misma base de datos con una cuenta independiente de solo lectura. El ejemplo local utiliza Docker y HTTP en texto plano en la interfaz de bucle invertido (loopback). Para un despliegue remoto, utilice su servidor MySQL existente y consulte la guía de Seguridad.
+1. Compilar Speedle con el backend MySQL Instale Git, Bash, curl, Docker y una versión compatible de Go (Go 1.</description>
     </item>
     
     <item>
@@ -47,8 +46,8 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/store/etcd/</guid>
-      
-      <description>Ejecute un servidor etcd independiente, conecte PMS y ADS, verifique las actualizaciones de políticas en tiempo real y guarde una copia de seguridad.</description>
+      <description>Esta guía paso a paso utiliza un servidor etcd v3.6.14 externo con un volumen persistente de Docker. PMS escribe políticas y ADS observa el mismo prefijo de clave. Este ejemplo de nodo único escucha en la interfaz de bucle invertido (loopback) y utiliza HTTP en texto plano para desarrollo local. La configuración de clúster y TLS para producción se explica más adelante.
+1. Compilar Speedle Prepare Bash, Git, curl, Docker y Go 1.</description>
     </item>
     
   </channel>

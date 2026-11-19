@@ -9,6 +9,7 @@ tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
 bref = "用 npm 安装 @speedle/sdk，再向本地 Speedle 调用 isAllowed 与 check。"
+summary = "用 npm 安装 @speedle/sdk，再向本地 Speedle 调用 isAllowed 与 check。"
 lastmod = 2026-11-10T09:48:45+08:00
 +++
 

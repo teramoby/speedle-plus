@@ -17,8 +17,9 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/docs/cloud/getting-started/</guid>
-      
-      <description>Sign in, save a policy, create an API key, and check authorization from your application.</description>
+      <description>Speedle Cloud is in public beta. This guide describes the workflow for the live service.
+Sign in with GitHub or Google Open the Cloud console in your browser and sign in with an available provider. For a new identity with an unused verified email address, confirm Create account. If the email is already in use, sign in with the linked provider shown by the console.
+Create a service and a policy Open the Service workspace, enter books, and choose Create service.</description>
     </item>
     
     <item>
@@ -27,7 +28,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/docs/cloud/tokens/</guid>
-      
       <description>API keys belong to your account and can access its services according to their scope. They authenticate your application, not its end users. Managing API keys, sessions and linked identities always requires a signed-in console session.
 Speedle Cloud is in public beta. This guide describes the workflow for the live service.
 Create an API key Open API keys, enter a name of 1–128 characters after trimming whitespace, select a scope and an expiry (7d, 30d, 90d, 180d or 365d; the console defaults to 3 months), and choose Create.</description>
@@ -39,8 +39,9 @@ Create an API key Open API keys, enter a name of 1–128 characters after trimmi
       <pubDate>Tue, 17 Nov 2026 00:00:00 +0800</pubDate>
       
       <guid>https://engine.speedle.io/docs/cloud/global-roles/</guid>
-      
-      <description>One role assignment for every service of the account.</description>
+      <description>Speedle Cloud is in public beta. This guide describes the workflow for the live service.
+A role assignment usually belongs to one service. When several services share the same assignment, define it once in the account&amp;rsquo;s Global roles service and use the role in each service&amp;rsquo;s own authorization policies.
+Only role policies are supported there. A global role assignment does not grant any operation by itself: every service still defines the permissions it allows.</description>
     </item>
     
     <item>
@@ -49,8 +50,9 @@ Create an API key Open API keys, enter a name of 1–128 characters after trimmi
       <pubDate>Sun, 08 Nov 2026 00:00:00 +0800</pubDate>
       
       <guid>https://engine.speedle.io/docs/cloud/authorization-api/</guid>
-      
-      <description>Server-side authorization with an account API key.</description>
+      <description>Speedle Cloud is in public beta. This guide describes the workflow for the live service.
+Use an account API key for server-side authorization calls. Sign in to the account to create keys. Use ads or pms:read+ads for ADS checks; pms:read and pms:write return 403 insufficient_scope. The combined pms:read+ads scope also permits PMS reads and is required for policy synchronization with Speedle Cloud ADS (speedle-cloud); it cannot write policies.
+Call IsAllowed from your server Send an account API key with the ads or pms:read+ads scope in one Authorization: Bearer header and make a POST request:</description>
     </item>
     
     <item>
@@ -59,8 +61,8 @@ Create an API key Open API keys, enter a name of 1–128 characters after trimmi
       <pubDate>Thu, 12 Nov 2026 10:00:00 +0800</pubDate>
       
       <guid>https://engine.speedle.io/docs/cloud/api-reference/</guid>
-      
-      <description>Reference for the Speedle Cloud API: authorization checks and policy management with an API key. Requests run from your server; this page is read-only.</description>
+      <description>Authorization API explains the IsAllowed call. Limits and errors lists quotas and error responses.
+   document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/openapi/cloud-public.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34;, supportedSubmitMethods: [] }); window.ui = ui; });  </description>
     </item>
     
     <item>
@@ -69,7 +71,6 @@ Create an API key Open API keys, enter a name of 1–128 characters after trimmi
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/docs/cloud/limits-and-errors/</guid>
-      
       <description>Speedle Cloud is in public beta. This guide describes the workflow for the live service.
 Limits apply to the whole account unless a row says otherwise. API keys are account credentials; changing keys does not increase the daily quota.
 Limits    What is limited Limit When reached / how to recover     Services per account 100 409 quota_exceeded; delete an unused service. No timed reset.</description>

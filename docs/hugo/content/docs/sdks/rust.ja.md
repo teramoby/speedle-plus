@@ -9,6 +9,7 @@ tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
 bref = "cargo add で speedle 1.9.0 クレートを追加し、ローカルの Speedle に対して is_allowed と check を呼び出します。"
+summary = "cargo add で speedle 1.9.0 クレートを追加し、ローカルの Speedle に対して is_allowed と check を呼び出します。"
 lastmod = 2026-11-07T19:43:15+08:00
 +++
 

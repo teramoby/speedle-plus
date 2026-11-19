@@ -16,8 +16,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ja/docs/spdl/</guid>
-      
-      <description>SPDL の基礎</description>
+      <description>SPDL は Speedle ポリシーおよびロールポリシーを記述するための言語です。このページでは構文、命名規則、およびサンプルを説明します。 </description>
     </item>
     
     <item>
@@ -26,8 +25,8 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ja/docs/performance-testing/</guid>
-      
-      <description>このプロンプトを AI コーディングエージェントに貼り付け、自分のマシンで Speedle と選んだ認可プロジェクトを比較できます。</description>
+      <description>ここでは性能レポートを公開しません。結果はハードウェア、ポリシー、固定したバージョンによって変わります。
+最初に、Speedle と比較したいオープンソースの認可プロジェクトを私に質問してください。ポリシー数と時間の予算も質問し、既定値として 10、100、1,000 件と 30 分を提示してください。私が回答するまで、ほかの作業を始めないでください。 その後、新しいローカルディレクトリで、同じマシンを使い、予算内で公平に比較してください。すべてのエンジンとツールのバージョンを固定してください。等価な RBAC・ABAC ポリシーと、期待する許可・拒否の判定を持つ共通リクエストを作成し、計測前に全エンジンの判定を検証してください。意味の違いを記録し、非対応のケースは直接比較から除外してください。 合意したポリシー数でスケーリングを測定してください。ポリシー読み込みと定常評価、組み込みとネットワーク/API の測定を分けてください。同じリクエスト、同時実行数、キャッシュ設定を使い、各エンジンをウォームアップして最低 5 回繰り返してください。レイテンシ p50/p95/p99 とスループットを、単位、実行時間、ばらつきとともに報告してください。実測値だけを報告し、未実行と失敗は明記してください。スクリプト、ポリシー、正確なコマンド、バージョン、環境情報、生の出力をローカルに保存し、結果を再現できるようにしてください。 プロンプトをコピーしてエージェントに貼り付け、質問に答えてください。</description>
     </item>
     
     <item>
@@ -36,8 +35,13 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ja/docs/pms/discover/</guid>
-      
-      <description>アクセスリクエストを記録し、認可ポリシーを生成して、通常の認可チェックに戻します。</description>
+      <description>ポリシー検出の役割 検出モードはリクエストを記録し、記録操作が成功した場合に理由 5 で allowed=true を返します。これは既存のポリシーが操作を認可したことを証明するものではありません。分離されたテスト環境でのみ使用し、生成されたグラントを確認してから、通常の is-allowed による強制を復元してください。アサーションやストレージのエラーは引き続き適切に処理する必要があり、エラーを認可と見なしてはなりません。
+再現可能なローカルサンプルの開始 クイックスタート の手順でバイナリをビルドし、チェックアウトのルートからすべてのターミナルを実行します。開始前に新しいファイルを使用し、前のページのフィクスチャを停止してください。
+printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json ターミナル 1:
+./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --insecure=true ターミナル 2:
+./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6734 --insecure=true 両方を実行したままにします。ターミナル 3 で、1 つのリクエストを記録します:
+curl --fail --silent --show-error -H &amp;#39;Content-Type: application/json&amp;#39; \  -d &amp;#39;{&amp;#34;subject&amp;#34;:{&amp;#34;principals&amp;#34;:[{&amp;#34;type&amp;#34;:&amp;#34;user&amp;#34;,&amp;#34;name&amp;#34;:&amp;#34;alice&amp;#34;}]},&amp;#34;serviceName&amp;#34;:&amp;#34;observed&amp;#34;,&amp;#34;resource&amp;#34;:&amp;#34;book&amp;#34;,&amp;#34;action&amp;#34;:&amp;#34;read&amp;#34;}&amp;#39; \  http://127.0.0.1:6734/authz-check/v1/discover キャプチャされたリクエストを調査し、提案されるサービス定義を生成します:
+./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ discover request --service-name observed ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ discover policy --service-name observed &amp;gt; discovered-service.</description>
     </item>
     
     <item>
@@ -46,8 +50,15 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ja/docs/pms/policy-mgmt/</guid>
-      
-      <description>ポリシー管理の基本</description>
+      <description>Speedle ポリシーとは？ ポリシー管理サービス (PMS) は、サービス、認可ポリシー、ロールポリシー、およびカスタム関数を管理します。ポリシーストアは、登録された ストレージバックエンド を使用してそれらのオブジェクトを永続化します。
+サービスと認可ポリシー サービスはそのポリシーのスコープを制限します。認可ポリシーは、プリンシパルに対してリソース上のアクションを実行する権限を付与または拒否し、オプションで条件を設定できます。グローバルロールポリシー を除き、あるサービスのポリシーが別のサービスで自動的に適用されることはありません。
+grant group Administrators list,watch,get expr:^c1/default/core/pods/.*$ この正規表現は c1/default/core/pods/ 配下のリソースに一致します。c1/default/core/podssecret や c1 の前に余計なプレフィックスがあるパスには一致しません。expr: はシェルのワイルドカードではなく正規表現を使用します。任意の文字には .* を使用し、完全な識別子に一致させる必要がある場合は ^/$ を使用します。
+ロールポリシー grant user alan manager on res1 grant role manager update res1 最初のステートメントは特定のリソース上のロールを Alan に割り当て、2 番目のステートメントはそのロールに操作権限を付与します。ロールを割り当てるだけでは権限は生成されません。該当する明示的な拒否（deny）は許可（grant）をオーバーライドします。
+プリンシパルと条件 プリンシパルには、ユーザー、グループ、エンティティ、またはロールを指定できます。エンティティはサービスなどの人間以外のアイデンティティを表します。統合コードはこれらのアイデンティティを信頼できるソースから取得する必要があります。
+AND プリンシパルグループは、リスト内のすべてのプリンシパルが一致することを要求します。個別のグループ間は OR 条件になります。たとえば、以下の例では両方のロールが適用される必要があります:
+grant (role designer, role dba) update db_design_doc リソースは保護対象のオブジェクトを指定し、アクションはアプリケーションの操作を指定します。条件は、信頼できる属性、定数、演算子、およびサポートされている関数から評価されるブール式です。
+文法については SPDL を、完全な決定例については RBAC/ABAC を参照してください。
+サンプル実行前の準備 クイックスタート の手順に従い、リポジトリルート下の ./bin/spctl、./bin/speedle-pms、./bin/speedle-ads をビルドします。Go 1.27.4（または同じリリースブランチの新しいパッチバージョン）、Bash、curl、Python 3 が必要です。各ターミナルはリポジトリのルートから実行してください。このページ用に新しいポリシーファイルを使用します。両方のサービスを停止した後にのみファイルをリセットしてください。</description>
     </item>
     
     <item>
@@ -56,8 +67,13 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ja/docs/decisions/</guid>
-      
-      <description>認可決定を取得</description>
+      <description>認可決定とは？ Speedle は指定されたサービス内でサブジェクト、アクション、およびリソースを評価し、アプリケーションがその結果を適用します。評価エラーやタイムアウトは通常の Deny（拒否）とは区別して扱い、エラー時はアクセスを拒否（fail closed）してください。REST、gRPC、組み込み Go の各 API はデータ表現が異なるため、それぞれの API 契約 に従ってください。
+実行前の準備 クイックスタート に従ってリポジトリルートで ./bin/spctl、./bin/speedle-pms、./bin/speedle-ads をビルドします。Go 1.27.4（または同じリリースブランチの新しいパッチバージョン）、Bash、curl、Python 3 が必要です。各ターミナルはリポジトリのルートディレクトリから実行してください。このページ用には新しいポリシーファイルを使用し、両方のサービスを停止した後にのみリセットしてください。
+ 注: このページで使用する website/tests/examples/ のファイルは、リポジトリのクローン（クイックスタート のルート B）に含まれています。go install では含まれません。
+ 空のポリシーファイルを初期化します:
+printf &amp;#39;{} &amp;#39; &amp;gt; docs-policies.json ターミナル1で PMS を起動し、実行したままにします:
+./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --grpc-endpoint 127.0.0.1:0 --insecure=true ターミナル2で ADS を起動し、実行したままにします:
+./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6734 --grpc-endpoint 127.0.0.1:0 --insecure=true 残りのコマンドはターミナル3で実行します。PMS と ADS はファイルを共有し、変更は非同期に反映されます。意図した更新が ADS に到達したことを確認してから依存してください。--insecure=true はこのループバックサンプルのためのものです。本番接続については セキュリティ を参照してください。明示的な PMS アドレスを指定することで ~/.</description>
     </item>
     
   </channel>

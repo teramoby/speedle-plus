@@ -9,6 +9,7 @@ tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
 bref = "dotnet add package で Speedle.Sdk 1.9.0 を追加し、ローカルの Speedle に対して IsAllowedAsync と CheckAsync を呼び出します。"
+summary = "dotnet add package で Speedle.Sdk 1.9.0 を追加し、ローカルの Speedle に対して IsAllowedAsync と CheckAsync を呼び出します。"
 lastmod = 2026-11-07T19:43:15+08:00
 +++
 

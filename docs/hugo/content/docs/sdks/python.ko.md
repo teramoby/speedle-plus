@@ -9,6 +9,7 @@ tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
 bref = "pip 또는 uv로 speedle 1.9.0을 설치하고 로컬 Speedle에 대해 is_allowed 및 check를 호출합니다."
+summary = "pip 또는 uv로 speedle 1.9.0을 설치하고 로컬 Speedle에 대해 is_allowed 및 check를 호출합니다."
 lastmod = 2026-11-07T19:43:15+08:00
 +++
 

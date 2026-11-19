@@ -9,6 +9,7 @@ tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
 bref = "Añada el crate speedle 1.9.0 con cargo add, y luego llame a is_allowed y check frente a un Speedle local."
+summary = "Añada el crate speedle 1.9.0 con cargo add, y luego llame a is_allowed y check frente a un Speedle local."
 lastmod = 2026-11-07T19:43:15+08:00
 +++
 

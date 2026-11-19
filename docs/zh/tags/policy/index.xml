@@ -16,7 +16,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/spdl/</guid>
-      
       <description>SPDL 是编写 Speedle 策略和角色策略的语言。本文介绍语法、命名规则和示例。 </description>
     </item>
     
@@ -26,8 +25,8 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/performance-testing/</guid>
-      
-      <description>把这段提示词粘贴到 AI 编程助手中，在自己的机器上对比 Speedle 与你选择的授权项目。</description>
+      <description>这里不发布性能报告；结果取决于你的硬件、策略和固定的版本。
+首先问我想把 Speedle 与哪些开源授权项目进行对比，同时询问策略集规模和时间预算，建议默认值为 10、100、1,000 条策略和 30 分钟。等待我的回答，再做任何其他事情。 然后在新的本地目录中，在同一台机器上、预算时间内公平对比。固定所有引擎和工具的版本。构建等价的 RBAC 和 ABAC 策略，以及带有预期允许/拒绝决策的共享请求；计时前，先验证每个引擎的结果都符合预期。记录语义差异，不支持的用例不纳入直接对比。 按商定的策略数量测量规模变化的影响。策略加载与稳态评估分开，嵌入式测量与网络/API 测量分开。使用相同的请求、并发数和缓存设置，为每个引擎预热并至少重复运行五次。报告延迟 p50/p95/p99 和吞吐量，注明单位、运行时长和波动。只报告实测数字，明确标记未运行的用例和失败。在本地保存脚本、策略、准确命令、版本、环境信息和原始输出，让我能复现结果。 复制提示词，粘贴到助手中并回答它的问题。</description>
     </item>
     
     <item>
@@ -36,7 +35,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/decisions/</guid>
-      
       <description>什么是授权决策？ Speedle 在指定服务内评估主体、操作与资源，由应用执行结果。应区分评估错误、超时与正常的 Deny，并在出错时拒绝访问。REST、gRPC、嵌入式 Go 的数据表示不同，应分别遵循各自的 API 契约。
 运行示例前 先按快速入门编译仓库根目录下的 ./bin/spctl、./bin/speedle-pms 和 ./bin/speedle-ads，需要 Go 1.27.4（也可使用同一大版本的更新补丁版本）、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
  注意： 本页使用的 website/tests/examples/ 文件来自克隆的仓库（快速入门的 Route B）；go install 不包含这些文件。
@@ -53,7 +51,6 @@ printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一启动 PMS，
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/pms/discover/</guid>
-      
       <description>策略发现的作用 发现模式记录请求，成功记录时返回 allowed=true、reason 5，不代表既有策略曾授权该操作。仅在隔离测试环境使用，审核生成的授权，并在结束后恢复正常的 is-allowed 检查。断言或存储错误仍需单独处理，不能把错误当作授权成功。
 启动可复现的本地示例 先按快速入门编译二进制。下面各终端均从源码根目录运行，使用新的策略文件，并先停止其他页面示例的服务。
 printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一：
@@ -70,8 +67,17 @@ curl --fail --silent --show-error -H &amp;#39;Content-Type: application/json&amp
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/pms/policy-mgmt/</guid>
-      
-      <description>策略管理基础</description>
+      <description>什么是 Speedle 策略？ 策略管理服务（PMS）管理服务、授权策略、角色策略与自定义函数，由已注册的存储后端持久化这些对象。
+服务与授权策略 服务限定策略的作用范围。授权策略允许或拒绝主体对资源执行操作，并可附带条件。除全局角色策略外，一个服务的策略不会自动在另一个服务中生效。
+grant group Administrators list,watch,get expr:^c1/default/core/pods/.*$ 此正则只匹配 c1/default/core/pods/ 下的资源，不匹配 c1/default/core/podssecret 或带额外前缀的路径。expr: 使用正则表达式，不是 shell 通配符：任意字符使用 .*，需要匹配完整标识符时加 ^、$。
+角色策略 grant user alan manager on res1 grant role manager update res1 第一行把指定资源上的角色分配给 Alan，第二行才为该角色授予操作权限。仅分配角色不会自动产生权限。适用的显式拒绝优先于允许。
+主体与条件 主体可以是用户、组、实体或角色。实体表示服务等非人身份，集成代码必须从可信来源获取这些身份。
+AND 主体组要求组内所有身份均匹配，多组之间为 OR。以下例子要求两个角色都有效：
+grant (role designer, role dba) update db_design_doc 资源指需要保护的对象，操作是应用定义的动作。条件是由可信属性、常量、运算符和受支持函数构成的布尔表达式。
+语法见 SPDL，完整决策示例见 RBAC 与 ABAC。
+运行示例前 先按快速入门编译仓库根目录下的 ./bin/spctl、./bin/speedle-pms 和 ./bin/speedle-ads，需要 Go 1.27.4（也可使用同一大版本的更新补丁版本）、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
+初始化空策略文件：
+printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json  macOS： /usr/sbin/spctl 是 Apple 的 Gatekeeper 工具，直接运行 spctl 时可能会选中它。请使用 Speedle CLI 的完整路径，或在其所在目录中用 .</description>
     </item>
     
   </channel>

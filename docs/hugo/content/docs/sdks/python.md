@@ -9,6 +9,7 @@ tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
 bref = "Install speedle 1.9.0 with pip or uv, then call is_allowed and check against a local Speedle."
+summary = "Install speedle 1.9.0 with pip or uv, then call is_allowed and check against a local Speedle."
 lastmod = 2026-11-07T19:43:15+08:00
 +++
 

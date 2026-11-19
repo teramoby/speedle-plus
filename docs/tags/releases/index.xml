@@ -16,8 +16,8 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/docs/versions/</guid>
-      
-      <description>Releases — Speedle follows semantic versioning</description>
+      <description>Speedle releases Use the GitHub Releases page for published versions and release notes.
+ v1.9.0: custom-function failures now fail the decision, functions can declare parameter and result types, the MySQL store uses schema version 2, the js/wasm build accepts a host custom-function caller, and application and audit logging moved to Go log/slog. v1.8.0: removed the experimental policy-distribution feature, source builds require Go 1.27.4 or newer, the container image includes the public CA bundle, and the documentation gained Japanese, Korean and Spanish.</description>
     </item>
     
   </channel>

@@ -17,7 +17,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ko/docs/sdks/dotnet/</guid>
-      
       <description>dotnet add package로 Speedle.Sdk 1.9.0을 추가하고 로컬 Speedle에 대해 IsAllowedAsync 및 CheckAsync를 호출합니다.</description>
     </item>
     
@@ -27,7 +26,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ko/docs/sdks/go/</guid>
-      
       <description>go get으로 github.com/teramoby/speedle-sdk/go v1.9.0을 추가하고 로컬 Speedle에 대해 IsAllowed 및 Check를 호출합니다.</description>
     </item>
     
@@ -37,7 +35,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ko/docs/sdks/java/</guid>
-      
       <description>Maven 또는 Gradle로 io.speedle:speedle-sdk 1.9.0을 추가하고 로컬 Speedle에 대해 isAllowed 및 check를 호출합니다.</description>
     </item>
     
@@ -47,7 +44,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ko/docs/sdks/node/</guid>
-      
       <description>npm으로 @speedle/sdk를 설치하고 로컬 Speedle에 대해 isAllowed 및 check를 호출합니다.</description>
     </item>
     
@@ -57,7 +53,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ko/docs/sdks/python/</guid>
-      
       <description>pip 또는 uv로 speedle 1.9.0을 설치하고 로컬 Speedle에 대해 is_allowed 및 check를 호출합니다.</description>
     </item>
     
@@ -67,7 +62,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ko/docs/sdks/rust/</guid>
-      
       <description>cargo add로 speedle 1.9.0 크레이트를 추가하고 로컬 Speedle에 대해 is_allowed 및 check를 호출합니다.</description>
     </item>
     
@@ -77,8 +71,9 @@
       <pubDate>Tue, 10 Nov 2026 14:45:43 +0800</pubDate>
       
       <guid>https://engine.speedle.io/ko/docs/sdks/</guid>
-      
-      <description>Speedle 인가 결정 API용 6개 언어 클라이언트 라이브러리. 자체 호스팅 Speedle ADS를 지원합니다.</description>
+      <description>Speedle SDK는 결정 API POST /authz-check/v1/is-allowed의 클라이언트 라이브러리입니다. 자체 호스팅 Speedle ADS에서 작동합니다. 각 언어 페이지에서는 패키지 추가 방법을 설명하고 자체 호스팅 환경에 대해 테스트를 거친 완전한 프로그램을 제공합니다. 소스 코드와 전체 참조 문서는 teramoby/speedle-sdk에서 확인할 수 있습니다. 이 예제들에서 사용할 PMS 및 ADS 실행 방법에 대해서는 배포와 Docker 이미지를 참조하십시오.
+패키지 6개 SDK는 모두 1.9.0 버전으로 게시되어 있습니다. 각 언어별 설치 명령은 해당 페이지에 나와 있습니다.
+ Java: Maven Central io.</description>
     </item>
     
   </channel>

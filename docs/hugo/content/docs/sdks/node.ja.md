@@ -9,6 +9,7 @@ tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
 bref = "npm で @speedle/sdk をインストールし、ローカルの Speedle に対して isAllowed と check を呼び出します。"
+summary = "npm で @speedle/sdk をインストールし、ローカルの Speedle に対して isAllowed と check を呼び出します。"
 lastmod = 2026-11-10T09:48:45+08:00
 +++
 

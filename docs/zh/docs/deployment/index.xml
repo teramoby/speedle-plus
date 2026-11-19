@@ -17,7 +17,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/deployment/embedded/</guid>
-      
       <description>什么是 Speedle 嵌入模式 嵌入模式将 Speedle 策略决策引擎运行在你的 Go 应用进程中，通过 evaluator 直接决策，无需启动 PMS 或 ADS 服务。应用负责认证用户，并为每次决策提供主体、资源和操作。
 编写代码前，可以先用 Playground 体验基本策略功能。如果希望以独立服务运行 Speedle，请参阅快速入门。
 前提条件 使用 Linux 或 macOS、命令行 shell，以及 Go 1.27.4（也可使用同一大版本的更新补丁版本），安全补丁版本要求与快速入门一致。本例使用 Go modules 和已发布的 Speedle v1.9.0。
@@ -34,8 +33,14 @@ mkdir speedle-embedded-demo cd speedle-embedded-demo go mod init example.com/spe
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/deployment/docker/</guid>
-      
-      <description>Docker Hub 和 GHCR 上的同一个镜像运行策略管理服务、决策服务和 spctl，并共用一份文件存储。</description>
+      <description>Speedle 发布一个镜像，其中包含 speedle-pms、speedle-ads 和 spctl。镜像基于 scratch 构建，以 UID 65532 运行，里面没有 shell。第一个参数决定启动哪个程序。
+两个仓库上的镜像索引相同：
+ Docker Hub：docker.io/speedle/speedle GHCR：ghcr.io/teramoby/speedle  1.9.0 在两个仓库都发布了标签 1.9.0、1.9 和 latest，架构为 linux/amd64 和 linux/arm64。
+拉取镜像 docker pull docker.io/speedle/speedle:1.9.0 docker pull ghcr.io/teramoby/speedle:1.9.0 docker pull 会打印索引摘要。1.9.0 在两个仓库上的摘要都是 sha256:f20947fc15fb342dbafe93403df99f909795ad66ac0866fd9252611268791d2c。
+选择标签 1.9.0 指向这一次发布。更高的 1.9 补丁发布后，1.9 会跟着移动。从 master 最新提交发布更高版本时，latest 会跟着移动。同一次版本可以再次发布，因此标签不是不可变的构建。
+查看索引摘要：
+docker buildx imagetools inspect docker.io/speedle/speedle:1.9.0 --format &amp;#39;{{.Manifest.Digest}}&amp;#39; 1.9.0 这次发布里，两个仓库上的 1.9.0、1.9 和 latest 都打印：
+sha256:f20947fc15fb342dbafe93403df99f909795ad66ac0866fd9252611268791d2c 部署 1.9 或 latest 之前请再查一次摘要。要固定在同一次构建上，把镜像名写成带 @ 和该摘要的形式，例如 docker.io/speedle/speedle@sha256:f20947fc15fb342dbafe93403df99f909795ad66ac0866fd9252611268791d2c。</description>
     </item>
     
     <item>
@@ -44,8 +49,13 @@ mkdir speedle-embedded-demo cd speedle-embedded-demo go mod init example.com/spe
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/deployment/homebrew/</guid>
-      
-      <description>Homebrew 安装命令行工具和两个服务，并让它们在 127.0.0.1 上共用一份策略文件。</description>
+      <description>在 macOS 或 Linux 上用 Homebrew 安装 Speedle 命令行工具。Homebrew 在安装或启动官方组织以外的 tap 中的 formula 之前，需要先信任该 tap。
+brew tap teramoby/tap brew trust teramoby/tap brew install teramoby/tap/spctl Formula 的名字是 spctl。macOS 上的命令是 speedle-spctl，因此安装不会替换 Apple Gatekeeper 的 /usr/sbin/spctl。Linux 上同一个程序也可以用 spctl 调用。
+策略管理服务和授权决策服务是单独的 formula：
+brew install teramoby/tap/speedle-pms brew install teramoby/tap/speedle-ads 命令行工具和两个服务可以一次装齐：
+brew install teramoby/tap/speedle spctl、speedle-pms 和 speedle-ads 各自安装对应系统的发布二进制，并用该发布的 checksums.txt 校验。
+用 Homebrew 做一次演示 启动两个服务。它们监听 127.0.0.1，并共用一份文件策略库。
+brew services start speedle-pms brew services start speedle-ads speedle-pms 监听 127.</description>
     </item>
     
   </channel>

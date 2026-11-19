@@ -17,8 +17,11 @@
       <pubDate>Tue, 10 Nov 2026 14:45:43 +0800</pubDate>
       
       <guid>https://engine.speedle.io/ja/docs/api/</guid>
-      
-      <description>Open API 仕様ドキュメント。API を使用して、シンプルおよび複雑なポリシーを宣言的にモデル化し、決定を取得し、ポリシーを動的に検出し、ポリシー評価をデバッグします。</description>
+      <description>Java、Python、Go、.NET、Rust、Node.js/TypeScript 向けのクライアントライブラリは SDK にあります。
+REST API これらは 構成された PMS/ADS またはアサーターエンドポイント の参照仕様です。speedle.io はドキュメントとブラウザ Playground を配信しており、ホスト型の PMS/ADS サービスではありません。Content-Type: application/json で JSON を提供し、TLS/mTLS とアクセス制御 を構成してください。
+ ポリシー管理 API 認可決定 API トークンアサーション Webhook  ポリシーおよびロールポリシーの ID は文字列です。PMS のレスポンスはフラットなオブジェクトであり、認可権限には permissions（複数形）を使用します。REST の決定リクエストは型付き属性配列を使用しますが、診断レスポンス属性および Webhook 属性はオブジェクトです。
+gRPC API  PMS proto: pb.PolicyManager ADS proto: pb.Evaluator  現在の proto と生成されたクライアントを一緒に使用してください。PMS は pb.PolicyManager を使用し、ADS は pb.Evaluator を使用します。gRPC はサーバーが --grpc-endpoint で起動されない限り無効であり、REST と同じ TLS 設定を使用します。
+組み込み Go API  ポリシー管理インターフェース 認可決定インターフェース  完全なアプリケーションとリソースのライフサイクルの例については、組み込みモード を参照してください。</description>
     </item>
     
     <item>
@@ -27,8 +30,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ja/docs/spdl/</guid>
-      
-      <description>SPDL の基礎</description>
+      <description>SPDL は Speedle ポリシーおよびロールポリシーを記述するための言語です。このページでは構文、命名規則、およびサンプルを説明します。 </description>
     </item>
     
     <item>
@@ -37,8 +39,7 @@
       <pubDate>Wed, 28 Oct 2026 13:16:58 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ja/docs/pms/</guid>
-      
-      <description>ポリシーの作成と管理、アクセスパターンの検出、認可評価の診断。</description>
+      <description> ポリシー管理 グローバルポリシー ポリシー検出 認可診断  </description>
     </item>
     
     <item>
@@ -47,7 +48,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ja/docs/api/asserter_api/</guid>
-      
       <description>トークンアサーション Webhook リファレンス。errCode は整数、attributes はオブジェクトです。実際のエンドポイントは ADS アサーター構成で指定されます。
 セキュリティとエンドポイント構成。本文はインターフェース仕様を説明するものであり、speedle.io はホスト型バックエンドを提供しません。Try it out は無効です。仕様にサーバーホストがないため、有効にするとリクエストはこのドキュメントサイトへ送られます。
    document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/swagger/asserter.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34;, supportedSubmitMethods: [] }); window.ui = ui; });  </description>
@@ -59,8 +59,8 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ja/docs/performance-testing/</guid>
-      
-      <description>このプロンプトを AI コーディングエージェントに貼り付け、自分のマシンで Speedle と選んだ認可プロジェクトを比較できます。</description>
+      <description>ここでは性能レポートを公開しません。結果はハードウェア、ポリシー、固定したバージョンによって変わります。
+最初に、Speedle と比較したいオープンソースの認可プロジェクトを私に質問してください。ポリシー数と時間の予算も質問し、既定値として 10、100、1,000 件と 30 分を提示してください。私が回答するまで、ほかの作業を始めないでください。 その後、新しいローカルディレクトリで、同じマシンを使い、予算内で公平に比較してください。すべてのエンジンとツールのバージョンを固定してください。等価な RBAC・ABAC ポリシーと、期待する許可・拒否の判定を持つ共通リクエストを作成し、計測前に全エンジンの判定を検証してください。意味の違いを記録し、非対応のケースは直接比較から除外してください。 合意したポリシー数でスケーリングを測定してください。ポリシー読み込みと定常評価、組み込みとネットワーク/API の測定を分けてください。同じリクエスト、同時実行数、キャッシュ設定を使い、各エンジンをウォームアップして最低 5 回繰り返してください。レイテンシ p50/p95/p99 とスループットを、単位、実行時間、ばらつきとともに報告してください。実測値だけを報告し、未実行と失敗は明記してください。スクリプト、ポリシー、正確なコマンド、バージョン、環境情報、生の出力をローカルに保存し、結果を再現できるようにしてください。 プロンプトをコピーしてエージェントに貼り付け、質問に答えてください。</description>
     </item>
     
     <item>
@@ -69,7 +69,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ja/docs/api/management_api/</guid>
-      
       <description>構成された PMS のインターフェースリファレンス。リクエストとレスポンスは JSON を使用し、ポリシー ID は文字列、レスポンスはフラットなオブジェクトです。
 セキュリティとエンドポイント構成。本文はインターフェース仕様を説明するものであり、speedle.io はホスト型バックエンドを提供しません。Try it out は無効です。仕様にサーバーホストがないため、有効にするとリクエストはこのドキュメントサイトへ送られます。
    document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/swagger/policy-manage.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34;, supportedSubmitMethods: [] }); window.ui = ui; });  </description>
@@ -81,7 +80,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ja/docs/logging/</guid>
-      
       <description>概要 v1.8.0 の次のリリースでは、アプリケーションと監査ログに Go log/slog、ファイルローテーションに gopkg.in/natefinch/lumberjack.v2 を使用します。v1.8.0 以前は従来の API を使用します。
 ログ設定 既存の --log-*、--auditlog-*、SPDL_* 環境変数と JSON キーは維持されます。優先順位は明示的なオプション &amp;gt; 環境変数 &amp;gt; ファイルです。アプリケーションの既定値は info、text、stderr、呼び出し元情報なしです。監査の既定値は info と JSON で、--auditlog-* により独立して設定できます。
 --log-level string --log-formatter string --log-reportcaller string --log-filename string --log-maxsize string --log-maxbackups string --log-maxage string --log-localtime string --log-compress string これらのフラグは文字列型です。--flag=value の形式で値を指定してください（例: --log-compress=true）。フラグ名だけを指定すると、次の引数がその値として扱われるため、--log-compress --help では --help が --log-compress の値になります。
@@ -94,7 +92,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ja/docs/api/decision_api/</guid>
-      
       <description>構成された ADS のインターフェースリファレンス。リクエスト属性は型付き配列、診断レスポンス属性はオブジェクトです。
 セキュリティとエンドポイント構成。本文はインターフェース仕様を説明するものであり、speedle.io はホスト型バックエンドを提供しません。Try it out は無効です。仕様にサーバーホストがないため、有効にするとリクエストはこのドキュメントサイトへ送られます。
    document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/swagger/policy-check.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.presets.apis ], plugins: [ SwaggerUIBundle.plugins.DownloadUrl ], validatorUrl: null, layout: &#34;BaseLayout&#34;, supportedSubmitMethods: [] }); window.ui = ui; });  ヘルスチェックエンドポイント GET /healthz はプロセスの稼働状態を報告します。プロセス実行中は常に 200 {&amp;quot;status&amp;quot;:&amp;quot;ok&amp;quot;} を返します。

@@ -9,6 +9,7 @@ tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
 bref = "go get で github.com/teramoby/speedle-sdk/go v1.9.0 を追加し、ローカルの Speedle に対して IsAllowed と Check を呼び出します。"
+summary = "go get で github.com/teramoby/speedle-sdk/go v1.9.0 を追加し、ローカルの Speedle に対して IsAllowed と Check を呼び出します。"
 lastmod = 2026-11-07T19:43:15+08:00
 +++
 

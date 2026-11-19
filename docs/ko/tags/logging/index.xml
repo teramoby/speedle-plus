@@ -16,7 +16,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ko/docs/logging/</guid>
-      
       <description>개요 v1.8.0 다음 릴리스는 애플리케이션 및 감사 로그에 Go log/slog를, 파일 순환에 gopkg.in/natefinch/lumberjack.v2를 사용합니다. v1.8.0과 이전 버전은 기존 API를 사용합니다.
 로그 설정 기존 --log-*, --auditlog-* 옵션, SPDL_* 환경 변수와 JSON 키는 유지됩니다. 우선순위는 명시적 옵션 &amp;gt; 환경 변수 &amp;gt; 파일입니다. 애플리케이션 기본값은 info, text, stderr이며 호출자 정보는 꺼져 있습니다. 감사 기본값은 info와 JSON이며 --auditlog-*로 별도 설정합니다.
 --log-level string --log-formatter string --log-reportcaller string --log-filename string --log-maxsize string --log-maxbackups string --log-maxage string --log-localtime string --log-compress string 이 옵션은 문자열 플래그이므로 --flag=value 형식으로 값을 지정합니다(예: --log-compress=true).</description>

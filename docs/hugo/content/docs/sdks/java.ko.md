@@ -9,6 +9,7 @@ tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
 bref = "Maven 또는 Gradle로 io.speedle:speedle-sdk 1.9.0을 추가하고 로컬 Speedle에 대해 isAllowed 및 check를 호출합니다."
+summary = "Maven 또는 Gradle로 io.speedle:speedle-sdk 1.9.0을 추가하고 로컬 Speedle에 대해 isAllowed 및 check를 호출합니다."
 lastmod = 2026-11-08T19:23:52+08:00
 +++
 

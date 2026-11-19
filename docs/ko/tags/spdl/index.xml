@@ -16,8 +16,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ko/docs/spdl/</guid>
-      
-      <description>SPDL의 기초</description>
+      <description>SPDL은 Speedle 정책 및 역할 정책을 작성하기 위한 언어입니다. 이 페이지에서는 구문, 명명 규칙 및 예제를 설명합니다. </description>
     </item>
     
     <item>
@@ -26,8 +25,8 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ko/docs/overview/</guid>
-      
-      <description>인가 및 접근 제어 어휘에서 Speedle의 위치</description>
+      <description>Speedle은 오픈 소스 인가 엔진입니다. 애플리케이션으로부터 &amp;ldquo;이 사용자가 이 리소스에 대해 이 작업을 수행할 수 있는가?&amp;ldquo;라는 질의를 수신하고 중앙에서 관리되는 정책에 따라 허용(Allow) 또는 거부(Deny)를 반환합니다. 이 페이지에서는 일반적인 인가 용어와 이를 구현하는 Speedle 구성 요소를 연결하고 각각의 상세 가이드 링크를 제공합니다.
+아래 예제에서는 library라는 이름의 서비스를 사용합니다. 각 정책은 정책 관리 서비스(PMS)의 REST API를 통해 생성되었으며, 각 결정은 인가 결정 서비스(ADS)의 REST API에서 반환되었습니다. 이유 코드는 인가 결정에 나열되어 있습니다.</description>
     </item>
     
   </channel>

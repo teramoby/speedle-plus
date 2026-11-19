@@ -17,7 +17,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ja/docs/sdks/java/</guid>
-      
       <description>Maven または Gradle で io.speedle:speedle-sdk 1.9.0 を追加し、ローカルの Speedle に対して isAllowed と check を呼び出します。</description>
     </item>
     
@@ -27,7 +26,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ja/docs/sdks/python/</guid>
-      
       <description>pip または uv で speedle 1.9.0 をインストールし、ローカルの Speedle に対して is_allowed と check を呼び出します。</description>
     </item>
     
@@ -37,7 +35,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ja/docs/sdks/go/</guid>
-      
       <description>go get で github.com/teramoby/speedle-sdk/go v1.9.0 を追加し、ローカルの Speedle に対して IsAllowed と Check を呼び出します。</description>
     </item>
     
@@ -47,7 +44,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ja/docs/sdks/dotnet/</guid>
-      
       <description>dotnet add package で Speedle.Sdk 1.9.0 を追加し、ローカルの Speedle に対して IsAllowedAsync と CheckAsync を呼び出します。</description>
     </item>
     
@@ -57,7 +53,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ja/docs/sdks/rust/</guid>
-      
       <description>cargo add で speedle 1.9.0 クレートを追加し、ローカルの Speedle に対して is_allowed と check を呼び出します。</description>
     </item>
     
@@ -67,7 +62,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ja/docs/sdks/node/</guid>
-      
       <description>npm で @speedle/sdk をインストールし、ローカルの Speedle に対して isAllowed と check を呼び出します。</description>
     </item>
     

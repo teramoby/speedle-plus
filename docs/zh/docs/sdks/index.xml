@@ -17,7 +17,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/sdks/java/</guid>
-      
       <description>用 Maven 或 Gradle 添加 io.speedle:speedle-sdk 1.9.0，再向本地 Speedle 调用 isAllowed 与 check。</description>
     </item>
     
@@ -27,7 +26,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/sdks/python/</guid>
-      
       <description>用 pip 或 uv 安装 speedle 1.9.0，再向本地 Speedle 调用 is_allowed 与 check。</description>
     </item>
     
@@ -37,7 +35,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/sdks/go/</guid>
-      
       <description>用 go get 添加 github.com/teramoby/speedle-sdk/go v1.9.0，再向本地 Speedle 调用 IsAllowed 与 Check。</description>
     </item>
     
@@ -47,7 +44,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/sdks/dotnet/</guid>
-      
       <description>用 dotnet add package 添加 Speedle.Sdk 1.9.0，再向本地 Speedle 调用 IsAllowedAsync 与 CheckAsync。</description>
     </item>
     
@@ -57,7 +53,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/sdks/rust/</guid>
-      
       <description>用 cargo add 添加 speedle 1.9.0，再向本地 Speedle 调用 is_allowed 与 check。</description>
     </item>
     
@@ -67,7 +62,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/sdks/node/</guid>
-      
       <description>用 npm 安装 @speedle/sdk，再向本地 Speedle 调用 isAllowed 与 check。</description>
     </item>
     

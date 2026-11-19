@@ -17,7 +17,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/sdks/dotnet/</guid>
-      
       <description>Añada Speedle.Sdk 1.9.0 con dotnet add package, y luego llame a IsAllowedAsync y CheckAsync frente a un Speedle local.</description>
     </item>
     
@@ -27,7 +26,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/sdks/go/</guid>
-      
       <description>Añada github.com/teramoby/speedle-sdk/go v1.9.0 con go get, y llame a IsAllowed y Check frente a un Speedle local.</description>
     </item>
     
@@ -37,7 +35,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/sdks/java/</guid>
-      
       <description>Añada io.speedle:speedle-sdk 1.9.0 con Maven o Gradle, y luego llame a isAllowed y check frente a un Speedle local.</description>
     </item>
     
@@ -47,7 +44,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/sdks/node/</guid>
-      
       <description>Instale @speedle/sdk con npm, y luego llame a isAllowed y check frente a un Speedle local.</description>
     </item>
     
@@ -57,7 +53,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/sdks/python/</guid>
-      
       <description>Instale speedle 1.9.0 con pip o uv, y luego llame a is_allowed y check frente a un Speedle local.</description>
     </item>
     
@@ -67,7 +62,6 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/sdks/rust/</guid>
-      
       <description>Añada el crate speedle 1.9.0 con cargo add, y luego llame a is_allowed y check frente a un Speedle local.</description>
     </item>
     
@@ -77,8 +71,8 @@
       <pubDate>Tue, 10 Nov 2026 14:45:43 +0800</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/sdks/</guid>
-      
-      <description>Bibliotecas cliente para la API de decisiones de Speedle en seis lenguajes. Compatibles con un Speedle ADS autohospedado.</description>
+      <description>Los SDK de Speedle son bibliotecas cliente para la API de decisiones POST /authz-check/v1/is-allowed. Funcionan con un Speedle ADS autohospedado. Cada página de lenguaje muestra cómo agregar el paquete y proporciona un programa completo y probado para el entorno autohospedado. El código fuente y la referencia completa se encuentran en teramoby/speedle-sdk. Para ejecutar PMS y ADS para estos ejemplos, consulte Despliegue y la Imagen de Docker.
+Paquetes Los seis SDK están en la versión 1.</description>
     </item>
     
   </channel>

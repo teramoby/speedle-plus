@@ -9,6 +9,7 @@ tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
 bref = "Añada io.speedle:speedle-sdk 1.9.0 con Maven o Gradle, y luego llame a isAllowed y check frente a un Speedle local."
+summary = "Añada io.speedle:speedle-sdk 1.9.0 con Maven o Gradle, y luego llame a isAllowed y check frente a un Speedle local."
 lastmod = 2026-11-08T19:23:52+08:00
 +++
 
