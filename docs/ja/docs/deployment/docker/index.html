@@ -206,30 +206,30 @@
 <li>GHCR: <code>ghcr.io/teramoby/speedle</code></li>
 </ul>
 
-<p>リリース 1.7.0 では、<code>linux/amd64</code> および <code>linux/arm64</code> 向けに、両方のレジストリでタグ <code>1.7.0</code>、<code>1.7</code>、および <code>latest</code> が公開されています。</p>
+<p>リリース 1.9.0 では、<code>linux/amd64</code> および <code>linux/arm64</code> 向けに、両方のレジストリでタグ <code>1.9.0</code>、<code>1.9</code>、および <code>latest</code> が公開されています。</p>
 
 <h2 id="イメージのプル">イメージのプル</h2>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker pull docker.io/speedle/speedle:1.7.0
-docker pull ghcr.io/teramoby/speedle:1.7.0</code></pre></div>
-<p><code>docker pull</code> はインデックスダイジェストを出力します。1.7.0 の場合、そのダイジェストは両方のレジストリで <code>sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0</code> です。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker pull docker.io/speedle/speedle:1.9.0
+docker pull ghcr.io/teramoby/speedle:1.9.0</code></pre></div>
+<p><code>docker pull</code> はインデックスダイジェストを出力します。1.9.0 の場合、そのダイジェストは両方のレジストリで <code>sha256:f20947fc15fb342dbafe93403df99f909795ad66ac0866fd9252611268791d2c</code> です。</p>
 
 <h2 id="タグの選択">タグの選択</h2>
 
-<p><code>1.7.0</code> はこのリリースを指定します。より新しい 1.7 パッチが公開されると <code>1.7</code> が移動します。<code>master</code> の最新コミットから新しいリリースが公開されると <code>latest</code> が移動します。リリースの再試行で同じバージョンダグが再度公開される可能性があるため、タグは不変のビルドではありません。</p>
+<p><code>1.9.0</code> はこのリリースを指定します。より新しい 1.9 パッチが公開されると <code>1.9</code> が移動します。<code>master</code> の最新コミットから新しいリリースが公開されると <code>latest</code> が移動します。リリースの再試行で同じバージョンダグが再度公開される可能性があるため、タグは不変のビルドではありません。</p>
 
 <p>インデックスダイジェストを確認するには:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker buildx imagetools inspect docker.io/speedle/speedle:1.7.0 --format <span style="color:#f1fa8c">&#39;{{.Manifest.Digest}}&#39;</span></code></pre></div>
-<p>1.7.0 リリースの場合、両方のレジストリ上の <code>1.7.0</code>、<code>1.7</code>、および <code>latest</code> はすべて以下を出力します:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0</code></pre></div>
-<p><code>1.7</code> または <code>latest</code> をデプロイする前に、ダイジェストを再度確認してください。単一のビルドに固定するには、イメージ名に <code>@</code> とそのダイジェストを組み合わせて使用します（例: <code>docker.io/speedle/speedle@sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0</code>）。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker buildx imagetools inspect docker.io/speedle/speedle:1.9.0 --format <span style="color:#f1fa8c">&#39;{{.Manifest.Digest}}&#39;</span></code></pre></div>
+<p>1.9.0 リリースの場合、両方のレジストリ上の <code>1.9.0</code>、<code>1.9</code>、および <code>latest</code> はすべて以下を出力します:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">sha256:f20947fc15fb342dbafe93403df99f909795ad66ac0866fd9252611268791d2c</code></pre></div>
+<p><code>1.9</code> または <code>latest</code> をデプロイする前に、ダイジェストを再度確認してください。単一のビルドに固定するには、イメージ名に <code>@</code> とそのダイジェストを組み合わせて使用します（例: <code>docker.io/speedle/speedle@sha256:f20947fc15fb342dbafe93403df99f909795ad66ac0866fd9252611268791d2c</code>）。</p>
 
 <h2 id="イメージ内のコマンド">イメージ内のコマンド</h2>
 
 <p>引数なしで実行すると、イメージは 3 つのプログラム名を出力します:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker run --rm docker.io/speedle/speedle:1.7.0</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">speedle-pms
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker run --rm docker.io/speedle/speedle:1.9.0</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">speedle-pms
 speedle-ads
 spctl</code></pre></div>
-<p><code>docker run --rm ghcr.io/teramoby/speedle:1.7.0</code> も同じ行を出力します。以下のコマンドでは Docker Hub の名前を使用しています。GHCR のコピーを使用する場合は GHCR の名前に置き換えてください。イメージ内にシェルはないため、<code>docker exec</code> では <code>/spctl</code>、<code>/speedle-pms</code>、または <code>/speedle-ads</code> を絶対パスで呼び出す必要があります。</p>
+<p><code>docker run --rm ghcr.io/teramoby/speedle:1.9.0</code> も同じ行を出力します。以下のコマンドでは Docker Hub の名前を使用しています。GHCR のコピーを使用する場合は GHCR の名前に置き換えてください。イメージ内にシェルはないため、<code>docker exec</code> では <code>/spctl</code>、<code>/speedle-pms</code>、または <code>/speedle-ads</code> を絶対パスで呼び出す必要があります。</p>
 
 <h2 id="pms-と-ads-の実行">PMS と ADS の実行</h2>
 
@@ -238,7 +238,7 @@ spctl</code></pre></div>
 docker run -d --name speedle-pms <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  -p <span style="color:#bd93f9">127</span>.0.0.1:6733:6733 <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  -v speedle-policies:/data <span style="color:#f1fa8c">\
-</span><span style="color:#f1fa8c"></span>  docker.io/speedle/speedle:1.7.0 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  docker.io/speedle/speedle:1.9.0 <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  speedle-pms --store-type file --filestore-loc /data/policies.json --endpoint <span style="color:#bd93f9">0</span>.0.0.0:6733 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
 <p>新しい名前付きボリュームには、UID 65532 が書き込み可能なイメージの <code>/data</code> ディレクトリの内容が入力されます。<code>/data/policies.json</code> が見つからない場合、PMS が作成します。イメージには公開 CA 証明書バンドルが含まれています。1.7.0 と 1.7.1 はこのバンドルが追加される前に公開されたため、これらのタグで TLS エンドポイントに接続する場合は CA ファイルを指定してください。<code>--insecure=true</code> はこのローカル HTTP サンプル用です。TLS については <a href="/ja/docs/security/">セキュリティ</a> を参照してください。</p>
 
@@ -251,7 +251,7 @@ docker run -d --name speedle-pms <span style="color:#f1fa8c">\
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker run -d --name speedle-ads <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  -p <span style="color:#bd93f9">127</span>.0.0.1:6734:6734 <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  -v speedle-policies:/data <span style="color:#f1fa8c">\
-</span><span style="color:#f1fa8c"></span>  docker.io/speedle/speedle:1.7.0 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  docker.io/speedle/speedle:1.9.0 <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  speedle-ads --store-type file --filestore-loc /data/policies.json --endpoint <span style="color:#bd93f9">0</span>.0.0.0:6734 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
 <h2 id="ヘルスチェックと準備状態の確認">ヘルスチェックと準備状態の確認</h2>
 
@@ -277,7 +277,7 @@ policy created
 
 <p>同じ <code>spctl</code> バイナリは、PMS のネットワーク名前空間を共有する 2 つ目のコンテナでも実行できます:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker run --rm --network container:speedle-pms <span style="color:#f1fa8c">\
-</span><span style="color:#f1fa8c"></span>  docker.io/speedle/speedle:1.7.0 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  docker.io/speedle/speedle:1.9.0 <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ get service --all</code></pre></div>
 <h2 id="ads-への認可決定リクエスト">ADS への認可決定リクエスト</h2>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --header <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
@@ -320,7 +320,7 @@ node main.mjs</code></pre></div><div class="highlight"><pre style="color:#f8f8f2
 <p>このファイルを <code>compose.yaml</code> として保存します。これは、同じ 2 つのプロセスと同じボリュームを実行するもう 1 つの方法です。前のセクションのコンテナがまだ実行されている場合は、ポート 6733 と 6734 が解放されるように先に停止してください。そのボリュームを削除すると、そのポリシーファイルも削除されます。</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">services:
   pms:
-    image: docker.io/speedle/speedle:<span style="color:#bd93f9">1.7</span>.<span style="color:#bd93f9">0</span>
+    image: docker.io/speedle/speedle:<span style="color:#bd93f9">1.9</span>.<span style="color:#bd93f9">0</span>
     command:
       - speedle-pms
       - --store-type
@@ -335,7 +335,7 @@ node main.mjs</code></pre></div><div class="highlight"><pre style="color:#f8f8f2
     volumes:
       - speedle-policies:/data
   ads:
-    image: docker.io/speedle/speedle:<span style="color:#bd93f9">1.7</span>.<span style="color:#bd93f9">0</span>
+    image: docker.io/speedle/speedle:<span style="color:#bd93f9">1.9</span>.<span style="color:#bd93f9">0</span>
     command:
       - speedle-ads
       - --store-type
@@ -367,8 +367,8 @@ docker compose -f compose.yaml <span style="color:#8be9fd;font-style:italic">exe
 <h2 id="プロベナンスの検証">プロベナンスの検証</h2>
 
 <p>公開ビルドにはプロベナンスと SBOM が添付されています（<code>docker buildx build --provenance=mode=max --sbom=true</code>）。インデックスを確認します:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker buildx imagetools inspect docker.io/speedle/speedle:1.7.0</code></pre></div>
-<p>インデックスには <code>linux/amd64</code>、<code>linux/arm64</code>、および 2 つの <code>unknown/unknown</code> マニフェストが一覧表示されます。これらの未知のプラットフォームはアテステーションマニフェストです。それぞれ <code>vnd.docker.reference.type</code> を <code>attestation-manifest</code> に設定し、<code>vnd.docker.reference.digest</code> を説明対象のプラットフォームイメージに設定しています。<code>docker buildx imagetools inspect ghcr.io/teramoby/speedle:1.7.0</code> も同じプラットフォームおよびアテステーションのダイジェストを出力します。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker buildx imagetools inspect docker.io/speedle/speedle:1.9.0</code></pre></div>
+<p>インデックスには <code>linux/amd64</code>、<code>linux/arm64</code>、および 2 つの <code>unknown/unknown</code> マニフェストが一覧表示されます。これらの未知のプラットフォームはアテステーションマニフェストです。それぞれ <code>vnd.docker.reference.type</code> を <code>attestation-manifest</code> に設定し、<code>vnd.docker.reference.digest</code> を説明対象のプラットフォームイメージに設定しています。<code>docker buildx imagetools inspect ghcr.io/teramoby/speedle:1.9.0</code> も同じプラットフォームおよびアテステーションのダイジェストを出力します。</p>
 
 <h2 id="コンテナの停止">コンテナの停止</h2>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker rm -f speedle-pms speedle-ads

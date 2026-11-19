@@ -235,6 +235,10 @@ grant user user1 from IDCS.tenant01 read book</code></pre></div>
 
 <p><a href="https://github.com/teramoby/speedle-plus/blob/master/website/tests/examples/idd.json">测试文件</a>允许 GitHub 的 <code>user1</code> 读取、Google 的 <code>user1</code> 写入，并允许任何域的 <code>user1</code> 租借。小写域名是演示命名空间。</p>
 
+<blockquote>
+<p><strong>注意：</strong> 本页使用的 <code>website/tests/examples/</code> 文件来自克隆的仓库（<a href="/zh/quick-start/">快速入门</a>的 Route B）；<code>go install</code> 不包含这些文件。</p>
+</blockquote>
+
 <!-- docs-check: idd-fixture -->
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service --json-file website/tests/examples/idd.json</code></pre></div>
 <h2 id="比较决策">比较决策</h2>

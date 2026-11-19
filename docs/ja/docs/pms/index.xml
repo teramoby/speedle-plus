@@ -53,10 +53,11 @@ printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json ターミナル 1 で 
       <description>認可診断の役割 Diagnose は認可評価を詳細に説明します。決定結果、理由、有効なロール、属性、および検証されたポリシーが含まれます。IsAllowed と同じリクエストコンテキストを受け取ります。REST では /authz-check/v1/diagnose を使用し、Go/gRPC では Diagnose を使用します。
 診断機能はポリシー定義とリクエストコンテキストをそのまま開示します。API セキュリティ制御 を使用して信頼できるオペレーターにのみ制限してください。パブリックなデバッグエンドポイントではありません。
 サンプル実行前の準備 クイックスタート の手順に従い、リポジトリルート下の ./bin/spctl、./bin/speedle-pms、./bin/speedle-ads をビルドします。Go 1.27.4（または同じリリースブランチの新しいパッチバージョン）、Bash、curl、Python 3 が必要です。各ターミナルはリポジトリのルートから実行してください。このページ用に新しいポリシーファイルを使用します。両方のサービスを停止した後にのみファイルをリセットしてください。
-空のポリシーファイルを初期化します:
+ 注: このページで使用する website/tests/examples/ のファイルは、リポジトリのクローン（クイックスタート のルート B）に含まれています。go install では含まれません。
+ 空のポリシーファイルを初期化します:
 printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json ターミナル 1 で PMS を起動し、実行したままにします:
 ./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --grpc-endpoint 127.0.0.1:0 --insecure=true ターミナル 2 で ADS を起動し、実行したままにします:
-./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6734 --grpc-endpoint 127.0.0.1:0 --insecure=true 残りのコマンドは 3 つ目のターミナルで実行します。PMS と ADS は同じファイルを共有し、変更は watch を通じて非同期に伝播します。新しいポリシーに依存する前に、更新が反映されていることを確認してください。--insecure=true はローカルのループバック用です。本番環境の接続については セキュリティ を参照してください。明示的な PMS アドレスの指定により、~/.spctlconfig を変更する必要はありません。完了したら、両方のサーバーターミナルで Ctrl-C を押して終了します。</description>
+./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6734 --grpc-endpoint 127.0.0.1:0 --insecure=true 残りのコマンドは 3 つ目のターミナルで実行します。PMS と ADS は同じファイルを共有し、変更は watch を通じて非同期に伝播します。新しいポリシーに依存する前に、更新が反映されていることを確認してください。--insecure=true はローカルのループバック用です。本番環境の接続については セキュリティ を参照してください。明示的な PMS アドレスの指定により、~/.</description>
     </item>
     
     <item>

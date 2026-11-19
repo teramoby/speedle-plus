@@ -205,7 +205,7 @@
 
 <h2 id="前提条件">前提条件</h2>
 
-<p><a href="/ja/quick-start/">クイックスタート</a> と同様に、シェルと <strong>Go 1.27.4</strong>（または同じリリースブランチの新しいパッチバージョン）を備えた Linux または macOS を使用します。このウォークスルーでは、Go modules と公開された <strong>Speedle v1.6.0</strong> リリースを使用します。</p>
+<p><a href="/ja/quick-start/">クイックスタート</a> と同様に、シェルと <strong>Go 1.27.4</strong>（または同じリリースブランチの新しいパッチバージョン）を備えた Linux または macOS を使用します。このウォークスルーでは、Go modules と公開された <strong>Speedle v1.9.0</strong> リリースを使用します。</p>
 
 <p><a href="https://go.dev/doc/install">Go 公式インストール手順</a> に従って Go をインストールし、バージョンを確認します:</p>
 
@@ -221,7 +221,7 @@
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mkdir speedle-embedded-demo
 <span style="color:#8be9fd;font-style:italic">cd</span> speedle-embedded-demo
 go mod init example.com/speedle-embedded-demo
-go get github.com/teramoby/speedle-plus/pkg/eval@v1.6.0</code></pre></div>
+go get github.com/teramoby/speedle-plus/pkg/eval@v1.9.0</code></pre></div>
 <p>既存の Go モジュールでは、そのモジュールのディレクトリから最後の <code>go get</code> コマンドのみを実行します。</p>
 
 <p>ここで <code>go get</code> はバージョン管理された<strong>ライブラリ依存関係</strong>を <code>go.mod</code> と <code>go.sum</code> に追加します。プログラムのインストールは行いません。これは、スタンドアロンサービスの実行可能ファイルをビルドするために <code>git clone</code> と <code>go build</code> を使用するクイックスタートとは異なります。どちらも Go modules を使用します。<code>go.mod</code> と <code>go.sum</code> はバージョン管理下に保持してください。</p>

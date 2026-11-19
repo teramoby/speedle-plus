@@ -208,6 +208,10 @@
 
 <p>このモックは、<code>githubtoken</code>/<code>github</code>、<code>googletoken</code>/<code>google</code>、<code>gitlabtoken</code>/<code>gitlab</code> の 3 組の入力のみを認識し、それぞれ対応するドメインの <code>user1</code> を表します。トークンとプロバイダーのペアが一致しない場合は失敗します。<strong>これはテスト用フィクスチャであり、実際のトークン検証ではありません。</strong> トークンの値は記録されません。ループバックアドレスのみにバインドし、本番環境では実際のプロバイダー統合に置き換えてください。</p>
 
+<blockquote>
+<p><strong>注:</strong> このページで使用する <code>website/tests/examples/</code> のファイルは、リポジトリのクローン（<a href="/ja/quick-start/">クイックスタート</a> のルート B）に含まれています。<code>go install</code> では含まれません。</p>
+</blockquote>
+
 <p>リポジトリルートから別のターミナルで起動します:</p>
 
 <!-- docs-check: mock-asserter -->

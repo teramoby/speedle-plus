@@ -205,7 +205,7 @@
 
 <h2 id="prerequisites">Prerequisites</h2>
 
-<p>Use Linux or macOS with a shell and <strong>Go 1.27.4</strong> (or a newer patch on the same release branch), matching <a href="/quick-start/">Quick Start</a>. This walkthrough uses Go modules and the published <strong>Speedle v1.6.0</strong> release.</p>
+<p>Use Linux or macOS with a shell and <strong>Go 1.27.4</strong> (or a newer patch on the same release branch), matching <a href="/quick-start/">Quick Start</a>. This walkthrough uses Go modules and the published <strong>Speedle v1.9.0</strong> release.</p>
 
 <p>Install Go using the <a href="https://go.dev/doc/install">official installation instructions</a>, then check your version:</p>
 
@@ -221,7 +221,7 @@
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mkdir speedle-embedded-demo
 <span style="color:#8be9fd;font-style:italic">cd</span> speedle-embedded-demo
 go mod init example.com/speedle-embedded-demo
-go get github.com/teramoby/speedle-plus/pkg/eval@v1.6.0</code></pre></div>
+go get github.com/teramoby/speedle-plus/pkg/eval@v1.9.0</code></pre></div>
 <p>In an existing Go module, run only the final <code>go get</code> command from that module&rsquo;s directory.</p>
 
 <p>Here, <code>go get</code> adds a versioned <strong>library dependency</strong> to <code>go.mod</code> and <code>go.sum</code>; it does not install a program. This differs from Quick Start, which uses <code>git clone</code> and <code>go build</code> to build the standalone service executables. Both use Go modules. Keep <code>go.mod</code> and <code>go.sum</code> in version control.</p>

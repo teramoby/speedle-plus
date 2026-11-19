@@ -206,30 +206,30 @@
 <li>GHCR: <code>ghcr.io/teramoby/speedle</code></li>
 </ul>
 
-<p>La versión 1.7.0 publica las etiquetas <code>1.7.0</code>, <code>1.7</code> y <code>latest</code> en ambos registros, para las arquitecturas <code>linux/amd64</code> y <code>linux/arm64</code>.</p>
+<p>La versión 1.9.0 publica las etiquetas <code>1.9.0</code>, <code>1.9</code> y <code>latest</code> en ambos registros, para las arquitecturas <code>linux/amd64</code> y <code>linux/arm64</code>.</p>
 
 <h2 id="descargar-la-imagen">Descargar la imagen</h2>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker pull docker.io/speedle/speedle:1.7.0
-docker pull ghcr.io/teramoby/speedle:1.7.0</code></pre></div>
-<p><code>docker pull</code> imprime el digest del índice. Para 1.7.0 ese digest es <code>sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0</code> en ambos registros.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker pull docker.io/speedle/speedle:1.9.0
+docker pull ghcr.io/teramoby/speedle:1.9.0</code></pre></div>
+<p><code>docker pull</code> imprime el digest del índice. Para 1.9.0 ese digest es <code>sha256:f20947fc15fb342dbafe93403df99f909795ad66ac0866fd9252611268791d2c</code> en ambos registros.</p>
 
 <h2 id="elegir-una-etiqueta">Elegir una etiqueta</h2>
 
-<p><code>1.7.0</code> identifica esta versión. <code>1.7</code> se actualiza cuando se publica un parche 1.7 superior. <code>latest</code> se actualiza cuando se publica una versión superior desde el commit más reciente en <code>master</code>. Un reintento de publicación puede publicar la misma etiqueta de versión nuevamente, por lo que una etiqueta no es una compilación inmutable.</p>
+<p><code>1.9.0</code> identifica esta versión. <code>1.9</code> se actualiza cuando se publica un parche 1.9 superior. <code>latest</code> se actualiza cuando se publica una versión superior desde el commit más reciente en <code>master</code>. Un reintento de publicación puede publicar la misma etiqueta de versión nuevamente, por lo que una etiqueta no es una compilación inmutable.</p>
 
 <p>Para leer el digest del índice:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker buildx imagetools inspect docker.io/speedle/speedle:1.7.0 --format <span style="color:#f1fa8c">&#39;{{.Manifest.Digest}}&#39;</span></code></pre></div>
-<p>Para la versión 1.7.0, <code>1.7.0</code>, <code>1.7</code> y <code>latest</code> en ambos registros imprimen:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0</code></pre></div>
-<p>Verifique el digest nuevamente antes de desplegar <code>1.7</code> o <code>latest</code>. Para fijar una compilación específica, utilice el nombre de la imagen con <code>@</code> y ese digest, por ejemplo <code>docker.io/speedle/speedle@sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker buildx imagetools inspect docker.io/speedle/speedle:1.9.0 --format <span style="color:#f1fa8c">&#39;{{.Manifest.Digest}}&#39;</span></code></pre></div>
+<p>Para la versión 1.9.0, <code>1.9.0</code>, <code>1.9</code> y <code>latest</code> en ambos registros imprimen:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">sha256:f20947fc15fb342dbafe93403df99f909795ad66ac0866fd9252611268791d2c</code></pre></div>
+<p>Verifique el digest nuevamente antes de desplegar <code>1.9</code> o <code>latest</code>. Para fijar una compilación específica, utilice el nombre de la imagen con <code>@</code> y ese digest, por ejemplo <code>docker.io/speedle/speedle@sha256:f20947fc15fb342dbafe93403df99f909795ad66ac0866fd9252611268791d2c</code>.</p>
 
 <h2 id="comandos-en-la-imagen">Comandos en la imagen</h2>
 
 <p>Sin argumentos, la imagen imprime los tres programas disponibles:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker run --rm docker.io/speedle/speedle:1.7.0</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">speedle-pms
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker run --rm docker.io/speedle/speedle:1.9.0</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">speedle-pms
 speedle-ads
 spctl</code></pre></div>
-<p><code>docker run --rm ghcr.io/teramoby/speedle:1.7.0</code> imprime las mismas líneas. Los comandos siguientes utilizan el nombre de Docker Hub. Sustitúyalo por el nombre de GHCR si desea utilizar esa copia. No hay shell en la imagen, por lo que <code>docker exec</code> debe llamar a <code>/spctl</code>, <code>/speedle-pms</code> o <code>/speedle-ads</code> mediante su ruta absoluta.</p>
+<p><code>docker run --rm ghcr.io/teramoby/speedle:1.9.0</code> imprime las mismas líneas. Los comandos siguientes utilizan el nombre de Docker Hub. Sustitúyalo por el nombre de GHCR si desea utilizar esa copia. No hay shell en la imagen, por lo que <code>docker exec</code> debe llamar a <code>/spctl</code>, <code>/speedle-pms</code> o <code>/speedle-ads</code> mediante su ruta absoluta.</p>
 
 <h2 id="ejecutar-pms-y-ads">Ejecutar PMS y ADS</h2>
 
@@ -238,7 +238,7 @@ spctl</code></pre></div>
 docker run -d --name speedle-pms <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  -p <span style="color:#bd93f9">127</span>.0.0.1:6733:6733 <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  -v speedle-policies:/data <span style="color:#f1fa8c">\
-</span><span style="color:#f1fa8c"></span>  docker.io/speedle/speedle:1.7.0 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  docker.io/speedle/speedle:1.9.0 <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  speedle-pms --store-type file --filestore-loc /data/policies.json --endpoint <span style="color:#bd93f9">0</span>.0.0.0:6733 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
 <p>El nuevo volumen con nombre se rellena a partir del directorio <code>/data</code> de la imagen, en el que el UID 65532 puede escribir. PMS crea <code>/data/policies.json</code> si no existe. La imagen incluye el paquete de certificados de CA públicos. Las versiones 1.7.0 y 1.7.1 se publicaron antes de añadir ese paquete; proporcione un archivo de CA para los endpoints TLS cuando use esas etiquetas. <code>--insecure=true</code> es para este ejemplo HTTP local. Consulte <a href="/es/docs/security/">Seguridad</a> para configurar TLS.</p>
 
@@ -251,7 +251,7 @@ docker run -d --name speedle-pms <span style="color:#f1fa8c">\
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker run -d --name speedle-ads <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  -p <span style="color:#bd93f9">127</span>.0.0.1:6734:6734 <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  -v speedle-policies:/data <span style="color:#f1fa8c">\
-</span><span style="color:#f1fa8c"></span>  docker.io/speedle/speedle:1.7.0 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  docker.io/speedle/speedle:1.9.0 <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  speedle-ads --store-type file --filestore-loc /data/policies.json --endpoint <span style="color:#bd93f9">0</span>.0.0.0:6734 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
 <h2 id="comprobar-estado-y-preparación">Comprobar estado y preparación</h2>
 
@@ -277,7 +277,7 @@ policy created
 
 <p>El mismo binario <code>spctl</code> puede ejecutarse en un segundo contenedor que comparte el espacio de nombres de red de PMS:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker run --rm --network container:speedle-pms <span style="color:#f1fa8c">\
-</span><span style="color:#f1fa8c"></span>  docker.io/speedle/speedle:1.7.0 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  docker.io/speedle/speedle:1.9.0 <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ get service --all</code></pre></div>
 <h2 id="pedir-una-decisión-a-ads">Pedir una decisión a ADS</h2>
 
@@ -322,7 +322,7 @@ node main.mjs</code></pre></div><div class="highlight"><pre style="color:#f8f8f2
 <p>Guarde este archivo como <code>compose.yaml</code>. Es otra forma de ejecutar los mismos dos procesos y el mismo volumen. Si los contenedores de la sección anterior siguen ejecutándose, deténgalos primero para que los puertos 6733 y 6734 queden libres. Al eliminar ese volumen también se elimina su archivo de políticas.</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">services:
   pms:
-    image: docker.io/speedle/speedle:<span style="color:#bd93f9">1.7</span>.<span style="color:#bd93f9">0</span>
+    image: docker.io/speedle/speedle:<span style="color:#bd93f9">1.9</span>.<span style="color:#bd93f9">0</span>
     command:
       - speedle-pms
       - --store-type
@@ -337,7 +337,7 @@ node main.mjs</code></pre></div><div class="highlight"><pre style="color:#f8f8f2
     volumes:
       - speedle-policies:/data
   ads:
-    image: docker.io/speedle/speedle:<span style="color:#bd93f9">1.7</span>.<span style="color:#bd93f9">0</span>
+    image: docker.io/speedle/speedle:<span style="color:#bd93f9">1.9</span>.<span style="color:#bd93f9">0</span>
     command:
       - speedle-ads
       - --store-type
@@ -369,8 +369,8 @@ docker compose -f compose.yaml <span style="color:#8be9fd;font-style:italic">exe
 <h2 id="verificar-procedencia-y-sbom">Verificar procedencia y SBOM</h2>
 
 <p>La compilación de publicación adjunta la procedencia (provenance) y un SBOM (<code>docker buildx build --provenance=mode=max --sbom=true</code>). Inspeccione el índice:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker buildx imagetools inspect docker.io/speedle/speedle:1.7.0</code></pre></div>
-<p>El índice enumera <code>linux/amd64</code>, <code>linux/arm64</code> y dos manifiestos <code>unknown/unknown</code>. Esas plataformas desconocidas son los manifiestos de atestación. Cada uno establece <code>vnd.docker.reference.type</code> en <code>attestation-manifest</code> y <code>vnd.docker.reference.digest</code> en la imagen de plataforma que describe. <code>docker buildx imagetools inspect ghcr.io/teramoby/speedle:1.7.0</code> imprime los mismos digests de plataforma y atestación.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker buildx imagetools inspect docker.io/speedle/speedle:1.9.0</code></pre></div>
+<p>El índice enumera <code>linux/amd64</code>, <code>linux/arm64</code> y dos manifiestos <code>unknown/unknown</code>. Esas plataformas desconocidas son los manifiestos de atestación. Cada uno establece <code>vnd.docker.reference.type</code> en <code>attestation-manifest</code> y <code>vnd.docker.reference.digest</code> en la imagen de plataforma que describe. <code>docker buildx imagetools inspect ghcr.io/teramoby/speedle:1.9.0</code> imprime los mismos digests de plataforma y atestación.</p>
 
 <h2 id="detener-los-contenedores">Detener los contenedores</h2>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker rm -f speedle-pms speedle-ads

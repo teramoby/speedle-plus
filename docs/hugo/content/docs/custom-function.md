@@ -20,6 +20,8 @@ SPDL conditions can call a configured function when built-in operators or functi
 
 This example accepts numeric values from 100 to 50000. Wrong parameter types or an empty parameter list return an HTTP error. It uses plaintext only on a loopback IP; use TLS for other interfaces.
 
+> **Note:** The files under `website/tests/examples/` used on this page come from a clone of the repository (Route B of the [Quick Start](/quick-start/)); `go install` does not include them.
+
 Start it in a separate terminal:
 
 <!-- docs-check: function-server -->

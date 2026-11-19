@@ -206,30 +206,30 @@
 <li>GHCR: <code>ghcr.io/teramoby/speedle</code></li>
 </ul>
 
-<p>Release 1.7.0 publishes the tags <code>1.7.0</code>, <code>1.7</code> and <code>latest</code> on both registries, for <code>linux/amd64</code> and <code>linux/arm64</code>.</p>
+<p>Release 1.9.0 publishes the tags <code>1.9.0</code>, <code>1.9</code> and <code>latest</code> on both registries, for <code>linux/amd64</code> and <code>linux/arm64</code>.</p>
 
 <h2 id="pull-the-image">Pull the image</h2>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker pull docker.io/speedle/speedle:1.7.0
-docker pull ghcr.io/teramoby/speedle:1.7.0</code></pre></div>
-<p><code>docker pull</code> prints the index digest. For 1.7.0 that digest is <code>sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0</code> on both registries.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker pull docker.io/speedle/speedle:1.9.0
+docker pull ghcr.io/teramoby/speedle:1.9.0</code></pre></div>
+<p><code>docker pull</code> prints the index digest. For 1.9.0 that digest is <code>sha256:f20947fc15fb342dbafe93403df99f909795ad66ac0866fd9252611268791d2c</code> on both registries.</p>
 
 <h2 id="choose-a-tag">Choose a tag</h2>
 
-<p><code>1.7.0</code> names this release. <code>1.7</code> moves when a higher 1.7 patch is published. <code>latest</code> moves when a higher release is published from the newest commit on <code>master</code>. A release retry can publish the same version tag again, so a tag is not an immutable build.</p>
+<p><code>1.9.0</code> names this release. <code>1.9</code> moves when a higher 1.9 patch is published. <code>latest</code> moves when a higher release is published from the newest commit on <code>master</code>. A release retry can publish the same version tag again, so a tag is not an immutable build.</p>
 
 <p>To read the index digest:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker buildx imagetools inspect docker.io/speedle/speedle:1.7.0 --format <span style="color:#f1fa8c">&#39;{{.Manifest.Digest}}&#39;</span></code></pre></div>
-<p>For the 1.7.0 release, <code>1.7.0</code>, <code>1.7</code> and <code>latest</code> on both registries all print:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0</code></pre></div>
-<p>Check the digest again before you deploy <code>1.7</code> or <code>latest</code>. To stay on one build, use the image name with <code>@</code> and that digest, for example <code>docker.io/speedle/speedle@sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0</code>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker buildx imagetools inspect docker.io/speedle/speedle:1.9.0 --format <span style="color:#f1fa8c">&#39;{{.Manifest.Digest}}&#39;</span></code></pre></div>
+<p>For the 1.9.0 release, <code>1.9.0</code>, <code>1.9</code> and <code>latest</code> on both registries all print:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">sha256:f20947fc15fb342dbafe93403df99f909795ad66ac0866fd9252611268791d2c</code></pre></div>
+<p>Check the digest again before you deploy <code>1.9</code> or <code>latest</code>. To stay on one build, use the image name with <code>@</code> and that digest, for example <code>docker.io/speedle/speedle@sha256:f20947fc15fb342dbafe93403df99f909795ad66ac0866fd9252611268791d2c</code>.</p>
 
 <h2 id="commands-in-the-image">Commands in the image</h2>
 
 <p>With no arguments the image prints the three programs:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker run --rm docker.io/speedle/speedle:1.7.0</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">speedle-pms
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker run --rm docker.io/speedle/speedle:1.9.0</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">speedle-pms
 speedle-ads
 spctl</code></pre></div>
-<p><code>docker run --rm ghcr.io/teramoby/speedle:1.7.0</code> prints the same lines. The commands below use the Docker Hub name. Substitute the GHCR name to use that copy. There is no shell in the image, so <code>docker exec</code> must call <code>/spctl</code>, <code>/speedle-pms</code> or <code>/speedle-ads</code> by absolute path.</p>
+<p><code>docker run --rm ghcr.io/teramoby/speedle:1.9.0</code> prints the same lines. The commands below use the Docker Hub name. Substitute the GHCR name to use that copy. There is no shell in the image, so <code>docker exec</code> must call <code>/spctl</code>, <code>/speedle-pms</code> or <code>/speedle-ads</code> by absolute path.</p>
 
 <h2 id="run-pms-and-ads">Run PMS and ADS</h2>
 
@@ -238,7 +238,7 @@ spctl</code></pre></div>
 docker run -d --name speedle-pms <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  -p <span style="color:#bd93f9">127</span>.0.0.1:6733:6733 <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  -v speedle-policies:/data <span style="color:#f1fa8c">\
-</span><span style="color:#f1fa8c"></span>  docker.io/speedle/speedle:1.7.0 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  docker.io/speedle/speedle:1.9.0 <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  speedle-pms --store-type file --filestore-loc /data/policies.json --endpoint <span style="color:#bd93f9">0</span>.0.0.0:6733 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
 <p>A new named volume is filled from the image&rsquo;s <code>/data</code> directory, which UID 65532 can write. PMS creates <code>/data/policies.json</code> when it is missing. The image includes the public CA bundle. Releases 1.7.0 and 1.7.1 were published before the bundle was added; pass a CA file for TLS endpoints when using those tags. <code>--insecure=true</code> is for this local HTTP example. See <a href="/docs/security/">Security</a> for TLS.</p>
 
@@ -251,7 +251,7 @@ docker run -d --name speedle-pms <span style="color:#f1fa8c">\
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker run -d --name speedle-ads <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  -p <span style="color:#bd93f9">127</span>.0.0.1:6734:6734 <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  -v speedle-policies:/data <span style="color:#f1fa8c">\
-</span><span style="color:#f1fa8c"></span>  docker.io/speedle/speedle:1.7.0 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  docker.io/speedle/speedle:1.9.0 <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  speedle-ads --store-type file --filestore-loc /data/policies.json --endpoint <span style="color:#bd93f9">0</span>.0.0.0:6734 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
 <h2 id="check-health-and-readiness">Check health and readiness</h2>
 
@@ -277,7 +277,7 @@ policy created
 
 <p>The same <code>spctl</code> binary can run in a second container that shares the PMS network namespace:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker run --rm --network container:speedle-pms <span style="color:#f1fa8c">\
-</span><span style="color:#f1fa8c"></span>  docker.io/speedle/speedle:1.7.0 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  docker.io/speedle/speedle:1.9.0 <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ get service --all</code></pre></div>
 <h2 id="ask-ads-for-a-decision">Ask ADS for a decision</h2>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --header <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
@@ -320,7 +320,7 @@ node main.mjs</code></pre></div><div class="highlight"><pre style="color:#f8f8f2
 <p>Save this file as <code>compose.yaml</code>. It is another way to run the same two processes and the same volume. If the containers from the earlier section are still running, stop them first so ports 6733 and 6734 are free. Removing that volume also removes its policy file.</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">services:
   pms:
-    image: docker.io/speedle/speedle:<span style="color:#bd93f9">1.7</span>.<span style="color:#bd93f9">0</span>
+    image: docker.io/speedle/speedle:<span style="color:#bd93f9">1.9</span>.<span style="color:#bd93f9">0</span>
     command:
       - speedle-pms
       - --store-type
@@ -335,7 +335,7 @@ node main.mjs</code></pre></div><div class="highlight"><pre style="color:#f8f8f2
     volumes:
       - speedle-policies:/data
   ads:
-    image: docker.io/speedle/speedle:<span style="color:#bd93f9">1.7</span>.<span style="color:#bd93f9">0</span>
+    image: docker.io/speedle/speedle:<span style="color:#bd93f9">1.9</span>.<span style="color:#bd93f9">0</span>
     command:
       - speedle-ads
       - --store-type
@@ -367,8 +367,8 @@ docker compose -f compose.yaml <span style="color:#8be9fd;font-style:italic">exe
 <h2 id="verify-provenance">Verify provenance</h2>
 
 <p>The publish build attaches provenance and an SBOM (<code>docker buildx build --provenance=mode=max --sbom=true</code>). Inspect the index:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker buildx imagetools inspect docker.io/speedle/speedle:1.7.0</code></pre></div>
-<p>The index lists <code>linux/amd64</code>, <code>linux/arm64</code>, and two <code>unknown/unknown</code> manifests. Those unknown platforms are the attestation manifests. Each one sets <code>vnd.docker.reference.type</code> to <code>attestation-manifest</code> and <code>vnd.docker.reference.digest</code> to the platform image it describes. <code>docker buildx imagetools inspect ghcr.io/teramoby/speedle:1.7.0</code> prints the same platform and attestation digests.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker buildx imagetools inspect docker.io/speedle/speedle:1.9.0</code></pre></div>
+<p>The index lists <code>linux/amd64</code>, <code>linux/arm64</code>, and two <code>unknown/unknown</code> manifests. Those unknown platforms are the attestation manifests. Each one sets <code>vnd.docker.reference.type</code> to <code>attestation-manifest</code> and <code>vnd.docker.reference.digest</code> to the platform image it describes. <code>docker buildx imagetools inspect ghcr.io/teramoby/speedle:1.9.0</code> prints the same platform and attestation digests.</p>
 
 <h2 id="stop-the-containers">Stop the containers</h2>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker rm -f speedle-pms speedle-ads

@@ -206,30 +206,30 @@
 <li>GHCR：<code>ghcr.io/teramoby/speedle</code></li>
 </ul>
 
-<p>1.7.0 在两个仓库都发布了标签 <code>1.7.0</code>、<code>1.7</code> 和 <code>latest</code>，架构为 <code>linux/amd64</code> 和 <code>linux/arm64</code>。</p>
+<p>1.9.0 在两个仓库都发布了标签 <code>1.9.0</code>、<code>1.9</code> 和 <code>latest</code>，架构为 <code>linux/amd64</code> 和 <code>linux/arm64</code>。</p>
 
 <h2 id="拉取镜像">拉取镜像</h2>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker pull docker.io/speedle/speedle:1.7.0
-docker pull ghcr.io/teramoby/speedle:1.7.0</code></pre></div>
-<p><code>docker pull</code> 会打印索引摘要。1.7.0 在两个仓库上的摘要都是 <code>sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker pull docker.io/speedle/speedle:1.9.0
+docker pull ghcr.io/teramoby/speedle:1.9.0</code></pre></div>
+<p><code>docker pull</code> 会打印索引摘要。1.9.0 在两个仓库上的摘要都是 <code>sha256:f20947fc15fb342dbafe93403df99f909795ad66ac0866fd9252611268791d2c</code>。</p>
 
 <h2 id="选择标签">选择标签</h2>
 
-<p><code>1.7.0</code> 指向这一次发布。更高的 1.7 补丁发布后，<code>1.7</code> 会跟着移动。从 <code>master</code> 最新提交发布更高版本时，<code>latest</code> 会跟着移动。同一次版本可以再次发布，因此标签不是不可变的构建。</p>
+<p><code>1.9.0</code> 指向这一次发布。更高的 1.9 补丁发布后，<code>1.9</code> 会跟着移动。从 <code>master</code> 最新提交发布更高版本时，<code>latest</code> 会跟着移动。同一次版本可以再次发布，因此标签不是不可变的构建。</p>
 
 <p>查看索引摘要：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker buildx imagetools inspect docker.io/speedle/speedle:1.7.0 --format <span style="color:#f1fa8c">&#39;{{.Manifest.Digest}}&#39;</span></code></pre></div>
-<p>1.7.0 这次发布里，两个仓库上的 <code>1.7.0</code>、<code>1.7</code> 和 <code>latest</code> 都打印：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0</code></pre></div>
-<p>部署 <code>1.7</code> 或 <code>latest</code> 之前请再查一次摘要。要固定在同一次构建上，把镜像名写成带 <code>@</code> 和该摘要的形式，例如 <code>docker.io/speedle/speedle@sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0</code>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker buildx imagetools inspect docker.io/speedle/speedle:1.9.0 --format <span style="color:#f1fa8c">&#39;{{.Manifest.Digest}}&#39;</span></code></pre></div>
+<p>1.9.0 这次发布里，两个仓库上的 <code>1.9.0</code>、<code>1.9</code> 和 <code>latest</code> 都打印：</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">sha256:f20947fc15fb342dbafe93403df99f909795ad66ac0866fd9252611268791d2c</code></pre></div>
+<p>部署 <code>1.9</code> 或 <code>latest</code> 之前请再查一次摘要。要固定在同一次构建上，把镜像名写成带 <code>@</code> 和该摘要的形式，例如 <code>docker.io/speedle/speedle@sha256:f20947fc15fb342dbafe93403df99f909795ad66ac0866fd9252611268791d2c</code>。</p>
 
 <h2 id="镜像里的命令">镜像里的命令</h2>
 
 <p>不带参数时，镜像打印这三个程序：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker run --rm docker.io/speedle/speedle:1.7.0</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">speedle-pms
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker run --rm docker.io/speedle/speedle:1.9.0</code></pre></div><div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">speedle-pms
 speedle-ads
 spctl</code></pre></div>
-<p><code>docker run --rm ghcr.io/teramoby/speedle:1.7.0</code> 打印同样的三行。下面的命令使用 Docker Hub 的名字。把名字换成 GHCR 即使用那一份副本。镜像里没有 shell，所以 <code>docker exec</code> 必须用绝对路径调用 <code>/spctl</code>、<code>/speedle-pms</code> 或 <code>/speedle-ads</code>。</p>
+<p><code>docker run --rm ghcr.io/teramoby/speedle:1.9.0</code> 打印同样的三行。下面的命令使用 Docker Hub 的名字。把名字换成 GHCR 即使用那一份副本。镜像里没有 shell，所以 <code>docker exec</code> 必须用绝对路径调用 <code>/spctl</code>、<code>/speedle-pms</code> 或 <code>/speedle-ads</code>。</p>
 
 <h2 id="运行-pms-和-ads">运行 PMS 和 ADS</h2>
 
@@ -238,7 +238,7 @@ spctl</code></pre></div>
 docker run -d --name speedle-pms <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  -p <span style="color:#bd93f9">127</span>.0.0.1:6733:6733 <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  -v speedle-policies:/data <span style="color:#f1fa8c">\
-</span><span style="color:#f1fa8c"></span>  docker.io/speedle/speedle:1.7.0 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  docker.io/speedle/speedle:1.9.0 <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  speedle-pms --store-type file --filestore-loc /data/policies.json --endpoint <span style="color:#bd93f9">0</span>.0.0.0:6733 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
 <p>新建的命名卷会放入镜像里的 <code>/data</code> 目录，UID 65532 可以写入。策略文件不存在时，PMS 会创建 <code>/data/policies.json</code>。镜像包含公共 CA 证书包。1.7.0 和 1.7.1 发布时还没有该证书包；使用这些标签时，连接 TLS 端点需要提供 CA 文件。<code>--insecure=true</code> 只用于这个本地 HTTP 示例。TLS 见<a href="/zh/docs/security/">安全</a>。</p>
 
@@ -251,7 +251,7 @@ docker run -d --name speedle-pms <span style="color:#f1fa8c">\
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker run -d --name speedle-ads <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  -p <span style="color:#bd93f9">127</span>.0.0.1:6734:6734 <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  -v speedle-policies:/data <span style="color:#f1fa8c">\
-</span><span style="color:#f1fa8c"></span>  docker.io/speedle/speedle:1.7.0 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  docker.io/speedle/speedle:1.9.0 <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  speedle-ads --store-type file --filestore-loc /data/policies.json --endpoint <span style="color:#bd93f9">0</span>.0.0.0:6734 --insecure<span style="color:#ff79c6">=</span>true</code></pre></div>
 <h2 id="检查健康和就绪">检查健康和就绪</h2>
 
@@ -277,7 +277,7 @@ policy created
 
 <p>同一个 <code>spctl</code> 也可以在另一个容器里运行，只要它与 PMS 共用网络命名空间：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker run --rm --network container:speedle-pms <span style="color:#f1fa8c">\
-</span><span style="color:#f1fa8c"></span>  docker.io/speedle/speedle:1.7.0 <span style="color:#f1fa8c">\
+</span><span style="color:#f1fa8c"></span>  docker.io/speedle/speedle:1.9.0 <span style="color:#f1fa8c">\
 </span><span style="color:#f1fa8c"></span>  spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ get service --all</code></pre></div>
 <h2 id="向-ads-请求决策">向 ADS 请求决策</h2>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">curl --fail --silent --show-error --header <span style="color:#f1fa8c">&#39;Content-Type: application/json&#39;</span> <span style="color:#f1fa8c">\
@@ -320,7 +320,7 @@ node main.mjs</code></pre></div><div class="highlight"><pre style="color:#f8f8f2
 <p>把下面的内容存成 <code>compose.yaml</code>。这是运行同样两个进程和同一个卷的另一种方式。如果前面的容器还在运行，先停掉它们，让 6733 和 6734 空出来。删掉那个卷也会删掉里面的策略文件。</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">services:
   pms:
-    image: docker.io/speedle/speedle:<span style="color:#bd93f9">1.7</span>.<span style="color:#bd93f9">0</span>
+    image: docker.io/speedle/speedle:<span style="color:#bd93f9">1.9</span>.<span style="color:#bd93f9">0</span>
     command:
       - speedle-pms
       - --store-type
@@ -335,7 +335,7 @@ node main.mjs</code></pre></div><div class="highlight"><pre style="color:#f8f8f2
     volumes:
       - speedle-policies:/data
   ads:
-    image: docker.io/speedle/speedle:<span style="color:#bd93f9">1.7</span>.<span style="color:#bd93f9">0</span>
+    image: docker.io/speedle/speedle:<span style="color:#bd93f9">1.9</span>.<span style="color:#bd93f9">0</span>
     command:
       - speedle-ads
       - --store-type
@@ -367,8 +367,8 @@ docker compose -f compose.yaml <span style="color:#8be9fd;font-style:italic">exe
 <h2 id="核对来源证明">核对来源证明</h2>
 
 <p>发布构建附带了来源证明和 SBOM（<code>docker buildx build --provenance=mode=max --sbom=true</code>）。查看索引：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker buildx imagetools inspect docker.io/speedle/speedle:1.7.0</code></pre></div>
-<p>索引列出 <code>linux/amd64</code>、<code>linux/arm64</code>，以及两份 <code>unknown/unknown</code> 清单。这两份未知平台是证明清单。每一份都把 <code>vnd.docker.reference.type</code> 设为 <code>attestation-manifest</code>，并把 <code>vnd.docker.reference.digest</code> 设为它所描述的平台镜像。<code>docker buildx imagetools inspect ghcr.io/teramoby/speedle:1.7.0</code> 打印相同的平台摘要和证明摘要。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker buildx imagetools inspect docker.io/speedle/speedle:1.9.0</code></pre></div>
+<p>索引列出 <code>linux/amd64</code>、<code>linux/arm64</code>，以及两份 <code>unknown/unknown</code> 清单。这两份未知平台是证明清单。每一份都把 <code>vnd.docker.reference.type</code> 设为 <code>attestation-manifest</code>，并把 <code>vnd.docker.reference.digest</code> 设为它所描述的平台镜像。<code>docker buildx imagetools inspect ghcr.io/teramoby/speedle:1.9.0</code> 打印相同的平台摘要和证明摘要。</p>
 
 <h2 id="停止容器">停止容器</h2>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">docker rm -f speedle-pms speedle-ads

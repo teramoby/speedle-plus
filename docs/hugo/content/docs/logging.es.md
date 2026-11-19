@@ -23,14 +23,16 @@ Se conservan las opciones `--log-*` y `--auditlog-*`, las variables `SPDL_*` y l
 ```text
 --log-level string
 --log-formatter string
---log-reportcaller bool
+--log-reportcaller string
 --log-filename string
---log-maxsize int
---log-maxbackups int
---log-maxage int
---log-localtime bool
---log-compress bool
+--log-maxsize string
+--log-maxbackups string
+--log-maxage string
+--log-localtime string
+--log-compress string
 ```
+
+Estas opciones son de tipo cadena: indique el valor con `--flag=value` (por ejemplo, `--log-compress=true`). Si solo se escribe la opción, el siguiente argumento se toma como su valor, por lo que `--log-compress --help` usa `--help` como valor de `--log-compress`.
 
 | Flag | Default | Meaning |
 | --- | --- | --- |
@@ -52,10 +54,10 @@ Se conservan las opciones `--log-*` y `--auditlog-*`, las variables `SPDL_*` y l
     "setReportCaller": false,
     "rotationConfig": {
       "filename": "/mnt/logs/speedle.log",
-      "maxSize": 20,
-      "maxBackups": 5,
-      "maxAge": 0,
-      "LocalTime": false,
+      "maxsize": 20,
+      "maxbackups": 5,
+      "maxage": 0,
+      "localtime": false,
       "compress": false
     }
   },

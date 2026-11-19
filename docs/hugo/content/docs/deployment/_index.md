@@ -84,7 +84,7 @@ The image includes the public CA bundle. Releases 1.7.0 and 1.7.1 were published
 
 ## Kubernetes development example
 
-Use a current Kubernetes cluster and compatible `kubectl`. Save the following as `speedle-dev.yaml`. It uses `apps/v1`, one pod with PMS/ADS sharing one file, a non-root application UID and an internal ClusterIP service. This is an isolated development example: `emptyDir` policies are lost when the pod is replaced, and HTTP endpoints need cluster access controls. The manifest uses a `<release-tag>` placeholder; replace it with the release tag you deploy, or a digest for immutable pinning, and add an image pull secret if your cluster requires one.
+Use a current Kubernetes cluster and compatible `kubectl`. Save the following as `speedle-dev.yaml`. It uses `apps/v1`, one pod with PMS/ADS sharing one file, a non-root application UID and an internal ClusterIP service. This is an isolated development example: `emptyDir` policies are lost when the pod is replaced, and HTTP endpoints need cluster access controls. The manifest uses a `<speedle-image>` placeholder; the apply step below substitutes `SPEEDLE_IMAGE`, which you can set to a release tag or a digest for immutable pinning. Add an image pull secret if your cluster requires one.
 
 <!-- deployment-template: kubernetes -->
 ```yaml
@@ -113,7 +113,7 @@ spec:
               mountPath: /data
       containers:
         - name: pms
-          image: docker.io/speedle/speedle:<release-tag>
+          image: <speedle-image>
           args: ["speedle-pms", "--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6733", "--insecure=true"]
           ports:
             - containerPort: 6733
@@ -124,7 +124,7 @@ spec:
             - name: policies
               mountPath: /data
         - name: ads
-          image: docker.io/speedle/speedle:<release-tag>
+          image: <speedle-image>
           args: ["speedle-ads", "--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6734", "--insecure=true"]
           ports:
             - containerPort: 6734
@@ -155,11 +155,12 @@ spec:
       targetPort: 6734
 ```
 
-Set `SPEEDLE_IMAGE` to the exact image you deploy, for example a release tag or a digest. Substitute it locally before applying; keep port-forward running while using Quick Start clients:
+Set `SPEEDLE_IMAGE` to the exact image you deploy, for example `docker.io/speedle/speedle:1.9.0` or an image with a `@sha256:` digest. The block below keeps a value you set and otherwise defaults to `1.9.0`; keep port-forward running while using Quick Start clients:
 
 <!-- deployment-template: apply -->
 ```bash
-kubectl set image --local -f speedle-dev.yaml pms="$SPEEDLE_IMAGE" ads="$SPEEDLE_IMAGE" -o yaml | kubectl apply -f -
+SPEEDLE_IMAGE="${SPEEDLE_IMAGE:-docker.io/speedle/speedle:1.9.0}"
+sed "s|<speedle-image>|$SPEEDLE_IMAGE|g" speedle-dev.yaml | kubectl apply -f -
 kubectl rollout status deployment/speedle-dev
 kubectl port-forward service/speedle-dev 6733:6733 6734:6734
 ```

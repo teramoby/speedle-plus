@@ -23,6 +23,8 @@ The [Token Assertion Plugin API](/docs/api/asserter_api/) uses integer `errCode`
 
 This mock recognizes only `githubtoken`/`github`, `googletoken`/`google`, and `gitlabtoken`/`gitlab`. Each represents `user1` in the named domain. Wrong token/provider pairs fail. **It is a test fixture, not real token validation.** It does not log tokens. Keep it on loopback and use a real provider integration in production.
 
+> **Note:** The files under `website/tests/examples/` used on this page come from a clone of the repository (Route B of the [Quick Start](/quick-start/)); `go install` does not include them.
+
 Start it in a separate terminal from the repository root:
 
 <!-- docs-check: mock-asserter -->

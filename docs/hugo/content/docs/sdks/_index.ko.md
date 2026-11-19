@@ -16,7 +16,7 @@ Speedle SDK는 결정 API `POST /authz-check/v1/is-allowed`의 클라이언트 �
 
 ## 패키지
 
-Java, Python, Go, .NET, Rust는 0.2.0 버전입니다. `@speedle/sdk`는 npm에 게시되어 있습니다. 각 언어별 설치 명령은 해당 페이지에 나와 있습니다.
+Java, Python, Go, .NET, Rust는 0.2.0 버전이고 Node.js/TypeScript SDK는 0.2.1 버전입니다. `@speedle/sdk`는 npm에 게시되어 있습니다. 각 언어별 설치 명령은 해당 페이지에 나와 있습니다.
 
 - [Java](/docs/sdks/java/): Maven Central `io.speedle:speedle-sdk`, 게시 완료.
 - [Python](/docs/sdks/python/): PyPI `speedle`, 게시 완료.

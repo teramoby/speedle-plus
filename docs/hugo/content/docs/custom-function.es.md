@@ -20,6 +20,8 @@ Las condiciones en SPDL pueden invocar una función configurada cuando los opera
 
 Este ejemplo acepta valores numéricos entre 100 y 50000. Los tipos de parámetros incorrectos o una lista de parámetros vacía devuelven un error HTTP. Utiliza texto en plano únicamente en una dirección IP de loopback; utilice TLS para otras interfaces.
 
+> **Nota:** Los archivos de `website/tests/examples/` que se usan en esta página vienen de un clon del repositorio (ruta B del [Inicio rápido](/es/quick-start/)); `go install` no los incluye.
+
 Inícielo en una terminal independiente:
 
 <!-- docs-check: function-server -->

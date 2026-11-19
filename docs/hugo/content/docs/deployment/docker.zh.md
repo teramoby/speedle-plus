@@ -18,41 +18,41 @@ Speedle 发布一个镜像，其中包含 `speedle-pms`、`speedle-ads` 和 `spc
 - Docker Hub：`docker.io/speedle/speedle`
 - GHCR：`ghcr.io/teramoby/speedle`
 
-1.7.0 在两个仓库都发布了标签 `1.7.0`、`1.7` 和 `latest`，架构为 `linux/amd64` 和 `linux/arm64`。
+1.9.0 在两个仓库都发布了标签 `1.9.0`、`1.9` 和 `latest`，架构为 `linux/amd64` 和 `linux/arm64`。
 
 ## 拉取镜像
 
 ```bash
-docker pull docker.io/speedle/speedle:1.7.0
-docker pull ghcr.io/teramoby/speedle:1.7.0
+docker pull docker.io/speedle/speedle:1.9.0
+docker pull ghcr.io/teramoby/speedle:1.9.0
 ```
 
-`docker pull` 会打印索引摘要。1.7.0 在两个仓库上的摘要都是 `sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0`。
+`docker pull` 会打印索引摘要。1.9.0 在两个仓库上的摘要都是 `sha256:f20947fc15fb342dbafe93403df99f909795ad66ac0866fd9252611268791d2c`。
 
 ## 选择标签
 
-`1.7.0` 指向这一次发布。更高的 1.7 补丁发布后，`1.7` 会跟着移动。从 `master` 最新提交发布更高版本时，`latest` 会跟着移动。同一次版本可以再次发布，因此标签不是不可变的构建。
+`1.9.0` 指向这一次发布。更高的 1.9 补丁发布后，`1.9` 会跟着移动。从 `master` 最新提交发布更高版本时，`latest` 会跟着移动。同一次版本可以再次发布，因此标签不是不可变的构建。
 
 查看索引摘要：
 
 ```bash
-docker buildx imagetools inspect docker.io/speedle/speedle:1.7.0 --format '{{.Manifest.Digest}}'
+docker buildx imagetools inspect docker.io/speedle/speedle:1.9.0 --format '{{.Manifest.Digest}}'
 ```
 
-1.7.0 这次发布里，两个仓库上的 `1.7.0`、`1.7` 和 `latest` 都打印：
+1.9.0 这次发布里，两个仓库上的 `1.9.0`、`1.9` 和 `latest` 都打印：
 
 ```text
-sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0
+sha256:f20947fc15fb342dbafe93403df99f909795ad66ac0866fd9252611268791d2c
 ```
 
-部署 `1.7` 或 `latest` 之前请再查一次摘要。要固定在同一次构建上，把镜像名写成带 `@` 和该摘要的形式，例如 `docker.io/speedle/speedle@sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0`。
+部署 `1.9` 或 `latest` 之前请再查一次摘要。要固定在同一次构建上，把镜像名写成带 `@` 和该摘要的形式，例如 `docker.io/speedle/speedle@sha256:f20947fc15fb342dbafe93403df99f909795ad66ac0866fd9252611268791d2c`。
 
 ## 镜像里的命令
 
 不带参数时，镜像打印这三个程序：
 
 ```bash
-docker run --rm docker.io/speedle/speedle:1.7.0
+docker run --rm docker.io/speedle/speedle:1.9.0
 ```
 
 ```text
@@ -61,7 +61,7 @@ speedle-ads
 spctl
 ```
 
-`docker run --rm ghcr.io/teramoby/speedle:1.7.0` 打印同样的三行。下面的命令使用 Docker Hub 的名字。把名字换成 GHCR 即使用那一份副本。镜像里没有 shell，所以 `docker exec` 必须用绝对路径调用 `/spctl`、`/speedle-pms` 或 `/speedle-ads`。
+`docker run --rm ghcr.io/teramoby/speedle:1.9.0` 打印同样的三行。下面的命令使用 Docker Hub 的名字。把名字换成 GHCR 即使用那一份副本。镜像里没有 shell，所以 `docker exec` 必须用绝对路径调用 `/spctl`、`/speedle-pms` 或 `/speedle-ads`。
 
 ## 运行 PMS 和 ADS
 
@@ -72,7 +72,7 @@ docker volume create speedle-policies
 docker run -d --name speedle-pms \
   -p 127.0.0.1:6733:6733 \
   -v speedle-policies:/data \
-  docker.io/speedle/speedle:1.7.0 \
+  docker.io/speedle/speedle:1.9.0 \
   speedle-pms --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6733 --insecure=true
 ```
 
@@ -97,7 +97,7 @@ curl --fail --silent --show-error --retry 30 --retry-all-errors --retry-delay 1 
 docker run -d --name speedle-ads \
   -p 127.0.0.1:6734:6734 \
   -v speedle-policies:/data \
-  docker.io/speedle/speedle:1.7.0 \
+  docker.io/speedle/speedle:1.9.0 \
   speedle-ads --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6734 --insecure=true
 ```
 
@@ -143,7 +143,7 @@ PMS 会分配 `createtime` 和策略 `id`，所以每次运行这两个值都不
 
 ```bash
 docker run --rm --network container:speedle-pms \
-  docker.io/speedle/speedle:1.7.0 \
+  docker.io/speedle/speedle:1.9.0 \
   spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ get service --all
 ```
 
@@ -221,7 +221,7 @@ alice get /docs/public: allowed=true
 ```yaml
 services:
   pms:
-    image: docker.io/speedle/speedle:1.7.0
+    image: docker.io/speedle/speedle:1.9.0
     command:
       - speedle-pms
       - --store-type
@@ -236,7 +236,7 @@ services:
     volumes:
       - speedle-policies:/data
   ads:
-    image: docker.io/speedle/speedle:1.7.0
+    image: docker.io/speedle/speedle:1.9.0
     command:
       - speedle-ads
       - --store-type
@@ -284,10 +284,10 @@ docker compose -f compose.yaml down -v
 发布构建附带了来源证明和 SBOM（`docker buildx build --provenance=mode=max --sbom=true`）。查看索引：
 
 ```bash
-docker buildx imagetools inspect docker.io/speedle/speedle:1.7.0
+docker buildx imagetools inspect docker.io/speedle/speedle:1.9.0
 ```
 
-索引列出 `linux/amd64`、`linux/arm64`，以及两份 `unknown/unknown` 清单。这两份未知平台是证明清单。每一份都把 `vnd.docker.reference.type` 设为 `attestation-manifest`，并把 `vnd.docker.reference.digest` 设为它所描述的平台镜像。`docker buildx imagetools inspect ghcr.io/teramoby/speedle:1.7.0` 打印相同的平台摘要和证明摘要。
+索引列出 `linux/amd64`、`linux/arm64`，以及两份 `unknown/unknown` 清单。这两份未知平台是证明清单。每一份都把 `vnd.docker.reference.type` 设为 `attestation-manifest`，并把 `vnd.docker.reference.digest` 设为它所描述的平台镜像。`docker buildx imagetools inspect ghcr.io/teramoby/speedle:1.9.0` 打印相同的平台摘要和证明摘要。
 
 ## 停止容器
 

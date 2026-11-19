@@ -125,7 +125,7 @@ def verify(locale, steps, toolchain, candidate=False):
 
         build()
         module = json.loads(run("go list -m -json github.com/teramoby/speedle-plus", app, env))
-        assert module["Version"] == "v1.6.0" and "Replace" not in module, module
+        assert module["Version"] == "v1.9.0" and "Replace" not in module, module
         output = run(steps["run"], app, env).strip()
         assert output.splitlines() == ["alice allowed=true", "bob allowed=false"], output
         assert (app / "go.mod").is_file() and (app / "go.sum").is_file()

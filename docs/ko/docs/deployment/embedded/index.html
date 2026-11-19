@@ -205,7 +205,7 @@
 
 <h2 id="사전-요구-사항">사전 요구 사항</h2>
 
-<p><a href="/ko/quick-start/">빠른 시작</a>과 동일하게 Linux 또는 macOS 환경과 명령줄 셸, 그리고 <strong>Go 1.27.4</strong>(또는 동일 릴리스 브랜치의 최신 패치 버전)을 준비합니다. 이 예제는 Go modules와 공개된 <strong>Speedle v1.6.0</strong> 릴리스를 사용합니다.</p>
+<p><a href="/ko/quick-start/">빠른 시작</a>과 동일하게 Linux 또는 macOS 환경과 명령줄 셸, 그리고 <strong>Go 1.27.4</strong>(또는 동일 릴리스 브랜치의 최신 패치 버전)을 준비합니다. 이 예제는 Go modules와 공개된 <strong>Speedle v1.9.0</strong> 릴리스를 사용합니다.</p>
 
 <p><a href="https://go.dev/doc/install">공식 설치 지침</a>에 따라 Go를 설치한 후 버전을 확인합니다:</p>
 
@@ -221,7 +221,7 @@
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mkdir speedle-embedded-demo
 <span style="color:#8be9fd;font-style:italic">cd</span> speedle-embedded-demo
 go mod init example.com/speedle-embedded-demo
-go get github.com/teramoby/speedle-plus/pkg/eval@v1.6.0</code></pre></div>
+go get github.com/teramoby/speedle-plus/pkg/eval@v1.9.0</code></pre></div>
 <p>기존 Go 모듈이 있는 경우 해당 모듈의 디렉터리에서 마지막 <code>go get</code> 명령만 실행합니다.</p>
 
 <p>여기서 <code>go get</code>은 <code>go.mod</code> 및 <code>go.sum</code>에 버전이 지정된 <strong>라이브러리 의존성</strong>을 추가하며 프로그램을 설치하지 않습니다. 이는 독립 실행형 서비스 실행 파일을 빌드하기 위해 <code>git clone</code> 및 <code>go build</code>를 사용하는 빠른 시작과 다릅니다. 둘 다 Go modules를 사용합니다. <code>go.mod</code> 및 <code>go.sum</code>을 버전 제어에 유지하십시오.</p>

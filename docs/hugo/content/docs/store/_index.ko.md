@@ -46,6 +46,8 @@ lastmod = 2026-11-17T10:00:00+08:00
 
 이 완전한 예제는 팩토리 계약을 입증하기 위해 기존 파일 백엔드에 위임합니다. 새로운 데이터베이스를 완전히 구현한 것은 아닙니다:
 
+> **참고:** 이 페이지에서 사용하는 `website/tests/examples/` 파일은 저장소 복제본([빠른 시작](/quick-start/)의 경로 B)에 포함됩니다. `go install`에는 포함되지 않습니다.
+
 <!-- docs-check: store -->
 ```bash
 go run ./website/tests/examples/store

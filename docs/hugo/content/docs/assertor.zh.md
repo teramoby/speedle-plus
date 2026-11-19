@@ -23,6 +23,8 @@ tags = ["Identity", "Token asserter"]
 
 此 mock 只识别 `githubtoken`/`github`、`googletoken`/`google`、`gitlabtoken`/`gitlab` 三组输入，分别表示对应域的 `user1`。令牌与提供方不匹配时失败。**它是测试 fixture，不验证真实令牌。** 不会记录令牌值。仅绑定回环地址，生产环境必须替换为真实身份集成。
 
+> **注意：** 本页使用的 `website/tests/examples/` 文件来自克隆的仓库（[快速入门](/quick-start/)的 Route B）；`go install` 不包含这些文件。
+
 从仓库根目录在单独终端运行：
 
 <!-- docs-check: mock-asserter -->

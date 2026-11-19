@@ -19,7 +19,7 @@ lastmod = 2026-11-10T14:45:43+08:00
 
 ## 前提条件
 
-[クイックスタート](/ja/quick-start/) と同様に、シェルと **Go 1.27.4**（または同じリリースブランチの新しいパッチバージョン）を備えた Linux または macOS を使用します。このウォークスルーでは、Go modules と公開された **Speedle v1.6.0** リリースを使用します。
+[クイックスタート](/ja/quick-start/) と同様に、シェルと **Go 1.27.4**（または同じリリースブランチの新しいパッチバージョン）を備えた Linux または macOS を使用します。このウォークスルーでは、Go modules と公開された **Speedle v1.9.0** リリースを使用します。
 
 [Go 公式インストール手順](https://go.dev/doc/install) に従って Go をインストールし、バージョンを確認します:
 
@@ -39,7 +39,7 @@ Speedle ソースチェックアウトの外部にある書き込み可能なデ
 mkdir speedle-embedded-demo
 cd speedle-embedded-demo
 go mod init example.com/speedle-embedded-demo
-go get github.com/teramoby/speedle-plus/pkg/eval@v1.6.0
+go get github.com/teramoby/speedle-plus/pkg/eval@v1.9.0
 ```
 
 既存の Go モジュールでは、そのモジュールのディレクトリから最後の `go get` コマンドのみを実行します。

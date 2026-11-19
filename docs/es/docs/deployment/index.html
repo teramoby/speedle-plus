@@ -245,7 +245,7 @@ docker run --rm -p <span style="color:#bd93f9">127</span>.0.0.1:6734:6734 -v spe
 
 <h2 id="ejemplo-de-desarrollo-en-kubernetes">Ejemplo de desarrollo en Kubernetes</h2>
 
-<p>Utilice un clúster de Kubernetes actual y un <code>kubectl</code> compatible. Guarde lo siguiente como <code>speedle-dev.yaml</code>. Usa <code>apps/v1</code>, un pod en el que PMS y ADS comparten un archivo, un UID de aplicación no root y un servicio ClusterIP interno. Es un ejemplo de desarrollo aislado: las políticas de <code>emptyDir</code> se pierden cuando se sustituye el pod, y los endpoints HTTP necesitan controles de acceso del clúster. El manifiesto usa el marcador <code>&lt;release-tag&gt;</code>; sustitúyalo por la etiqueta de la versión que despliega, o por un digest para un anclaje inmutable, y añada un secreto de extracción de imagen si su clúster lo requiere.</p>
+<p>Utilice un clúster de Kubernetes actual y un <code>kubectl</code> compatible. Guarde lo siguiente como <code>speedle-dev.yaml</code>. Usa <code>apps/v1</code>, un pod en el que PMS y ADS comparten un archivo, un UID de aplicación no root y un servicio ClusterIP interno. Es un ejemplo de desarrollo aislado: las políticas de <code>emptyDir</code> se pierden cuando se sustituye el pod, y los endpoints HTTP necesitan controles de acceso del clúster. El manifiesto usa el marcador <code>&lt;speedle-image&gt;</code>; el paso de aplicación siguiente lo sustituye con <code>SPEEDLE_IMAGE</code>, que puede ser una etiqueta de versión o un digest para un anclaje inmutable. Añada un secreto de extracción de imagen si su clúster lo requiere.</p>
 
 <!-- deployment-template: kubernetes -->
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1
@@ -273,7 +273,7 @@ spec:
               mountPath: /data
       containers:
         - name: pms
-          image: docker.io/speedle/speedle:&lt;release-tag<span style="color:#f1fa8c">&gt;
+          image: &lt;speedle-image<span style="color:#f1fa8c">&gt;
 </span><span style="color:#f1fa8c">          args: [&#34;speedle-pms&#34;, &#34;--store-type&#34;, &#34;file&#34;, &#34;--filestore-loc&#34;, &#34;/data/policies.json&#34;, &#34;--endpoint&#34;, &#34;0.0.0.0:6733&#34;, &#34;--insecure=true&#34;]
 </span><span style="color:#f1fa8c">          ports:
 </span><span style="color:#f1fa8c">            - containerPort: 6733
@@ -284,7 +284,7 @@ spec:
 </span><span style="color:#f1fa8c">            - name: policies
 </span><span style="color:#f1fa8c">              mountPath: /data</span>
         - name: ads
-          image: docker.io/speedle/speedle:&lt;release-tag<span style="color:#f1fa8c">&gt;
+          image: &lt;speedle-image<span style="color:#f1fa8c">&gt;
 </span><span style="color:#f1fa8c">          args: [&#34;speedle-ads&#34;, &#34;--store-type&#34;, &#34;file&#34;, &#34;--filestore-loc&#34;, &#34;/data/policies.json&#34;, &#34;--endpoint&#34;, &#34;0.0.0.0:6734&#34;, &#34;--insecure=true&#34;]
 </span><span style="color:#f1fa8c">          ports:
 </span><span style="color:#f1fa8c">            - containerPort: 6734
@@ -313,10 +313,11 @@ spec:
     - name: ads
       port: <span style="color:#bd93f9">6734</span>
       targetPort: <span style="color:#bd93f9">6734</span></code></pre></div>
-<p>Establezca <code>SPEEDLE_IMAGE</code> con la imagen exacta que vaya a desplegar, como una etiqueta de versión o un digest sha256. Sustitúyala localmente antes de aplicar; mantenga port-forward en ejecución mientras utiliza los clientes de Inicio rápido:</p>
+<p>Establezca <code>SPEEDLE_IMAGE</code> con la imagen exacta que vaya a desplegar, por ejemplo <code>docker.io/speedle/speedle:1.9.0</code> o una imagen con un digest <code>@sha256:</code>. El bloque siguiente conserva el valor que haya establecido y, si no hay ninguno, usa <code>1.9.0</code> por defecto; mantenga port-forward en ejecución mientras utiliza los clientes de Inicio rápido:</p>
 
 <!-- deployment-template: apply -->
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kubectl <span style="color:#8be9fd;font-style:italic">set</span> image --local -f speedle-dev.yaml <span style="color:#8be9fd;font-style:italic">pms</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$SPEEDLE_IMAGE</span><span style="color:#f1fa8c">&#34;</span> <span style="color:#8be9fd;font-style:italic">ads</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$SPEEDLE_IMAGE</span><span style="color:#f1fa8c">&#34;</span> -o yaml | kubectl apply -f -
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">SPEEDLE_IMAGE</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#f1fa8c">${</span><span style="color:#8be9fd;font-style:italic">SPEEDLE_IMAGE</span><span style="color:#ff79c6">:-</span><span style="color:#8be9fd;font-style:italic">docker</span>.io/speedle/speedle:<span style="color:#8be9fd;font-style:italic">1</span>.9.0<span style="color:#f1fa8c">}</span><span style="color:#f1fa8c">&#34;</span>
+sed <span style="color:#f1fa8c">&#34;s|&lt;speedle-image&gt;|</span><span style="color:#8be9fd;font-style:italic">$SPEEDLE_IMAGE</span><span style="color:#f1fa8c">|g&#34;</span> speedle-dev.yaml | kubectl apply -f -
 kubectl rollout status deployment/speedle-dev
 kubectl port-forward service/speedle-dev <span style="color:#bd93f9">6733</span>:6733 <span style="color:#bd93f9">6734</span>:6734</code></pre></div>
 <h2 id="despliegues-de-producción">Despliegues de producción</h2>

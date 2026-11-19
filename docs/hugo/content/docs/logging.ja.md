@@ -23,14 +23,16 @@ v1.8.0 の次のリリースでは、アプリケーションと監査ログに 
 ```text
 --log-level string
 --log-formatter string
---log-reportcaller bool
+--log-reportcaller string
 --log-filename string
---log-maxsize int
---log-maxbackups int
---log-maxage int
---log-localtime bool
---log-compress bool
+--log-maxsize string
+--log-maxbackups string
+--log-maxage string
+--log-localtime string
+--log-compress string
 ```
+
+これらのフラグは文字列型です。`--flag=value` の形式で値を指定してください（例: `--log-compress=true`）。フラグ名だけを指定すると、次の引数がその値として扱われるため、`--log-compress --help` では `--help` が `--log-compress` の値になります。
 
 | Flag | Default | Meaning |
 | --- | --- | --- |
@@ -52,10 +54,10 @@ v1.8.0 の次のリリースでは、アプリケーションと監査ログに 
     "setReportCaller": false,
     "rotationConfig": {
       "filename": "/mnt/logs/speedle.log",
-      "maxSize": 20,
-      "maxBackups": 5,
-      "maxAge": 0,
-      "LocalTime": false,
+      "maxsize": 20,
+      "maxbackups": 5,
+      "maxage": 0,
+      "localtime": false,
       "compress": false
     }
   },

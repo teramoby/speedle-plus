@@ -199,7 +199,15 @@
 
 <h2 id="speedle-releases">Speedle releases</h2>
 
-<p>Use the <a href="https://github.com/teramoby/speedle-plus/releases">GitHub Releases</a> page for published versions and release notes. <a href="https://github.com/teramoby/speedle-plus/releases/tag/v1.6.0">v1.6.0</a> is the version pinned by the current embedded Go walkthrough. Use an explicit released version for reproducible module dependencies; the <a href="/docs/deployment/embedded/">embedded guide</a> explains the setup.</p>
+<p>Use the <a href="https://github.com/teramoby/speedle-plus/releases">GitHub Releases</a> page for published versions and release notes.</p>
+
+<ul>
+<li><a href="https://github.com/teramoby/speedle-plus/releases/tag/v1.9.0">v1.9.0</a>: custom-function failures now fail the decision, functions can declare parameter and result types, the MySQL store uses schema version 2, the js/wasm build accepts a host custom-function caller, and application and audit logging moved to Go <code>log/slog</code>.</li>
+<li><a href="https://github.com/teramoby/speedle-plus/releases/tag/v1.8.0">v1.8.0</a>: removed the experimental policy-distribution feature, source builds require Go 1.27.4 or newer, the container image includes the public CA bundle, and the documentation gained Japanese, Korean and Spanish.</li>
+<li><a href="https://github.com/teramoby/speedle-plus/releases/tag/v1.7.0">v1.7.0</a>: MySQL policy storage, offline <code>spctl check</code>, the full option list in command help, fail-closed authorization on panics and store outages, and one multi-architecture image on Docker Hub and GHCR.</li>
+</ul>
+
+<p><a href="https://github.com/teramoby/speedle-plus/releases/tag/v1.9.0">v1.9.0</a> is the version pinned by the current embedded Go walkthrough. Use an explicit released version for reproducible module dependencies; the <a href="/docs/deployment/embedded/">embedded guide</a> explains the setup.</p>
 
 <h2 id="historical-oracle-speedle-release">Historical Oracle Speedle release</h2>
 

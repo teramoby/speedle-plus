@@ -83,6 +83,8 @@ Un [store.StoreBuilder](https://github.com/teramoby/speedle-plus/blob/master/pkg
 
 Este ejemplo completo delega en el backend de archivos existente para demostrar el contrato de fábrica. No pretende implementar una nueva base de datos:
 
+> **Nota:** Los archivos de `website/tests/examples/` que se usan en esta página vienen de un clon del repositorio (ruta B del [Inicio rápido](/es/quick-start/)); `go install` no los incluye.
+
 <!-- docs-check: store -->
 ```bash
 go run ./website/tests/examples/store

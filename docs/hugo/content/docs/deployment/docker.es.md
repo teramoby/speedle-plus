@@ -18,41 +18,41 @@ El mismo índice de imágenes está disponible en ambos registros:
 - Docker Hub: `docker.io/speedle/speedle`
 - GHCR: `ghcr.io/teramoby/speedle`
 
-La versión 1.7.0 publica las etiquetas `1.7.0`, `1.7` y `latest` en ambos registros, para las arquitecturas `linux/amd64` y `linux/arm64`.
+La versión 1.9.0 publica las etiquetas `1.9.0`, `1.9` y `latest` en ambos registros, para las arquitecturas `linux/amd64` y `linux/arm64`.
 
 ## Descargar la imagen
 
 ```bash
-docker pull docker.io/speedle/speedle:1.7.0
-docker pull ghcr.io/teramoby/speedle:1.7.0
+docker pull docker.io/speedle/speedle:1.9.0
+docker pull ghcr.io/teramoby/speedle:1.9.0
 ```
 
-`docker pull` imprime el digest del índice. Para 1.7.0 ese digest es `sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0` en ambos registros.
+`docker pull` imprime el digest del índice. Para 1.9.0 ese digest es `sha256:f20947fc15fb342dbafe93403df99f909795ad66ac0866fd9252611268791d2c` en ambos registros.
 
 ## Elegir una etiqueta
 
-`1.7.0` identifica esta versión. `1.7` se actualiza cuando se publica un parche 1.7 superior. `latest` se actualiza cuando se publica una versión superior desde el commit más reciente en `master`. Un reintento de publicación puede publicar la misma etiqueta de versión nuevamente, por lo que una etiqueta no es una compilación inmutable.
+`1.9.0` identifica esta versión. `1.9` se actualiza cuando se publica un parche 1.9 superior. `latest` se actualiza cuando se publica una versión superior desde el commit más reciente en `master`. Un reintento de publicación puede publicar la misma etiqueta de versión nuevamente, por lo que una etiqueta no es una compilación inmutable.
 
 Para leer el digest del índice:
 
 ```bash
-docker buildx imagetools inspect docker.io/speedle/speedle:1.7.0 --format '{{.Manifest.Digest}}'
+docker buildx imagetools inspect docker.io/speedle/speedle:1.9.0 --format '{{.Manifest.Digest}}'
 ```
 
-Para la versión 1.7.0, `1.7.0`, `1.7` y `latest` en ambos registros imprimen:
+Para la versión 1.9.0, `1.9.0`, `1.9` y `latest` en ambos registros imprimen:
 
 ```text
-sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0
+sha256:f20947fc15fb342dbafe93403df99f909795ad66ac0866fd9252611268791d2c
 ```
 
-Verifique el digest nuevamente antes de desplegar `1.7` o `latest`. Para fijar una compilación específica, utilice el nombre de la imagen con `@` y ese digest, por ejemplo `docker.io/speedle/speedle@sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0`.
+Verifique el digest nuevamente antes de desplegar `1.9` o `latest`. Para fijar una compilación específica, utilice el nombre de la imagen con `@` y ese digest, por ejemplo `docker.io/speedle/speedle@sha256:f20947fc15fb342dbafe93403df99f909795ad66ac0866fd9252611268791d2c`.
 
 ## Comandos en la imagen
 
 Sin argumentos, la imagen imprime los tres programas disponibles:
 
 ```bash
-docker run --rm docker.io/speedle/speedle:1.7.0
+docker run --rm docker.io/speedle/speedle:1.9.0
 ```
 
 ```text
@@ -61,7 +61,7 @@ speedle-ads
 spctl
 ```
 
-`docker run --rm ghcr.io/teramoby/speedle:1.7.0` imprime las mismas líneas. Los comandos siguientes utilizan el nombre de Docker Hub. Sustitúyalo por el nombre de GHCR si desea utilizar esa copia. No hay shell en la imagen, por lo que `docker exec` debe llamar a `/spctl`, `/speedle-pms` o `/speedle-ads` mediante su ruta absoluta.
+`docker run --rm ghcr.io/teramoby/speedle:1.9.0` imprime las mismas líneas. Los comandos siguientes utilizan el nombre de Docker Hub. Sustitúyalo por el nombre de GHCR si desea utilizar esa copia. No hay shell en la imagen, por lo que `docker exec` debe llamar a `/spctl`, `/speedle-pms` o `/speedle-ads` mediante su ruta absoluta.
 
 ## Ejecutar PMS y ADS
 
@@ -72,7 +72,7 @@ docker volume create speedle-policies
 docker run -d --name speedle-pms \
   -p 127.0.0.1:6733:6733 \
   -v speedle-policies:/data \
-  docker.io/speedle/speedle:1.7.0 \
+  docker.io/speedle/speedle:1.9.0 \
   speedle-pms --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6733 --insecure=true
 ```
 
@@ -97,7 +97,7 @@ Inicie ADS en el mismo volumen. Lee el archivo que escribe PMS, incluidas las ac
 docker run -d --name speedle-ads \
   -p 127.0.0.1:6734:6734 \
   -v speedle-policies:/data \
-  docker.io/speedle/speedle:1.7.0 \
+  docker.io/speedle/speedle:1.9.0 \
   speedle-ads --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6734 --insecure=true
 ```
 
@@ -143,7 +143,7 @@ El mismo binario `spctl` puede ejecutarse en un segundo contenedor que comparte 
 
 ```bash
 docker run --rm --network container:speedle-pms \
-  docker.io/speedle/speedle:1.7.0 \
+  docker.io/speedle/speedle:1.9.0 \
   spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ get service --all
 ```
 
@@ -223,7 +223,7 @@ Guarde este archivo como `compose.yaml`. Es otra forma de ejecutar los mismos do
 ```yaml
 services:
   pms:
-    image: docker.io/speedle/speedle:1.7.0
+    image: docker.io/speedle/speedle:1.9.0
     command:
       - speedle-pms
       - --store-type
@@ -238,7 +238,7 @@ services:
     volumes:
       - speedle-policies:/data
   ads:
-    image: docker.io/speedle/speedle:1.7.0
+    image: docker.io/speedle/speedle:1.9.0
     command:
       - speedle-ads
       - --store-type
@@ -286,10 +286,10 @@ docker compose -f compose.yaml down -v
 La compilación de publicación adjunta la procedencia (provenance) y un SBOM (`docker buildx build --provenance=mode=max --sbom=true`). Inspeccione el índice:
 
 ```bash
-docker buildx imagetools inspect docker.io/speedle/speedle:1.7.0
+docker buildx imagetools inspect docker.io/speedle/speedle:1.9.0
 ```
 
-El índice enumera `linux/amd64`, `linux/arm64` y dos manifiestos `unknown/unknown`. Esas plataformas desconocidas son los manifiestos de atestación. Cada uno establece `vnd.docker.reference.type` en `attestation-manifest` y `vnd.docker.reference.digest` en la imagen de plataforma que describe. `docker buildx imagetools inspect ghcr.io/teramoby/speedle:1.7.0` imprime los mismos digests de plataforma y atestación.
+El índice enumera `linux/amd64`, `linux/arm64` y dos manifiestos `unknown/unknown`. Esas plataformas desconocidas son los manifiestos de atestación. Cada uno establece `vnd.docker.reference.type` en `attestation-manifest` y `vnd.docker.reference.digest` en la imagen de plataforma que describe. `docker buildx imagetools inspect ghcr.io/teramoby/speedle:1.9.0` imprime los mismos digests de plataforma y atestación.
 
 ## Detener los contenedores
 

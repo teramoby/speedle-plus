@@ -80,13 +80,13 @@ alice delete /docs/public: allowed=false reason=NoApplicablePolicies
 npm install @speedle/mcp@0.2.1
 ```
 
-O ejecute el binario `speedle-mcp` directamente:
+O ejecute el binario `speedle-mcp` directamente. El modo `check` lee la URL de ADS de `SPEEDLE_ENDPOINT` y el nombre del servicio de `SPEEDLE_SERVICE_NAME`; este ejemplo usa el ADS local de la [descripción general de los SDK](/es/docs/sdks/#example-policy):
 
 ```bash
-npx @speedle/mcp@0.2.1 check
+SPEEDLE_ENDPOINT=http://127.0.0.1:6734 SPEEDLE_SERVICE_NAME=docs npx @speedle/mcp@0.2.1 check
 ```
 
-Ejecutar `speedle-mcp` sin especificar un modo muestra las instrucciones de uso y finaliza con un estado distinto de cero. Referencia: [speedle-mcp](https://github.com/teramoby/speedle-mcp).
+Sin `SPEEDLE_ENDPOINT`, el comando termina con `speedle-mcp: SPEEDLE_ENDPOINT is required`. El comando inicia un servidor MCP por stdio y espera a un cliente, por lo que un inicio correcto no imprime nada. Ejecutar `speedle-mcp` sin especificar un modo muestra las instrucciones de uso y finaliza con un estado distinto de cero. Referencia: [speedle-mcp](https://github.com/teramoby/speedle-mcp).
 
 ## Gestión de errores
 

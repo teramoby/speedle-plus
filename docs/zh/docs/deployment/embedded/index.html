@@ -205,7 +205,7 @@
 
 <h2 id="前提条件">前提条件</h2>
 
-<p>使用 Linux 或 macOS、命令行 shell，以及 <strong>Go 1.27.4</strong>（也可使用同一大版本的更新补丁版本），安全补丁版本要求与<a href="/zh/quick-start/">快速入门</a>一致。本例使用 Go modules 和已发布的 <strong>Speedle v1.6.0</strong>。</p>
+<p>使用 Linux 或 macOS、命令行 shell，以及 <strong>Go 1.27.4</strong>（也可使用同一大版本的更新补丁版本），安全补丁版本要求与<a href="/zh/quick-start/">快速入门</a>一致。本例使用 Go modules 和已发布的 <strong>Speedle v1.9.0</strong>。</p>
 
 <p>按照 <a href="https://go.dev/doc/install">Go 官方安装说明</a>安装 Go，然后检查版本：</p>
 
@@ -221,7 +221,7 @@
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mkdir speedle-embedded-demo
 <span style="color:#8be9fd;font-style:italic">cd</span> speedle-embedded-demo
 go mod init example.com/speedle-embedded-demo
-go get github.com/teramoby/speedle-plus/pkg/eval@v1.6.0</code></pre></div>
+go get github.com/teramoby/speedle-plus/pkg/eval@v1.9.0</code></pre></div>
 <p>如果已有包含 <code>go.mod</code> 的应用，只需在该应用的模块目录中执行最后一条 <code>go get</code> 命令。</p>
 
 <p>这里的 <code>go get</code> 将指定版本的<strong>库依赖</strong>加入 <code>go.mod</code> 和 <code>go.sum</code>，不会安装程序。快速入门使用 <code>git clone</code> 和 <code>go build</code> 构建独立服务的可执行文件，两种用法均使用 Go modules。请将 <code>go.mod</code> 和 <code>go.sum</code> 纳入版本控制。</p>

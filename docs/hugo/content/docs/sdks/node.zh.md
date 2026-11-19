@@ -80,13 +80,13 @@ alice delete /docs/public: allowed=false reason=NoApplicablePolicies
 npm install @speedle/mcp@0.2.1
 ```
 
-或直接运行 `speedle-mcp` 二进制：
+或直接运行 `speedle-mcp` 二进制。`check` 模式从 `SPEEDLE_ENDPOINT` 读取 ADS 地址，从 `SPEEDLE_SERVICE_NAME` 读取服务名；下面的示例连接 [SDK 概览](/docs/sdks/#example-policy)中的本地 ADS：
 
 ```bash
-npx @speedle/mcp@0.2.1 check
+SPEEDLE_ENDPOINT=http://127.0.0.1:6734 SPEEDLE_SERVICE_NAME=docs npx @speedle/mcp@0.2.1 check
 ```
 
-不带模式运行 `speedle-mcp` 会打印用法，并以非零状态退出。参考文档：[speedle-mcp](https://github.com/teramoby/speedle-mcp)。
+未设置 `SPEEDLE_ENDPOINT` 时，命令以 `speedle-mcp: SPEEDLE_ENDPOINT is required` 退出。该命令启动 stdio MCP 服务器并等待客户端，因此成功启动时不会输出内容。不带模式运行 `speedle-mcp` 会打印用法，并以非零状态退出。参考文档：[speedle-mcp](https://github.com/teramoby/speedle-mcp)。
 
 ## 错误处理
 

@@ -18,41 +18,41 @@ Speedle は、`speedle-pms`、`speedle-ads`、および `spctl` を含む 1 つ�
 - Docker Hub: `docker.io/speedle/speedle`
 - GHCR: `ghcr.io/teramoby/speedle`
 
-リリース 1.7.0 では、`linux/amd64` および `linux/arm64` 向けに、両方のレジストリでタグ `1.7.0`、`1.7`、および `latest` が公開されています。
+リリース 1.9.0 では、`linux/amd64` および `linux/arm64` 向けに、両方のレジストリでタグ `1.9.0`、`1.9`、および `latest` が公開されています。
 
 ## イメージのプル
 
 ```bash
-docker pull docker.io/speedle/speedle:1.7.0
-docker pull ghcr.io/teramoby/speedle:1.7.0
+docker pull docker.io/speedle/speedle:1.9.0
+docker pull ghcr.io/teramoby/speedle:1.9.0
 ```
 
-`docker pull` はインデックスダイジェストを出力します。1.7.0 の場合、そのダイジェストは両方のレジストリで `sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0` です。
+`docker pull` はインデックスダイジェストを出力します。1.9.0 の場合、そのダイジェストは両方のレジストリで `sha256:f20947fc15fb342dbafe93403df99f909795ad66ac0866fd9252611268791d2c` です。
 
 ## タグの選択
 
-`1.7.0` はこのリリースを指定します。より新しい 1.7 パッチが公開されると `1.7` が移動します。`master` の最新コミットから新しいリリースが公開されると `latest` が移動します。リリースの再試行で同じバージョンダグが再度公開される可能性があるため、タグは不変のビルドではありません。
+`1.9.0` はこのリリースを指定します。より新しい 1.9 パッチが公開されると `1.9` が移動します。`master` の最新コミットから新しいリリースが公開されると `latest` が移動します。リリースの再試行で同じバージョンダグが再度公開される可能性があるため、タグは不変のビルドではありません。
 
 インデックスダイジェストを確認するには:
 
 ```bash
-docker buildx imagetools inspect docker.io/speedle/speedle:1.7.0 --format '{{.Manifest.Digest}}'
+docker buildx imagetools inspect docker.io/speedle/speedle:1.9.0 --format '{{.Manifest.Digest}}'
 ```
 
-1.7.0 リリースの場合、両方のレジストリ上の `1.7.0`、`1.7`、および `latest` はすべて以下を出力します:
+1.9.0 リリースの場合、両方のレジストリ上の `1.9.0`、`1.9`、および `latest` はすべて以下を出力します:
 
 ```text
-sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0
+sha256:f20947fc15fb342dbafe93403df99f909795ad66ac0866fd9252611268791d2c
 ```
 
-`1.7` または `latest` をデプロイする前に、ダイジェストを再度確認してください。単一のビルドに固定するには、イメージ名に `@` とそのダイジェストを組み合わせて使用します（例: `docker.io/speedle/speedle@sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0`）。
+`1.9` または `latest` をデプロイする前に、ダイジェストを再度確認してください。単一のビルドに固定するには、イメージ名に `@` とそのダイジェストを組み合わせて使用します（例: `docker.io/speedle/speedle@sha256:f20947fc15fb342dbafe93403df99f909795ad66ac0866fd9252611268791d2c`）。
 
 ## イメージ内のコマンド
 
 引数なしで実行すると、イメージは 3 つのプログラム名を出力します:
 
 ```bash
-docker run --rm docker.io/speedle/speedle:1.7.0
+docker run --rm docker.io/speedle/speedle:1.9.0
 ```
 
 ```text
@@ -61,7 +61,7 @@ speedle-ads
 spctl
 ```
 
-`docker run --rm ghcr.io/teramoby/speedle:1.7.0` も同じ行を出力します。以下のコマンドでは Docker Hub の名前を使用しています。GHCR のコピーを使用する場合は GHCR の名前に置き換えてください。イメージ内にシェルはないため、`docker exec` では `/spctl`、`/speedle-pms`、または `/speedle-ads` を絶対パスで呼び出す必要があります。
+`docker run --rm ghcr.io/teramoby/speedle:1.9.0` も同じ行を出力します。以下のコマンドでは Docker Hub の名前を使用しています。GHCR のコピーを使用する場合は GHCR の名前に置き換えてください。イメージ内にシェルはないため、`docker exec` では `/spctl`、`/speedle-pms`、または `/speedle-ads` を絶対パスで呼び出す必要があります。
 
 ## PMS と ADS の実行
 
@@ -72,7 +72,7 @@ docker volume create speedle-policies
 docker run -d --name speedle-pms \
   -p 127.0.0.1:6733:6733 \
   -v speedle-policies:/data \
-  docker.io/speedle/speedle:1.7.0 \
+  docker.io/speedle/speedle:1.9.0 \
   speedle-pms --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6733 --insecure=true
 ```
 
@@ -97,7 +97,7 @@ curl --fail --silent --show-error --retry 30 --retry-all-errors --retry-delay 1 
 docker run -d --name speedle-ads \
   -p 127.0.0.1:6734:6734 \
   -v speedle-policies:/data \
-  docker.io/speedle/speedle:1.7.0 \
+  docker.io/speedle/speedle:1.9.0 \
   speedle-ads --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6734 --insecure=true
 ```
 
@@ -143,7 +143,7 @@ PMS が `createtime` とポリシー `id` を割り当てるため、これら�
 
 ```bash
 docker run --rm --network container:speedle-pms \
-  docker.io/speedle/speedle:1.7.0 \
+  docker.io/speedle/speedle:1.9.0 \
   spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ get service --all
 ```
 
@@ -221,7 +221,7 @@ alice get /docs/public: allowed=true
 ```yaml
 services:
   pms:
-    image: docker.io/speedle/speedle:1.7.0
+    image: docker.io/speedle/speedle:1.9.0
     command:
       - speedle-pms
       - --store-type
@@ -236,7 +236,7 @@ services:
     volumes:
       - speedle-policies:/data
   ads:
-    image: docker.io/speedle/speedle:1.7.0
+    image: docker.io/speedle/speedle:1.9.0
     command:
       - speedle-ads
       - --store-type
@@ -284,10 +284,10 @@ docker compose -f compose.yaml down -v
 公開ビルドにはプロベナンスと SBOM が添付されています（`docker buildx build --provenance=mode=max --sbom=true`）。インデックスを確認します:
 
 ```bash
-docker buildx imagetools inspect docker.io/speedle/speedle:1.7.0
+docker buildx imagetools inspect docker.io/speedle/speedle:1.9.0
 ```
 
-インデックスには `linux/amd64`、`linux/arm64`、および 2 つの `unknown/unknown` マニフェストが一覧表示されます。これらの未知のプラットフォームはアテステーションマニフェストです。それぞれ `vnd.docker.reference.type` を `attestation-manifest` に設定し、`vnd.docker.reference.digest` を説明対象のプラットフォームイメージに設定しています。`docker buildx imagetools inspect ghcr.io/teramoby/speedle:1.7.0` も同じプラットフォームおよびアテステーションのダイジェストを出力します。
+インデックスには `linux/amd64`、`linux/arm64`、および 2 つの `unknown/unknown` マニフェストが一覧表示されます。これらの未知のプラットフォームはアテステーションマニフェストです。それぞれ `vnd.docker.reference.type` を `attestation-manifest` に設定し、`vnd.docker.reference.digest` を説明対象のプラットフォームイメージに設定しています。`docker buildx imagetools inspect ghcr.io/teramoby/speedle:1.9.0` も同じプラットフォームおよびアテステーションのダイジェストを出力します。
 
 ## コンテナの停止
 

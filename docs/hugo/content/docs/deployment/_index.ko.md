@@ -70,7 +70,7 @@ ADS 엔드포인트를 지정하여 결정을 확인합니다:
 
 ## 빠른 시작용 Kubernetes 매니페스트
 
-이 매니페스트는 [빠른 시작](../../quick-start/)과 동일한 단일 파드 개발 구성을 실행하며, 빈 볼륨을 통해 파일 저장소를 공유합니다. 이 구성을 `speedle-dev.yaml`로 저장합니다:
+이 매니페스트는 [빠른 시작](../../quick-start/)과 동일한 단일 파드 개발 구성을 실행하며, 빈 볼륨을 통해 파일 저장소를 공유합니다. 이 구성을 `speedle-dev.yaml`로 저장합니다. 이미지는 `<speedle-image>` 자리 표시자를 사용하며, 아래 적용 단계에서 `SPEEDLE_IMAGE`로 대체합니다:
 
 ```yaml
 apiVersion: apps/v1
@@ -89,7 +89,7 @@ spec:
     spec:
       containers:
         - name: pms
-          image: docker.io/speedle/speedle:<release-tag>
+          image: <speedle-image>
           args: ["speedle-pms", "--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6733", "--insecure=true"]
           ports:
             - containerPort: 6733
@@ -100,7 +100,7 @@ spec:
             - name: policies
               mountPath: /data
         - name: ads
-          image: docker.io/speedle/speedle:<release-tag>
+          image: <speedle-image>
           args: ["speedle-ads", "--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6734", "--insecure=true"]
           ports:
             - containerPort: 6734
@@ -131,11 +131,12 @@ spec:
       targetPort: 6734
 ```
 
-`SPEEDLE_IMAGE`를 배포할 정확한 이미지(예: 릴리스 태그 또는 다이제스트)로 설정합니다. 적용하기 전에 로컬에서 대체하고, 빠른 시작 클라이언트를 사용하는 동안 포트 포워딩을 유지합니다:
+`SPEEDLE_IMAGE`를 배포할 정확한 이미지(예: `docker.io/speedle/speedle:1.9.0` 또는 `@sha256:` 다이제스트가 포함된 이미지)로 설정합니다. 아래 블록은 설정한 값을 유지하며, 값이 없으면 `1.9.0`을 기본값으로 사용합니다. 빠른 시작 클라이언트를 사용하는 동안 포트 포워딩을 유지합니다:
 
 <!-- deployment-template: apply -->
 ```bash
-kubectl set image --local -f speedle-dev.yaml pms="$SPEEDLE_IMAGE" ads="$SPEEDLE_IMAGE" -o yaml | kubectl apply -f -
+SPEEDLE_IMAGE="${SPEEDLE_IMAGE:-docker.io/speedle/speedle:1.9.0}"
+sed "s|<speedle-image>|$SPEEDLE_IMAGE|g" speedle-dev.yaml | kubectl apply -f -
 kubectl rollout status deployment/speedle-dev
 kubectl port-forward service/speedle-dev 6733:6733 6734:6734
 ```

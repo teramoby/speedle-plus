@@ -102,6 +102,8 @@ file 存储的 PMS 写入先完整序列化并同步临时文件，再在同一�
 
 以下完整示例复用文件后端，演示工厂接口与注册流程，并不声称实现了一个新数据库：
 
+> **注意：** 本页使用的 `website/tests/examples/` 文件来自克隆的仓库（[快速入门](/quick-start/)的 Route B）；`go install` 不包含这些文件。
+
 <!-- docs-check: store -->
 ```bash
 go run ./website/tests/examples/store

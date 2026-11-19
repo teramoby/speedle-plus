@@ -201,6 +201,14 @@
 
 <p>Consulte la página de <a href="https://github.com/teramoby/speedle-plus/releases">GitHub Releases</a> para ver las versiones publicadas y las notas de la versión.</p>
 
+<ul>
+<li><a href="https://github.com/teramoby/speedle-plus/releases/tag/v1.9.0">v1.9.0</a>: los fallos de las funciones personalizadas hacen fallar la decisión, las funciones pueden declarar tipos de parámetros y de resultado, el almacén MySQL usa el esquema versión 2, la compilación js/wasm acepta un llamador de funciones personalizado del host y los registros de aplicación y auditoría pasan a Go <code>log/slog</code>.</li>
+<li><a href="https://github.com/teramoby/speedle-plus/releases/tag/v1.8.0">v1.8.0</a>: se elimina la función experimental de distribución de políticas, las compilaciones desde el código fuente requieren Go 1.27.4 o posterior, la imagen de contenedor incluye el paquete de CA públicos y la documentación añade japonés, coreano y español.</li>
+<li><a href="https://github.com/teramoby/speedle-plus/releases/tag/v1.7.0">v1.7.0</a>: almacenamiento de políticas MySQL, <code>spctl check</code> sin conexión, la lista completa de opciones en la ayuda de los comandos, denegación por defecto ante pánicos y fallos del almacén, y una única imagen multiarquitectura en Docker Hub y GHCR.</li>
+</ul>
+
+<p><a href="https://github.com/teramoby/speedle-plus/releases/tag/v1.9.0">v1.9.0</a> es la versión fijada por el recorrido Go embebido actual. Utilice una versión publicada explícita para dependencias de módulo reproducibles; la <a href="/es/docs/deployment/embedded/">guía de modo embebido</a> explica la configuración.</p>
+
 <h2 id="versión-histórica-de-oracle-speedle">Versión histórica de Oracle Speedle</h2>
 
 <p>La versión 0.1.0 fue el lanzamiento original de código abierto, que incluía gestión de políticas, decisiones de autorización, la herramienta de línea de comandos y muestras de integración.</p>
