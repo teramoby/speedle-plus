@@ -155,11 +155,11 @@ spec:
       targetPort: 6734
 ```
 
-将 `SPEEDLE_IMAGE` 设置为实际部署的完整映像，例如 `docker.io/speedle/speedle:1.9.0`，或带 `@sha256:` 摘要的映像。先在本地替换清单中的映像，再应用；使用快速入门客户端时保持端口转发运行：
+将 `SPEEDLE_IMAGE` 设置为实际部署的完整映像，例如 `docker.io/speedle/speedle:1.9.0`，或带 `@sha256:` 摘要的映像。下面的命令会保留已设置的值，未设置时默认使用 `1.9.0`；使用快速入门客户端时保持端口转发运行：
 
 <!-- deployment-template: apply -->
 ```bash
-SPEEDLE_IMAGE=docker.io/speedle/speedle:1.9.0
+SPEEDLE_IMAGE="${SPEEDLE_IMAGE:-docker.io/speedle/speedle:1.9.0}"
 sed "s|<speedle-image>|$SPEEDLE_IMAGE|g" speedle-dev.yaml | kubectl apply -f -
 kubectl rollout status deployment/speedle-dev
 kubectl port-forward service/speedle-dev 6733:6733 6734:6734

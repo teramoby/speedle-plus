@@ -2723,11 +2723,11 @@ spec:
       targetPort: 6734
 ```
 
-Set `SPEEDLE_IMAGE` to the exact image you deploy, for example `docker.io/speedle/speedle:1.9.0` or an image with a `@sha256:` digest. Substitute it in the manifest before applying; keep port-forward running while using Quick Start clients:
+Set `SPEEDLE_IMAGE` to the exact image you deploy, for example `docker.io/speedle/speedle:1.9.0` or an image with a `@sha256:` digest. The block below keeps a value you set and otherwise defaults to `1.9.0`; keep port-forward running while using Quick Start clients:
 
 
 ```bash
-SPEEDLE_IMAGE=docker.io/speedle/speedle:1.9.0
+SPEEDLE_IMAGE="${SPEEDLE_IMAGE:-docker.io/speedle/speedle:1.9.0}"
 sed "s|<speedle-image>|$SPEEDLE_IMAGE|g" speedle-dev.yaml | kubectl apply -f -
 kubectl rollout status deployment/speedle-dev
 kubectl port-forward service/speedle-dev 6733:6733 6734:6734

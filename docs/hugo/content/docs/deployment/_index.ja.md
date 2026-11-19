@@ -155,11 +155,11 @@ spec:
       targetPort: 6734
 ```
 
-`SPEEDLE_IMAGE` を、デプロイする正確なイメージ（例: `docker.io/speedle/speedle:1.9.0`、または `@sha256:` ダイジェスト付きのイメージ）に設定します。適用前にローカルで置換し、クイックスタートのクライアントを使用している間はポートフォワードを実行したままにしてください:
+`SPEEDLE_IMAGE` を、デプロイする正確なイメージ（例: `docker.io/speedle/speedle:1.9.0`、または `@sha256:` ダイジェスト付きのイメージ）に設定します。以下のブロックは設定済みの値を保持し、未設定の場合は `1.9.0` を既定値として使用します。クイックスタートのクライアントを使用している間はポートフォワードを実行したままにしてください:
 
 <!-- deployment-template: apply -->
 ```bash
-SPEEDLE_IMAGE=docker.io/speedle/speedle:1.9.0
+SPEEDLE_IMAGE="${SPEEDLE_IMAGE:-docker.io/speedle/speedle:1.9.0}"
 sed "s|<speedle-image>|$SPEEDLE_IMAGE|g" speedle-dev.yaml | kubectl apply -f -
 kubectl rollout status deployment/speedle-dev
 kubectl port-forward service/speedle-dev 6733:6733 6734:6734

@@ -131,11 +131,11 @@ spec:
       targetPort: 6734
 ```
 
-`SPEEDLE_IMAGE`를 배포할 정확한 이미지(예: `docker.io/speedle/speedle:1.9.0` 또는 `@sha256:` 다이제스트가 포함된 이미지)로 설정합니다. 적용하기 전에 로컬에서 대체하고, 빠른 시작 클라이언트를 사용하는 동안 포트 포워딩을 유지합니다:
+`SPEEDLE_IMAGE`를 배포할 정확한 이미지(예: `docker.io/speedle/speedle:1.9.0` 또는 `@sha256:` 다이제스트가 포함된 이미지)로 설정합니다. 아래 블록은 설정한 값을 유지하며, 값이 없으면 `1.9.0`을 기본값으로 사용합니다. 빠른 시작 클라이언트를 사용하는 동안 포트 포워딩을 유지합니다:
 
 <!-- deployment-template: apply -->
 ```bash
-SPEEDLE_IMAGE=docker.io/speedle/speedle:1.9.0
+SPEEDLE_IMAGE="${SPEEDLE_IMAGE:-docker.io/speedle/speedle:1.9.0}"
 sed "s|<speedle-image>|$SPEEDLE_IMAGE|g" speedle-dev.yaml | kubectl apply -f -
 kubectl rollout status deployment/speedle-dev
 kubectl port-forward service/speedle-dev 6733:6733 6734:6734
