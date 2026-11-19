@@ -12,7 +12,7 @@ bref = "npm で @speedle/sdk をインストールし、ローカルの Speedle 
 lastmod = 2026-11-10T09:48:45+08:00
 +++
 
-Node.js SDK は Node.js 22 以降が必要で、TypeScript の型定義を含む ESM および CommonJS ビルドを提供し、ランタイム依存関係はありません。パッケージ: npm の [`@speedle/sdk`](https://www.npmjs.com/package/@speedle/sdk)。リファレンス: [speedle-sdk/node](https://github.com/teramoby/speedle-sdk/tree/main/node)。
+Node.js SDK は Node.js 22 以降が必要で、過去 3 年間にリリースされたすべての Node.js バージョンをサポートします。TypeScript の型定義を含む ESM および CommonJS ビルドを提供し、ランタイム依存関係はありません。パッケージ: npm の [`@speedle/sdk`](https://www.npmjs.com/package/@speedle/sdk)。リファレンス: [speedle-sdk/node](https://github.com/teramoby/speedle-sdk/tree/main/node)。
 
 サンプルでは、[SDK 概要](/ja/docs/sdks/#example-policy) で説明されているポリシーをチェックします。
 
@@ -25,7 +25,7 @@ mkdir speedle-example
 cd speedle-example
 npm init -y
 npm pkg set type=module
-npm install @speedle/sdk@0.2.1
+npm install @speedle/sdk@1.9.0
 ```
 
 ## ローカルの Speedle の呼び出し
@@ -77,16 +77,16 @@ alice delete /docs/public: allowed=false reason=NoApplicablePolicies
 [`@speedle/mcp`](https://www.npmjs.com/package/@speedle/mcp) は npm で公開されています。Speedle MCP（ローンチプレビュー）は、`check` および `manage` モードを備えた 1 つのパッケージです。npm でインストールします:
 
 ```bash
-npm install @speedle/mcp@0.2.1
+npm install @speedle/mcp@1.9.0
 ```
 
 または `speedle-mcp` バイナリを直接実行します。`check` モードは `SPEEDLE_ENDPOINT` から ADS の URL を、`SPEEDLE_SERVICE_NAME` からサービス名を読み取ります。この例は [SDK の概要](/ja/docs/sdks/#example-policy) にあるローカル ADS に対する実行です:
 
 ```bash
-SPEEDLE_ENDPOINT=http://127.0.0.1:6734 SPEEDLE_SERVICE_NAME=docs npx @speedle/mcp@0.2.1 check
+SPEEDLE_ENDPOINT=http://127.0.0.1:6734 SPEEDLE_SERVICE_NAME=docs npx @speedle/mcp@1.9.0 check
 ```
 
-`SPEEDLE_ENDPOINT` が未設定の場合、コマンドは `speedle-mcp: SPEEDLE_ENDPOINT is required` で終了します。このコマンドは stdio の MCP サーバーを起動してクライアントを待つため、正常に起動しても何も出力されません。モードを指定せずに `speedle-mcp` を実行すると、使用方法を出力し、ゼロ以外のステータスで終了します。リファレンス: [speedle-mcp](https://github.com/teramoby/speedle-mcp)。
+`SPEEDLE_ENDPOINT` が未設定の場合、コマンドは `speedle-mcp: SPEEDLE_ENDPOINT is required (for example https://cloud.speedle.io or http://127.0.0.1:6734)` で終了します。このコマンドは stdio の MCP サーバーを起動してクライアントを待つため、正常に起動しても何も出力されません。モードを指定せずに `speedle-mcp` を実行すると、使用方法を出力し、ゼロ以外のステータスで終了します。リファレンス: [speedle-mcp](https://github.com/teramoby/speedle-mcp)。
 
 ## エラー処理
 

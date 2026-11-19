@@ -8,11 +8,11 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "Maven 또는 Gradle로 io.speedle:speedle-sdk 0.2.0을 추가하고 로컬 Speedle에 대해 isAllowed 및 check를 호출합니다."
+bref = "Maven 또는 Gradle로 io.speedle:speedle-sdk 1.9.0을 추가하고 로컬 Speedle에 대해 isAllowed 및 check를 호출합니다."
 lastmod = 2026-11-08T19:23:52+08:00
 +++
 
-Java SDK는 Java 17 이상이 필요하며 런타임 의존성이 없습니다. 패키지: Maven Central의 [`io.speedle:speedle-sdk`](https://repo1.maven.org/maven2/io/speedle/speedle-sdk/0.2.0/) 0.2.0. 참조 문서: [speedle-sdk/java](https://github.com/teramoby/speedle-sdk/tree/main/java).
+Java SDK는 Java 17 이상이 필요하고 지난 3년 동안 릴리스된 모든 Java 버전을 지원하며 런타임 의존성이 없습니다. 패키지: Maven Central의 [`io.speedle:speedle-sdk`](https://repo1.maven.org/maven2/io/speedle/speedle-sdk/1.9.0/) 1.9.0. 참조 문서: [speedle-sdk/java](https://github.com/teramoby/speedle-sdk/tree/main/java).
 
 예제에서는 [SDK 개요](/docs/sdks/#example-policy)에서 설명한 정책을 확인합니다.
 
@@ -39,7 +39,7 @@ Maven의 경우 전체 `pom.xml`:
     <dependency>
       <groupId>io.speedle</groupId>
       <artifactId>speedle-sdk</artifactId>
-      <version>0.2.0</version>
+      <version>1.9.0</version>
     </dependency>
   </dependencies>
 </project>
@@ -57,7 +57,7 @@ repositories {
 }
 
 dependencies {
-    implementation("io.speedle:speedle-sdk:0.2.0")
+    implementation("io.speedle:speedle-sdk:1.9.0")
 }
 
 application {

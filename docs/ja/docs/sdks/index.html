@@ -187,7 +187,7 @@
 
 <h2 id="パッケージ">パッケージ</h2>
 
-<p>Java、Python、Go、.NET、Rust はバージョン 0.2.0、Node.js/TypeScript SDK はバージョン 0.2.1 です。<code>@speedle/sdk</code> は npm で公開されています。各言語のインストールコマンドは各ページに記載されています。</p>
+<p>6 つの SDK はすべてバージョン 1.9.0 で公開されています。各言語のインストールコマンドは各ページに記載されています。</p>
 
 <ul>
 <li><a href="/ja/docs/sdks/java/">Java</a>: Maven Central <code>io.speedle:speedle-sdk</code>、公開済み。</li>
@@ -197,6 +197,58 @@
 <li><a href="/ja/docs/sdks/rust/">Rust</a>: crates.io <code>speedle</code>、公開済み。</li>
 <li><a href="/ja/docs/sdks/node/">Node.js / TypeScript</a>: npm <code>@speedle/sdk</code>、公開済み。</li>
 </ul>
+
+<h2 id="ランタイムサポート">ランタイムサポート</h2>
+
+<p>各 SDK は過去 3 年間にリリースされた言語またはランタイムのバージョンをサポートします。より古いバージョンも動作する場合があります。宣言された最小バージョンと CI のビルド・テスト対象バージョンは <a href="https://github.com/teramoby/speedle-sdk#runtime-support">speedle-sdk README</a> に記載されています。</p>
+
+<table>
+<thead>
+<tr>
+<th>SDK</th>
+<th>最小バージョン</th>
+<th>CI テストバージョン</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Go</td>
+<td>Go 1.22</td>
+<td>1.22, 1.27</td>
+</tr>
+
+<tr>
+<td>Python</td>
+<td>Python 3.10</td>
+<td>3.10, 3.11, 3.12, 3.13, 3.14, 3.15</td>
+</tr>
+
+<tr>
+<td>Node.js</td>
+<td>Node.js 22</td>
+<td>22, 24, 26</td>
+</tr>
+
+<tr>
+<td>Java</td>
+<td>Java 17</td>
+<td>17, 21, 25, 27</td>
+</tr>
+
+<tr>
+<td>.NET</td>
+<td>.NET 8</td>
+<td>net8.0, net10.0, net11.0</td>
+</tr>
+
+<tr>
+<td>Rust</td>
+<td>Rust 1.75</td>
+<td>1.75, stable</td>
+</tr>
+</tbody>
+</table>
 
 <h2 id="機能">機能</h2>
 

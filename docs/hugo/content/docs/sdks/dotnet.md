@@ -8,11 +8,11 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "Add Speedle.Sdk 0.2.0 with dotnet add package, then call IsAllowedAsync and CheckAsync against a local Speedle."
+bref = "Add Speedle.Sdk 1.9.0 with dotnet add package, then call IsAllowedAsync and CheckAsync against a local Speedle."
 lastmod = 2026-11-07T19:43:15+08:00
 +++
 
-The .NET SDK targets .NET 8 or later and has no dependencies. Package: [`Speedle.Sdk`](https://www.nuget.org/packages/Speedle.Sdk) 0.2.0 on NuGet, namespace `Speedle.Sdk`. Reference: [speedle-sdk/dotnet](https://github.com/teramoby/speedle-sdk/tree/main/dotnet).
+The .NET SDK targets .NET 8 or later, supports every .NET release from the past three years, and has no dependencies. Package: [`Speedle.Sdk`](https://www.nuget.org/packages/Speedle.Sdk) 1.9.0 on NuGet, namespace `Speedle.Sdk`. Reference: [speedle-sdk/dotnet](https://github.com/teramoby/speedle-sdk/tree/main/dotnet).
 
 The examples check the policy described in the [SDKs overview](/docs/sdks/#example-policy).
 
@@ -23,7 +23,7 @@ In a new console project:
 ```bash
 dotnet new console -o SpeedleExample
 cd SpeedleExample
-dotnet add package Speedle.Sdk --version 0.2.0
+dotnet add package Speedle.Sdk --version 1.9.0
 ```
 
 ## Call a local Speedle

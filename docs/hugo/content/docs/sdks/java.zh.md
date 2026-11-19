@@ -8,11 +8,11 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "用 Maven 或 Gradle 添加 io.speedle:speedle-sdk 0.2.0，再向本地 Speedle 调用 isAllowed 与 check。"
+bref = "用 Maven 或 Gradle 添加 io.speedle:speedle-sdk 1.9.0，再向本地 Speedle 调用 isAllowed 与 check。"
 lastmod = 2026-11-08T19:23:52+08:00
 +++
 
-Java SDK 需要 Java 17 或更高版本，没有运行时依赖。软件包：Maven Central 上的 [`io.speedle:speedle-sdk`](https://repo1.maven.org/maven2/io/speedle/speedle-sdk/0.2.0/) 0.2.0。参考文档：[speedle-sdk/java](https://github.com/teramoby/speedle-sdk/tree/main/java)。
+Java SDK 需要 Java 17 或更高版本，支持过去三年内发布的所有 Java 版本，没有运行时依赖。软件包：Maven Central 上的 [`io.speedle:speedle-sdk`](https://repo1.maven.org/maven2/io/speedle/speedle-sdk/1.9.0/) 1.9.0。参考文档：[speedle-sdk/java](https://github.com/teramoby/speedle-sdk/tree/main/java)。
 
 示例使用的策略见 [SDK 概览](/docs/sdks/#示例策略)。
 
@@ -39,7 +39,7 @@ Maven，完整的 `pom.xml`：
     <dependency>
       <groupId>io.speedle</groupId>
       <artifactId>speedle-sdk</artifactId>
-      <version>0.2.0</version>
+      <version>1.9.0</version>
     </dependency>
   </dependencies>
 </project>
@@ -57,7 +57,7 @@ repositories {
 }
 
 dependencies {
-    implementation("io.speedle:speedle-sdk:0.2.0")
+    implementation("io.speedle:speedle-sdk:1.9.0")
 }
 
 application {

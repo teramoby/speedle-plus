@@ -8,11 +8,11 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "cargo add で speedle 0.2.0 クレートを追加し、ローカルの Speedle に対して is_allowed と check を呼び出します。"
+bref = "cargo add で speedle 1.9.0 クレートを追加し、ローカルの Speedle に対して is_allowed と check を呼び出します。"
 lastmod = 2026-11-07T19:43:15+08:00
 +++
 
-Rust SDK は Rust 1.75 以降が必要です。`tokio` と `reqwest` (rustls) をベースにした非同期構成です。`blocking` 機能により、以下で使用するブロッキングクライアントが追加されます。クレート: crates.io の [`speedle`](https://crates.io/crates/speedle) 0.2.0。リファレンス: [speedle-sdk/rust](https://github.com/teramoby/speedle-sdk/tree/main/rust)。
+Rust SDK は Rust 1.75 以降が必要で、過去 3 年間にリリースされたすべての Rust バージョンをサポートします。`tokio` と `reqwest` (rustls) をベースにした非同期構成です。`blocking` 機能により、以下で使用するブロッキングクライアントが追加されます。クレート: crates.io の [`speedle`](https://crates.io/crates/speedle) 1.9.0。リファレンス: [speedle-sdk/rust](https://github.com/teramoby/speedle-sdk/tree/main/rust)。
 
 サンプルでは、[SDK 概要](/ja/docs/sdks/#example-policy) で説明されているポリシーをチェックします。
 
@@ -23,7 +23,7 @@ Rust SDK は Rust 1.75 以降が必要です。`tokio` と `reqwest` (rustls) �
 ```bash
 cargo new speedle-example
 cd speedle-example
-cargo add speedle@0.2.0 --features blocking
+cargo add speedle@1.9.0 --features blocking
 ```
 
 ## ローカルの Speedle の呼び出し

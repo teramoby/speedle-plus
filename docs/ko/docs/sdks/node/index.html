@@ -197,7 +197,7 @@
 
   <div id="kube-component" class="content">
 
-<p>Node.js SDK는 Node.js 22 이상이 필요하며 TypeScript 타입 정의를 포함한 ESM 및 CommonJS 빌드를 제공하고 런타임 의존성이 없습니다. 패키지: npm의 <a href="https://www.npmjs.com/package/@speedle/sdk"><code>@speedle/sdk</code></a>. 참조 문서: <a href="https://github.com/teramoby/speedle-sdk/tree/main/node">speedle-sdk/node</a>.</p>
+<p>Node.js SDK는 Node.js 22 이상이 필요하고 지난 3년 동안 릴리스된 모든 Node.js 버전을 지원합니다. TypeScript 타입 정의를 포함한 ESM 및 CommonJS 빌드를 제공하고 런타임 의존성이 없습니다. 패키지: npm의 <a href="https://www.npmjs.com/package/@speedle/sdk"><code>@speedle/sdk</code></a>. 참조 문서: <a href="https://github.com/teramoby/speedle-sdk/tree/main/node">speedle-sdk/node</a>.</p>
 
 <p>예제에서는 <a href="/ko/docs/sdks/#example-policy">SDK 개요</a>에서 설명한 정책을 확인합니다.</p>
 
@@ -208,7 +208,7 @@
 <span style="color:#8be9fd;font-style:italic">cd</span> speedle-example
 npm init -y
 npm pkg <span style="color:#8be9fd;font-style:italic">set</span> <span style="color:#8be9fd;font-style:italic">type</span><span style="color:#ff79c6">=</span>module
-npm install @speedle/sdk@0.2.1</code></pre></div>
+npm install @speedle/sdk@1.9.0</code></pre></div>
 <h2 id="로컬-speedle-호출">로컬 Speedle 호출</h2>
 
 <p><a href="/ko/docs/sdks/#example-policy">SDK 개요</a>의 설명에 따라 Speedle을 시작하고 예제 정책을 생성합니다. 이 프로그램을 <code>main.ts</code>로 저장합니다:</p>
@@ -243,10 +243,10 @@ alice delete /docs/public: allowed=false reason=NoApplicablePolicies</code></pre
 <h2 id="speedle-mcp">Speedle MCP</h2>
 
 <p><a href="https://www.npmjs.com/package/@speedle/mcp"><code>@speedle/mcp</code></a>는 npm에 공개되어 있습니다. Speedle MCP(출시 프리뷰)는 <code>check</code> 및 <code>manage</code> 모드를 제공하는 단일 패키지입니다. npm으로 설치합니다:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">npm install @speedle/mcp@0.2.1</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">npm install @speedle/mcp@1.9.0</code></pre></div>
 <p>또는 <code>speedle-mcp</code> 바이너리를 직접 실행합니다. <code>check</code> 모드는 <code>SPEEDLE_ENDPOINT</code>에서 ADS URL을, <code>SPEEDLE_SERVICE_NAME</code>에서 서비스 이름을 읽습니다. 이 예제는 <a href="/ko/docs/sdks/#example-policy">SDK 개요</a>의 로컬 ADS에 대해 실행합니다:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">SPEEDLE_ENDPOINT</span><span style="color:#ff79c6">=</span>http://127.0.0.1:6734 <span style="color:#8be9fd;font-style:italic">SPEEDLE_SERVICE_NAME</span><span style="color:#ff79c6">=</span>docs npx @speedle/mcp@0.2.1 check</code></pre></div>
-<p><code>SPEEDLE_ENDPOINT</code>가 없으면 명령은 <code>speedle-mcp: SPEEDLE_ENDPOINT is required</code>로 종료됩니다. 이 명령은 stdio MCP 서버를 시작해 클라이언트를 기다리므로 성공적으로 시작해도 아무것도 출력하지 않습니다. 모드를 지정하지 않고 <code>speedle-mcp</code>를 실행하면 사용법을 출력하고 0이 아닌 상태 코드로 종료합니다. 참조 문서: <a href="https://github.com/teramoby/speedle-mcp">speedle-mcp</a>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">SPEEDLE_ENDPOINT</span><span style="color:#ff79c6">=</span>http://127.0.0.1:6734 <span style="color:#8be9fd;font-style:italic">SPEEDLE_SERVICE_NAME</span><span style="color:#ff79c6">=</span>docs npx @speedle/mcp@1.9.0 check</code></pre></div>
+<p><code>SPEEDLE_ENDPOINT</code>가 없으면 명령은 <code>speedle-mcp: SPEEDLE_ENDPOINT is required (for example https://cloud.speedle.io or http://127.0.0.1:6734)</code>로 종료됩니다. 이 명령은 stdio MCP 서버를 시작해 클라이언트를 기다리므로 성공적으로 시작해도 아무것도 출력하지 않습니다. 모드를 지정하지 않고 <code>speedle-mcp</code>를 실행하면 사용법을 출력하고 0이 아닌 상태 코드로 종료합니다. 참조 문서: <a href="https://github.com/teramoby/speedle-mcp">speedle-mcp</a>.</p>
 
 <h2 id="오류-처리">오류 처리</h2>
 

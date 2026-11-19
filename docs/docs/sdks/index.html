@@ -187,7 +187,7 @@
 
 <h2 id="packages">Packages</h2>
 
-<p>Java, Python, Go, .NET and Rust are version 0.2.0, and the Node.js/TypeScript SDK is version 0.2.1. <code>@speedle/sdk</code> is published on npm. Each language page shows the install command.</p>
+<p>All six SDKs are version 1.9.0 and published. Each language page shows the install command.</p>
 
 <ul>
 <li><a href="/docs/sdks/java/">Java</a>: Maven Central <code>io.speedle:speedle-sdk</code>, published.</li>
@@ -197,6 +197,58 @@
 <li><a href="/docs/sdks/rust/">Rust</a>: crates.io <code>speedle</code>, published.</li>
 <li><a href="/docs/sdks/node/">Node.js / TypeScript</a>: npm <code>@speedle/sdk</code>, published.</li>
 </ul>
+
+<h2 id="runtime-support">Runtime support</h2>
+
+<p>Each SDK supports every language or runtime version released in the past three years; older versions may also work. The declared minimums and the versions CI builds and tests come from the <a href="https://github.com/teramoby/speedle-sdk#runtime-support">speedle-sdk README</a>.</p>
+
+<table>
+<thead>
+<tr>
+<th>SDK</th>
+<th>Minimum</th>
+<th>CI test versions</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Go</td>
+<td>Go 1.22</td>
+<td>1.22, 1.27</td>
+</tr>
+
+<tr>
+<td>Python</td>
+<td>Python 3.10</td>
+<td>3.10, 3.11, 3.12, 3.13, 3.14, 3.15</td>
+</tr>
+
+<tr>
+<td>Node.js</td>
+<td>Node.js 22</td>
+<td>22, 24, 26</td>
+</tr>
+
+<tr>
+<td>Java</td>
+<td>Java 17</td>
+<td>17, 21, 25, 27</td>
+</tr>
+
+<tr>
+<td>.NET</td>
+<td>.NET 8</td>
+<td>net8.0, net10.0, net11.0</td>
+</tr>
+
+<tr>
+<td>Rust</td>
+<td>Rust 1.75</td>
+<td>1.75, stable</td>
+</tr>
+</tbody>
+</table>
 
 <h2 id="features">Features</h2>
 

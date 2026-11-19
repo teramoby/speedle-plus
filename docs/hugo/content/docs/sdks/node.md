@@ -12,7 +12,7 @@ bref = "Install @speedle/sdk with npm, then call isAllowed and check against a l
 lastmod = 2026-11-10T09:48:45+08:00
 +++
 
-The Node.js SDK needs Node.js 22 or later, ships ESM and CommonJS builds with TypeScript types, and has no runtime dependencies. Package: [`@speedle/sdk`](https://www.npmjs.com/package/@speedle/sdk), published on npm. Reference: [speedle-sdk/node](https://github.com/teramoby/speedle-sdk/tree/main/node).
+The Node.js SDK needs Node.js 22 or later, supports every Node.js release from the past three years, ships ESM and CommonJS builds with TypeScript types, and has no runtime dependencies. Package: [`@speedle/sdk`](https://www.npmjs.com/package/@speedle/sdk), published on npm. Reference: [speedle-sdk/node](https://github.com/teramoby/speedle-sdk/tree/main/node).
 
 The examples check the policy described in the [SDKs overview](/docs/sdks/#example-policy).
 
@@ -25,7 +25,7 @@ mkdir speedle-example
 cd speedle-example
 npm init -y
 npm pkg set type=module
-npm install @speedle/sdk@0.2.1
+npm install @speedle/sdk@1.9.0
 ```
 
 ## Call a local Speedle
@@ -77,16 +77,16 @@ alice delete /docs/public: allowed=false reason=NoApplicablePolicies
 [`@speedle/mcp`](https://www.npmjs.com/package/@speedle/mcp) is published on npm. Speedle MCP (launch preview) is one package with `check` and `manage` modes. Install it with npm:
 
 ```bash
-npm install @speedle/mcp@0.2.1
+npm install @speedle/mcp@1.9.0
 ```
 
 Or run the `speedle-mcp` binary directly. The `check` mode reads the ADS URL from `SPEEDLE_ENDPOINT` and the service name from `SPEEDLE_SERVICE_NAME`; this example uses the local ADS from the [SDKs overview](/docs/sdks/#example-policy):
 
 ```bash
-SPEEDLE_ENDPOINT=http://127.0.0.1:6734 SPEEDLE_SERVICE_NAME=docs npx @speedle/mcp@0.2.1 check
+SPEEDLE_ENDPOINT=http://127.0.0.1:6734 SPEEDLE_SERVICE_NAME=docs npx @speedle/mcp@1.9.0 check
 ```
 
-Without `SPEEDLE_ENDPOINT`, the command exits with `speedle-mcp: SPEEDLE_ENDPOINT is required`. The command starts a stdio MCP server and waits for a client, so a successful start prints nothing. Running `speedle-mcp` without a mode prints usage and exits with a non-zero status. Reference: [speedle-mcp](https://github.com/teramoby/speedle-mcp).
+Without `SPEEDLE_ENDPOINT`, the command exits with `speedle-mcp: SPEEDLE_ENDPOINT is required (for example https://cloud.speedle.io or http://127.0.0.1:6734)`. The command starts a stdio MCP server and waits for a client, so a successful start prints nothing. Running `speedle-mcp` without a mode prints usage and exits with a non-zero status. Reference: [speedle-mcp](https://github.com/teramoby/speedle-mcp).
 
 ## Error handling
 

@@ -197,7 +197,7 @@
 
   <div id="kube-component" class="content">
 
-<p>Node.js SDK 需要 Node.js 22 或更高版本，同时提供 ESM 和 CommonJS 构建及 TypeScript 类型，没有运行时依赖。软件包：npm 上已发布的 <a href="https://www.npmjs.com/package/@speedle/sdk"><code>@speedle/sdk</code></a>。参考文档：<a href="https://github.com/teramoby/speedle-sdk/tree/main/node">speedle-sdk/node</a>。</p>
+<p>Node.js SDK 需要 Node.js 22 或更高版本，支持过去三年内发布的所有 Node.js 版本，同时提供 ESM 和 CommonJS 构建及 TypeScript 类型，没有运行时依赖。软件包：npm 上已发布的 <a href="https://www.npmjs.com/package/@speedle/sdk"><code>@speedle/sdk</code></a>。参考文档：<a href="https://github.com/teramoby/speedle-sdk/tree/main/node">speedle-sdk/node</a>。</p>
 
 <p>示例使用的策略见 <a href="/zh/docs/sdks/#示例策略">SDK 概览</a>。</p>
 
@@ -208,7 +208,7 @@
 <span style="color:#8be9fd;font-style:italic">cd</span> speedle-example
 npm init -y
 npm pkg <span style="color:#8be9fd;font-style:italic">set</span> <span style="color:#8be9fd;font-style:italic">type</span><span style="color:#ff79c6">=</span>module
-npm install @speedle/sdk@0.2.1</code></pre></div>
+npm install @speedle/sdk@1.9.0</code></pre></div>
 <h2 id="调用本地-speedle">调用本地 Speedle</h2>
 
 <p>按 <a href="/zh/docs/sdks/#示例策略">SDK 概览</a>中的说明启动 Speedle 并创建示例策略。将以下程序保存为 <code>main.ts</code>：</p>
@@ -243,10 +243,10 @@ alice delete /docs/public: allowed=false reason=NoApplicablePolicies</code></pre
 <h2 id="speedle-mcp">Speedle MCP</h2>
 
 <p><a href="https://www.npmjs.com/package/@speedle/mcp"><code>@speedle/mcp</code></a> 已在 npm 发布。Speedle MCP（预览）是一个软件包，包含 <code>check</code> 与 <code>manage</code> 两种模式。用 npm 安装：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">npm install @speedle/mcp@0.2.1</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">npm install @speedle/mcp@1.9.0</code></pre></div>
 <p>或直接运行 <code>speedle-mcp</code> 二进制。<code>check</code> 模式从 <code>SPEEDLE_ENDPOINT</code> 读取 ADS 地址，从 <code>SPEEDLE_SERVICE_NAME</code> 读取服务名；下面的示例连接 <a href="/zh/docs/sdks/#example-policy">SDK 概览</a>中的本地 ADS：</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">SPEEDLE_ENDPOINT</span><span style="color:#ff79c6">=</span>http://127.0.0.1:6734 <span style="color:#8be9fd;font-style:italic">SPEEDLE_SERVICE_NAME</span><span style="color:#ff79c6">=</span>docs npx @speedle/mcp@0.2.1 check</code></pre></div>
-<p>未设置 <code>SPEEDLE_ENDPOINT</code> 时，命令以 <code>speedle-mcp: SPEEDLE_ENDPOINT is required</code> 退出。该命令启动 stdio MCP 服务器并等待客户端，因此成功启动时不会输出内容。不带模式运行 <code>speedle-mcp</code> 会打印用法，并以非零状态退出。参考文档：<a href="https://github.com/teramoby/speedle-mcp">speedle-mcp</a>。</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">SPEEDLE_ENDPOINT</span><span style="color:#ff79c6">=</span>http://127.0.0.1:6734 <span style="color:#8be9fd;font-style:italic">SPEEDLE_SERVICE_NAME</span><span style="color:#ff79c6">=</span>docs npx @speedle/mcp@1.9.0 check</code></pre></div>
+<p>未设置 <code>SPEEDLE_ENDPOINT</code> 时，命令以 <code>speedle-mcp: SPEEDLE_ENDPOINT is required (for example https://cloud.speedle.io or http://127.0.0.1:6734)</code> 退出。该命令启动 stdio MCP 服务器并等待客户端，因此成功启动时不会输出内容。不带模式运行 <code>speedle-mcp</code> 会打印用法，并以非零状态退出。参考文档：<a href="https://github.com/teramoby/speedle-mcp">speedle-mcp</a>。</p>
 
 <h2 id="错误处理">错误处理</h2>
 

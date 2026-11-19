@@ -8,11 +8,11 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "cargo add로 speedle 0.2.0 크레이트를 추가하고 로컬 Speedle에 대해 is_allowed 및 check를 호출합니다."
+bref = "cargo add로 speedle 1.9.0 크레이트를 추가하고 로컬 Speedle에 대해 is_allowed 및 check를 호출합니다."
 lastmod = 2026-11-07T19:43:15+08:00
 +++
 
-Rust SDK는 Rust 1.75 이상이 필요합니다. `tokio`와 `reqwest`(rustls)를 기반으로 한 비동기 구성을 제공합니다. `blocking` 기능 플래그를 통해 아래 예제에서 사용하는 동기식 블로킹 클라이언트가 추가됩니다. 크레이트: crates.io의 [`speedle`](https://crates.io/crates/speedle) 0.2.0. 참조 문서: [speedle-sdk/rust](https://github.com/teramoby/speedle-sdk/tree/main/rust).
+Rust SDK는 Rust 1.75 이상이 필요하고 지난 3년 동안 릴리스된 모든 Rust 버전을 지원합니다. `tokio`와 `reqwest`(rustls)를 기반으로 한 비동기 구성을 제공합니다. `blocking` 기능 플래그를 통해 아래 예제에서 사용하는 동기식 블로킹 클라이언트가 추가됩니다. 크레이트: crates.io의 [`speedle`](https://crates.io/crates/speedle) 1.9.0. 참조 문서: [speedle-sdk/rust](https://github.com/teramoby/speedle-sdk/tree/main/rust).
 
 예제에서는 [SDK 개요](/docs/sdks/#example-policy)에서 설명한 정책을 확인합니다.
 
@@ -23,7 +23,7 @@ Rust SDK는 Rust 1.75 이상이 필요합니다. `tokio`와 `reqwest`(rustls)를
 ```bash
 cargo new speedle-example
 cd speedle-example
-cargo add speedle@0.2.0 --features blocking
+cargo add speedle@1.9.0 --features blocking
 ```
 
 ## 로컬 Speedle 호출

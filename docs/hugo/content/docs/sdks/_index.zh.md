@@ -16,7 +16,7 @@ Speedle SDK 是决策 API `POST /authz-check/v1/is-allowed` 的客户端库，�
 
 ## 软件包
 
-Java、Python、Go、.NET 和 Rust 的版本均为 0.2.0，Node.js/TypeScript SDK 的版本为 0.2.1。`@speedle/sdk` 已在 npm 发布。安装命令见各语言页面。
+六个 SDK 的版本均为 1.9.0，均已发布。安装命令见各语言页面。
 
 - [Java](/docs/sdks/java/)：Maven Central `io.speedle:speedle-sdk`，已发布。
 - [Python](/docs/sdks/python/)：PyPI `speedle`，已发布。
@@ -24,6 +24,19 @@ Java、Python、Go、.NET 和 Rust 的版本均为 0.2.0，Node.js/TypeScript SD
 - [C#/.NET](/docs/sdks/dotnet/)：NuGet `Speedle.Sdk`，已发布。
 - [Rust](/docs/sdks/rust/)：crates.io `speedle`，已发布。
 - [Node.js / TypeScript](/docs/sdks/node/)：npm `@speedle/sdk`，已发布。
+
+## 运行时支持
+
+每个 SDK 都支持过去三年内发布的语言或运行时版本，更早的版本也可能可用。声明的最低版本以及 CI 构建和测试的版本见 [speedle-sdk README](https://github.com/teramoby/speedle-sdk#runtime-support)。
+
+| SDK | 最低版本 | CI 测试版本 |
+| --- | --- | --- |
+| Go | Go 1.22 | 1.22、1.27 |
+| Python | Python 3.10 | 3.10、3.11、3.12、3.13、3.14、3.15 |
+| Node.js | Node.js 22 | 22、24、26 |
+| Java | Java 17 | 17、21、25、27 |
+| .NET | .NET 8 | net8.0、net10.0、net11.0 |
+| Rust | Rust 1.75 | 1.75、stable |
 
 ## 功能
 

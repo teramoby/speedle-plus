@@ -8,11 +8,11 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "Install speedle 0.2.0 with pip or uv, then call is_allowed and check against a local Speedle."
+bref = "Install speedle 1.9.0 with pip or uv, then call is_allowed and check against a local Speedle."
 lastmod = 2026-11-07T19:43:15+08:00
 +++
 
-The Python SDK needs Python 3.10 or later; its only runtime dependency is `httpx`. It has a sync `Client` and an asyncio `AsyncClient` with the same arguments. Package: [`speedle`](https://pypi.org/project/speedle/) 0.2.0 on PyPI. Reference: [speedle-sdk/python](https://github.com/teramoby/speedle-sdk/tree/main/python).
+The Python SDK needs Python 3.10 or later, supports every Python release from the past three years, and its only runtime dependency is `httpx`. It has a sync `Client` and an asyncio `AsyncClient` with the same arguments. Package: [`speedle`](https://pypi.org/project/speedle/) 1.9.0 on PyPI. Reference: [speedle-sdk/python](https://github.com/teramoby/speedle-sdk/tree/main/python).
 
 The examples check the policy described in the [SDKs overview](/docs/sdks/#example-policy).
 
@@ -23,13 +23,13 @@ With pip, in a virtual environment:
 ```bash
 python3 -m venv .venv
 . .venv/bin/activate
-pip install speedle==0.2.0
+pip install speedle==1.9.0
 ```
 
 Or with uv, in a uv project:
 
 ```bash
-uv add speedle==0.2.0
+uv add speedle==1.9.0
 ```
 
 ## Call a local Speedle

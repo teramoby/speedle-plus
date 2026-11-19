@@ -184,7 +184,7 @@
 <div id="main">
 
   <h1>Go SDK</h1>
-  <p class="docs-lead">用 go get 添加 github.com/teramoby/speedle-sdk/go v0.2.0，再向本地 Speedle 调用 IsAllowed 与 Check。</p>
+  <p class="docs-lead">用 go get 添加 github.com/teramoby/speedle-sdk/go v1.9.0，再向本地 Speedle 调用 IsAllowed 与 Check。</p>
 
 
 
@@ -197,7 +197,7 @@
 
   <div id="kube-component" class="content">
 
-<p>Go SDK 支持最新的两个 Go 版本，只使用标准库。模块：<a href="https://pkg.go.dev/github.com/teramoby/speedle-sdk/go"><code>github.com/teramoby/speedle-sdk/go</code></a> v0.2.0，包名 <code>speedle</code>。参考文档：<a href="https://github.com/teramoby/speedle-sdk/tree/main/go">speedle-sdk/go</a>。</p>
+<p>Go SDK 需要 Go 1.22 或更高版本，支持过去三年内发布的所有 Go 版本，只使用标准库。模块：<a href="https://pkg.go.dev/github.com/teramoby/speedle-sdk/go"><code>github.com/teramoby/speedle-sdk/go</code></a> v1.9.0，包名 <code>speedle</code>。参考文档：<a href="https://github.com/teramoby/speedle-sdk/tree/main/go">speedle-sdk/go</a>。</p>
 
 <p>示例使用的策略见 <a href="/zh/docs/sdks/#示例策略">SDK 概览</a>。</p>
 
@@ -205,7 +205,7 @@
 
 <p>在新模块中执行：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">go mod init example.com/speedle-example
-go get github.com/teramoby/speedle-sdk/go@v0.2.0</code></pre></div>
+go get github.com/teramoby/speedle-sdk/go@v1.9.0</code></pre></div>
 <h2 id="调用本地-speedle">调用本地 Speedle</h2>
 
 <p>按 <a href="/zh/docs/sdks/#示例策略">SDK 概览</a>中的说明启动 Speedle 并创建示例策略。将以下程序保存为 <code>main.go</code>：</p>

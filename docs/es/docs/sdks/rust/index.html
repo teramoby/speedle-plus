@@ -184,7 +184,7 @@
 <div id="main">
 
   <h1>Rust SDK</h1>
-  <p class="docs-lead">Añada el crate speedle 0.2.0 con cargo add, y luego llame a is_allowed y check frente a un Speedle local.</p>
+  <p class="docs-lead">Añada el crate speedle 1.9.0 con cargo add, y luego llame a is_allowed y check frente a un Speedle local.</p>
 
 
 
@@ -197,7 +197,7 @@
 
   <div id="kube-component" class="content">
 
-<p>El SDK de Rust requiere Rust 1.75 o posterior. Es asíncrono sobre <code>tokio</code> y <code>reqwest</code> (rustls); la característica <code>blocking</code> añade el cliente bloqueante utilizado a continuación. Crate: <a href="https://crates.io/crates/speedle"><code>speedle</code></a> 0.2.0 en crates.io. Referencia: <a href="https://github.com/teramoby/speedle-sdk/tree/main/rust">speedle-sdk/rust</a>.</p>
+<p>El SDK de Rust requiere Rust 1.75 o posterior y admite todas las versiones de Rust publicadas en los últimos tres años. Es asíncrono sobre <code>tokio</code> y <code>reqwest</code> (rustls); la característica <code>blocking</code> añade el cliente bloqueante utilizado a continuación. Crate: <a href="https://crates.io/crates/speedle"><code>speedle</code></a> 1.9.0 en crates.io. Referencia: <a href="https://github.com/teramoby/speedle-sdk/tree/main/rust">speedle-sdk/rust</a>.</p>
 
 <p>Los ejemplos comprueban la política descrita en la <a href="/es/docs/sdks/#example-policy">descripción general de los SDK</a>.</p>
 
@@ -206,7 +206,7 @@
 <p>En un nuevo paquete:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">cargo new speedle-example
 <span style="color:#8be9fd;font-style:italic">cd</span> speedle-example
-cargo add speedle@0.2.0 --features blocking</code></pre></div>
+cargo add speedle@1.9.0 --features blocking</code></pre></div>
 <h2 id="llamar-a-un-speedle-local">Llamar a un Speedle local</h2>
 
 <p>Inicie Speedle y cree la política de ejemplo como se describe en la <a href="/es/docs/sdks/#example-policy">descripción general de los SDK</a>. Sustituya <code>src/main.rs</code> por:</p>
