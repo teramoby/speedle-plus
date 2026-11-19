@@ -684,9 +684,7 @@ test('gate runs every package once, only store-dependent packages again with etc
   assert.deepEqual(gate.args.slice(0, 7),
     ['-I', 'scripts/ci/coverage.py', 'coverage.out', '--merge', 'coverage-cli.out', '--min-file', 'scripts/ci/coverage-min.txt']);
   assert.deepEqual(records.filter(r => r.tool === 'python3').slice(1).map(r => r.args), [
-    // The published release the guide installs may switch the toolchain; the
-    // source build it also exercises stays on the installed go.mod toolchain.
-    ['-I', 'website/tests/check_quick_start.py', '--toolchain', 'go1.27.4', '--allow-toolchain-upgrade'],
+    ['-I', 'website/tests/check_quick_start.py', '--toolchain', 'go1.27.4'],
     ['-I', 'website/tests/check_embedded.py', '--toolchain', 'go1.27.4', '--candidate'],
     ['-I', 'website/tests/check_docs.py'],
   ]);
@@ -793,13 +791,9 @@ test('nightly runs every suite even after a failure, records checks and fails at
   }
   for (const backend of ['file', 'etcd', 'mysql', 'mongodb']) assert.match(checks, new RegExp(`^${backend}-full=0:${backend}-full\\.log$`, 'm'));
   // The quick start runs on the declared minimum and on the latest release.
-  // Only the minimum leg lets the published release switch the toolchain; the
-  // source build it also exercises stays on the declared minimum.
   const quickStarts = records.filter(r => r.tool === 'python3' && r.args.includes('website/tests/check_quick_start.py'));
-  const [minimumQuickStart] = quickStarts.filter(r => r.args.includes('go1.26.0'));
-  const [latestQuickStart] = quickStarts.filter(r => r.args.includes('go1.27.4'));
-  assert.ok(minimumQuickStart.args.includes('--allow-toolchain-upgrade'), minimumQuickStart.args);
-  assert.ok(!latestQuickStart.args.includes('--allow-toolchain-upgrade'), latestQuickStart.args);
+  assert.ok(quickStarts.some(r => r.args.includes('go1.26.0')), 'quick start runs on the declared minimum');
+  assert.ok(quickStarts.some(r => r.args.includes('go1.27.4')), 'quick start runs on the latest release');
   assert.match(checks, /^quick-start-go1\.26\.0=0:/m);
   assert.match(checks, /quick-start-go1\.27\.4=7:/);
   const govulncheck = records.find(r => r.tool === 'go' && r.args.includes('golang.org/x/vuln/cmd/govulncheck@v1.9.0'));
@@ -1022,7 +1016,7 @@ test('quick content checks select documentation walkthroughs and propagate walkt
           // Quick start builds this checkout with the installed toolchain; the
           // embedded guide builds published v1.9.0, which needs the latest
           // toolchain until a release declares the new minimum (#484).
-          ['-I', commands[0], '--toolchain', 'go1.26.11', '--allow-toolchain-upgrade'],
+          ['-I', commands[0], '--toolchain', 'go1.26.11'],
           ['-I', commands[1], '--toolchain', 'go1.27.4', '--candidate'],
           ['test', '-count=1', commands[2]], ['-I', commands[3]],
         ]);

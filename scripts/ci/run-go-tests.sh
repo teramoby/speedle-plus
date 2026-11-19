@@ -137,14 +137,14 @@ case "${mode}" in
     bash scripts/ci/condition-conformance.sh
     # Read the candidate's documentation on every run. These execute the actual
     # fenced commands/program/policy blocks; failures block the same test job.
-    # The Quick Start install route installs the published release, which keeps
-    # its own newer toolchain requirement, so only that module may switch the
-    # toolchain; the source build under test stays on the installed go.mod
-    # toolchain. The embedded guide builds the published v1.9.0 module, whose
-    # go.mod declares Go 1.27.4, so it needs the latest toolchain until a
+    # The Quick Start install route installs the published release, whose
+    # go.mod may declare a newer toolchain; the checker lets that release
+    # select it and asserts that the source build stayed on the installed
+    # go.mod toolchain. The embedded guide builds the published v1.9.0 module,
+    # whose go.mod declares Go 1.27.4, so it needs the latest toolchain until a
     # release that declares the new minimum exists (#484).
     toolchain=$(go env GOVERSION)
-    python3 -I website/tests/check_quick_start.py --toolchain "${toolchain}" --allow-toolchain-upgrade
+    python3 -I website/tests/check_quick_start.py --toolchain "${toolchain}"
     python3 -I website/tests/check_embedded.py --toolchain "${latest_toolchain}" --candidate
     go test -count=1 ./website/tests/docscheck
     python3 -I website/tests/check_docs.py
@@ -201,13 +201,11 @@ case "${mode}" in
     fi
     check etcd-docs with_docker python3 -I website/tests/check_etcd.py
     check mongodb-docs with_docker python3 -I website/tests/check_mongodb.py
-    # The install route installs the published release, which keeps its own
-    # newer toolchain requirement, so the minimum leg lets Go switch for that
-    # release; the source build under test stays on the declared minimum.
+    # The install route installs the published release, whose go.mod may
+    # declare a newer toolchain; the checker lets that release select it and
+    # asserts that the source build stayed on the named toolchain.
     for toolchain in "${all_toolchains[@]}"; do
-      quick_start_args=(--toolchain "${toolchain}")
-      [[ "${toolchain}" != "${minimum_toolchain}" ]] || quick_start_args+=(--allow-toolchain-upgrade)
-      check "quick-start-${toolchain}" python3 -I website/tests/check_quick_start.py "${quick_start_args[@]}"
+      check "quick-start-${toolchain}" python3 -I website/tests/check_quick_start.py --toolchain "${toolchain}"
     done
     # govulncheck matches its database and the standard library against the
     # toolchain in use, so analyze with the latest release, the same toolchain
@@ -223,9 +221,9 @@ case "${mode}" in
     set_race
     gotest_json go-file STORE_TYPE=file -- -p 1 -count=1 -timeout 600s "${race[@]}" "${pkgs[@]}"
     toolchain=$(go env GOVERSION)
-    # The published release the guide installs declares its own toolchain;
-    # only that module may switch it.
-    check quick-start python3 -I website/tests/check_quick_start.py --toolchain "${toolchain}" --allow-toolchain-upgrade
+    # The published release the guide installs may declare its own newer
+    # toolchain; the checker lets that module select it.
+    check quick-start python3 -I website/tests/check_quick_start.py --toolchain "${toolchain}"
     # The published v1.9.0 module the embedded guide builds declares Go 1.27.4;
     # use the latest toolchain until a release declares the new minimum (#484).
     check embedded python3 -I website/tests/check_embedded.py --toolchain "${latest_toolchain}" --candidate
