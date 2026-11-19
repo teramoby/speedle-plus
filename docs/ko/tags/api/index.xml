@@ -37,7 +37,7 @@ REST API 이는 구성된 PMS/ADS 또는 어서터(Asserter) 엔드포인트의 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ko/docs/sdks/go/</guid>
-      <description>go get으로 github.com/teramoby/speedle-sdk/go v1.9.0을 추가하고 로컬 Speedle에 대해 IsAllowed 및 Check를 호출합니다.</description>
+      <description>go get으로 github.com/teramoby/speedle-sdk/go v1.9.1을 추가하고 로컬 Speedle에 대해 IsAllowed 및 Check를 호출합니다.</description>
     </item>
     
     <item>

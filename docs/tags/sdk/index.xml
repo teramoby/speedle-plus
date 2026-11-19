@@ -26,7 +26,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/docs/sdks/go/</guid>
-      <description>Add github.com/teramoby/speedle-sdk/go v1.9.0 with go get, then call IsAllowed and Check against a local Speedle.</description>
+      <description>Add github.com/teramoby/speedle-sdk/go v1.9.1 with go get, then call IsAllowed and Check against a local Speedle.</description>
     </item>
     
     <item>
@@ -72,7 +72,7 @@
       
       <guid>https://engine.speedle.io/docs/sdks/</guid>
       <description>The Speedle SDKs are client libraries for the decision API POST /authz-check/v1/is-allowed. They work with a self-hosted Speedle ADS. Each language page shows how to add the package and gives a complete, tested program for a self-hosted ADS. The source and the full reference are in teramoby/speedle-sdk. To run PMS and ADS for these examples, see Deployment and the Docker image.
-Packages All six SDKs are version 1.9.0 and published.</description>
+Packages All six SDKs are published: the Go module is v1.</description>
     </item>
     
   </channel>

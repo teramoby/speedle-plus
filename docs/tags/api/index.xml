@@ -48,7 +48,7 @@ Security and endpoint configuration. This is a contract reference, not a backend
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/docs/sdks/go/</guid>
-      <description>Add github.com/teramoby/speedle-sdk/go v1.9.0 with go get, then call IsAllowed and Check against a local Speedle.</description>
+      <description>Add github.com/teramoby/speedle-sdk/go v1.9.1 with go get, then call IsAllowed and Check against a local Speedle.</description>
     </item>
     
     <item>

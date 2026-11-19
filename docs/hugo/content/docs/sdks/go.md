@@ -8,12 +8,12 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "Add github.com/teramoby/speedle-sdk/go v1.9.0 with go get, then call IsAllowed and Check against a local Speedle."
-summary = "Add github.com/teramoby/speedle-sdk/go v1.9.0 with go get, then call IsAllowed and Check against a local Speedle."
+bref = "Add github.com/teramoby/speedle-sdk/go v1.9.1 with go get, then call IsAllowed and Check against a local Speedle."
+summary = "Add github.com/teramoby/speedle-sdk/go v1.9.1 with go get, then call IsAllowed and Check against a local Speedle."
 lastmod = 2026-11-07T19:43:15+08:00
 +++
 
-The Go SDK supports every Go release from the past three years. The published v1.9.0 module declares Go 1.26, so build v1.9.0 with a Go 1.26 or newer toolchain; from v1.9.1 on the declared minimum is Go 1.22. It uses only the standard library. Module: [`github.com/teramoby/speedle-sdk/go`](https://pkg.go.dev/github.com/teramoby/speedle-sdk/go) v1.9.0, package `speedle`. Reference: [speedle-sdk/go](https://github.com/teramoby/speedle-sdk/tree/main/go).
+The Go SDK supports every Go release from the past three years and declares Go 1.22 as its minimum. It uses only the standard library. Module: [`github.com/teramoby/speedle-sdk/go`](https://pkg.go.dev/github.com/teramoby/speedle-sdk/go) v1.9.1, package `speedle`. Reference: [speedle-sdk/go](https://github.com/teramoby/speedle-sdk/tree/main/go).
 
 The examples check the policy described in the [SDKs overview](/docs/sdks/#example-policy).
 
@@ -23,7 +23,7 @@ In a new module:
 
 ```bash
 go mod init example.com/speedle-example
-go get github.com/teramoby/speedle-sdk/go@v1.9.0
+go get github.com/teramoby/speedle-sdk/go@v1.9.1
 ```
 
 ## Call a local Speedle

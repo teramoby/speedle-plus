@@ -324,7 +324,7 @@ idd 是主体所属的身份域，也就是应用在哪个命名空间里完成�
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/sdks/go/</guid>
-      <description>用 go get 添加 github.com/teramoby/speedle-sdk/go v1.9.0，再向本地 Speedle 调用 IsAllowed 与 Check。</description>
+      <description>用 go get 添加 github.com/teramoby/speedle-sdk/go v1.9.1，再向本地 Speedle 调用 IsAllowed 与 Check。</description>
     </item>
     
     <item>

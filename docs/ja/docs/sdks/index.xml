@@ -35,7 +35,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ja/docs/sdks/go/</guid>
-      <description>go get で github.com/teramoby/speedle-sdk/go v1.9.0 を追加し、ローカルの Speedle に対して IsAllowed と Check を呼び出します。</description>
+      <description>go get で github.com/teramoby/speedle-sdk/go v1.9.1 を追加し、ローカルの Speedle に対して IsAllowed と Check を呼び出します。</description>
     </item>
     
     <item>

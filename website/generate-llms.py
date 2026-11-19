@@ -104,7 +104,7 @@ ANNOTATIONS = {
     "docs/sdks/_index": "Client libraries for the decision API in six languages.",
     "docs/sdks/java": "Maven Central `io.speedle:speedle-sdk` 1.9.0, published.",
     "docs/sdks/python": "PyPI `speedle` 1.9.0, published.",
-    "docs/sdks/go": "Go module `github.com/teramoby/speedle-sdk/go` v1.9.0, published.",
+    "docs/sdks/go": "Go module `github.com/teramoby/speedle-sdk/go` v1.9.1, published.",
     "docs/sdks/dotnet": "NuGet `Speedle.Sdk` 1.9.0, published.",
     "docs/sdks/rust": "crates.io `speedle` 1.9.0, published.",
     "docs/sdks/node": "npm `@speedle/sdk` 1.9.0, published. Install with `npm install @speedle/sdk@1.9.0`.",
@@ -351,7 +351,7 @@ def render_llms(pages, definition):
             item("docs/api/management_api"),
         ]),
         section("SDKs", [
-            "All six SDKs are version 1.9.0 and published: Maven Central `io.speedle:speedle-sdk`, PyPI `speedle`, the Go module `github.com/teramoby/speedle-sdk/go`, NuGet `Speedle.Sdk`, crates.io `speedle`, and npm `@speedle/sdk` (`npm install @speedle/sdk@1.9.0`).",
+            "All six SDKs are published: Maven Central `io.speedle:speedle-sdk` 1.9.0, PyPI `speedle` 1.9.0, the Go module `github.com/teramoby/speedle-sdk/go` v1.9.1, NuGet `Speedle.Sdk` 1.9.0, crates.io `speedle` 1.9.0, and npm `@speedle/sdk` 1.9.0 (`npm install @speedle/sdk@1.9.0`).",
             "",
             item("docs/sdks/_index"),
             item("docs/sdks/java"),

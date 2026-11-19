@@ -16,7 +16,7 @@ The Speedle SDKs are client libraries for the decision API `POST /authz-check/v1
 
 ## Packages
 
-All six SDKs are version 1.9.0 and published. Each language page shows the install command.
+All six SDKs are published: the Go module is v1.9.1 and the other five are 1.9.0. Each language page shows the install command.
 
 - [Java](/docs/sdks/java/): Maven Central `io.speedle:speedle-sdk`, published.
 - [Python](/docs/sdks/python/): PyPI `speedle`, published.
@@ -27,11 +27,11 @@ All six SDKs are version 1.9.0 and published. Each language page shows the insta
 
 ## Runtime support
 
-Each SDK supports every language or runtime version released in the three-year window ending 2026-11-19; older versions may also work. The declared minimums and the versions CI builds and tests come from the [speedle-sdk README](https://github.com/teramoby/speedle-sdk#runtime-support) and describe the SDK source for the next release (v1.9.1 for Go). The published Go v1.9.0 module declares Go 1.26, so build v1.9.0 with a Go 1.26 or newer toolchain.
+Each SDK supports every language or runtime version released in the three-year window ending 2026-11-19; older versions may also work. The declared minimums and the versions CI builds and tests come from the [speedle-sdk README](https://github.com/teramoby/speedle-sdk#runtime-support).
 
 | SDK | Minimum | CI test versions |
 | --- | --- | --- |
-| Go | Go 1.22 from v1.9.1 (v1.9.0: Go 1.26) | 1.22, 1.27 |
+| Go | Go 1.22 | 1.22, 1.27 |
 | Python | Python 3.10 | 3.10, 3.11, 3.12, 3.13, 3.14, 3.15 |
 | Node.js | Node.js 22 | 22, 24, 26 |
 | Java | Java 17 | 17, 21, 25, 27 |

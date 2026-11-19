@@ -16,7 +16,7 @@ Speedle SDK 是决策 API `POST /authz-check/v1/is-allowed` 的客户端库，�
 
 ## 软件包
 
-六个 SDK 的版本均为 1.9.0，均已发布。安装命令见各语言页面。
+六个 SDK 均已发布：Go 模块为 v1.9.1，其余五个为 1.9.0。安装命令见各语言页面。
 
 - [Java](/docs/sdks/java/)：Maven Central `io.speedle:speedle-sdk`，已发布。
 - [Python](/docs/sdks/python/)：PyPI `speedle`，已发布。
@@ -27,11 +27,11 @@ Speedle SDK 是决策 API `POST /authz-check/v1/is-allowed` 的客户端库，�
 
 ## 运行时支持
 
-每个 SDK 都支持以 2026-11-19 为终点的三年内发布的语言或运行时版本，更早的版本也可能可用。声明的最低版本以及 CI 构建和测试的版本见 [speedle-sdk README](https://github.com/teramoby/speedle-sdk#runtime-support)，描述的是下一次发布所用的 SDK 源码（Go 为 v1.9.1）。已发布的 Go v1.9.0 模块声明 Go 1.26，请使用 Go 1.26 或更高版本的工具链构建 v1.9.0。
+每个 SDK 都支持以 2026-11-19 为终点的三年内发布的语言或运行时版本，更早的版本也可能可用。声明的最低版本以及 CI 构建和测试的版本见 [speedle-sdk README](https://github.com/teramoby/speedle-sdk#runtime-support)。
 
 | SDK | 最低版本 | CI 测试版本 |
 | --- | --- | --- |
-| Go | 从 v1.9.1 起为 Go 1.22（v1.9.0 为 Go 1.26） | 1.22、1.27 |
+| Go | Go 1.22 | 1.22、1.27 |
 | Python | Python 3.10 | 3.10、3.11、3.12、3.13、3.14、3.15 |
 | Node.js | Node.js 22 | 22、24、26 |
 | Java | Java 17 | 17、21、25、27 |

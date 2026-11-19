@@ -39,7 +39,7 @@ gRPC API  PMS proto：pb.PolicyManager ADS proto：pb.Evaluator  客户端必须
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/sdks/go/</guid>
-      <description>用 go get 添加 github.com/teramoby/speedle-sdk/go v1.9.0，再向本地 Speedle 调用 IsAllowed 与 Check。</description>
+      <description>用 go get 添加 github.com/teramoby/speedle-sdk/go v1.9.1，再向本地 Speedle 调用 IsAllowed 与 Check。</description>
     </item>
     
     <item>

@@ -16,7 +16,7 @@ Speedle SDK는 결정 API `POST /authz-check/v1/is-allowed`의 클라이언트 �
 
 ## 패키지
 
-6개 SDK는 모두 1.9.0 버전으로 게시되어 있습니다. 각 언어별 설치 명령은 해당 페이지에 나와 있습니다.
+6개 SDK는 모두 게시되어 있습니다. Go 모듈은 v1.9.1이고 나머지 5개는 1.9.0입니다. 각 언어별 설치 명령은 해당 페이지에 나와 있습니다.
 
 - [Java](/docs/sdks/java/): Maven Central `io.speedle:speedle-sdk`, 게시 완료.
 - [Python](/docs/sdks/python/): PyPI `speedle`, 게시 완료.
@@ -27,11 +27,11 @@ Speedle SDK는 결정 API `POST /authz-check/v1/is-allowed`의 클라이언트 �
 
 ## 런타임 지원
 
-각 SDK는 2026-11-19를 기준으로 지난 3년 동안 릴리스된 언어 또는 런타임 버전을 지원합니다. 더 오래된 버전도 작동할 수 있습니다. 선언된 최소 버전과 CI가 빌드하고 테스트하는 버전은 [speedle-sdk README](https://github.com/teramoby/speedle-sdk#runtime-support)에 있으며, 다음 릴리스(Go의 경우 v1.9.1)의 SDK 소스를 가리킵니다. 게시된 Go v1.9.0 모듈은 Go 1.26을 선언하므로 v1.9.0은 Go 1.26 이상 툴체인으로 빌드하세요.
+각 SDK는 2026-11-19를 기준으로 지난 3년 동안 릴리스된 언어 또는 런타임 버전을 지원합니다. 더 오래된 버전도 작동할 수 있습니다. 선언된 최소 버전과 CI가 빌드하고 테스트하는 버전은 [speedle-sdk README](https://github.com/teramoby/speedle-sdk#runtime-support)에 있습니다.
 
 | SDK | 최소 버전 | CI 테스트 버전 |
 | --- | --- | --- |
-| Go | v1.9.1부터 Go 1.22(v1.9.0은 Go 1.26) | 1.22, 1.27 |
+| Go | Go 1.22 | 1.22, 1.27 |
 | Python | Python 3.10 | 3.10, 3.11, 3.12, 3.13, 3.14, 3.15 |
 | Node.js | Node.js 22 | 22, 24, 26 |
 | Java | Java 17 | 17, 21, 25, 27 |
