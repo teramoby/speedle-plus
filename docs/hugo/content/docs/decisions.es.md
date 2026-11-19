@@ -18,7 +18,7 @@ Speedle evalúa un sujeto, una acción y un recurso dentro de un servicio. La ap
 
 ## Antes de ejecutar los ejemplos
 
-Compile `./bin/spctl`, `./bin/speedle-pms` y `./bin/speedle-ads` mediante el [inicio rápido](/es/quick-start/). Utilice Go 1.27.4 (o un parche más reciente de la misma rama de lanzamiento), Bash, curl y Python 3. Ejecute cada terminal desde la raíz del repositorio. Utilice un archivo de políticas nuevo para esta página; reinícielo únicamente tras detener ambos servicios.
+Compile `./bin/spctl`, `./bin/speedle-pms` y `./bin/speedle-ads` mediante el [inicio rápido](/es/quick-start/). Utilice Go 1.26.0 (o un parche más reciente de la misma rama de lanzamiento), Bash, curl y Python 3. Ejecute cada terminal desde la raíz del repositorio. Utilice un archivo de políticas nuevo para esta página; reinícielo únicamente tras detener ambos servicios.
 
 > **Nota:** Los archivos de `website/tests/examples/` que se usan en esta página vienen de un clon del repositorio (ruta B del [Inicio rápido](/es/quick-start/)); `go install` no los incluye.
 

@@ -33,7 +33,7 @@ curl --header &amp;#39;Content-Type: application/json&amp;#39; --data &amp;#39;{
       
       <guid>https://engine.speedle.io/ja/docs/decisions/</guid>
       <description>認可決定とは？ Speedle は指定されたサービス内でサブジェクト、アクション、およびリソースを評価し、アプリケーションがその結果を適用します。評価エラーやタイムアウトは通常の Deny（拒否）とは区別して扱い、エラー時はアクセスを拒否（fail closed）してください。REST、gRPC、組み込み Go の各 API はデータ表現が異なるため、それぞれの API 契約 に従ってください。
-実行前の準備 クイックスタート に従ってリポジトリルートで ./bin/spctl、./bin/speedle-pms、./bin/speedle-ads をビルドします。Go 1.27.4（または同じリリースブランチの新しいパッチバージョン）、Bash、curl、Python 3 が必要です。各ターミナルはリポジトリのルートディレクトリから実行してください。このページ用には新しいポリシーファイルを使用し、両方のサービスを停止した後にのみリセットしてください。
+実行前の準備 クイックスタート に従ってリポジトリルートで ./bin/spctl、./bin/speedle-pms、./bin/speedle-ads をビルドします。Go 1.26.0（または同じリリースブランチの新しいパッチバージョン）、Bash、curl、Python 3 が必要です。各ターミナルはリポジトリのルートディレクトリから実行してください。このページ用には新しいポリシーファイルを使用し、両方のサービスを停止した後にのみリセットしてください。
  注: このページで使用する website/tests/examples/ のファイルは、リポジトリのクローン（クイックスタート のルート B）に含まれています。go install では含まれません。
  空のポリシーファイルを初期化します:
 printf &amp;#39;{} &amp;#39; &amp;gt; docs-policies.json ターミナル1で PMS を起動し、実行したままにします:

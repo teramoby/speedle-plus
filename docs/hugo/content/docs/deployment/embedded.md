@@ -19,7 +19,9 @@ To try basic policies before writing code, open the [Playground](/playground/). 
 
 ## Prerequisites
 
-Use Linux or macOS with a shell and **Go 1.27.4** (or a newer patch on the same release branch), matching [Quick Start](/quick-start/). This walkthrough uses Go modules and the published **Speedle v1.9.0** release.
+Use Linux or macOS with a shell and **Go 1.26.0** (or a newer patch on the same release branch), matching [Quick Start](/quick-start/). This walkthrough uses Go modules and the published **Speedle v1.9.0** release.
+
+That release declares Go 1.27.4; Go's automatic toolchain selection downloads and uses it when the installed toolchain is older (the default `GOTOOLCHAIN=auto`).
 
 Install Go using the [official installation instructions](https://go.dev/doc/install), then check your version:
 

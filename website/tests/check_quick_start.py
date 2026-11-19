@@ -410,14 +410,18 @@ def exercise(locale, steps, checkout, env, isolated=False):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--toolchain", help="Exact Go toolchain, for example go1.27.3")
+    parser.add_argument("--toolchain", help="Exact Go toolchain, for example go1.27.4")
+    parser.add_argument("--allow-toolchain-upgrade", action="store_true",
+                        help="Let a module that requires a newer Go release switch the "
+                             "toolchain (GOTOOLCHAIN=<toolchain>+auto); the source build "
+                             "stays on the declared minimum")
     parser.add_argument("--report", type=Path)
     parser.add_argument("--exercise", type=Path, help=argparse.SUPPRESS)
     parser.add_argument("--locale", choices=("en", "zh"), help=argparse.SUPPRESS)
     args = parser.parse_args()
     env = {key: value for key, value in os.environ.items() if not key.startswith("SPDL_")}
     if args.toolchain:
-        env["GOTOOLCHAIN"] = args.toolchain
+        env["GOTOOLCHAIN"] = args.toolchain + ("+auto" if args.allow_toolchain_upgrade else "")
     env["NO_PROXY"] = env["no_proxy"] = "127.0.0.1,localhost" + ("," + env["NO_PROXY"] if env.get("NO_PROXY") else "")
     if args.exercise:
         assert sys.platform.startswith("linux") and args.locale and args.report
