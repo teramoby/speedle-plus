@@ -184,7 +184,7 @@
 <div id="main">
 
   <h1>Python SDK</h1>
-  <p class="docs-lead">pip または uv で speedle 0.2.0 をインストールし、ローカルの Speedle に対して is_allowed と check を呼び出します。</p>
+  <p class="docs-lead">pip または uv で speedle 1.9.0 をインストールし、ローカルの Speedle に対して is_allowed と check を呼び出します。</p>
 
 
 
@@ -197,7 +197,7 @@
 
   <div id="kube-component" class="content">
 
-<p>Python SDK は Python 3.10 以降が必要です。ランタイム依存関係は <code>httpx</code> のみです。同じ引数を持つ同期の <code>Client</code> と asyncio の <code>AsyncClient</code> を備えています。パッケージ: PyPI の <a href="https://pypi.org/project/speedle/"><code>speedle</code></a> 0.2.0。リファレンス: <a href="https://github.com/teramoby/speedle-sdk/tree/main/python">speedle-sdk/python</a>。</p>
+<p>Python SDK は Python 3.10 以降が必要で、過去 3 年間にリリースされたすべての Python バージョンをサポートします。ランタイム依存関係は <code>httpx</code> のみです。同じ引数を持つ同期の <code>Client</code> と asyncio の <code>AsyncClient</code> を備えています。パッケージ: PyPI の <a href="https://pypi.org/project/speedle/"><code>speedle</code></a> 1.9.0。リファレンス: <a href="https://github.com/teramoby/speedle-sdk/tree/main/python">speedle-sdk/python</a>。</p>
 
 <p>サンプルでは、<a href="/ja/docs/sdks/#example-policy">SDK 概要</a> で説明されているポリシーをチェックします。</p>
 
@@ -206,9 +206,9 @@
 <p>仮想環境で pip を使用する場合:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">python3 -m venv .venv
 . .venv/bin/activate
-pip install <span style="color:#8be9fd;font-style:italic">speedle</span><span style="color:#ff79c6">==</span><span style="color:#bd93f9">0</span>.2.0</code></pre></div>
+pip install <span style="color:#8be9fd;font-style:italic">speedle</span><span style="color:#ff79c6">==</span><span style="color:#bd93f9">1</span>.9.0</code></pre></div>
 <p>または uv プロジェクトで uv を使用する場合:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">uv add <span style="color:#8be9fd;font-style:italic">speedle</span><span style="color:#ff79c6">==</span><span style="color:#bd93f9">0</span>.2.0</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">uv add <span style="color:#8be9fd;font-style:italic">speedle</span><span style="color:#ff79c6">==</span><span style="color:#bd93f9">1</span>.9.0</code></pre></div>
 <h2 id="ローカルの-speedle-の呼び出し">ローカルの Speedle の呼び出し</h2>
 
 <p><a href="/ja/docs/sdks/#example-policy">SDK 概要</a> の説明に従って Speedle を起動し、サンプルポリシーを作成します。このプログラムを <code>main.py</code> として保存します:</p>

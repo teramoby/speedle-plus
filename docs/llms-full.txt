@@ -2070,7 +2070,7 @@ The Speedle SDKs are client libraries for the decision API `POST /authz-check/v1
 
 ### Packages
 
-Java, Python, Go, .NET and Rust are version 0.2.0, and the Node.js/TypeScript SDK is version 0.2.1. `@speedle/sdk` is published on npm. Each language page shows the install command.
+All six SDKs are published: the Go module is v1.9.1 and the other five are 1.9.0. Each language page shows the install command.
 
 - [Java](https://engine.speedle.io/docs/sdks/java/): Maven Central `io.speedle:speedle-sdk`, published.
 - [Python](https://engine.speedle.io/docs/sdks/python/): PyPI `speedle`, published.
@@ -2078,6 +2078,19 @@ Java, Python, Go, .NET and Rust are version 0.2.0, and the Node.js/TypeScript SD
 - [C#/.NET](https://engine.speedle.io/docs/sdks/dotnet/): NuGet `Speedle.Sdk`, published.
 - [Rust](https://engine.speedle.io/docs/sdks/rust/): crates.io `speedle`, published.
 - [Node.js / TypeScript](https://engine.speedle.io/docs/sdks/node/): npm `@speedle/sdk`, published.
+
+### Runtime support
+
+Each SDK supports every language or runtime version released in the three-year window ending 2026-11-19; older versions may also work. The declared minimums and the versions CI builds and tests come from the [speedle-sdk README](https://github.com/teramoby/speedle-sdk#runtime-support).
+
+| SDK | Minimum | CI test versions |
+| --- | --- | --- |
+| Go | Go 1.22 | 1.22, 1.27 |
+| Python | Python 3.10 | 3.10, 3.11, 3.12, 3.13, 3.14, 3.15 |
+| Node.js | Node.js 22 | 22, 24, 26 |
+| Java | Java 17 | 17, 21, 25, 27 |
+| .NET | .NET 8 | net8.0, net10.0, net11.0 |
+| Rust | Rust 1.75 | 1.75, stable |
 
 ### Features
 
@@ -2106,7 +2119,7 @@ The local examples connect to `http://localhost:6734` without credentials. The S
 
 Source: https://engine.speedle.io/docs/sdks/java/
 
-The Java SDK needs Java 17 or later and has no runtime dependencies. Package: [`io.speedle:speedle-sdk`](https://repo1.maven.org/maven2/io/speedle/speedle-sdk/0.2.0/) 0.2.0 on Maven Central. Reference: [speedle-sdk/java](https://github.com/teramoby/speedle-sdk/tree/main/java).
+The Java SDK needs Java 17 or later, supports every Java release from the past three years, and has no runtime dependencies. Package: [`io.speedle:speedle-sdk`](https://repo1.maven.org/maven2/io/speedle/speedle-sdk/1.9.0/) 1.9.0 on Maven Central. Reference: [speedle-sdk/java](https://github.com/teramoby/speedle-sdk/tree/main/java).
 
 The examples check the policy described in the [SDKs overview](https://engine.speedle.io/docs/sdks/#example-policy).
 
@@ -2133,7 +2146,7 @@ Maven, a complete `pom.xml`:
     <dependency>
       <groupId>io.speedle</groupId>
       <artifactId>speedle-sdk</artifactId>
-      <version>0.2.0</version>
+      <version>1.9.0</version>
     </dependency>
   </dependencies>
 </project>
@@ -2151,7 +2164,7 @@ repositories {
 }
 
 dependencies {
-    implementation("io.speedle:speedle-sdk:0.2.0")
+    implementation("io.speedle:speedle-sdk:1.9.0")
 }
 
 application {
@@ -2217,7 +2230,7 @@ A denied request is not an error: `isAllowed` returns `false`, and `check` retur
 
 Source: https://engine.speedle.io/docs/sdks/python/
 
-The Python SDK needs Python 3.10 or later; its only runtime dependency is `httpx`. It has a sync `Client` and an asyncio `AsyncClient` with the same arguments. Package: [`speedle`](https://pypi.org/project/speedle/) 0.2.0 on PyPI. Reference: [speedle-sdk/python](https://github.com/teramoby/speedle-sdk/tree/main/python).
+The Python SDK needs Python 3.10 or later, supports every Python release from the past three years, and its only runtime dependency is `httpx`. It has a sync `Client` and an asyncio `AsyncClient` with the same arguments. Package: [`speedle`](https://pypi.org/project/speedle/) 1.9.0 on PyPI. Reference: [speedle-sdk/python](https://github.com/teramoby/speedle-sdk/tree/main/python).
 
 The examples check the policy described in the [SDKs overview](https://engine.speedle.io/docs/sdks/#example-policy).
 
@@ -2228,13 +2241,13 @@ With pip, in a virtual environment:
 ```bash
 python3 -m venv .venv
 . .venv/bin/activate
-pip install speedle==0.2.0
+pip install speedle==1.9.0
 ```
 
 Or with uv, in a uv project:
 
 ```bash
-uv add speedle==0.2.0
+uv add speedle==1.9.0
 ```
 
 ### Call a local Speedle
@@ -2285,7 +2298,7 @@ A denied request is not an error: `is_allowed` returns `False`, and `check` retu
 
 Source: https://engine.speedle.io/docs/sdks/go/
 
-The Go SDK supports the two latest Go releases and uses only the standard library. Module: [`github.com/teramoby/speedle-sdk/go`](https://pkg.go.dev/github.com/teramoby/speedle-sdk/go) v0.2.0, package `speedle`. Reference: [speedle-sdk/go](https://github.com/teramoby/speedle-sdk/tree/main/go).
+The Go SDK supports every Go release from the past three years and declares Go 1.22 as its minimum. It uses only the standard library. Module: [`github.com/teramoby/speedle-sdk/go`](https://pkg.go.dev/github.com/teramoby/speedle-sdk/go) v1.9.1, package `speedle`. Reference: [speedle-sdk/go](https://github.com/teramoby/speedle-sdk/tree/main/go).
 
 The examples check the policy described in the [SDKs overview](https://engine.speedle.io/docs/sdks/#example-policy).
 
@@ -2295,7 +2308,7 @@ In a new module:
 
 ```bash
 go mod init example.com/speedle-example
-go get github.com/teramoby/speedle-sdk/go@v0.2.0
+go get github.com/teramoby/speedle-sdk/go@v1.9.1
 ```
 
 ### Call a local Speedle
@@ -2365,7 +2378,7 @@ A denied request is not an error: `IsAllowed` returns `false`, and `Check` retur
 
 Source: https://engine.speedle.io/docs/sdks/dotnet/
 
-The .NET SDK targets .NET 8 or later and has no dependencies. Package: [`Speedle.Sdk`](https://www.nuget.org/packages/Speedle.Sdk) 0.2.0 on NuGet, namespace `Speedle.Sdk`. Reference: [speedle-sdk/dotnet](https://github.com/teramoby/speedle-sdk/tree/main/dotnet).
+The .NET SDK targets .NET 8 or later, supports every .NET release from the past three years, and has no dependencies. Package: [`Speedle.Sdk`](https://www.nuget.org/packages/Speedle.Sdk) 1.9.0 on NuGet, namespace `Speedle.Sdk`. Reference: [speedle-sdk/dotnet](https://github.com/teramoby/speedle-sdk/tree/main/dotnet).
 
 The examples check the policy described in the [SDKs overview](https://engine.speedle.io/docs/sdks/#example-policy).
 
@@ -2376,7 +2389,7 @@ In a new console project:
 ```bash
 dotnet new console -o SpeedleExample
 cd SpeedleExample
-dotnet add package Speedle.Sdk --version 0.2.0
+dotnet add package Speedle.Sdk --version 1.9.0
 ```
 
 ### Call a local Speedle
@@ -2432,7 +2445,7 @@ A denied request is not an error: `IsAllowedAsync` returns `false`, and `CheckAs
 
 Source: https://engine.speedle.io/docs/sdks/rust/
 
-The Rust SDK needs Rust 1.75 or later. It is async on `tokio` and `reqwest` (rustls); the `blocking` feature adds the blocking client used below. Crate: [`speedle`](https://crates.io/crates/speedle) 0.2.0 on crates.io. Reference: [speedle-sdk/rust](https://github.com/teramoby/speedle-sdk/tree/main/rust).
+The Rust SDK needs Rust 1.75 or later and supports every Rust release from the past three years. It is async on `tokio` and `reqwest` (rustls); the `blocking` feature adds the blocking client used below. Crate: [`speedle`](https://crates.io/crates/speedle) 1.9.0 on crates.io. Reference: [speedle-sdk/rust](https://github.com/teramoby/speedle-sdk/tree/main/rust).
 
 The examples check the policy described in the [SDKs overview](https://engine.speedle.io/docs/sdks/#example-policy).
 
@@ -2443,7 +2456,7 @@ In a new package:
 ```bash
 cargo new speedle-example
 cd speedle-example
-cargo add speedle@0.2.0 --features blocking
+cargo add speedle@1.9.0 --features blocking
 ```
 
 ### Call a local Speedle
@@ -2495,7 +2508,7 @@ A denied request is not an error: `is_allowed` returns `false`, and `check` retu
 
 Source: https://engine.speedle.io/docs/sdks/node/
 
-The Node.js SDK needs Node.js 22 or later, ships ESM and CommonJS builds with TypeScript types, and has no runtime dependencies. Package: [`@speedle/sdk`](https://www.npmjs.com/package/@speedle/sdk), published on npm. Reference: [speedle-sdk/node](https://github.com/teramoby/speedle-sdk/tree/main/node).
+The Node.js SDK needs Node.js 22 or later, supports every Node.js release from the past three years, ships ESM and CommonJS builds with TypeScript types, and has no runtime dependencies. Package: [`@speedle/sdk`](https://www.npmjs.com/package/@speedle/sdk), published on npm. Reference: [speedle-sdk/node](https://github.com/teramoby/speedle-sdk/tree/main/node).
 
 The examples check the policy described in the [SDKs overview](https://engine.speedle.io/docs/sdks/#example-policy).
 
@@ -2508,7 +2521,7 @@ mkdir speedle-example
 cd speedle-example
 npm init -y
 npm pkg set type=module
-npm install @speedle/sdk@0.2.1
+npm install @speedle/sdk@1.9.0
 ```
 
 ### Call a local Speedle
@@ -2560,16 +2573,16 @@ alice delete /docs/public: allowed=false reason=NoApplicablePolicies
 [`@speedle/mcp`](https://www.npmjs.com/package/@speedle/mcp) is published on npm. Speedle MCP (launch preview) is one package with `check` and `manage` modes. Install it with npm:
 
 ```bash
-npm install @speedle/mcp@0.2.1
+npm install @speedle/mcp@1.9.0
 ```
 
 Or run the `speedle-mcp` binary directly. The `check` mode reads the ADS URL from `SPEEDLE_ENDPOINT` and the service name from `SPEEDLE_SERVICE_NAME`; this example uses the local ADS from the [SDKs overview](https://engine.speedle.io/docs/sdks/#example-policy):
 
 ```bash
-SPEEDLE_ENDPOINT=http://127.0.0.1:6734 SPEEDLE_SERVICE_NAME=docs npx @speedle/mcp@0.2.1 check
+SPEEDLE_ENDPOINT=http://127.0.0.1:6734 SPEEDLE_SERVICE_NAME=docs npx @speedle/mcp@1.9.0 check
 ```
 
-Without `SPEEDLE_ENDPOINT`, the command exits with `speedle-mcp: SPEEDLE_ENDPOINT is required`. The command starts a stdio MCP server and waits for a client, so a successful start prints nothing. Running `speedle-mcp` without a mode prints usage and exits with a non-zero status. Reference: [speedle-mcp](https://github.com/teramoby/speedle-mcp).
+Without `SPEEDLE_ENDPOINT`, the command exits with `speedle-mcp: SPEEDLE_ENDPOINT is required (for example https://cloud.speedle.io or http://127.0.0.1:6734)`. The command starts a stdio MCP server and waits for a client, so a successful start prints nothing. Running `speedle-mcp` without a mode prints usage and exits with a non-zero status. Reference: [speedle-mcp](https://github.com/teramoby/speedle-mcp).
 
 ### Error handling
 
@@ -3060,7 +3073,7 @@ Install the published package in `speedle-example` and run `main.mjs` there. The
 ```bash
 npm init -y
 npm pkg set type=module
-npm install @speedle/sdk@0.2.1
+npm install @speedle/sdk@1.9.0
 node main.mjs
 ```
 

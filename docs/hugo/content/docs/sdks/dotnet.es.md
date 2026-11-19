@@ -8,11 +8,12 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "Añada Speedle.Sdk 0.2.0 con dotnet add package, y luego llame a IsAllowedAsync y CheckAsync frente a un Speedle local."
+bref = "Añada Speedle.Sdk 1.9.0 con dotnet add package, y luego llame a IsAllowedAsync y CheckAsync frente a un Speedle local."
+summary = "Añada Speedle.Sdk 1.9.0 con dotnet add package, y luego llame a IsAllowedAsync y CheckAsync frente a un Speedle local."
 lastmod = 2026-11-07T19:43:15+08:00
 +++
 
-El SDK de .NET es compatible con .NET 8 o posterior y no tiene dependencias. Paquete: [`Speedle.Sdk`](https://www.nuget.org/packages/Speedle.Sdk) 0.2.0 en NuGet, espacio de nombres `Speedle.Sdk`. Referencia: [speedle-sdk/dotnet](https://github.com/teramoby/speedle-sdk/tree/main/dotnet).
+El SDK de .NET es compatible con .NET 8 o posterior, admite todas las versiones de .NET publicadas en los últimos tres años y no tiene dependencias. Paquete: [`Speedle.Sdk`](https://www.nuget.org/packages/Speedle.Sdk) 1.9.0 en NuGet, espacio de nombres `Speedle.Sdk`. Referencia: [speedle-sdk/dotnet](https://github.com/teramoby/speedle-sdk/tree/main/dotnet).
 
 Los ejemplos comprueban la política descrita en la [descripción general de los SDK](/es/docs/sdks/#example-policy).
 
@@ -23,7 +24,7 @@ En un nuevo proyecto de consola:
 ```bash
 dotnet new console -o SpeedleExample
 cd SpeedleExample
-dotnet add package Speedle.Sdk --version 0.2.0
+dotnet add package Speedle.Sdk --version 1.9.0
 ```
 
 ## Llamar a un Speedle local

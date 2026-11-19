@@ -8,11 +8,12 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "go get で github.com/teramoby/speedle-sdk/go v0.2.0 を追加し、ローカルの Speedle に対して IsAllowed と Check を呼び出します。"
+bref = "go get で github.com/teramoby/speedle-sdk/go v1.9.1 を追加し、ローカルの Speedle に対して IsAllowed と Check を呼び出します。"
+summary = "go get で github.com/teramoby/speedle-sdk/go v1.9.1 を追加し、ローカルの Speedle に対して IsAllowed と Check を呼び出します。"
 lastmod = 2026-11-07T19:43:15+08:00
 +++
 
-Go SDK は最新の 2 つの Go リリースをサポートし、標準ライブラリのみを使用します。モジュール: [`github.com/teramoby/speedle-sdk/go`](https://pkg.go.dev/github.com/teramoby/speedle-sdk/go) v0.2.0、パッケージ名 `speedle`。リファレンス: [speedle-sdk/go](https://github.com/teramoby/speedle-sdk/tree/main/go)。
+Go SDK は過去 3 年間にリリースされたすべての Go バージョンをサポートし、宣言する最低バージョンは Go 1.22 です。標準ライブラリのみを使用します。モジュール: [`github.com/teramoby/speedle-sdk/go`](https://pkg.go.dev/github.com/teramoby/speedle-sdk/go) v1.9.1、パッケージ名 `speedle`。リファレンス: [speedle-sdk/go](https://github.com/teramoby/speedle-sdk/tree/main/go)。
 
 サンプルでは、[SDK 概要](/ja/docs/sdks/#example-policy) で説明されているポリシーをチェックします。
 
@@ -22,7 +23,7 @@ Go SDK は最新の 2 つの Go リリースをサポートし、標準ライブ
 
 ```bash
 go mod init example.com/speedle-example
-go get github.com/teramoby/speedle-sdk/go@v0.2.0
+go get github.com/teramoby/speedle-sdk/go@v1.9.1
 ```
 
 ## ローカルの Speedle の呼び出し

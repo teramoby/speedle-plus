@@ -8,11 +8,12 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "Añada github.com/teramoby/speedle-sdk/go v0.2.0 con go get, y llame a IsAllowed y Check frente a un Speedle local."
+bref = "Añada github.com/teramoby/speedle-sdk/go v1.9.1 con go get, y llame a IsAllowed y Check frente a un Speedle local."
+summary = "Añada github.com/teramoby/speedle-sdk/go v1.9.1 con go get, y llame a IsAllowed y Check frente a un Speedle local."
 lastmod = 2026-11-07T19:43:15+08:00
 +++
 
-El SDK de Go es compatible con las dos versiones más recientes de Go y utiliza únicamente la biblioteca estándar. Módulo: [`github.com/teramoby/speedle-sdk/go`](https://pkg.go.dev/github.com/teramoby/speedle-sdk/go) v0.2.0, paquete `speedle`. Referencia: [speedle-sdk/go](https://github.com/teramoby/speedle-sdk/tree/main/go).
+El SDK de Go admite todas las versiones de Go publicadas en los últimos tres años y declara Go 1.22 como versión mínima. Utiliza únicamente la biblioteca estándar. Módulo: [`github.com/teramoby/speedle-sdk/go`](https://pkg.go.dev/github.com/teramoby/speedle-sdk/go) v1.9.1, paquete `speedle`. Referencia: [speedle-sdk/go](https://github.com/teramoby/speedle-sdk/tree/main/go).
 
 Los ejemplos comprueban la política descrita en la [descripción general de los SDK](/es/docs/sdks/#example-policy).
 
@@ -22,7 +23,7 @@ En un módulo nuevo:
 
 ```bash
 go mod init example.com/speedle-example
-go get github.com/teramoby/speedle-sdk/go@v0.2.0
+go get github.com/teramoby/speedle-sdk/go@v1.9.1
 ```
 
 ## Llamar a un Speedle local

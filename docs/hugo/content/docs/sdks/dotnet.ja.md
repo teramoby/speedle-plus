@@ -8,11 +8,12 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "dotnet add package で Speedle.Sdk 0.2.0 を追加し、ローカルの Speedle に対して IsAllowedAsync と CheckAsync を呼び出します。"
+bref = "dotnet add package で Speedle.Sdk 1.9.0 を追加し、ローカルの Speedle に対して IsAllowedAsync と CheckAsync を呼び出します。"
+summary = "dotnet add package で Speedle.Sdk 1.9.0 を追加し、ローカルの Speedle に対して IsAllowedAsync と CheckAsync を呼び出します。"
 lastmod = 2026-11-07T19:43:15+08:00
 +++
 
-.NET SDK は .NET 8 以降を対象とし、依存関係はありません。パッケージ: NuGet の [`Speedle.Sdk`](https://www.nuget.org/packages/Speedle.Sdk) 0.2.0、名前空間 `Speedle.Sdk`。リファレンス: [speedle-sdk/dotnet](https://github.com/teramoby/speedle-sdk/tree/main/dotnet)。
+.NET SDK は .NET 8 以降を対象とし、過去 3 年間にリリースされたすべての .NET バージョンをサポートします。依存関係はありません。パッケージ: NuGet の [`Speedle.Sdk`](https://www.nuget.org/packages/Speedle.Sdk) 1.9.0、名前空間 `Speedle.Sdk`。リファレンス: [speedle-sdk/dotnet](https://github.com/teramoby/speedle-sdk/tree/main/dotnet)。
 
 サンプルでは、[SDK 概要](/ja/docs/sdks/#example-policy) で説明されているポリシーをチェックします。
 
@@ -23,7 +24,7 @@ lastmod = 2026-11-07T19:43:15+08:00
 ```bash
 dotnet new console -o SpeedleExample
 cd SpeedleExample
-dotnet add package Speedle.Sdk --version 0.2.0
+dotnet add package Speedle.Sdk --version 1.9.0
 ```
 
 ## ローカルの Speedle の呼び出し

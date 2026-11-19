@@ -16,7 +16,7 @@ Los SDK de Speedle son bibliotecas cliente para la API de decisiones `POST /auth
 
 ## Paquetes
 
-Java, Python, Go, .NET y Rust están en la versión 0.2.0, y el SDK de Node.js/TypeScript está en la versión 0.2.1. `@speedle/sdk` está publicado en npm. Cada página de lenguaje muestra el comando de instalación correspondiente.
+Los seis SDK están publicados: el módulo de Go está en v1.9.1 y los otros cinco en 1.9.0. Cada página de lenguaje muestra el comando de instalación correspondiente.
 
 - [Java](/es/docs/sdks/java/): Maven Central `io.speedle:speedle-sdk`, publicado.
 - [Python](/es/docs/sdks/python/): PyPI `speedle`, publicado.
@@ -24,6 +24,19 @@ Java, Python, Go, .NET y Rust están en la versión 0.2.0, y el SDK de Node.js/T
 - [C#/.NET](/es/docs/sdks/dotnet/): NuGet `Speedle.Sdk`, publicado.
 - [Rust](/es/docs/sdks/rust/): crates.io `speedle`, publicado.
 - [Node.js / TypeScript](/es/docs/sdks/node/): npm `@speedle/sdk`, publicado.
+
+## Requisitos de ejecución
+
+Cada SDK admite todas las versiones del lenguaje o del entorno de ejecución publicadas en los tres años anteriores al 2026-11-19; las versiones anteriores también pueden funcionar. Los mínimos declarados y las versiones que CI compila y prueba proceden del [README de speedle-sdk](https://github.com/teramoby/speedle-sdk#runtime-support).
+
+| SDK | Versión mínima | Versiones probadas en CI |
+| --- | --- | --- |
+| Go | Go 1.22 | 1.22, 1.27 |
+| Python | Python 3.10 | 3.10, 3.11, 3.12, 3.13, 3.14, 3.15 |
+| Node.js | Node.js 22 | 22, 24, 26 |
+| Java | Java 17 | 17, 21, 25, 27 |
+| .NET | .NET 8 | net8.0, net10.0, net11.0 |
+| Rust | Rust 1.75 | 1.75, stable |
 
 ## Funcionalidades
 

@@ -9,10 +9,11 @@ tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
 bref = "Instale @speedle/sdk con npm, y luego llame a isAllowed y check frente a un Speedle local."
+summary = "Instale @speedle/sdk con npm, y luego llame a isAllowed y check frente a un Speedle local."
 lastmod = 2026-11-10T09:48:45+08:00
 +++
 
-El SDK de Node.js requiere Node.js 22 o posterior, incluye distribuciones ESM y CommonJS con tipos de TypeScript, y no tiene dependencias de tiempo de ejecución. Paquete: [`@speedle/sdk`](https://www.npmjs.com/package/@speedle/sdk), publicado en npm. Referencia: [speedle-sdk/node](https://github.com/teramoby/speedle-sdk/tree/main/node).
+El SDK de Node.js requiere Node.js 22 o posterior, admite todas las versiones de Node.js publicadas en los últimos tres años, incluye distribuciones ESM y CommonJS con tipos de TypeScript y no tiene dependencias de tiempo de ejecución. Paquete: [`@speedle/sdk`](https://www.npmjs.com/package/@speedle/sdk), publicado en npm. Referencia: [speedle-sdk/node](https://github.com/teramoby/speedle-sdk/tree/main/node).
 
 Los ejemplos comprueban la política descrita en la [descripción general de los SDK](/es/docs/sdks/#example-policy).
 
@@ -25,7 +26,7 @@ mkdir speedle-example
 cd speedle-example
 npm init -y
 npm pkg set type=module
-npm install @speedle/sdk@0.2.1
+npm install @speedle/sdk@1.9.0
 ```
 
 ## Llamar a un Speedle local
@@ -77,16 +78,16 @@ alice delete /docs/public: allowed=false reason=NoApplicablePolicies
 [`@speedle/mcp`](https://www.npmjs.com/package/@speedle/mcp) está publicado en npm. Speedle MCP (vista previa de lanzamiento) es un paquete con modos `check` y `manage`. Instálelo con npm:
 
 ```bash
-npm install @speedle/mcp@0.2.1
+npm install @speedle/mcp@1.9.0
 ```
 
 O ejecute el binario `speedle-mcp` directamente. El modo `check` lee la URL de ADS de `SPEEDLE_ENDPOINT` y el nombre del servicio de `SPEEDLE_SERVICE_NAME`; este ejemplo usa el ADS local de la [descripción general de los SDK](/es/docs/sdks/#example-policy):
 
 ```bash
-SPEEDLE_ENDPOINT=http://127.0.0.1:6734 SPEEDLE_SERVICE_NAME=docs npx @speedle/mcp@0.2.1 check
+SPEEDLE_ENDPOINT=http://127.0.0.1:6734 SPEEDLE_SERVICE_NAME=docs npx @speedle/mcp@1.9.0 check
 ```
 
-Sin `SPEEDLE_ENDPOINT`, el comando termina con `speedle-mcp: SPEEDLE_ENDPOINT is required`. El comando inicia un servidor MCP por stdio y espera a un cliente, por lo que un inicio correcto no imprime nada. Ejecutar `speedle-mcp` sin especificar un modo muestra las instrucciones de uso y finaliza con un estado distinto de cero. Referencia: [speedle-mcp](https://github.com/teramoby/speedle-mcp).
+Sin `SPEEDLE_ENDPOINT`, el comando termina con `speedle-mcp: SPEEDLE_ENDPOINT is required (for example https://cloud.speedle.io or http://127.0.0.1:6734)`. El comando inicia un servidor MCP por stdio y espera a un cliente, por lo que un inicio correcto no imprime nada. Ejecutar `speedle-mcp` sin especificar un modo muestra las instrucciones de uso y finaliza con un estado distinto de cero. Referencia: [speedle-mcp](https://github.com/teramoby/speedle-mcp).
 
 ## Gestión de errores
 

@@ -16,7 +16,7 @@ The Speedle SDKs are client libraries for the decision API `POST /authz-check/v1
 
 ## Packages
 
-Java, Python, Go, .NET and Rust are version 0.2.0, and the Node.js/TypeScript SDK is version 0.2.1. `@speedle/sdk` is published on npm. Each language page shows the install command.
+All six SDKs are published: the Go module is v1.9.1 and the other five are 1.9.0. Each language page shows the install command.
 
 - [Java](/docs/sdks/java/): Maven Central `io.speedle:speedle-sdk`, published.
 - [Python](/docs/sdks/python/): PyPI `speedle`, published.
@@ -24,6 +24,19 @@ Java, Python, Go, .NET and Rust are version 0.2.0, and the Node.js/TypeScript SD
 - [C#/.NET](/docs/sdks/dotnet/): NuGet `Speedle.Sdk`, published.
 - [Rust](/docs/sdks/rust/): crates.io `speedle`, published.
 - [Node.js / TypeScript](/docs/sdks/node/): npm `@speedle/sdk`, published.
+
+## Runtime support
+
+Each SDK supports every language or runtime version released in the three-year window ending 2026-11-19; older versions may also work. The declared minimums and the versions CI builds and tests come from the [speedle-sdk README](https://github.com/teramoby/speedle-sdk#runtime-support).
+
+| SDK | Minimum | CI test versions |
+| --- | --- | --- |
+| Go | Go 1.22 | 1.22, 1.27 |
+| Python | Python 3.10 | 3.10, 3.11, 3.12, 3.13, 3.14, 3.15 |
+| Node.js | Node.js 22 | 22, 24, 26 |
+| Java | Java 17 | 17, 21, 25, 27 |
+| .NET | .NET 8 | net8.0, net10.0, net11.0 |
+| Rust | Rust 1.75 | 1.75, stable |
 
 ## Features
 

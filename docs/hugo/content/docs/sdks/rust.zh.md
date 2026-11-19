@@ -8,11 +8,12 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "用 cargo add 添加 speedle 0.2.0，再向本地 Speedle 调用 is_allowed 与 check。"
+bref = "用 cargo add 添加 speedle 1.9.0，再向本地 Speedle 调用 is_allowed 与 check。"
+summary = "用 cargo add 添加 speedle 1.9.0，再向本地 Speedle 调用 is_allowed 与 check。"
 lastmod = 2026-11-08T11:21:16+08:00
 +++
 
-Rust SDK 需要 Rust 1.75 或更高版本，基于 `tokio` 和 `reqwest`（rustls）实现异步调用；下面使用的阻塞客户端由 `blocking` 特性提供。crate：crates.io 上的 [`speedle`](https://crates.io/crates/speedle) 0.2.0。参考文档：[speedle-sdk/rust](https://github.com/teramoby/speedle-sdk/tree/main/rust)。
+Rust SDK 需要 Rust 1.75 或更高版本，支持过去三年内发布的所有 Rust 版本，基于 `tokio` 和 `reqwest`（rustls）实现异步调用；下面使用的阻塞客户端由 `blocking` 特性提供。crate：crates.io 上的 [`speedle`](https://crates.io/crates/speedle) 1.9.0。参考文档：[speedle-sdk/rust](https://github.com/teramoby/speedle-sdk/tree/main/rust)。
 
 示例使用的策略见 [SDK 概览](/docs/sdks/#示例策略)。
 
@@ -23,7 +24,7 @@ Rust SDK 需要 Rust 1.75 或更高版本，基于 `tokio` 和 `reqwest`（rustl
 ```bash
 cargo new speedle-example
 cd speedle-example
-cargo add speedle@0.2.0 --features blocking
+cargo add speedle@1.9.0 --features blocking
 ```
 
 ## 调用本地 Speedle

@@ -184,7 +184,7 @@
 <div id="main">
 
   <h1>Rust SDK</h1>
-  <p class="docs-lead">cargo add で speedle 0.2.0 クレートを追加し、ローカルの Speedle に対して is_allowed と check を呼び出します。</p>
+  <p class="docs-lead">cargo add で speedle 1.9.0 クレートを追加し、ローカルの Speedle に対して is_allowed と check を呼び出します。</p>
 
 
 
@@ -197,7 +197,7 @@
 
   <div id="kube-component" class="content">
 
-<p>Rust SDK は Rust 1.75 以降が必要です。<code>tokio</code> と <code>reqwest</code> (rustls) をベースにした非同期構成です。<code>blocking</code> 機能により、以下で使用するブロッキングクライアントが追加されます。クレート: crates.io の <a href="https://crates.io/crates/speedle"><code>speedle</code></a> 0.2.0。リファレンス: <a href="https://github.com/teramoby/speedle-sdk/tree/main/rust">speedle-sdk/rust</a>。</p>
+<p>Rust SDK は Rust 1.75 以降が必要で、過去 3 年間にリリースされたすべての Rust バージョンをサポートします。<code>tokio</code> と <code>reqwest</code> (rustls) をベースにした非同期構成です。<code>blocking</code> 機能により、以下で使用するブロッキングクライアントが追加されます。クレート: crates.io の <a href="https://crates.io/crates/speedle"><code>speedle</code></a> 1.9.0。リファレンス: <a href="https://github.com/teramoby/speedle-sdk/tree/main/rust">speedle-sdk/rust</a>。</p>
 
 <p>サンプルでは、<a href="/ja/docs/sdks/#example-policy">SDK 概要</a> で説明されているポリシーをチェックします。</p>
 
@@ -206,7 +206,7 @@
 <p>新しいパッケージを作成します:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">cargo new speedle-example
 <span style="color:#8be9fd;font-style:italic">cd</span> speedle-example
-cargo add speedle@0.2.0 --features blocking</code></pre></div>
+cargo add speedle@1.9.0 --features blocking</code></pre></div>
 <h2 id="ローカルの-speedle-の呼び出し">ローカルの Speedle の呼び出し</h2>
 
 <p><a href="/ja/docs/sdks/#example-policy">SDK 概要</a> の説明に従って Speedle を起動し、サンプルポリシーを作成します。<code>src/main.rs</code> を以下に置き換えます:</p>
