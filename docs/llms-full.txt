@@ -2081,18 +2081,16 @@ All six SDKs are version 1.9.0 and published. Each language page shows the insta
 
 ### Runtime support
 
-Each SDK supports every language or runtime version released in the three-year window ending 2026-11-19; older versions may also work. The declared minimums and the versions CI builds and tests come from the [speedle-sdk README](https://github.com/teramoby/speedle-sdk#runtime-support).
+Each SDK supports every language or runtime version released in the three-year window ending 2026-11-19; older versions may also work. The declared minimums and the versions CI builds and tests come from the [speedle-sdk README](https://github.com/teramoby/speedle-sdk#runtime-support) and describe the SDK source for the next release (v1.9.1 for Go). The published Go v1.9.0 module declares Go 1.26, so build v1.9.0 with a Go 1.26 or newer toolchain.
 
 | SDK | Minimum | CI test versions |
 | --- | --- | --- |
-| Go | Go 1.26 (v1.9.0); Go 1.22 from v1.9.1 | 1.22, 1.27 |
+| Go | Go 1.22 from v1.9.1 (v1.9.0: Go 1.26) | 1.22, 1.27 |
 | Python | Python 3.10 | 3.10, 3.11, 3.12, 3.13, 3.14, 3.15 |
 | Node.js | Node.js 22 | 22, 24, 26 |
 | Java | Java 17 | 17, 21, 25, 27 |
 | .NET | .NET 8 | net8.0, net10.0, net11.0 |
 | Rust | Rust 1.75 | 1.75, stable |
-
-The published Go module is v1.9.0, which declares Go 1.26; the Go SDK's declared minimum becomes Go 1.22 with v1.9.1.
 
 ### Features
 
@@ -2300,7 +2298,7 @@ A denied request is not an error: `is_allowed` returns `False`, and `check` retu
 
 Source: https://engine.speedle.io/docs/sdks/go/
 
-The Go SDK supports every Go release from the past three years. The published v1.9.0 module declares Go 1.26; from v1.9.1 on the declared minimum is Go 1.22. It uses only the standard library. Module: [`github.com/teramoby/speedle-sdk/go`](https://pkg.go.dev/github.com/teramoby/speedle-sdk/go) v1.9.0, package `speedle`. Reference: [speedle-sdk/go](https://github.com/teramoby/speedle-sdk/tree/main/go).
+The Go SDK supports every Go release from the past three years. The published v1.9.0 module declares Go 1.26, so build v1.9.0 with a Go 1.26 or newer toolchain; from v1.9.1 on the declared minimum is Go 1.22. It uses only the standard library. Module: [`github.com/teramoby/speedle-sdk/go`](https://pkg.go.dev/github.com/teramoby/speedle-sdk/go) v1.9.0, package `speedle`. Reference: [speedle-sdk/go](https://github.com/teramoby/speedle-sdk/tree/main/go).
 
 The examples check the policy described in the [SDKs overview](https://engine.speedle.io/docs/sdks/#example-policy).
 

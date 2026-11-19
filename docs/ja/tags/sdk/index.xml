@@ -73,8 +73,7 @@
       <guid>https://engine.speedle.io/ja/docs/sdks/</guid>
       <description>Speedle SDK は、決定 API POST /authz-check/v1/is-allowed のクライアントライブラリです。セルフホストの Speedle ADS で動作します。各言語ページではパッケージの追加方法を説明し、セルフホスト環境向けにテスト済みの完全なプログラムを提供しています。ソースコードと完全なリファレンスは teramoby/speedle-sdk にあります。これらのサンプルで PMS と ADS を実行する方法については、デプロイ と Docker イメージ を参照してください。
 パッケージ 6 つの SDK はすべてバージョン 1.9.0 で公開されています。各言語のインストールコマンドは各ページに記載されています。
- Java: Maven Central io.speedle:speedle-sdk、公開済み。 Python: PyPI speedle、公開済み。 Go: Go モジュール github.com/teramoby/speedle-sdk/go、公開済み。 C#/.NET: NuGet Speedle.Sdk、公開済み。 Rust: crates.io speedle、公開済み。 Node.js / TypeScript: npm @speedle/sdk、公開済み。  ランタイムサポート 各 SDK は 2026-11-19 を終点とする過去 3 年間にリリースされた言語またはランタイムのバージョンをサポートします。より古いバージョンも動作する場合があります。宣言された最小バージョンと CI のビルド・テスト対象バージョンは speedle-sdk README に記載されています。
-   SDK 最小バージョン CI テストバージョン     Go Go 1.</description>
+ Java: Maven Central io.speedle:speedle-sdk、公開済み。 Python: PyPI speedle、公開済み。 Go: Go モジュール github.com/teramoby/speedle-sdk/go、公開済み。 C#/.NET: NuGet Speedle.Sdk、公開済み。 Rust: crates.io speedle、公開済み。 Node.js / TypeScript: npm @speedle/sdk、公開済み。  ランタイムサポート 各 SDK は 2026-11-19 を終点とする過去 3 年間にリリースされた言語またはランタイムのバージョンをサポートします。より古いバージョンも動作する場合があります。宣言された最小バージョンと CI のビルド・テスト対象バージョンは speedle-sdk README に記載されており、次のリリース（Go では v1.9.1）の SDK ソースを指します。公開済みの Go v1.</description>
     </item>
     
   </channel>
