@@ -27,7 +27,7 @@ Speedle SDK는 결정 API `POST /authz-check/v1/is-allowed`의 클라이언트 �
 
 ## 런타임 지원
 
-각 SDK는 지난 3년 동안 릴리스된 언어 또는 런타임 버전을 지원합니다. 더 오래된 버전도 작동할 수 있습니다. 선언된 최소 버전과 CI가 빌드하고 테스트하는 버전은 [speedle-sdk README](https://github.com/teramoby/speedle-sdk#runtime-support)에 있습니다.
+각 SDK는 2026-11-19를 기준으로 지난 3년 동안 릴리스된 언어 또는 런타임 버전을 지원합니다. 더 오래된 버전도 작동할 수 있습니다. 선언된 최소 버전과 CI가 빌드하고 테스트하는 버전은 [speedle-sdk README](https://github.com/teramoby/speedle-sdk#runtime-support)에 있습니다.
 
 | SDK | 최소 버전 | CI 테스트 버전 |
 | --- | --- | --- |

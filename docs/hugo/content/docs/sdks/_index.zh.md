@@ -27,7 +27,7 @@ Speedle SDK 是决策 API `POST /authz-check/v1/is-allowed` 的客户端库，�
 
 ## 运行时支持
 
-每个 SDK 都支持过去三年内发布的语言或运行时版本，更早的版本也可能可用。声明的最低版本以及 CI 构建和测试的版本见 [speedle-sdk README](https://github.com/teramoby/speedle-sdk#runtime-support)。
+每个 SDK 都支持以 2026-11-19 为终点的三年内发布的语言或运行时版本，更早的版本也可能可用。声明的最低版本以及 CI 构建和测试的版本见 [speedle-sdk README](https://github.com/teramoby/speedle-sdk#runtime-support)。
 
 | SDK | 最低版本 | CI 测试版本 |
 | --- | --- | --- |

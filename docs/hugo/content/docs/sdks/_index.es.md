@@ -27,7 +27,7 @@ Los seis SDK están en la versión 1.9.0 y están publicados. Cada página de le
 
 ## Requisitos de ejecución
 
-Cada SDK admite todas las versiones del lenguaje o del entorno de ejecución publicadas en los últimos tres años; las versiones anteriores también pueden funcionar. Los mínimos declarados y las versiones que CI compila y prueba proceden del [README de speedle-sdk](https://github.com/teramoby/speedle-sdk#runtime-support).
+Cada SDK admite todas las versiones del lenguaje o del entorno de ejecución publicadas en los tres años anteriores al 2026-11-19; las versiones anteriores también pueden funcionar. Los mínimos declarados y las versiones que CI compila y prueba proceden del [README de speedle-sdk](https://github.com/teramoby/speedle-sdk#runtime-support).
 
 | SDK | Versión mínima | Versiones probadas en CI |
 | --- | --- | --- |

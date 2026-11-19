@@ -2081,7 +2081,7 @@ All six SDKs are version 1.9.0 and published. Each language page shows the insta
 
 ### Runtime support
 
-Each SDK supports every language or runtime version released in the past three years; older versions may also work. The declared minimums and the versions CI builds and tests come from the [speedle-sdk README](https://github.com/teramoby/speedle-sdk#runtime-support).
+Each SDK supports every language or runtime version released in the three-year window ending 2026-11-19; older versions may also work. The declared minimums and the versions CI builds and tests come from the [speedle-sdk README](https://github.com/teramoby/speedle-sdk#runtime-support).
 
 | SDK | Minimum | CI test versions |
 | --- | --- | --- |
