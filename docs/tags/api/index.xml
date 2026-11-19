@@ -17,9 +17,8 @@
       <pubDate>Tue, 10 Nov 2026 14:45:43 +0800</pubDate>
       
       <guid>https://engine.speedle.io/docs/api/</guid>
-      <description>Client libraries for Java, Python, Go, .NET, Rust and Node.js/TypeScript are in SDKs.
-REST APIs These are reference contracts for your configured PMS/ADS or asserter endpoint. speedle.io serves documentation and the browser Playground; it is not a hosted PMS/ADS service. Supply JSON with Content-Type: application/json, and configure TLS/mTLS and caller access controls.
- Policy management API Authorization decision API Token assertion webhook  Policy and role-policy IDs are strings. PMS responses are flat objects; authorization permissions use permissions (plural).</description>
+      
+      <description>Open API Specification Docs. Use the API to model your simple and complex policies in a declarative way; get decisions, discover policies dynamically and debug policy evaluation.</description>
     </item>
     
     <item>
@@ -28,6 +27,7 @@ REST APIs These are reference contracts for your configured PMS/ADS or asserter 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/docs/api/decision_api/</guid>
+      
       <description>Reference for your configured ADS. Request attributes are typed arrays; diagnostic attributes are objects.
 Security and endpoint configuration. This is a contract reference, not a backend hosted by speedle.io. Try it out is disabled because this specification has no server host, so a request would otherwise be sent to this documentation site.
    document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/swagger/policy-check.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.</description>
@@ -39,10 +39,8 @@ Security and endpoint configuration. This is a contract reference, not a backend
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/docs/sdks/dotnet/</guid>
-      <description>The .NET SDK targets .NET 8 or later, supports every .NET release from the past three years, and has no dependencies. Package: Speedle.Sdk 1.9.0 on NuGet, namespace Speedle.Sdk. Reference: speedle-sdk/dotnet.
-The examples check the policy described in the SDKs overview.
-Add the dependency In a new console project:
-dotnet new console -o SpeedleExample cd SpeedleExample dotnet add package Speedle.Sdk --version 1.9.0 Call a local Speedle Start Speedle and create the example policy as described in the SDKs overview.</description>
+      
+      <description>Add Speedle.Sdk 1.9.0 with dotnet add package, then call IsAllowedAsync and CheckAsync against a local Speedle.</description>
     </item>
     
     <item>
@@ -51,10 +49,8 @@ dotnet new console -o SpeedleExample cd SpeedleExample dotnet add package Speedl
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/docs/sdks/go/</guid>
-      <description>The Go SDK needs Go 1.22 or later, supports every Go release from the past three years, and uses only the standard library. Module: github.com/teramoby/speedle-sdk/go v1.9.0, package speedle. Reference: speedle-sdk/go.
-The examples check the policy described in the SDKs overview.
-Add the dependency In a new module:
-go mod init example.com/speedle-example go get github.com/teramoby/speedle-sdk/go@v1.9.0 Call a local Speedle Start Speedle and create the example policy as described in the SDKs overview.</description>
+      
+      <description>Add github.com/teramoby/speedle-sdk/go v1.9.0 with go get, then call IsAllowed and Check against a local Speedle.</description>
     </item>
     
     <item>
@@ -63,10 +59,8 @@ go mod init example.com/speedle-example go get github.com/teramoby/speedle-sdk/g
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/docs/sdks/java/</guid>
-      <description>The Java SDK needs Java 17 or later, supports every Java release from the past three years, and has no runtime dependencies. Package: io.speedle:speedle-sdk 1.9.0 on Maven Central. Reference: speedle-sdk/java.
-The examples check the policy described in the SDKs overview.
-Add the dependency Maven, a complete pom.xml:
-&amp;lt;?xml version=&amp;#34;1.0&amp;#34; encoding=&amp;#34;UTF-8&amp;#34;?&amp;gt; &amp;lt;project xmlns=&amp;#34;http://maven.apache.org/POM/4.0.0&amp;#34; xmlns:xsi=&amp;#34;http://www.w3.org/2001/XMLSchema-instance&amp;#34; xsi:schemaLocation=&amp;#34;http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd&amp;#34;&amp;gt; &amp;lt;modelVersion&amp;gt;4.0.0&amp;lt;/modelVersion&amp;gt; &amp;lt;groupId&amp;gt;com.example&amp;lt;/groupId&amp;gt; &amp;lt;artifactId&amp;gt;speedle-example&amp;lt;/artifactId&amp;gt; &amp;lt;version&amp;gt;1.0&amp;lt;/version&amp;gt; &amp;lt;properties&amp;gt; &amp;lt;maven.compiler.release&amp;gt;17&amp;lt;/maven.compiler.release&amp;gt; &amp;lt;project.build.sourceEncoding&amp;gt;UTF-8&amp;lt;/project.build.sourceEncoding&amp;gt; &amp;lt;/properties&amp;gt; &amp;lt;dependencies&amp;gt; &amp;lt;dependency&amp;gt; &amp;lt;groupId&amp;gt;io.speedle&amp;lt;/groupId&amp;gt; &amp;lt;artifactId&amp;gt;speedle-sdk&amp;lt;/artifactId&amp;gt; &amp;lt;version&amp;gt;1.9.0&amp;lt;/version&amp;gt; &amp;lt;/dependency&amp;gt; &amp;lt;/dependencies&amp;gt; &amp;lt;/project&amp;gt; Gradle, a complete build.</description>
+      
+      <description>Add io.speedle:speedle-sdk 1.9.0 with Maven or Gradle, then call isAllowed and check against a local Speedle.</description>
     </item>
     
     <item>
@@ -75,10 +69,8 @@ Add the dependency Maven, a complete pom.xml:
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/docs/sdks/node/</guid>
-      <description>The Node.js SDK needs Node.js 22 or later, supports every Node.js release from the past three years, ships ESM and CommonJS builds with TypeScript types, and has no runtime dependencies. Package: @speedle/sdk, published on npm. Reference: speedle-sdk/node.
-The examples check the policy described in the SDKs overview.
-Add the dependency In a new ES module package:
-mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm install @speedle/sdk@1.</description>
+      
+      <description>Install @speedle/sdk with npm, then call isAllowed and check against a local Speedle.</description>
     </item>
     
     <item>
@@ -87,6 +79,7 @@ mkdir speedle-example cd speedle-example npm init -y npm pkg set type=module npm
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/docs/api/management_api/</guid>
+      
       <description>Reference for your configured PMS. Requests and responses are JSON; policy IDs are strings and responses are flat objects.
 Security and endpoint configuration. This is a contract reference, not a backend hosted by speedle.io. Try it out is disabled because this specification has no server host, so a request would otherwise be sent to this documentation site.
    document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/swagger/policy-manage.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.</description>
@@ -98,10 +91,8 @@ Security and endpoint configuration. This is a contract reference, not a backend
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/docs/sdks/python/</guid>
-      <description>The Python SDK needs Python 3.10 or later, supports every Python release from the past three years, and its only runtime dependency is httpx. It has a sync Client and an asyncio AsyncClient with the same arguments. Package: speedle 1.9.0 on PyPI. Reference: speedle-sdk/python.
-The examples check the policy described in the SDKs overview.
-Add the dependency With pip, in a virtual environment:
-python3 -m venv .venv . .venv/bin/activate pip install speedle==1.</description>
+      
+      <description>Install speedle 1.9.0 with pip or uv, then call is_allowed and check against a local Speedle.</description>
     </item>
     
     <item>
@@ -110,10 +101,8 @@ python3 -m venv .venv . .venv/bin/activate pip install speedle==1.</description>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/docs/sdks/rust/</guid>
-      <description>The Rust SDK needs Rust 1.75 or later and supports every Rust release from the past three years. It is async on tokio and reqwest (rustls); the blocking feature adds the blocking client used below. Crate: speedle 1.9.0 on crates.io. Reference: speedle-sdk/rust.
-The examples check the policy described in the SDKs overview.
-Add the dependency In a new package:
-cargo new speedle-example cd speedle-example cargo add speedle@1.9.0 --features blocking Call a local Speedle Start Speedle and create the example policy as described in the SDKs overview.</description>
+      
+      <description>Add the speedle 1.9.0 crate with cargo add, then call is_allowed and check against a local Speedle.</description>
     </item>
     
     <item>
@@ -122,7 +111,8 @@ cargo new speedle-example cd speedle-example cargo add speedle@1.9.0 --features 
       <pubDate>Wed, 28 Oct 2026 13:16:58 +0000</pubDate>
       
       <guid>https://engine.speedle.io/docs/pms/</guid>
-      <description> Policy Management Global Policy Policy Discovery Policy Diagnosis  </description>
+      
+      <description>Open API Specification Docs. Use the API to model your simple and complex policies in a declarative way; get decisions, discover policies dynamically and debug policy evaluation.</description>
     </item>
     
     <item>
@@ -131,6 +121,7 @@ cargo new speedle-example cd speedle-example cargo add speedle@1.9.0 --features 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/docs/api/asserter_api/</guid>
+      
       <description>Webhook reference. errCode is an integer and attributes is an object. Configure the actual endpoint in the ADS asserter configuration.
 Security and endpoint configuration. This is a contract reference, not a backend hosted by speedle.io. Try it out is disabled because this specification has no server host, so a request would otherwise be sent to this documentation site.
    document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/swagger/asserter.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.</description>

@@ -16,8 +16,8 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/pms/discover/</guid>
-      <description>¿Qué hace el descubrimiento? El descubrimiento registra solicitudes y devuelve allowed=true con motivo 5 para una operación de registro exitosa. No demuestra que una política existente haya autorizado la operación. Utilícelo únicamente en un entorno de prueba aislado, revise las concesiones generadas y restablezca la aplicación normal de is-allowed posteriormente. Los errores de aserción o almacenamiento deben seguir gestionándose; nunca trate un error como una concesión de autorización.
-Iniciar un ejemplo local reproducible Compile los binarios mediante el Inicio rápido, luego ejecute todas las terminales desde la raíz del repositorio.</description>
+      
+      <description>Speedle puede utilizarse para decisiones de autorización en sistemas con un gran número de recursos protegidos. Antes de acceder a dichos recursos, se invoca la API de decisiones de autorización de Speedle (API is-allowed). Definir políticas de autorización para esos recursos protegidos resulta difícil si no se sabe qué acciones ocurren o cómo se expresa un recurso protegido en una solicitud de decisión de autorización. El modo de descubrimiento de políticas puede facilitar enormemente esta tarea.</description>
     </item>
     
   </channel>

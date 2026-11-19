@@ -16,8 +16,8 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/performance-testing/</guid>
-      <description>Aquí no publicamos ningún informe de rendimiento; los resultados dependen de su hardware, sus políticas y las versiones fijadas.
-Primero pregúnteme qué proyectos de autorización de código abierto quiero comparar con Speedle. Pregunte también por los tamaños de los conjuntos de políticas y el tiempo disponible, proponiendo por defecto 10, 100 y 1,000 políticas y 30 minutos. Espere mi respuesta antes de hacer cualquier otra cosa. Después, trabaje en un directorio local nuevo y haga una comparación justa en la misma máquina dentro de ese tiempo.</description>
+      
+      <description>Pegue este prompt en su agente de programación con IA para comparar Speedle con los proyectos de autorización que elija en su propia máquina.</description>
     </item>
     
   </channel>

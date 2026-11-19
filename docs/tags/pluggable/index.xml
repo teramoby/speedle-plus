@@ -17,8 +17,8 @@
       <pubDate>Tue, 17 Nov 2026 10:00:00 +0800</pubDate>
       
       <guid>https://engine.speedle.io/docs/store/</guid>
-      <description>Built-in stores and extension contracts The standalone binaries register file, etcd, MongoDB and MySQL implementations under pkg/store. Availability does not mean identical operational guarantees; review backend authentication, persistence, transaction and watch behavior for your deployment. The configuration below illustrates property names; running etcd/MongoDB deployments is outside this local example.
-A full backend implements pms.PolicyStoreManager: service, authorization-policy, role-policy and function management, snapshot reads and watch/stop. ADS accepts the narrower PolicyStoreManagerADS read/watch interface.</description>
+      
+      <description>Speedle includes file, etcd, MongoDB and MySQL policy stores. This document describes their configuration and how to implement or register a different store.</description>
     </item>
     
     <item>
@@ -27,6 +27,7 @@ A full backend implements pms.PolicyStoreManager: service, authorization-policy,
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/docs/api/asserter_api/</guid>
+      
       <description>Webhook reference. errCode is an integer and attributes is an object. Configure the actual endpoint in the ADS asserter configuration.
 Security and endpoint configuration. This is a contract reference, not a backend hosted by speedle.io. Try it out is disabled because this specification has no server host, so a request would otherwise be sent to this documentation site.
    document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/swagger/asserter.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.</description>

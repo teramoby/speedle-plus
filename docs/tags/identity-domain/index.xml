@@ -17,6 +17,7 @@
       <pubDate>Thu, 17 Jan 2019 13:20:07 +0800</pubDate>
       
       <guid>https://engine.speedle.io/docs/idd/</guid>
+      
       <description>What is an identity domain? An identity domain (idd) is an explicit namespace for a principal. Two users named user1 can belong to different domains. The string is supplied by trusted integration code or a configured token asserter; it is not proof of authentication. Speedle does not infer or validate a provider&amp;rsquo;s tenant model merely from the domain name.
 Represent domains in policies and requests grant user user1 from github read book grant user user1 from IDCS.</description>
     </item>

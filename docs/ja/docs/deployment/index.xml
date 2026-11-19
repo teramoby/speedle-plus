@@ -17,6 +17,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ja/docs/deployment/embedded/</guid>
+      
       <description>組み込みモードとは？ 組み込みモードは、Speedle ポリシー決定エンジンを Go アプリケーション内で直接実行します。PMS や ADS サーバーを起動することなく、評価エンジンを直接呼び出します。アプリケーションがユーザーを認証し、各決定のためのサブジェクト、リソース、アクションを提供します。
 コードを書く前に基本的なポリシーを試すには、Playground を開いてください。Speedle をスタンドアロンサービスとして実行するには、クイックスタート に従ってください。
 前提条件 クイックスタート と同様に、シェルと Go 1.27.4（または同じリリースブランチの新しいパッチバージョン）を備えた Linux または macOS を使用します。このウォークスルーでは、Go modules と公開された Speedle v1.9.0 リリースを使用します。
@@ -33,14 +34,8 @@ mkdir speedle-embedded-demo cd speedle-embedded-demo go mod init example.com/spe
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ja/docs/deployment/docker/</guid>
-      <description>Speedle は、speedle-pms、speedle-ads、および spctl を含む 1 つのイメージを公開しています。イメージは FROM scratch でビルドされ、UID 65532 として実行され、シェルは含まれていません。最初の引数でプログラムを選択します。
-両方のレジストリに同一のイメージインデックスがあります:
- Docker Hub: docker.io/speedle/speedle GHCR: ghcr.io/teramoby/speedle  リリース 1.9.0 では、linux/amd64 および linux/arm64 向けに、両方のレジストリでタグ 1.9.0、1.9、および latest が公開されています。
-イメージのプル docker pull docker.io/speedle/speedle:1.9.0 docker pull ghcr.io/teramoby/speedle:1.9.0 docker pull はインデックスダイジェストを出力します。1.9.0 の場合、そのダイジェストは両方のレジストリで sha256:f20947fc15fb342dbafe93403df99f909795ad66ac0866fd9252611268791d2c です。
-タグの選択 1.9.0 はこのリリースを指定します。より新しい 1.9 パッチが公開されると 1.9 が移動します。master の最新コミットから新しいリリースが公開されると latest が移動します。リリースの再試行で同じバージョンダグが再度公開される可能性があるため、タグは不変のビルドではありません。
-インデックスダイジェストを確認するには:
-docker buildx imagetools inspect docker.io/speedle/speedle:1.9.0 --format &amp;#39;{{.Manifest.Digest}}&amp;#39; 1.9.0 リリースの場合、両方のレジストリ上の 1.9.0、1.9、および latest はすべて以下を出力します:
-sha256:f20947fc15fb342dbafe93403df99f909795ad66ac0866fd9252611268791d2c 1.9 または latest をデプロイする前に、ダイジェストを再度確認してください。単一のビルドに固定するには、イメージ名に @ とそのダイジェストを組み合わせて使用します（例: docker.</description>
+      
+      <description>Docker Hub と GHCR 上の同一イメージが、共有ファイルストアを使用してポリシーマネージャー、決定サービス、spctl を実行します。</description>
     </item>
     
     <item>
@@ -49,14 +44,8 @@ sha256:f20947fc15fb342dbafe93403df99f909795ad66ac0866fd9252611268791d2c 1.9 ま�
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ja/docs/deployment/homebrew/</guid>
-      <description>macOS または Linux で Homebrew を使い、Speedle のコマンドラインツールをインストールします。Homebrew は、公式組織以外の tap にある formula を信頼するまで、その formula をインストールまたは起動しません。
-brew tap teramoby/tap brew trust teramoby/tap brew install teramoby/tap/spctl Formula の名前は spctl です。macOS でのコマンドは speedle-spctl なので、このインストールは Apple Gatekeeper の /usr/sbin/spctl を置き換えません。Linux では同じプログラムを spctl としても使えます。
-ポリシー管理サービスと認可決定サービスは別の formula です。
-brew install teramoby/tap/speedle-pms brew install teramoby/tap/speedle-ads コマンドラインツールと両方のサービスをまとめてインストールします。
-brew install teramoby/tap/speedle spctl、speedle-pms、speedle-ads はそれぞれ、そのリリースの macOS または Linux バイナリをインストールし、そのリリースの checksums.txt と照合します。
-
-Homebrew でのデモ 両方のサービスを起動します。これらは 127.0.0.1 で待ち受け、1 つのファイルポリシーストアを共有します。
-brew services start speedle-pms brew services start speedle-ads speedle-pms は 127.</description>
+      
+      <description>Homebrew はコマンドラインツールと両方のサービスをインストールし、127.0.0.1 上で 1 つのポリシーファイルを共有して実行します。</description>
     </item>
     
   </channel>

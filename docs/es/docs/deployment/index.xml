@@ -17,6 +17,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/deployment/embedded/</guid>
+      
       <description>¿Qué es el modo integrado? El modo integrado ejecuta el motor de decisiones de políticas de Speedle dentro de su aplicación Go. Llame al evaluador directamente sin iniciar servidores PMS ni ADS. Su aplicación autentica a los usuarios y proporciona la entidad principal (sujeto), el recurso y la acción para cada decisión.
 Para probar políticas básicas antes de escribir código, abra el Playground. Para ejecutar Speedle como servicios independientes, siga el Inicio rápido.</description>
     </item>
@@ -27,9 +28,8 @@ Para probar políticas básicas antes de escribir código, abra el Playground. P
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/deployment/docker/</guid>
-      <description>Speedle publica una imagen que contiene speedle-pms, speedle-ads y spctl. La imagen se compila FROM scratch, se ejecuta como UID 65532 y no contiene ningún shell. El primer argumento selecciona el programa a ejecutar.
-El mismo índice de imágenes está disponible en ambos registros:
- Docker Hub: docker.io/speedle/speedle GHCR: ghcr.io/teramoby/speedle  La versión 1.9.0 publica las etiquetas 1.9.0, 1.9 y latest en ambos registros, para las arquitecturas linux/amd64 y linux/arm64.</description>
+      
+      <description>Una única imagen en Docker Hub y GHCR ejecuta el administrador de políticas, el servicio de decisiones y spctl, con un almacén de archivos compartido.</description>
     </item>
     
     <item>
@@ -38,8 +38,8 @@ El mismo índice de imágenes está disponible en ambos registros:
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/deployment/homebrew/</guid>
-      <description>Instale la herramienta de línea de comandos de Speedle con Homebrew en macOS o Linux. Homebrew no instala ni inicia una formula de un tap fuera de la organización oficial de Homebrew hasta que ese tap sea de confianza.
-brew tap teramoby/tap brew trust teramoby/tap brew install teramoby/tap/spctl La formula se llama spctl. En macOS el comando es speedle-spctl, así que la instalación no sustituye el Gatekeeper de Apple en /usr/sbin/spctl.</description>
+      
+      <description>Homebrew instala la herramienta de línea de comandos y ambos servicios, y los ejecuta en 127.0.0.1 con un archivo de políticas compartido.</description>
     </item>
     
   </channel>

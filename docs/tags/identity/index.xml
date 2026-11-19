@@ -17,8 +17,8 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/docs/overview/</guid>
-      <description>Speedle is an open-source authorization engine. Applications send it a question such as &amp;ldquo;may this user perform this action on this resource?&amp;rdquo;, and Speedle answers allow or deny according to centrally managed policies. This page connects common authorization terms to the Speedle components that implement them, and links to the guides that cover each one.
-The examples below use a service named library. Each policy was created through the Policy Management Service REST API and each decision was returned by the Authorization Decision Service REST API.</description>
+      
+      <description>Where Speedle fits in the vocabulary of authorization and access control</description>
     </item>
     
     <item>
@@ -27,6 +27,7 @@ The examples below use a service named library. Each policy was created through 
       <pubDate>Thu, 17 Jan 2019 13:20:07 +0800</pubDate>
       
       <guid>https://engine.speedle.io/docs/idd/</guid>
+      
       <description>What is an identity domain? An identity domain (idd) is an explicit namespace for a principal. Two users named user1 can belong to different domains. The string is supplied by trusted integration code or a configured token asserter; it is not proof of authentication. Speedle does not infer or validate a provider&amp;rsquo;s tenant model merely from the domain name.
 Represent domains in policies and requests grant user user1 from github read book grant user user1 from IDCS.</description>
     </item>
@@ -37,8 +38,8 @@ Represent domains in policies and requests grant user user1 from github read boo
       <pubDate>Mon, 21 Jan 2019 09:28:30 +0800</pubDate>
       
       <guid>https://engine.speedle.io/docs/assertor/</guid>
-      <description>What does a token asserter do? A configured asserter validates a token and returns explicit principals, including their identity domains. Speedle can then evaluate policies using those identities. A production implementation must validate the token&amp;rsquo;s signature or introspection result, issuer, audience, expiry and any provider-specific requirements. The webhook alone does not establish compatibility with arbitrary OAuth/OIDC tokens.
-The Token Assertion Plugin API uses integer errCode and an optional attribute object, not a typed attribute array.</description>
+      
+      <description>Evaluation requests can contain an identity token that represents a user. In this case, the evaluation engine can invoke the asserter service to obtain the explicit identities of the user</description>
     </item>
     
   </channel>

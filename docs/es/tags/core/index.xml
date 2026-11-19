@@ -17,9 +17,8 @@
       <pubDate>Tue, 10 Nov 2026 14:45:43 +0800</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/api/</guid>
-      <description>Las bibliotecas cliente para Java, Python, Go, .NET, Rust y Node.js/TypeScript se encuentran en SDK.
-APIs REST Estos son contratos de referencia para su punto de enlace configurado de PMS/ADS o asertor. speedle.io proporciona documentación y el Playground en el navegador; no es un servicio PMS/ADS hospedado. Envíe JSON con Content-Type: application/json y configure TLS/mTLS y control de acceso del cliente.
- API de gestión de políticas API de decisiones de autorización Webhook de aserción de tokens  Los identificadores de políticas y políticas de roles son cadenas de texto.</description>
+      
+      <description>Documentación de la especificación OpenAPI. Utilice la API para modelar sus políticas simples y complejas de forma declarativa; obtenga decisiones, descubra políticas dinámicamente y depure la evaluación de políticas.</description>
     </item>
     
     <item>
@@ -28,6 +27,7 @@ APIs REST Estos son contratos de referencia para su punto de enlace configurado 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/api/decision_api/</guid>
+      
       <description>Referencia para su ADS configurado. Los atributos de solicitud son matrices tipadas; los atributos de diagnóstico son objetos.
 Configuración de seguridad y endpoints. Esta es una referencia de contrato, no un backend hospedado por speedle.io. Try it out está desactivado: la especificación no indica un host de servidor, así que una petición se enviaría a este sitio de documentación.
    document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;</description>
@@ -39,6 +39,7 @@ Configuración de seguridad y endpoints. Esta es una referencia de contrato, no 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/api/management_api/</guid>
+      
       <description>Referencia para su PMS configurado. Las solicitudes y respuestas son JSON; los IDs de políticas son cadenas de texto y las respuestas son objetos planos.
 Configuración de seguridad y endpoints. Esta es una referencia de contrato, no un backend hospedado por speedle.io. Try it out está desactivado: la especificación no indica un host de servidor, así que una petición se enviaría a este sitio de documentación.
    document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;</description>
@@ -50,6 +51,7 @@ Configuración de seguridad y endpoints. Esta es una referencia de contrato, no 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/api/asserter_api/</guid>
+      
       <description>Referencia del webhook. errCode es un entero y attributes es un objeto. Configure el endpoint real en la configuración del asertor de ADS.
 Configuración de seguridad y endpoints. Esta es una referencia de contrato, no un backend hospedado por speedle.io. Try it out está desactivado: la especificación no indica un host de servidor, así que una petición se enviaría a este sitio de documentación.
    document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;</description>
@@ -61,8 +63,8 @@ Configuración de seguridad y endpoints. Esta es una referencia de contrato, no 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/decisions/</guid>
-      <description>¿Qué es una decisión de autorización? Speedle evalúa un sujeto, una acción y un recurso dentro de un servicio. La aplicación debe hacer cumplir el resultado. Trate un error de evaluación o un tiempo de espera por separado de una denegación ordinaria y falle de forma restrictiva (fail closed). Las APIs REST, gRPC y Go en modo integrado tienen representaciones de red distintas; utilice sus respectivos contratos.
-Antes de ejecutar los ejemplos Compile .</description>
+      
+      <description>Obtención de decisiones de autorización</description>
     </item>
     
     <item>
@@ -71,8 +73,8 @@ Antes de ejecutar los ejemplos Compile .</description>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/overview/</guid>
-      <description>Speedle es un motor de autorización de código abierto. Las aplicaciones le envían consultas como &amp;ldquo;¿puede este usuario realizar esta acción sobre este recurso?&amp;rdquo;, y Speedle responde permitir o denegar de acuerdo con políticas gestionadas centralmente. Esta página relaciona los términos habituales de autorización con los componentes de Speedle que los implementan, y enlaza con las guías correspondientes a cada uno.
-Los ejemplos a continuación utilizan un servicio denominado library.</description>
+      
+      <description>Dónde encaja Speedle en el vocabulario de autorización y control de acceso</description>
     </item>
     
     <item>
@@ -81,8 +83,8 @@ Los ejemplos a continuación utilizan un servicio denominado library.</descripti
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/pms/discover/</guid>
-      <description>¿Qué hace el descubrimiento? El descubrimiento registra solicitudes y devuelve allowed=true con motivo 5 para una operación de registro exitosa. No demuestra que una política existente haya autorizado la operación. Utilícelo únicamente en un entorno de prueba aislado, revise las concesiones generadas y restablezca la aplicación normal de is-allowed posteriormente. Los errores de aserción o almacenamiento deben seguir gestionándose; nunca trate un error como una concesión de autorización.
-Iniciar un ejemplo local reproducible Compile los binarios mediante el Inicio rápido, luego ejecute todas las terminales desde la raíz del repositorio.</description>
+      
+      <description>Speedle puede utilizarse para decisiones de autorización en sistemas con un gran número de recursos protegidos. Antes de acceder a dichos recursos, se invoca la API de decisiones de autorización de Speedle (API is-allowed). Definir políticas de autorización para esos recursos protegidos resulta difícil si no se sabe qué acciones ocurren o cómo se expresa un recurso protegido en una solicitud de decisión de autorización. El modo de descubrimiento de políticas puede facilitar enormemente esta tarea.</description>
     </item>
     
     <item>
@@ -91,8 +93,8 @@ Iniciar un ejemplo local reproducible Compile los binarios mediante el Inicio r�
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/pms/policy-mgmt/</guid>
-      <description>¿Qué es una política de Speedle? El Servicio de Gestión de Políticas (PMS) administra servicios, políticas de autorización, políticas de roles y funciones personalizadas. Un almacén de políticas persiste estos objetos utilizando un backend de almacenamiento registrado.
-Servicios y políticas de autorización Un servicio delimita el alcance de sus políticas. Una política de autorización concede o deniega a una entidad principal el permiso para realizar una acción sobre un recurso, opcionalmente sujeto a una condición.</description>
+      
+      <description>Conceptos básicos de la gestión de políticas</description>
     </item>
     
     <item>
@@ -101,7 +103,8 @@ Servicios y políticas de autorización Un servicio delimita el alcance de sus p
       <pubDate>Wed, 28 Oct 2026 13:16:58 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/pms/</guid>
-      <description> Gestión de políticas Políticas globales Descubrimiento de políticas Diagnóstico de autorización  </description>
+      
+      <description>Documentación de la especificación OpenAPI. Utilice la API para modelar sus políticas simples y complejas de forma declarativa; obtenga decisiones, descubra políticas dinámicamente y depure la evaluación de políticas.</description>
     </item>
     
     <item>
@@ -110,7 +113,8 @@ Servicios y políticas de autorización Un servicio delimita el alcance de sus p
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/spdl/</guid>
-      <description>SPDL es el lenguaje para escribir políticas y políticas de roles de Speedle. Esta página cubre la sintaxis, las reglas de nombres y los ejemplos. </description>
+      
+      <description>Conceptos básicos de SPDL</description>
     </item>
     
   </channel>

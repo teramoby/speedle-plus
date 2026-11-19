@@ -16,6 +16,7 @@
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/logging/</guid>
+      
       <description>Descripción general La versión posterior a v1.8.0 usa Go log/slog para los registros de aplicación y auditoría y gopkg.in/natefinch/lumberjack.v2 para la rotación. v1.8.0 y las versiones anteriores conservan la API anterior.
 Configuración del registro Se conservan las opciones --log-* y --auditlog-*, las variables SPDL_* y las claves JSON. La precedencia es opción explícita &amp;gt; entorno &amp;gt; archivo. La aplicación usa info, text y stderr sin datos del llamador; la auditoría usa info y JSON.</description>
     </item>

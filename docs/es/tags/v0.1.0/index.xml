@@ -17,9 +17,8 @@
       <pubDate>Tue, 10 Nov 2026 14:45:43 +0800</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/api/</guid>
-      <description>Las bibliotecas cliente para Java, Python, Go, .NET, Rust y Node.js/TypeScript se encuentran en SDK.
-APIs REST Estos son contratos de referencia para su punto de enlace configurado de PMS/ADS o asertor. speedle.io proporciona documentación y el Playground en el navegador; no es un servicio PMS/ADS hospedado. Envíe JSON con Content-Type: application/json y configure TLS/mTLS y control de acceso del cliente.
- API de gestión de políticas API de decisiones de autorización Webhook de aserción de tokens  Los identificadores de políticas y políticas de roles son cadenas de texto.</description>
+      
+      <description>Documentación de la especificación OpenAPI. Utilice la API para modelar sus políticas simples y complejas de forma declarativa; obtenga decisiones, descubra políticas dinámicamente y depure la evaluación de políticas.</description>
     </item>
     
     <item>
@@ -28,6 +27,7 @@ APIs REST Estos son contratos de referencia para su punto de enlace configurado 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/api/decision_api/</guid>
+      
       <description>Referencia para su ADS configurado. Los atributos de solicitud son matrices tipadas; los atributos de diagnóstico son objetos.
 Configuración de seguridad y endpoints. Esta es una referencia de contrato, no un backend hospedado por speedle.io. Try it out está desactivado: la especificación no indica un host de servidor, así que una petición se enviaría a este sitio de documentación.
    document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;</description>
@@ -39,6 +39,7 @@ Configuración de seguridad y endpoints. Esta es una referencia de contrato, no 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/api/management_api/</guid>
+      
       <description>Referencia para su PMS configurado. Las solicitudes y respuestas son JSON; los IDs de políticas son cadenas de texto y las respuestas son objetos planos.
 Configuración de seguridad y endpoints. Esta es una referencia de contrato, no un backend hospedado por speedle.io. Try it out está desactivado: la especificación no indica un host de servidor, así que una petición se enviaría a este sitio de documentación.
    document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;</description>
@@ -50,6 +51,7 @@ Configuración de seguridad y endpoints. Esta es una referencia de contrato, no 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/api/asserter_api/</guid>
+      
       <description>Referencia del webhook. errCode es un entero y attributes es un objeto. Configure el endpoint real en la configuración del asertor de ADS.
 Configuración de seguridad y endpoints. Esta es una referencia de contrato, no un backend hospedado por speedle.io. Try it out está desactivado: la especificación no indica un host de servidor, así que una petición se enviaría a este sitio de documentación.
    document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;</description>
@@ -61,8 +63,8 @@ Configuración de seguridad y endpoints. Esta es una referencia de contrato, no 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/performance-testing/</guid>
-      <description>Aquí no publicamos ningún informe de rendimiento; los resultados dependen de su hardware, sus políticas y las versiones fijadas.
-Primero pregúnteme qué proyectos de autorización de código abierto quiero comparar con Speedle. Pregunte también por los tamaños de los conjuntos de políticas y el tiempo disponible, proponiendo por defecto 10, 100 y 1,000 políticas y 30 minutos. Espere mi respuesta antes de hacer cualquier otra cosa. Después, trabaje en un directorio local nuevo y haga una comparación justa en la misma máquina dentro de ese tiempo.</description>
+      
+      <description>Pegue este prompt en su agente de programación con IA para comparar Speedle con los proyectos de autorización que elija en su propia máquina.</description>
     </item>
     
     <item>
@@ -71,6 +73,7 @@ Primero pregúnteme qué proyectos de autorización de código abierto quiero co
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/logging/</guid>
+      
       <description>Descripción general La versión posterior a v1.8.0 usa Go log/slog para los registros de aplicación y auditoría y gopkg.in/natefinch/lumberjack.v2 para la rotación. v1.8.0 y las versiones anteriores conservan la API anterior.
 Configuración del registro Se conservan las opciones --log-* y --auditlog-*, las variables SPDL_* y las claves JSON. La precedencia es opción explícita &amp;gt; entorno &amp;gt; archivo. La aplicación usa info, text y stderr sin datos del llamador; la auditoría usa info y JSON.</description>
     </item>
@@ -81,7 +84,8 @@ Configuración del registro Se conservan las opciones --log-* y --auditlog-*, la
       <pubDate>Wed, 28 Oct 2026 13:16:58 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/pms/</guid>
-      <description> Gestión de políticas Políticas globales Descubrimiento de políticas Diagnóstico de autorización  </description>
+      
+      <description>Documentación de la especificación OpenAPI. Utilice la API para modelar sus políticas simples y complejas de forma declarativa; obtenga decisiones, descubra políticas dinámicamente y depure la evaluación de políticas.</description>
     </item>
     
     <item>
@@ -90,7 +94,8 @@ Configuración del registro Se conservan las opciones --log-* y --auditlog-*, la
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/spdl/</guid>
-      <description>SPDL es el lenguaje para escribir políticas y políticas de roles de Speedle. Esta página cubre la sintaxis, las reglas de nombres y los ejemplos. </description>
+      
+      <description>Conceptos básicos de SPDL</description>
     </item>
     
   </channel>
