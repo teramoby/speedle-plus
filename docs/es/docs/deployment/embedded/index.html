@@ -205,7 +205,7 @@
 
 <h2 id="requisitos-previos">Requisitos previos</h2>
 
-<p>Utilice Linux o macOS con un shell y <strong>Go 1.27.4</strong> (o un parche más reciente en la misma rama de lanzamiento), coincidiendo con el <a href="/es/quick-start/">Inicio rápido</a>. Esta guía utiliza módulos de Go y la versión publicada <strong>Speedle v1.6.0</strong>.</p>
+<p>Utilice Linux o macOS con un shell y <strong>Go 1.27.4</strong> (o un parche más reciente en la misma rama de lanzamiento), coincidiendo con el <a href="/es/quick-start/">Inicio rápido</a>. Esta guía utiliza módulos de Go y la versión publicada <strong>Speedle v1.9.0</strong>.</p>
 
 <p>Instale Go siguiendo las <a href="https://go.dev/doc/install">instrucciones oficiales de instalación</a>, luego verifique su versión:</p>
 
@@ -221,7 +221,7 @@
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">mkdir speedle-embedded-demo
 <span style="color:#8be9fd;font-style:italic">cd</span> speedle-embedded-demo
 go mod init example.com/speedle-embedded-demo
-go get github.com/teramoby/speedle-plus/pkg/eval@v1.6.0</code></pre></div>
+go get github.com/teramoby/speedle-plus/pkg/eval@v1.9.0</code></pre></div>
 <p>En un módulo de Go existente, ejecute solo el comando <code>go get</code> final desde el directorio de ese módulo.</p>
 
 <p>Aquí, <code>go get</code> añade una <strong>dependencia de biblioteca</strong> con versión a <code>go.mod</code> y <code>go.sum</code>; no instala un programa. Esto difiere del Inicio rápido, que utiliza <code>git clone</code> y <code>go build</code> para compilar los ejecutables de los servicios independientes. Ambos utilizan módulos de Go. Mantenga <code>go.mod</code> y <code>go.sum</code> bajo control de versiones.</p>

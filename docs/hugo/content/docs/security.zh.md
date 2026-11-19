@@ -33,6 +33,8 @@ REST 与 gRPC 的地址分别配置。仅设置 `--endpoint` 不会启用 gRPC�
 
 先按[快速入门](/quick-start/)编译二进制，然后从仓库根目录使用 Go 1.27.4（也可使用同一大版本的更新补丁版本）生成本地 CA、独立的服务端与客户端证书。服务端证书的 SAN 包括 `localhost`、`127.0.0.1`、`::1`，私钥权限为 0600。这些是**有效期 24 小时的演示证书**，不能作为生产凭据。工具拒绝覆盖已有文件；重新生成时使用新的输出目录。
 
+> **注意：** 本页使用的 `website/tests/examples/` 文件来自克隆的仓库（[快速入门](/quick-start/)的 Route B）；`go install` 不包含这些文件。
+
 <!-- docs-check: certificates -->
 ```bash
 go run ./website/tests/examples/certificates --out ./tls

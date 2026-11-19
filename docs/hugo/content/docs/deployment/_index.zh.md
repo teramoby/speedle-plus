@@ -84,7 +84,7 @@ PMS 没有内置的调用方身份认证；`127.0.0.1` 绑定把未认证的管�
 
 ## Kubernetes 开发示例
 
-使用当前 Kubernetes 集群和兼容的 `kubectl`。将以下内容保存为 `speedle-dev.yaml`。它使用 `apps/v1`，在同一 Pod 内让 PMS/ADS 共享文件，以非 root 用户运行应用，并通过内部 ClusterIP 服务访问。这是隔离开发环境示例：Pod 替换后，`emptyDir` 中的策略会丢失，HTTP 端点需要集群访问控制。清单中的映像使用 `<release-tag>` 占位符；部署时请替换为要使用的发布标签，或使用摘要（digest）实现不可变固定；集群需要时配置 imagePullSecrets。
+使用当前 Kubernetes 集群和兼容的 `kubectl`。将以下内容保存为 `speedle-dev.yaml`。它使用 `apps/v1`，在同一 Pod 内让 PMS/ADS 共享文件，以非 root 用户运行应用，并通过内部 ClusterIP 服务访问。这是隔离开发环境示例：Pod 替换后，`emptyDir` 中的策略会丢失，HTTP 端点需要集群访问控制。清单中的映像使用 `<speedle-image>` 占位符；下面的应用步骤用 `SPEEDLE_IMAGE` 替换它，可设为发布标签，或使用摘要（digest）实现不可变固定；集群需要时配置 imagePullSecrets。
 
 <!-- deployment-template: kubernetes -->
 ```yaml
@@ -113,7 +113,7 @@ spec:
               mountPath: /data
       containers:
         - name: pms
-          image: docker.io/speedle/speedle:<release-tag>
+          image: <speedle-image>
           args: ["speedle-pms", "--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6733", "--insecure=true"]
           ports:
             - containerPort: 6733
@@ -124,7 +124,7 @@ spec:
             - name: policies
               mountPath: /data
         - name: ads
-          image: docker.io/speedle/speedle:<release-tag>
+          image: <speedle-image>
           args: ["speedle-ads", "--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6734", "--insecure=true"]
           ports:
             - containerPort: 6734
@@ -155,11 +155,12 @@ spec:
       targetPort: 6734
 ```
 
-将 `SPEEDLE_IMAGE` 设置为实际部署的完整映像，例如发布标签或摘要（digest）。先在本地替换清单中的映像，再应用；使用快速入门客户端时保持端口转发运行：
+将 `SPEEDLE_IMAGE` 设置为实际部署的完整映像，例如 `docker.io/speedle/speedle:1.9.0`，或带 `@sha256:` 摘要的映像。先在本地替换清单中的映像，再应用；使用快速入门客户端时保持端口转发运行：
 
 <!-- deployment-template: apply -->
 ```bash
-kubectl set image --local -f speedle-dev.yaml pms="$SPEEDLE_IMAGE" ads="$SPEEDLE_IMAGE" -o yaml | kubectl apply -f -
+SPEEDLE_IMAGE=docker.io/speedle/speedle:1.9.0
+sed "s|<speedle-image>|$SPEEDLE_IMAGE|g" speedle-dev.yaml | kubectl apply -f -
 kubectl rollout status deployment/speedle-dev
 kubectl port-forward service/speedle-dev 6733:6733 6734:6734
 ```

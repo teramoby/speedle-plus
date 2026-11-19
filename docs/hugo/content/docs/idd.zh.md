@@ -68,6 +68,8 @@ printf '{}\n' > docs-policies.json
 
 [测试文件](https://github.com/teramoby/speedle-plus/blob/master/website/tests/examples/idd.json)允许 GitHub 的 `user1` 读取、Google 的 `user1` 写入，并允许任何域的 `user1` 租借。小写域名是演示命名空间。
 
+> **注意：** 本页使用的 `website/tests/examples/` 文件来自克隆的仓库（[快速入门](/quick-start/)的 Route B）；`go install` 不包含这些文件。
+
 <!-- docs-check: idd-fixture -->
 ```bash
 ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service --json-file website/tests/examples/idd.json

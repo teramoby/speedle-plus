@@ -225,7 +225,7 @@ go build -o ./bin/ ./cmd/spctl ./cmd/speedle-pms ./cmd/speedle-ads</code></pre><
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">{&#34;allowed&#34;:true,&#34;reason&#34;:0}</code></pre></div>
 <h2 id="빠른-시작용-kubernetes-매니페스트">빠른 시작용 Kubernetes 매니페스트</h2>
 
-<p>이 매니페스트는 <a href="/ko/quick-start/">빠른 시작</a>과 동일한 단일 파드 개발 구성을 실행하며, 빈 볼륨을 통해 파일 저장소를 공유합니다. 이 구성을 <code>speedle-dev.yaml</code>로 저장합니다:</p>
+<p>이 매니페스트는 <a href="/ko/quick-start/">빠른 시작</a>과 동일한 단일 파드 개발 구성을 실행하며, 빈 볼륨을 통해 파일 저장소를 공유합니다. 이 구성을 <code>speedle-dev.yaml</code>로 저장합니다. 이미지는 <code>&lt;speedle-image&gt;</code> 자리 표시자를 사용하며, 아래 적용 단계에서 <code>SPEEDLE_IMAGE</code>로 대체합니다:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-yaml" data-lang="yaml">apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -242,7 +242,7 @@ spec:
     spec:
       containers:
         - name: pms
-          image: docker.io/speedle/speedle:&lt;release-tag<span style="color:#f1fa8c">&gt;
+          image: &lt;speedle-image<span style="color:#f1fa8c">&gt;
 </span><span style="color:#f1fa8c">          args: [&#34;speedle-pms&#34;, &#34;--store-type&#34;, &#34;file&#34;, &#34;--filestore-loc&#34;, &#34;/data/policies.json&#34;, &#34;--endpoint&#34;, &#34;0.0.0.0:6733&#34;, &#34;--insecure=true&#34;]
 </span><span style="color:#f1fa8c">          ports:
 </span><span style="color:#f1fa8c">            - containerPort: 6733
@@ -253,7 +253,7 @@ spec:
 </span><span style="color:#f1fa8c">            - name: policies
 </span><span style="color:#f1fa8c">              mountPath: /data</span>
         - name: ads
-          image: docker.io/speedle/speedle:&lt;release-tag<span style="color:#f1fa8c">&gt;
+          image: &lt;speedle-image<span style="color:#f1fa8c">&gt;
 </span><span style="color:#f1fa8c">          args: [&#34;speedle-ads&#34;, &#34;--store-type&#34;, &#34;file&#34;, &#34;--filestore-loc&#34;, &#34;/data/policies.json&#34;, &#34;--endpoint&#34;, &#34;0.0.0.0:6734&#34;, &#34;--insecure=true&#34;]
 </span><span style="color:#f1fa8c">          ports:
 </span><span style="color:#f1fa8c">            - containerPort: 6734
@@ -282,10 +282,11 @@ spec:
     - name: ads
       port: <span style="color:#bd93f9">6734</span>
       targetPort: <span style="color:#bd93f9">6734</span></code></pre></div>
-<p><code>SPEEDLE_IMAGE</code>를 배포할 정확한 이미지(예: 릴리스 태그 또는 다이제스트)로 설정합니다. 적용하기 전에 로컬에서 대체하고, 빠른 시작 클라이언트를 사용하는 동안 포트 포워딩을 유지합니다:</p>
+<p><code>SPEEDLE_IMAGE</code>를 배포할 정확한 이미지(예: <code>docker.io/speedle/speedle:1.9.0</code> 또는 <code>@sha256:</code> 다이제스트가 포함된 이미지)로 설정합니다. 적용하기 전에 로컬에서 대체하고, 빠른 시작 클라이언트를 사용하는 동안 포트 포워딩을 유지합니다:</p>
 
 <!-- deployment-template: apply -->
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">kubectl <span style="color:#8be9fd;font-style:italic">set</span> image --local -f speedle-dev.yaml <span style="color:#8be9fd;font-style:italic">pms</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$SPEEDLE_IMAGE</span><span style="color:#f1fa8c">&#34;</span> <span style="color:#8be9fd;font-style:italic">ads</span><span style="color:#ff79c6">=</span><span style="color:#f1fa8c">&#34;</span><span style="color:#8be9fd;font-style:italic">$SPEEDLE_IMAGE</span><span style="color:#f1fa8c">&#34;</span> -o yaml | kubectl apply -f -
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">SPEEDLE_IMAGE</span><span style="color:#ff79c6">=</span>docker.io/speedle/speedle:1.9.0
+sed <span style="color:#f1fa8c">&#34;s|&lt;speedle-image&gt;|</span><span style="color:#8be9fd;font-style:italic">$SPEEDLE_IMAGE</span><span style="color:#f1fa8c">|g&#34;</span> speedle-dev.yaml | kubectl apply -f -
 kubectl rollout status deployment/speedle-dev
 kubectl port-forward service/speedle-dev <span style="color:#bd93f9">6733</span>:6733 <span style="color:#bd93f9">6734</span>:6734</code></pre></div>
 <h2 id="프로덕션-배포">프로덕션 배포</h2>

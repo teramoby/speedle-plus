@@ -16,7 +16,7 @@ Los SDK de Speedle son bibliotecas cliente para la API de decisiones `POST /auth
 
 ## Paquetes
 
-Java, Python, Go, .NET y Rust están en la versión 0.2.0. `@speedle/sdk` está publicado en npm. Cada página de lenguaje muestra el comando de instalación correspondiente.
+Java, Python, Go, .NET y Rust están en la versión 0.2.0, y el SDK de Node.js/TypeScript está en la versión 0.2.1. `@speedle/sdk` está publicado en npm. Cada página de lenguaje muestra el comando de instalación correspondiente.
 
 - [Java](/es/docs/sdks/java/): Maven Central `io.speedle:speedle-sdk`, publicado.
 - [Python](/es/docs/sdks/python/): PyPI `speedle`, publicado.

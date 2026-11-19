@@ -206,13 +206,15 @@
 <p>现有 <code>--log-*</code>、<code>--auditlog-*</code> 参数、<code>SPDL_*</code> 环境变量及 JSON 配置键保持兼容。显式命令行参数优先于环境变量，环境变量优先于配置文件。应用日志默认为 info、text、stderr，不包含调用位置；审计日志默认为 info、JSON。使用对应的 <code>--auditlog-*</code> 参数单独配置审计日志。</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">--log-level string
 --log-formatter string
---log-reportcaller bool
+--log-reportcaller string
 --log-filename string
---log-maxsize int
---log-maxbackups int
---log-maxage int
---log-localtime bool
---log-compress bool</code></pre></div>
+--log-maxsize string
+--log-maxbackups string
+--log-maxage string
+--log-localtime string
+--log-compress string</code></pre></div>
+<p>这些参数都是字符串类型，请使用 <code>--flag=value</code> 形式传入值（例如 <code>--log-compress=true</code>）。只写参数名时，会把下一个参数当作它的值，例如 <code>--log-compress --help</code> 会把 <code>--help</code> 当作 <code>--log-compress</code> 的值。</p>
+
 <table>
 <thead>
 <tr>
@@ -285,10 +287,10 @@
     <span style="color:#ff79c6">&#34;setReportCaller&#34;</span>: <span style="color:#ff79c6">false</span>,
     <span style="color:#ff79c6">&#34;rotationConfig&#34;</span>: {
       <span style="color:#ff79c6">&#34;filename&#34;</span>: <span style="color:#f1fa8c">&#34;/mnt/logs/speedle.log&#34;</span>,
-      <span style="color:#ff79c6">&#34;maxSize&#34;</span>: <span style="color:#bd93f9">20</span>,
-      <span style="color:#ff79c6">&#34;maxBackups&#34;</span>: <span style="color:#bd93f9">5</span>,
-      <span style="color:#ff79c6">&#34;maxAge&#34;</span>: <span style="color:#bd93f9">0</span>,
-      <span style="color:#ff79c6">&#34;LocalTime&#34;</span>: <span style="color:#ff79c6">false</span>,
+      <span style="color:#ff79c6">&#34;maxsize&#34;</span>: <span style="color:#bd93f9">20</span>,
+      <span style="color:#ff79c6">&#34;maxbackups&#34;</span>: <span style="color:#bd93f9">5</span>,
+      <span style="color:#ff79c6">&#34;maxage&#34;</span>: <span style="color:#bd93f9">0</span>,
+      <span style="color:#ff79c6">&#34;localtime&#34;</span>: <span style="color:#ff79c6">false</span>,
       <span style="color:#ff79c6">&#34;compress&#34;</span>: <span style="color:#ff79c6">false</span>
     }
   },

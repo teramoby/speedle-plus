@@ -925,6 +925,8 @@ Speedle evaluates a subject, action and resource within a service. The applicati
 
 Build `./bin/spctl`, `./bin/speedle-pms` and `./bin/speedle-ads` using the [quick start](https://engine.speedle.io/quick-start/). Use Go 1.27.4 (or a newer patch on the same release branch), Bash, curl and Python 3. Run each terminal from the repository root. Use a fresh policy file for this page; reset it only after stopping both services.
 
+> **Note:** The files under `website/tests/examples/` used on this page come from a clone of the repository (Route B of the [Quick Start](https://engine.speedle.io/quick-start/)); `go install` does not include them.
+
 Initialize an empty policy file:
 
 
@@ -1361,6 +1363,8 @@ Diagnosis exposes policy definitions and request context. Restrict it to trusted
 
 Build `./bin/spctl`, `./bin/speedle-pms` and `./bin/speedle-ads` using the [quick start](https://engine.speedle.io/quick-start/). Use Go 1.27.4 (or a newer patch on the same release branch), Bash, curl and Python 3. Run each terminal from the repository root. Use a fresh policy file for this page; reset it only after stopping both services.
 
+> **Note:** The files under `website/tests/examples/` used on this page come from a clone of the repository (Route B of the [Quick Start](https://engine.speedle.io/quick-start/)); `go install` does not include them.
+
 Initialize an empty policy file:
 
 
@@ -1520,6 +1524,8 @@ SPDL conditions can call a configured function when built-in operators or functi
 ### Start the local example
 
 This example accepts numeric values from 100 to 50000. Wrong parameter types or an empty parameter list return an HTTP error. It uses plaintext only on a loopback IP; use TLS for other interfaces.
+
+> **Note:** The files under `website/tests/examples/` used on this page come from a clone of the repository (Route B of the [Quick Start](https://engine.speedle.io/quick-start/)); `go install` does not include them.
 
 Start it in a separate terminal:
 
@@ -1717,6 +1723,8 @@ The [Token Assertion Plugin API](https://engine.speedle.io/docs/api/asserter_api
 ### Run a deterministic local mock
 
 This mock recognizes only `githubtoken`/`github`, `googletoken`/`google`, and `gitlabtoken`/`gitlab`. Each represents `user1` in the named domain. Wrong token/provider pairs fail. **It is a test fixture, not real token validation.** It does not log tokens. Keep it on loopback and use a real provider integration in production.
+
+> **Note:** The files under `website/tests/examples/` used on this page come from a clone of the repository (Route B of the [Quick Start](https://engine.speedle.io/quick-start/)); `go install` does not include them.
 
 Start it in a separate terminal from the repository root:
 
@@ -1943,6 +1951,8 @@ Run the remaining commands in a third terminal. PMS and ADS share the file; watc
 
 The [fixture](https://github.com/teramoby/speedle-plus/blob/master/website/tests/examples/idd.json) grants `read` to GitHub's `user1`, `write` to Google's `user1`, and `rent` to `user1` from any domain. The lowercase domain values are demonstration namespaces.
 
+> **Note:** The files under `website/tests/examples/` used on this page come from a clone of the repository (Route B of the [Quick Start](https://engine.speedle.io/quick-start/)); `go install` does not include them.
+
 
 ```bash
 ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service --json-file website/tests/examples/idd.json
@@ -2060,7 +2070,7 @@ The Speedle SDKs are client libraries for the decision API `POST /authz-check/v1
 
 ### Packages
 
-Java, Python, Go, .NET and Rust are version 0.2.0. `@speedle/sdk` is published on npm. Each language page shows the install command.
+Java, Python, Go, .NET and Rust are version 0.2.0, and the Node.js/TypeScript SDK is version 0.2.1. `@speedle/sdk` is published on npm. Each language page shows the install command.
 
 - [Java](https://engine.speedle.io/docs/sdks/java/): Maven Central `io.speedle:speedle-sdk`, published.
 - [Python](https://engine.speedle.io/docs/sdks/python/): PyPI `speedle`, published.
@@ -2553,13 +2563,13 @@ alice delete /docs/public: allowed=false reason=NoApplicablePolicies
 npm install @speedle/mcp@0.2.1
 ```
 
-Or run the `speedle-mcp` binary directly:
+Or run the `speedle-mcp` binary directly. The `check` mode reads the ADS URL from `SPEEDLE_ENDPOINT` and the service name from `SPEEDLE_SERVICE_NAME`; this example uses the local ADS from the [SDKs overview](https://engine.speedle.io/docs/sdks/#example-policy):
 
 ```bash
-npx @speedle/mcp@0.2.1 check
+SPEEDLE_ENDPOINT=http://127.0.0.1:6734 SPEEDLE_SERVICE_NAME=docs npx @speedle/mcp@0.2.1 check
 ```
 
-Running `speedle-mcp` without a mode prints usage and exits with a non-zero status. Reference: [speedle-mcp](https://github.com/teramoby/speedle-mcp).
+Without `SPEEDLE_ENDPOINT`, the command exits with `speedle-mcp: SPEEDLE_ENDPOINT is required`. The command starts a stdio MCP server and waits for a client, so a successful start prints nothing. Running `speedle-mcp` without a mode prints usage and exits with a non-zero status. Reference: [speedle-mcp](https://github.com/teramoby/speedle-mcp).
 
 ### Error handling
 
@@ -2642,7 +2652,7 @@ The image includes the public CA bundle. Releases 1.7.0 and 1.7.1 were published
 
 ### Kubernetes development example
 
-Use a current Kubernetes cluster and compatible `kubectl`. Save the following as `speedle-dev.yaml`. It uses `apps/v1`, one pod with PMS/ADS sharing one file, a non-root application UID and an internal ClusterIP service. This is an isolated development example: `emptyDir` policies are lost when the pod is replaced, and HTTP endpoints need cluster access controls. The manifest uses a `<release-tag>` placeholder; replace it with the release tag you deploy, or a digest for immutable pinning, and add an image pull secret if your cluster requires one.
+Use a current Kubernetes cluster and compatible `kubectl`. Save the following as `speedle-dev.yaml`. It uses `apps/v1`, one pod with PMS/ADS sharing one file, a non-root application UID and an internal ClusterIP service. This is an isolated development example: `emptyDir` policies are lost when the pod is replaced, and HTTP endpoints need cluster access controls. The manifest uses a `<speedle-image>` placeholder; the apply step below substitutes `SPEEDLE_IMAGE`, which you can set to a release tag or a digest for immutable pinning. Add an image pull secret if your cluster requires one.
 
 
 ```yaml
@@ -2671,7 +2681,7 @@ spec:
               mountPath: /data
       containers:
         - name: pms
-          image: docker.io/speedle/speedle:<release-tag>
+          image: <speedle-image>
           args: ["speedle-pms", "--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6733", "--insecure=true"]
           ports:
             - containerPort: 6733
@@ -2682,7 +2692,7 @@ spec:
             - name: policies
               mountPath: /data
         - name: ads
-          image: docker.io/speedle/speedle:<release-tag>
+          image: <speedle-image>
           args: ["speedle-ads", "--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6734", "--insecure=true"]
           ports:
             - containerPort: 6734
@@ -2713,11 +2723,12 @@ spec:
       targetPort: 6734
 ```
 
-Set `SPEEDLE_IMAGE` to the exact image you deploy, for example a release tag or a digest. Substitute it locally before applying; keep port-forward running while using Quick Start clients:
+Set `SPEEDLE_IMAGE` to the exact image you deploy, for example `docker.io/speedle/speedle:1.9.0` or an image with a `@sha256:` digest. Substitute it in the manifest before applying; keep port-forward running while using Quick Start clients:
 
 
 ```bash
-kubectl set image --local -f speedle-dev.yaml pms="$SPEEDLE_IMAGE" ads="$SPEEDLE_IMAGE" -o yaml | kubectl apply -f -
+SPEEDLE_IMAGE=docker.io/speedle/speedle:1.9.0
+sed "s|<speedle-image>|$SPEEDLE_IMAGE|g" speedle-dev.yaml | kubectl apply -f -
 kubectl rollout status deployment/speedle-dev
 kubectl port-forward service/speedle-dev 6733:6733 6734:6734
 ```
@@ -2740,7 +2751,7 @@ To try basic policies before writing code, open the [Playground](https://engine.
 
 ### Prerequisites
 
-Use Linux or macOS with a shell and **Go 1.27.4** (or a newer patch on the same release branch), matching [Quick Start](https://engine.speedle.io/quick-start/). This walkthrough uses Go modules and the published **Speedle v1.6.0** release.
+Use Linux or macOS with a shell and **Go 1.27.4** (or a newer patch on the same release branch), matching [Quick Start](https://engine.speedle.io/quick-start/). This walkthrough uses Go modules and the published **Speedle v1.9.0** release.
 
 Install Go using the [official installation instructions](https://go.dev/doc/install), then check your version:
 
@@ -2760,7 +2771,7 @@ Start in a writable directory outside the Speedle source checkout. Use a new dir
 mkdir speedle-embedded-demo
 cd speedle-embedded-demo
 go mod init example.com/speedle-embedded-demo
-go get github.com/teramoby/speedle-plus/pkg/eval@v1.6.0
+go get github.com/teramoby/speedle-plus/pkg/eval@v1.9.0
 ```
 
 In an existing Go module, run only the final `go get` command from that module's directory.
@@ -2863,41 +2874,41 @@ The same image index is on both registries:
 - Docker Hub: `docker.io/speedle/speedle`
 - GHCR: `ghcr.io/teramoby/speedle`
 
-Release 1.7.0 publishes the tags `1.7.0`, `1.7` and `latest` on both registries, for `linux/amd64` and `linux/arm64`.
+Release 1.9.0 publishes the tags `1.9.0`, `1.9` and `latest` on both registries, for `linux/amd64` and `linux/arm64`.
 
 ### Pull the image
 
 ```bash
-docker pull docker.io/speedle/speedle:1.7.0
-docker pull ghcr.io/teramoby/speedle:1.7.0
+docker pull docker.io/speedle/speedle:1.9.0
+docker pull ghcr.io/teramoby/speedle:1.9.0
 ```
 
-`docker pull` prints the index digest. For 1.7.0 that digest is `sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0` on both registries.
+`docker pull` prints the index digest. For 1.9.0 that digest is `sha256:f20947fc15fb342dbafe93403df99f909795ad66ac0866fd9252611268791d2c` on both registries.
 
 ### Choose a tag
 
-`1.7.0` names this release. `1.7` moves when a higher 1.7 patch is published. `latest` moves when a higher release is published from the newest commit on `master`. A release retry can publish the same version tag again, so a tag is not an immutable build.
+`1.9.0` names this release. `1.9` moves when a higher 1.9 patch is published. `latest` moves when a higher release is published from the newest commit on `master`. A release retry can publish the same version tag again, so a tag is not an immutable build.
 
 To read the index digest:
 
 ```bash
-docker buildx imagetools inspect docker.io/speedle/speedle:1.7.0 --format '{{.Manifest.Digest}}'
+docker buildx imagetools inspect docker.io/speedle/speedle:1.9.0 --format '{{.Manifest.Digest}}'
 ```
 
-For the 1.7.0 release, `1.7.0`, `1.7` and `latest` on both registries all print:
+For the 1.9.0 release, `1.9.0`, `1.9` and `latest` on both registries all print:
 
 ```text
-sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0
+sha256:f20947fc15fb342dbafe93403df99f909795ad66ac0866fd9252611268791d2c
 ```
 
-Check the digest again before you deploy `1.7` or `latest`. To stay on one build, use the image name with `@` and that digest, for example `docker.io/speedle/speedle@sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0`.
+Check the digest again before you deploy `1.9` or `latest`. To stay on one build, use the image name with `@` and that digest, for example `docker.io/speedle/speedle@sha256:f20947fc15fb342dbafe93403df99f909795ad66ac0866fd9252611268791d2c`.
 
 ### Commands in the image
 
 With no arguments the image prints the three programs:
 
 ```bash
-docker run --rm docker.io/speedle/speedle:1.7.0
+docker run --rm docker.io/speedle/speedle:1.9.0
 ```
 
 ```text
@@ -2906,7 +2917,7 @@ speedle-ads
 spctl
 ```
 
-`docker run --rm ghcr.io/teramoby/speedle:1.7.0` prints the same lines. The commands below use the Docker Hub name. Substitute the GHCR name to use that copy. There is no shell in the image, so `docker exec` must call `/spctl`, `/speedle-pms` or `/speedle-ads` by absolute path.
+`docker run --rm ghcr.io/teramoby/speedle:1.9.0` prints the same lines. The commands below use the Docker Hub name. Substitute the GHCR name to use that copy. There is no shell in the image, so `docker exec` must call `/spctl`, `/speedle-pms` or `/speedle-ads` by absolute path.
 
 ### Run PMS and ADS
 
@@ -2917,7 +2928,7 @@ docker volume create speedle-policies
 docker run -d --name speedle-pms \
   -p 127.0.0.1:6733:6733 \
   -v speedle-policies:/data \
-  docker.io/speedle/speedle:1.7.0 \
+  docker.io/speedle/speedle:1.9.0 \
   speedle-pms --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6733 --insecure=true
 ```
 
@@ -2942,7 +2953,7 @@ Start ADS on the same volume. It reads the file PMS writes, including later upda
 docker run -d --name speedle-ads \
   -p 127.0.0.1:6734:6734 \
   -v speedle-policies:/data \
-  docker.io/speedle/speedle:1.7.0 \
+  docker.io/speedle/speedle:1.9.0 \
   speedle-ads --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6734 --insecure=true
 ```
 
@@ -2988,7 +2999,7 @@ The same `spctl` binary can run in a second container that shares the PMS networ
 
 ```bash
 docker run --rm --network container:speedle-pms \
-  docker.io/speedle/speedle:1.7.0 \
+  docker.io/speedle/speedle:1.9.0 \
   spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ get service --all
 ```
 
@@ -3066,7 +3077,7 @@ Save this file as `compose.yaml`. It is another way to run the same two processe
 ```yaml
 services:
   pms:
-    image: docker.io/speedle/speedle:1.7.0
+    image: docker.io/speedle/speedle:1.9.0
     command:
       - speedle-pms
       - --store-type
@@ -3081,7 +3092,7 @@ services:
     volumes:
       - speedle-policies:/data
   ads:
-    image: docker.io/speedle/speedle:1.7.0
+    image: docker.io/speedle/speedle:1.9.0
     command:
       - speedle-ads
       - --store-type
@@ -3129,10 +3140,10 @@ docker compose -f compose.yaml down -v
 The publish build attaches provenance and an SBOM (`docker buildx build --provenance=mode=max --sbom=true`). Inspect the index:
 
 ```bash
-docker buildx imagetools inspect docker.io/speedle/speedle:1.7.0
+docker buildx imagetools inspect docker.io/speedle/speedle:1.9.0
 ```
 
-The index lists `linux/amd64`, `linux/arm64`, and two `unknown/unknown` manifests. Those unknown platforms are the attestation manifests. Each one sets `vnd.docker.reference.type` to `attestation-manifest` and `vnd.docker.reference.digest` to the platform image it describes. `docker buildx imagetools inspect ghcr.io/teramoby/speedle:1.7.0` prints the same platform and attestation digests.
+The index lists `linux/amd64`, `linux/arm64`, and two `unknown/unknown` manifests. Those unknown platforms are the attestation manifests. Each one sets `vnd.docker.reference.type` to `attestation-manifest` and `vnd.docker.reference.digest` to the platform image it describes. `docker buildx imagetools inspect ghcr.io/teramoby/speedle:1.9.0` prints the same platform and attestation digests.
 
 ### Stop the containers
 
@@ -3698,6 +3709,8 @@ The operation timeout also bounds connection-pool waits and transaction lock wai
 A [store.StoreBuilder](https://github.com/teramoby/speedle-plus/blob/master/pkg/store/store.go) provides `NewStore(map[string]interface{}) (pms.PolicyStoreManager, error)` and `GetStoreParams() map[string]string`. The latter maps flag names to configuration property names. Register a unique store type in `init()` or before calling `store.NewStore`; duplicate registration is an error.
 
 This complete example delegates to the existing file backend to demonstrate the factory contract. It does not claim to implement a new database:
+
+> **Note:** The files under `website/tests/examples/` used on this page come from a clone of the repository (Route B of the [Quick Start](https://engine.speedle.io/quick-start/)); `go install` does not include them.
 
 
 ```bash
@@ -4589,6 +4602,8 @@ Configuration precedence is command line, then `SPDL_*` environment variables, t
 
 Build the binaries using the [quick start](https://engine.speedle.io/quick-start/). From the repository root, use Go 1.27.4 (or a newer patch on the same release branch) to generate a local CA plus separate server/client certificates. The server certificate has SANs for `localhost`, `127.0.0.1` and `::1`; private keys use mode 0600. These **24-hour demonstration certificates** are not production credentials. The generator refuses to overwrite existing files: choose a new output directory when regenerating.
 
+> **Note:** The files under `website/tests/examples/` used on this page come from a clone of the repository (Route B of the [Quick Start](https://engine.speedle.io/quick-start/)); `go install` does not include them.
+
 
 ```bash
 go run ./website/tests/examples/certificates --out ./tls
@@ -4699,14 +4714,16 @@ All existing `--log-*` and `--auditlog-*` flags, `SPDL_*` environment variables 
 ```text
 --log-level string
 --log-formatter string
---log-reportcaller bool
+--log-reportcaller string
 --log-filename string
---log-maxsize int
---log-maxbackups int
---log-maxage int
---log-localtime bool
---log-compress bool
+--log-maxsize string
+--log-maxbackups string
+--log-maxage string
+--log-localtime string
+--log-compress string
 ```
+
+These are string flags: pass each value with `--flag=value` (for example, `--log-compress=true`). A bare flag consumes the next argument as its value, so `--log-compress --help` treats `--help` as the value of `--log-compress`.
 
 | Flag | Default | Meaning |
 | --- | --- | --- |
@@ -4728,10 +4745,10 @@ All existing `--log-*` and `--auditlog-*` flags, `SPDL_*` environment variables 
     "setReportCaller": false,
     "rotationConfig": {
       "filename": "/mnt/logs/speedle.log",
-      "maxSize": 20,
-      "maxBackups": 5,
-      "maxAge": 0,
-      "LocalTime": false,
+      "maxsize": 20,
+      "maxbackups": 5,
+      "maxage": 0,
+      "localtime": false,
       "compress": false
     }
   },
@@ -4797,7 +4814,13 @@ Source: https://engine.speedle.io/docs/versions/
 
 ### Speedle releases
 
-Use the [GitHub Releases](https://github.com/teramoby/speedle-plus/releases) page for published versions and release notes. [v1.6.0](https://github.com/teramoby/speedle-plus/releases/tag/v1.6.0) is the version pinned by the current embedded Go walkthrough. Use an explicit released version for reproducible module dependencies; the [embedded guide](https://engine.speedle.io/docs/deployment/embedded/) explains the setup.
+Use the [GitHub Releases](https://github.com/teramoby/speedle-plus/releases) page for published versions and release notes.
+
+- [v1.9.0](https://github.com/teramoby/speedle-plus/releases/tag/v1.9.0): custom-function failures now fail the decision, functions can declare parameter and result types, the MySQL store uses schema version 2, the js/wasm build accepts a host custom-function caller, and application and audit logging moved to Go `log/slog`.
+- [v1.8.0](https://github.com/teramoby/speedle-plus/releases/tag/v1.8.0): removed the experimental policy-distribution feature, source builds require Go 1.27.4 or newer, the container image includes the public CA bundle, and the documentation gained Japanese, Korean and Spanish.
+- [v1.7.0](https://github.com/teramoby/speedle-plus/releases/tag/v1.7.0): MySQL policy storage, offline `spctl check`, the full option list in command help, fail-closed authorization on panics and store outages, and one multi-architecture image on Docker Hub and GHCR.
+
+[v1.9.0](https://github.com/teramoby/speedle-plus/releases/tag/v1.9.0) is the version pinned by the current embedded Go walkthrough. Use an explicit released version for reproducible module dependencies; the [embedded guide](https://engine.speedle.io/docs/deployment/embedded/) explains the setup.
 
 ### Historical Oracle Speedle release
 

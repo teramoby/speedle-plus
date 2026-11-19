@@ -18,41 +18,41 @@ The same image index is on both registries:
 - Docker Hub: `docker.io/speedle/speedle`
 - GHCR: `ghcr.io/teramoby/speedle`
 
-Release 1.7.0 publishes the tags `1.7.0`, `1.7` and `latest` on both registries, for `linux/amd64` and `linux/arm64`.
+Release 1.9.0 publishes the tags `1.9.0`, `1.9` and `latest` on both registries, for `linux/amd64` and `linux/arm64`.
 
 ## Pull the image
 
 ```bash
-docker pull docker.io/speedle/speedle:1.7.0
-docker pull ghcr.io/teramoby/speedle:1.7.0
+docker pull docker.io/speedle/speedle:1.9.0
+docker pull ghcr.io/teramoby/speedle:1.9.0
 ```
 
-`docker pull` prints the index digest. For 1.7.0 that digest is `sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0` on both registries.
+`docker pull` prints the index digest. For 1.9.0 that digest is `sha256:f20947fc15fb342dbafe93403df99f909795ad66ac0866fd9252611268791d2c` on both registries.
 
 ## Choose a tag
 
-`1.7.0` names this release. `1.7` moves when a higher 1.7 patch is published. `latest` moves when a higher release is published from the newest commit on `master`. A release retry can publish the same version tag again, so a tag is not an immutable build.
+`1.9.0` names this release. `1.9` moves when a higher 1.9 patch is published. `latest` moves when a higher release is published from the newest commit on `master`. A release retry can publish the same version tag again, so a tag is not an immutable build.
 
 To read the index digest:
 
 ```bash
-docker buildx imagetools inspect docker.io/speedle/speedle:1.7.0 --format '{{.Manifest.Digest}}'
+docker buildx imagetools inspect docker.io/speedle/speedle:1.9.0 --format '{{.Manifest.Digest}}'
 ```
 
-For the 1.7.0 release, `1.7.0`, `1.7` and `latest` on both registries all print:
+For the 1.9.0 release, `1.9.0`, `1.9` and `latest` on both registries all print:
 
 ```text
-sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0
+sha256:f20947fc15fb342dbafe93403df99f909795ad66ac0866fd9252611268791d2c
 ```
 
-Check the digest again before you deploy `1.7` or `latest`. To stay on one build, use the image name with `@` and that digest, for example `docker.io/speedle/speedle@sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0`.
+Check the digest again before you deploy `1.9` or `latest`. To stay on one build, use the image name with `@` and that digest, for example `docker.io/speedle/speedle@sha256:f20947fc15fb342dbafe93403df99f909795ad66ac0866fd9252611268791d2c`.
 
 ## Commands in the image
 
 With no arguments the image prints the three programs:
 
 ```bash
-docker run --rm docker.io/speedle/speedle:1.7.0
+docker run --rm docker.io/speedle/speedle:1.9.0
 ```
 
 ```text
@@ -61,7 +61,7 @@ speedle-ads
 spctl
 ```
 
-`docker run --rm ghcr.io/teramoby/speedle:1.7.0` prints the same lines. The commands below use the Docker Hub name. Substitute the GHCR name to use that copy. There is no shell in the image, so `docker exec` must call `/spctl`, `/speedle-pms` or `/speedle-ads` by absolute path.
+`docker run --rm ghcr.io/teramoby/speedle:1.9.0` prints the same lines. The commands below use the Docker Hub name. Substitute the GHCR name to use that copy. There is no shell in the image, so `docker exec` must call `/spctl`, `/speedle-pms` or `/speedle-ads` by absolute path.
 
 ## Run PMS and ADS
 
@@ -72,7 +72,7 @@ docker volume create speedle-policies
 docker run -d --name speedle-pms \
   -p 127.0.0.1:6733:6733 \
   -v speedle-policies:/data \
-  docker.io/speedle/speedle:1.7.0 \
+  docker.io/speedle/speedle:1.9.0 \
   speedle-pms --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6733 --insecure=true
 ```
 
@@ -97,7 +97,7 @@ Start ADS on the same volume. It reads the file PMS writes, including later upda
 docker run -d --name speedle-ads \
   -p 127.0.0.1:6734:6734 \
   -v speedle-policies:/data \
-  docker.io/speedle/speedle:1.7.0 \
+  docker.io/speedle/speedle:1.9.0 \
   speedle-ads --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6734 --insecure=true
 ```
 
@@ -143,7 +143,7 @@ The same `spctl` binary can run in a second container that shares the PMS networ
 
 ```bash
 docker run --rm --network container:speedle-pms \
-  docker.io/speedle/speedle:1.7.0 \
+  docker.io/speedle/speedle:1.9.0 \
   spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ get service --all
 ```
 
@@ -221,7 +221,7 @@ Save this file as `compose.yaml`. It is another way to run the same two processe
 ```yaml
 services:
   pms:
-    image: docker.io/speedle/speedle:1.7.0
+    image: docker.io/speedle/speedle:1.9.0
     command:
       - speedle-pms
       - --store-type
@@ -236,7 +236,7 @@ services:
     volumes:
       - speedle-policies:/data
   ads:
-    image: docker.io/speedle/speedle:1.7.0
+    image: docker.io/speedle/speedle:1.9.0
     command:
       - speedle-ads
       - --store-type
@@ -284,10 +284,10 @@ docker compose -f compose.yaml down -v
 The publish build attaches provenance and an SBOM (`docker buildx build --provenance=mode=max --sbom=true`). Inspect the index:
 
 ```bash
-docker buildx imagetools inspect docker.io/speedle/speedle:1.7.0
+docker buildx imagetools inspect docker.io/speedle/speedle:1.9.0
 ```
 
-The index lists `linux/amd64`, `linux/arm64`, and two `unknown/unknown` manifests. Those unknown platforms are the attestation manifests. Each one sets `vnd.docker.reference.type` to `attestation-manifest` and `vnd.docker.reference.digest` to the platform image it describes. `docker buildx imagetools inspect ghcr.io/teramoby/speedle:1.7.0` prints the same platform and attestation digests.
+The index lists `linux/amd64`, `linux/arm64`, and two `unknown/unknown` manifests. Those unknown platforms are the attestation manifests. Each one sets `vnd.docker.reference.type` to `attestation-manifest` and `vnd.docker.reference.digest` to the platform image it describes. `docker buildx imagetools inspect ghcr.io/teramoby/speedle:1.9.0` prints the same platform and attestation digests.
 
 ## Stop the containers
 

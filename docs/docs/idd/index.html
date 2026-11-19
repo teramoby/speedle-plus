@@ -235,6 +235,10 @@ grant user user1 from IDCS.tenant01 read book</code></pre></div>
 
 <p>The <a href="https://github.com/teramoby/speedle-plus/blob/master/website/tests/examples/idd.json">fixture</a> grants <code>read</code> to GitHub&rsquo;s <code>user1</code>, <code>write</code> to Google&rsquo;s <code>user1</code>, and <code>rent</code> to <code>user1</code> from any domain. The lowercase domain values are demonstration namespaces.</p>
 
+<blockquote>
+<p><strong>Note:</strong> The files under <code>website/tests/examples/</code> used on this page come from a clone of the repository (Route B of the <a href="/quick-start/">Quick Start</a>); <code>go install</code> does not include them.</p>
+</blockquote>
+
 <!-- docs-check: idd-fixture -->
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service --json-file website/tests/examples/idd.json</code></pre></div>
 <h2 id="compare-decisions">Compare decisions</h2>

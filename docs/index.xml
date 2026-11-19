@@ -191,8 +191,8 @@ Create an API key Open API keys, enter a name of 1–128 characters after trimmi
       <guid>https://engine.speedle.io/docs/deployment/docker/</guid>
       <description>Speedle publishes one image that contains speedle-pms, speedle-ads and spctl. The image is built FROM scratch, runs as UID 65532, and has no shell. The first argument selects the program.
 The same image index is on both registries:
- Docker Hub: docker.io/speedle/speedle GHCR: ghcr.io/teramoby/speedle  Release 1.7.0 publishes the tags 1.7.0, 1.7 and latest on both registries, for linux/amd64 and linux/arm64.
-Pull the image docker pull docker.io/speedle/speedle:1.7.0 docker pull ghcr.</description>
+ Docker Hub: docker.io/speedle/speedle GHCR: ghcr.io/teramoby/speedle  Release 1.9.0 publishes the tags 1.9.0, 1.9 and latest on both registries, for linux/amd64 and linux/arm64.
+Pull the image docker pull docker.io/speedle/speedle:1.9.0 docker pull ghcr.</description>
     </item>
     
     <item>
@@ -396,8 +396,8 @@ Logging configuration All existing --log-* and --auditlog-* flags, SPDL_* enviro
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/docs/versions/</guid>
-      <description>Speedle releases Use the GitHub Releases page for published versions and release notes. v1.6.0 is the version pinned by the current embedded Go walkthrough. Use an explicit released version for reproducible module dependencies; the embedded guide explains the setup.
-Historical Oracle Speedle release Version 0.1.0 was the original open-source release, including policy management, authorization decisions, the command-line tool and integration samples. The historical 0.2.0 planning note is not the current Speedle release roadmap.</description>
+      <description>Speedle releases Use the GitHub Releases page for published versions and release notes.
+ v1.9.0: custom-function failures now fail the decision, functions can declare parameter and result types, the MySQL store uses schema version 2, the js/wasm build accepts a host custom-function caller, and application and audit logging moved to Go log/slog. v1.8.0: removed the experimental policy-distribution feature, source builds require Go 1.27.4 or newer, the container image includes the public CA bundle, and the documentation gained Japanese, Korean and Spanish.</description>
     </item>
     
     <item>

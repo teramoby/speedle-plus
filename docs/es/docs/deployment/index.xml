@@ -29,7 +29,7 @@ Para probar políticas básicas antes de escribir código, abra el Playground. P
       <guid>https://engine.speedle.io/es/docs/deployment/docker/</guid>
       <description>Speedle publica una imagen que contiene speedle-pms, speedle-ads y spctl. La imagen se compila FROM scratch, se ejecuta como UID 65532 y no contiene ningún shell. El primer argumento selecciona el programa a ejecutar.
 El mismo índice de imágenes está disponible en ambos registros:
- Docker Hub: docker.io/speedle/speedle GHCR: ghcr.io/teramoby/speedle  La versión 1.7.0 publica las etiquetas 1.7.0, 1.7 y latest en ambos registros, para las arquitecturas linux/amd64 y linux/arm64.</description>
+ Docker Hub: docker.io/speedle/speedle GHCR: ghcr.io/teramoby/speedle  La versión 1.9.0 publica las etiquetas 1.9.0, 1.9 y latest en ambos registros, para las arquitecturas linux/amd64 y linux/arm64.</description>
     </item>
     
     <item>

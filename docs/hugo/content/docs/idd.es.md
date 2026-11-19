@@ -67,6 +67,8 @@ Ejecute los comandos restantes en una tercera terminal. PMS y ADS comparten el a
 
 El [archivo de prueba](https://github.com/teramoby/speedle-plus/blob/master/website/tests/examples/idd.json) concede `read` al usuario `user1` de GitHub, `write` al usuario `user1` de Google, y `rent` al usuario `user1` de cualquier dominio. Los valores de dominio en minúsculas son espacios de nombres de demostración.
 
+> **Nota:** Los archivos de `website/tests/examples/` que se usan en esta página vienen de un clon del repositorio (ruta B del [Inicio rápido](/es/quick-start/)); `go install` no los incluye.
+
 <!-- docs-check: idd-fixture -->
 ```bash
 ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service --json-file website/tests/examples/idd.json

@@ -23,14 +23,16 @@ All existing `--log-*` and `--auditlog-*` flags, `SPDL_*` environment variables 
 ```text
 --log-level string
 --log-formatter string
---log-reportcaller bool
+--log-reportcaller string
 --log-filename string
---log-maxsize int
---log-maxbackups int
---log-maxage int
---log-localtime bool
---log-compress bool
+--log-maxsize string
+--log-maxbackups string
+--log-maxage string
+--log-localtime string
+--log-compress string
 ```
+
+These are string flags: pass each value with `--flag=value` (for example, `--log-compress=true`). A bare flag consumes the next argument as its value, so `--log-compress --help` treats `--help` as the value of `--log-compress`.
 
 | Flag | Default | Meaning |
 | --- | --- | --- |
@@ -52,10 +54,10 @@ All existing `--log-*` and `--auditlog-*` flags, `SPDL_*` environment variables 
     "setReportCaller": false,
     "rotationConfig": {
       "filename": "/mnt/logs/speedle.log",
-      "maxSize": 20,
-      "maxBackups": 5,
-      "maxAge": 0,
-      "LocalTime": false,
+      "maxsize": 20,
+      "maxbackups": 5,
+      "maxage": 0,
+      "localtime": false,
       "compress": false
     }
   },

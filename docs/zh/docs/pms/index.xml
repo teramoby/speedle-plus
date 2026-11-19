@@ -55,12 +55,11 @@ printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一启动 PMS，
       <description>授权诊断提供什么？ Diagnose 用于解释一次授权评估：决策、原因、有效角色、属性及参与评估的策略。其请求上下文与 IsAllowed 相同；REST 路径为 /authz-check/v1/diagnose，Go/gRPC 方法均名为 Diagnose。
 诊断会暴露策略定义和请求上下文，必须通过API 安全配置限制为可信运维人员访问，不能作为公开调试端点。
 运行示例前 先按快速入门编译仓库根目录下的 ./bin/spctl、./bin/speedle-pms 和 ./bin/speedle-ads，需要 Go 1.27.4（也可使用同一大版本的更新补丁版本）、Bash、curl 和 Python 3。下面各终端都从仓库根目录运行。为本页使用一个新的策略文件；仅在两个服务都停止后重建该文件。
-初始化空策略文件：
+ 注意： 本页使用的 website/tests/examples/ 文件来自克隆的仓库（快速入门的 Route B）；go install 不包含这些文件。
+ 初始化空策略文件：
 printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一启动 PMS，并保持运行：
 ./bin/speedle-pms --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6733 --grpc-endpoint 127.0.0.1:0 --insecure=true 终端二启动 ADS，并保持运行：
-./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6734 --grpc-endpoint 127.0.0.1:0 --insecure=true 在第三个终端运行后续命令。PMS/ADS 共享同一个文件，策略更新通过 watch 异步到达 ADS；先查询确认已更新，再依赖新策略做决策。--insecure=true 仅用于回环地址上的本地示例，生产连接见安全配置。示例显式指定 PMS 地址，不修改 ~/.spctlconfig。完成后在两个服务终端按 Ctrl-C。
-创建示例策略 测试文件允许 user1 对 ^/api/v1/example/.*$ 下的资源执行 get，但显式拒绝 /api/v1/example/res1。
-./bin/spctl --pms-endpoint http://127.</description>
+./bin/speedle-ads --store-type file --filestore-loc ./docs-policies.json --endpoint 127.0.0.1:6734 --grpc-endpoint 127.0.0.1:0 --insecure=true 在第三个终端运行后续命令。PMS/ADS 共享同一个文件，策略更新通过 watch 异步到达 ADS；先查询确认已更新，再依赖新策略做决策。--insecure=true 仅用于回环地址上的本地示例，生产连接见安全配置。示例显式指定 PMS 地址，不修改 ~/.spctlconfig。完成后在两个服务终端按 Ctrl-C。</description>
     </item>
     
     <item>

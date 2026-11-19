@@ -208,6 +208,10 @@
 
 <p>此 mock 只识别 <code>githubtoken</code>/<code>github</code>、<code>googletoken</code>/<code>google</code>、<code>gitlabtoken</code>/<code>gitlab</code> 三组输入，分别表示对应域的 <code>user1</code>。令牌与提供方不匹配时失败。<strong>它是测试 fixture，不验证真实令牌。</strong> 不会记录令牌值。仅绑定回环地址，生产环境必须替换为真实身份集成。</p>
 
+<blockquote>
+<p><strong>注意：</strong> 本页使用的 <code>website/tests/examples/</code> 文件来自克隆的仓库（<a href="/zh/quick-start/">快速入门</a>的 Route B）；<code>go install</code> 不包含这些文件。</p>
+</blockquote>
+
 <p>从仓库根目录在单独终端运行：</p>
 
 <!-- docs-check: mock-asserter -->

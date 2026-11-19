@@ -244,9 +244,9 @@ alice delete /docs/public: allowed=false reason=NoApplicablePolicies</code></pre
 
 <p><a href="https://www.npmjs.com/package/@speedle/mcp"><code>@speedle/mcp</code></a> está publicado en npm. Speedle MCP (vista previa de lanzamiento) es un paquete con modos <code>check</code> y <code>manage</code>. Instálelo con npm:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">npm install @speedle/mcp@0.2.1</code></pre></div>
-<p>O ejecute el binario <code>speedle-mcp</code> directamente:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">npx @speedle/mcp@0.2.1 check</code></pre></div>
-<p>Ejecutar <code>speedle-mcp</code> sin especificar un modo muestra las instrucciones de uso y finaliza con un estado distinto de cero. Referencia: <a href="https://github.com/teramoby/speedle-mcp">speedle-mcp</a>.</p>
+<p>O ejecute el binario <code>speedle-mcp</code> directamente. El modo <code>check</code> lee la URL de ADS de <code>SPEEDLE_ENDPOINT</code> y el nombre del servicio de <code>SPEEDLE_SERVICE_NAME</code>; este ejemplo usa el ADS local de la <a href="/es/docs/sdks/#example-policy">descripción general de los SDK</a>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">SPEEDLE_ENDPOINT</span><span style="color:#ff79c6">=</span>http://127.0.0.1:6734 <span style="color:#8be9fd;font-style:italic">SPEEDLE_SERVICE_NAME</span><span style="color:#ff79c6">=</span>docs npx @speedle/mcp@0.2.1 check</code></pre></div>
+<p>Sin <code>SPEEDLE_ENDPOINT</code>, el comando termina con <code>speedle-mcp: SPEEDLE_ENDPOINT is required</code>. El comando inicia un servidor MCP por stdio y espera a un cliente, por lo que un inicio correcto no imprime nada. Ejecutar <code>speedle-mcp</code> sin especificar un modo muestra las instrucciones de uso y finaliza con un estado distinto de cero. Referencia: <a href="https://github.com/teramoby/speedle-mcp">speedle-mcp</a>.</p>
 
 <h2 id="gestión-de-errores">Gestión de errores</h2>
 

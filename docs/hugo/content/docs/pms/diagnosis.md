@@ -22,6 +22,8 @@ Diagnosis exposes policy definitions and request context. Restrict it to trusted
 
 Build `./bin/spctl`, `./bin/speedle-pms` and `./bin/speedle-ads` using the [quick start](/quick-start/). Use Go 1.27.4 (or a newer patch on the same release branch), Bash, curl and Python 3. Run each terminal from the repository root. Use a fresh policy file for this page; reset it only after stopping both services.
 
+> **Note:** The files under `website/tests/examples/` used on this page come from a clone of the repository (Route B of the [Quick Start](/quick-start/)); `go install` does not include them.
+
 Initialize an empty policy file:
 
 <!-- docs-check: setup -->

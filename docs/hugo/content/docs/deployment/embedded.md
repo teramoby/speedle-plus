@@ -19,7 +19,7 @@ To try basic policies before writing code, open the [Playground](/playground/). 
 
 ## Prerequisites
 
-Use Linux or macOS with a shell and **Go 1.27.4** (or a newer patch on the same release branch), matching [Quick Start](/quick-start/). This walkthrough uses Go modules and the published **Speedle v1.6.0** release.
+Use Linux or macOS with a shell and **Go 1.27.4** (or a newer patch on the same release branch), matching [Quick Start](/quick-start/). This walkthrough uses Go modules and the published **Speedle v1.9.0** release.
 
 Install Go using the [official installation instructions](https://go.dev/doc/install), then check your version:
 
@@ -39,7 +39,7 @@ Start in a writable directory outside the Speedle source checkout. Use a new dir
 mkdir speedle-embedded-demo
 cd speedle-embedded-demo
 go mod init example.com/speedle-embedded-demo
-go get github.com/teramoby/speedle-plus/pkg/eval@v1.6.0
+go get github.com/teramoby/speedle-plus/pkg/eval@v1.9.0
 ```
 
 In an existing Go module, run only the final `go get` command from that module's directory.

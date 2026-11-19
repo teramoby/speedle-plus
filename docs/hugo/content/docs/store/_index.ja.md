@@ -84,6 +84,8 @@ lastmod = 2026-11-17T10:00:00+08:00
 
 この完全なサンプルは、ファクトリコントラクトを実証するために既存のファイルバックエンドに委任します。新しいデータベースの実装を主張するものではありません:
 
+> **注:** このページで使用する `website/tests/examples/` のファイルは、リポジトリのクローン（[クイックスタート](/ja/quick-start/) のルート B）に含まれています。`go install` では含まれません。
+
 <!-- docs-check: store -->
 ```bash
 go run ./website/tests/examples/store

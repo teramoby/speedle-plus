@@ -34,6 +34,8 @@ La precedencia de configuración es la línea de comandos, luego las variables d
 
 Compile los binarios mediante el [inicio rápido](/es/quick-start/). Desde la raíz del repositorio, utilice Go 1.27.4 (o un parche más reciente de la misma rama de lanzamiento) para generar una CA local y certificados independientes para servidor y cliente. El certificado de servidor contiene SANs para `localhost`, `127.0.0.1` y `::1`; las claves privadas utilizan permisos 0600. Estos **certificados de demostración de 24 horas** no son credenciales para producción. El generador rechaza sobrescribir archivos existentes: seleccione un nuevo directorio de salida si vuelve a generar.
 
+> **Nota:** Los archivos de `website/tests/examples/` que se usan en esta página vienen de un clon del repositorio (ruta B del [Inicio rápido](/es/quick-start/)); `go install` no los incluye.
+
 <!-- docs-check: certificates -->
 ```bash
 go run ./website/tests/examples/certificates --out ./tls

@@ -22,6 +22,8 @@ lastmod = 2026-10-29T11:53:01+08:00
 
 [빠른 시작](/quick-start/)의 설명에 따라 저장소 루트 아래의 `./bin/spctl`, `./bin/speedle-pms`, `./bin/speedle-ads`를 빌드합니다. Go 1.27.4(또는 동일 릴리스 브랜치의 최신 패치 버전), Bash, curl, Python 3이 필요합니다. 각 터미널은 저장소 루트에서 실행하십시오. 이 페이지를 위해 새 정책 파일을 사용합니다. 두 서비스가 모두 중지된 후에만 파일을 재설정하십시오.
 
+> **참고:** 이 페이지에서 사용하는 `website/tests/examples/` 파일은 저장소 복제본([빠른 시작](/quick-start/)의 경로 B)에 포함됩니다. `go install`에는 포함되지 않습니다.
+
 빈 정책 파일 초기화:
 
 <!-- docs-check: setup -->

@@ -23,14 +23,16 @@ v1.8.0 다음 릴리스는 애플리케이션 및 감사 로그에 Go `log/slog`
 ```text
 --log-level string
 --log-formatter string
---log-reportcaller bool
+--log-reportcaller string
 --log-filename string
---log-maxsize int
---log-maxbackups int
---log-maxage int
---log-localtime bool
---log-compress bool
+--log-maxsize string
+--log-maxbackups string
+--log-maxage string
+--log-localtime string
+--log-compress string
 ```
+
+이 옵션은 문자열 플래그이므로 `--flag=value` 형식으로 값을 지정합니다(예: `--log-compress=true`). 옵션 이름만 지정하면 다음 인수가 그 값으로 사용되므로 `--log-compress --help`는 `--help`를 `--log-compress`의 값으로 처리합니다.
 
 | Flag | Default | Meaning |
 | --- | --- | --- |
@@ -52,10 +54,10 @@ v1.8.0 다음 릴리스는 애플리케이션 및 감사 로그에 Go `log/slog`
     "setReportCaller": false,
     "rotationConfig": {
       "filename": "/mnt/logs/speedle.log",
-      "maxSize": 20,
-      "maxBackups": 5,
-      "maxAge": 0,
-      "LocalTime": false,
+      "maxsize": 20,
+      "maxbackups": 5,
+      "maxage": 0,
+      "localtime": false,
       "compress": false
     }
   },

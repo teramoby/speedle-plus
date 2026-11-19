@@ -20,6 +20,8 @@ categories = ["docs"]
 
 示例接受 100 至 50000 之间的数值。参数类型错误或列表为空时返回 HTTP 错误。只有回环 IP 可以使用明文，其他监听地址必须提供 TLS。
 
+> **注意：** 本页使用的 `website/tests/examples/` 文件来自克隆的仓库（[快速入门](/quick-start/)的 Route B）；`go install` 不包含这些文件。
+
 在单独终端运行：
 
 <!-- docs-check: function-server -->

@@ -206,13 +206,15 @@
 <p>기존 <code>--log-*</code>, <code>--auditlog-*</code> 옵션, <code>SPDL_*</code> 환경 변수와 JSON 키는 유지됩니다. 우선순위는 명시적 옵션 &gt; 환경 변수 &gt; 파일입니다. 애플리케이션 기본값은 info, text, stderr이며 호출자 정보는 꺼져 있습니다. 감사 기본값은 info와 JSON이며 <code>--auditlog-*</code>로 별도 설정합니다.</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">--log-level string
 --log-formatter string
---log-reportcaller bool
+--log-reportcaller string
 --log-filename string
---log-maxsize int
---log-maxbackups int
---log-maxage int
---log-localtime bool
---log-compress bool</code></pre></div>
+--log-maxsize string
+--log-maxbackups string
+--log-maxage string
+--log-localtime string
+--log-compress string</code></pre></div>
+<p>이 옵션은 문자열 플래그이므로 <code>--flag=value</code> 형식으로 값을 지정합니다(예: <code>--log-compress=true</code>). 옵션 이름만 지정하면 다음 인수가 그 값으로 사용되므로 <code>--log-compress --help</code>는 <code>--help</code>를 <code>--log-compress</code>의 값으로 처리합니다.</p>
+
 <table>
 <thead>
 <tr>
@@ -285,10 +287,10 @@
     <span style="color:#ff79c6">&#34;setReportCaller&#34;</span>: <span style="color:#ff79c6">false</span>,
     <span style="color:#ff79c6">&#34;rotationConfig&#34;</span>: {
       <span style="color:#ff79c6">&#34;filename&#34;</span>: <span style="color:#f1fa8c">&#34;/mnt/logs/speedle.log&#34;</span>,
-      <span style="color:#ff79c6">&#34;maxSize&#34;</span>: <span style="color:#bd93f9">20</span>,
-      <span style="color:#ff79c6">&#34;maxBackups&#34;</span>: <span style="color:#bd93f9">5</span>,
-      <span style="color:#ff79c6">&#34;maxAge&#34;</span>: <span style="color:#bd93f9">0</span>,
-      <span style="color:#ff79c6">&#34;LocalTime&#34;</span>: <span style="color:#ff79c6">false</span>,
+      <span style="color:#ff79c6">&#34;maxsize&#34;</span>: <span style="color:#bd93f9">20</span>,
+      <span style="color:#ff79c6">&#34;maxbackups&#34;</span>: <span style="color:#bd93f9">5</span>,
+      <span style="color:#ff79c6">&#34;maxage&#34;</span>: <span style="color:#bd93f9">0</span>,
+      <span style="color:#ff79c6">&#34;localtime&#34;</span>: <span style="color:#ff79c6">false</span>,
       <span style="color:#ff79c6">&#34;compress&#34;</span>: <span style="color:#ff79c6">false</span>
     }
   },

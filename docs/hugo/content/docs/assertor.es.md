@@ -23,6 +23,8 @@ La [API del complemento de aserción de tokens](/es/docs/api/asserter_api/) util
 
 Este mock reconoce solo tres combinaciones de entrada: `githubtoken`/`github`, `googletoken`/`google` y `gitlabtoken`/`gitlab`. Cada una representa a `user1` en el dominio correspondiente. Los pares token/proveedor incorrectos fallan. **Es un fixture de prueba, no una validación de tokens real.** No registra valores de tokens. Manténgalo únicamente en bucle local y sustitúyalo por una integración real con su proveedor en producción.
 
+> **Nota:** Los archivos de `website/tests/examples/` que se usan en esta página vienen de un clon del repositorio (ruta B del [Inicio rápido](/es/quick-start/)); `go install` no los incluye.
+
 Inícielo en un terminal independiente desde la raíz del repositorio:
 
 <!-- docs-check: mock-asserter -->

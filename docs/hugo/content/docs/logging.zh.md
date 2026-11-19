@@ -23,14 +23,16 @@ v1.8.0 之后的下一个版本使用 Go `log/slog` 输出应用日志和审计�
 ```text
 --log-level string
 --log-formatter string
---log-reportcaller bool
+--log-reportcaller string
 --log-filename string
---log-maxsize int
---log-maxbackups int
---log-maxage int
---log-localtime bool
---log-compress bool
+--log-maxsize string
+--log-maxbackups string
+--log-maxage string
+--log-localtime string
+--log-compress string
 ```
+
+这些参数都是字符串类型，请使用 `--flag=value` 形式传入值（例如 `--log-compress=true`）。只写参数名时，会把下一个参数当作它的值，例如 `--log-compress --help` 会把 `--help` 当作 `--log-compress` 的值。
 
 | Flag | Default | Meaning |
 | --- | --- | --- |
@@ -52,10 +54,10 @@ v1.8.0 之后的下一个版本使用 Go `log/slog` 输出应用日志和审计�
     "setReportCaller": false,
     "rotationConfig": {
       "filename": "/mnt/logs/speedle.log",
-      "maxSize": 20,
-      "maxBackups": 5,
-      "maxAge": 0,
-      "LocalTime": false,
+      "maxsize": 20,
+      "maxbackups": 5,
+      "maxage": 0,
+      "localtime": false,
       "compress": false
     }
   },

@@ -19,7 +19,7 @@ lastmod = 2026-11-10T14:45:43+08:00
 
 ## 사전 요구 사항
 
-[빠른 시작](/quick-start/)과 동일하게 Linux 또는 macOS 환경과 명령줄 셸, 그리고 **Go 1.27.4**(또는 동일 릴리스 브랜치의 최신 패치 버전)을 준비합니다. 이 예제는 Go modules와 공개된 **Speedle v1.6.0** 릴리스를 사용합니다.
+[빠른 시작](/quick-start/)과 동일하게 Linux 또는 macOS 환경과 명령줄 셸, 그리고 **Go 1.27.4**(또는 동일 릴리스 브랜치의 최신 패치 버전)을 준비합니다. 이 예제는 Go modules와 공개된 **Speedle v1.9.0** 릴리스를 사용합니다.
 
 [공식 설치 지침](https://go.dev/doc/install)에 따라 Go를 설치한 후 버전을 확인합니다:
 
@@ -39,7 +39,7 @@ Speedle 소스 체크아웃 외부의 쓰기 가능한 디렉터리에서 시작
 mkdir speedle-embedded-demo
 cd speedle-embedded-demo
 go mod init example.com/speedle-embedded-demo
-go get github.com/teramoby/speedle-plus/pkg/eval@v1.6.0
+go get github.com/teramoby/speedle-plus/pkg/eval@v1.9.0
 ```
 
 기존 Go 모듈이 있는 경우 해당 모듈의 디렉터리에서 마지막 `go get` 명령만 실행합니다.

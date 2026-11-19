@@ -235,6 +235,10 @@ grant user user1 from IDCS.tenant01 read book</code></pre></div>
 
 <p>El <a href="https://github.com/teramoby/speedle-plus/blob/master/website/tests/examples/idd.json">archivo de prueba</a> concede <code>read</code> al usuario <code>user1</code> de GitHub, <code>write</code> al usuario <code>user1</code> de Google, y <code>rent</code> al usuario <code>user1</code> de cualquier dominio. Los valores de dominio en minúsculas son espacios de nombres de demostración.</p>
 
+<blockquote>
+<p><strong>Nota:</strong> Los archivos de <code>website/tests/examples/</code> que se usan en esta página vienen de un clon del repositorio (ruta B del <a href="/es/quick-start/">Inicio rápido</a>); <code>go install</code> no los incluye.</p>
+</blockquote>
+
 <!-- docs-check: idd-fixture -->
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service --json-file website/tests/examples/idd.json</code></pre></div>
 <h2 id="comparar-decisiones">Comparar decisiones</h2>

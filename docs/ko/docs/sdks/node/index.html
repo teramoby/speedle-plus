@@ -244,9 +244,9 @@ alice delete /docs/public: allowed=false reason=NoApplicablePolicies</code></pre
 
 <p><a href="https://www.npmjs.com/package/@speedle/mcp"><code>@speedle/mcp</code></a>는 npm에 공개되어 있습니다. Speedle MCP(출시 프리뷰)는 <code>check</code> 및 <code>manage</code> 모드를 제공하는 단일 패키지입니다. npm으로 설치합니다:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">npm install @speedle/mcp@0.2.1</code></pre></div>
-<p>또는 <code>speedle-mcp</code> 바이너리를 직접 실행합니다:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">npx @speedle/mcp@0.2.1 check</code></pre></div>
-<p>모드를 지정하지 않고 <code>speedle-mcp</code>를 실행하면 사용법을 출력하고 0이 아닌 상태 코드로 종료합니다. 참조 문서: <a href="https://github.com/teramoby/speedle-mcp">speedle-mcp</a>.</p>
+<p>또는 <code>speedle-mcp</code> 바이너리를 직접 실행합니다. <code>check</code> 모드는 <code>SPEEDLE_ENDPOINT</code>에서 ADS URL을, <code>SPEEDLE_SERVICE_NAME</code>에서 서비스 이름을 읽습니다. 이 예제는 <a href="/ko/docs/sdks/#example-policy">SDK 개요</a>의 로컬 ADS에 대해 실행합니다:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">SPEEDLE_ENDPOINT</span><span style="color:#ff79c6">=</span>http://127.0.0.1:6734 <span style="color:#8be9fd;font-style:italic">SPEEDLE_SERVICE_NAME</span><span style="color:#ff79c6">=</span>docs npx @speedle/mcp@0.2.1 check</code></pre></div>
+<p><code>SPEEDLE_ENDPOINT</code>가 없으면 명령은 <code>speedle-mcp: SPEEDLE_ENDPOINT is required</code>로 종료됩니다. 이 명령은 stdio MCP 서버를 시작해 클라이언트를 기다리므로 성공적으로 시작해도 아무것도 출력하지 않습니다. 모드를 지정하지 않고 <code>speedle-mcp</code>를 실행하면 사용법을 출력하고 0이 아닌 상태 코드로 종료합니다. 참조 문서: <a href="https://github.com/teramoby/speedle-mcp">speedle-mcp</a>.</p>
 
 <h2 id="오류-처리">오류 처리</h2>
 

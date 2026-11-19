@@ -84,7 +84,7 @@ PMS には組み込みの呼び出し元認証がありません。`127.0.0.1` �
 
 ## Kubernetes 開発サンプル
 
-最新の Kubernetes クラスターと互換性のある `kubectl` を使用してください。以下を `speedle-dev.yaml` として保存します。`apps/v1` を使用し、1 つのポッド内で PMS/ADS が 1 つのファイルを共有し、非 root のアプリケーション UID と内部 ClusterIP サービスを使用します。これは分離された開発用サンプルです。ポッドが置換されると `emptyDir` 内のポリシーは失われ、HTTP エンドポイントにはクラスターアクセス制御が必要です。マニフェストは `<release-tag>` プレースホルダーを使用しています。デプロイするリリースタグまたは不変の固定用のダイジェストに置き換え、クラスターに必要な場合は imagePullSecrets を追加してください。
+最新の Kubernetes クラスターと互換性のある `kubectl` を使用してください。以下を `speedle-dev.yaml` として保存します。`apps/v1` を使用し、1 つのポッド内で PMS/ADS が 1 つのファイルを共有し、非 root のアプリケーション UID と内部 ClusterIP サービスを使用します。これは分離された開発用サンプルです。ポッドが置換されると `emptyDir` 内のポリシーは失われ、HTTP エンドポイントにはクラスターアクセス制御が必要です。マニフェストは `<speedle-image>` プレースホルダーを使用しています。以下の適用手順で `SPEEDLE_IMAGE` を代入します。リリースタグ、または不変の固定用のダイジェストを設定できます。クラスターに必要な場合は imagePullSecrets を追加してください。
 
 <!-- deployment-template: kubernetes -->
 ```yaml
@@ -113,7 +113,7 @@ spec:
               mountPath: /data
       containers:
         - name: pms
-          image: docker.io/speedle/speedle:<release-tag>
+          image: <speedle-image>
           args: ["speedle-pms", "--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6733", "--insecure=true"]
           ports:
             - containerPort: 6733
@@ -124,7 +124,7 @@ spec:
             - name: policies
               mountPath: /data
         - name: ads
-          image: docker.io/speedle/speedle:<release-tag>
+          image: <speedle-image>
           args: ["speedle-ads", "--store-type", "file", "--filestore-loc", "/data/policies.json", "--endpoint", "0.0.0.0:6734", "--insecure=true"]
           ports:
             - containerPort: 6734
@@ -155,11 +155,12 @@ spec:
       targetPort: 6734
 ```
 
-`SPEEDLE_IMAGE` を、デプロイする正確なイメージ（リリースタグやダイジェストなど）に設定します。適用前にローカルで置換し、クイックスタートのクライアントを使用している間はポートフォワードを実行したままにしてください:
+`SPEEDLE_IMAGE` を、デプロイする正確なイメージ（例: `docker.io/speedle/speedle:1.9.0`、または `@sha256:` ダイジェスト付きのイメージ）に設定します。適用前にローカルで置換し、クイックスタートのクライアントを使用している間はポートフォワードを実行したままにしてください:
 
 <!-- deployment-template: apply -->
 ```bash
-kubectl set image --local -f speedle-dev.yaml pms="$SPEEDLE_IMAGE" ads="$SPEEDLE_IMAGE" -o yaml | kubectl apply -f -
+SPEEDLE_IMAGE=docker.io/speedle/speedle:1.9.0
+sed "s|<speedle-image>|$SPEEDLE_IMAGE|g" speedle-dev.yaml | kubectl apply -f -
 kubectl rollout status deployment/speedle-dev
 kubectl port-forward service/speedle-dev 6733:6733 6734:6734
 ```

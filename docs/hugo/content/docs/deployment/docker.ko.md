@@ -18,41 +18,41 @@ Speedle은 `speedle-pms`, `speedle-ads`, `spctl`이 포함된 단일 이미지�
 - Docker Hub: `docker.io/speedle/speedle`
 - GHCR: `ghcr.io/teramoby/speedle`
 
-릴리스 1.7.0은 두 레지스트리 모두에 `linux/amd64` 및 `linux/arm64` 아키텍처용으로 `1.7.0`, `1.7`, `latest` 태그를 게시합니다.
+릴리스 1.9.0은 두 레지스트리 모두에 `linux/amd64` 및 `linux/arm64` 아키텍처용으로 `1.9.0`, `1.9`, `latest` 태그를 게시합니다.
 
 ## 이미지 풀
 
 ```bash
-docker pull docker.io/speedle/speedle:1.7.0
-docker pull ghcr.io/teramoby/speedle:1.7.0
+docker pull docker.io/speedle/speedle:1.9.0
+docker pull ghcr.io/teramoby/speedle:1.9.0
 ```
 
-`docker pull`은 인덱스 다이제스트를 출력합니다. 1.7.0의 경우 두 레지스트리 모두 다이제스트는 `sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0`입니다.
+`docker pull`은 인덱스 다이제스트를 출력합니다. 1.9.0의 경우 두 레지스트리 모두 다이제스트는 `sha256:f20947fc15fb342dbafe93403df99f909795ad66ac0866fd9252611268791d2c`입니다.
 
 ## 태그 선택
 
-`1.7.0`은 이번 릴리스를 가리킵니다. 상위 1.7 패치가 게시되면 `1.7` 태그가 이동합니다. `master`의 최신 커밋에서 상위 릴리스가 게시되면 `latest` 태그가 이동합니다. 릴리스 재시도로 동일한 버전 태그가 다시 게시될 수 있으므로 태그는 불변 빌드가 아닙니다.
+`1.9.0`은 이번 릴리스를 가리킵니다. 상위 1.9 패치가 게시되면 `1.9` 태그가 이동합니다. `master`의 최신 커밋에서 상위 릴리스가 게시되면 `latest` 태그가 이동합니다. 릴리스 재시도로 동일한 버전 태그가 다시 게시될 수 있으므로 태그는 불변 빌드가 아닙니다.
 
 인덱스 다이제스트 확인:
 
 ```bash
-docker buildx imagetools inspect docker.io/speedle/speedle:1.7.0 --format '{{.Manifest.Digest}}'
+docker buildx imagetools inspect docker.io/speedle/speedle:1.9.0 --format '{{.Manifest.Digest}}'
 ```
 
-1.7.0 릴리스의 경우 두 레지스트리의 `1.7.0`, `1.7`, `latest` 모두 다음을 출력합니다:
+1.9.0 릴리스의 경우 두 레지스트리의 `1.9.0`, `1.9`, `latest` 모두 다음을 출력합니다:
 
 ```text
-sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0
+sha256:f20947fc15fb342dbafe93403df99f909795ad66ac0866fd9252611268791d2c
 ```
 
-`1.7` 또는 `latest`를 배포하기 전에 다이제스트를 다시 확인하십시오. 특정 빌드를 고정하려면 이미지 이름 뒤에 `@`와 해당 다이제스트를 사용합니다(예: `docker.io/speedle/speedle@sha256:20bd3fe8169ec3ddadf1484285e34bd68004dbb457782223dc84a2a9f1dd91c0`).
+`1.9` 또는 `latest`를 배포하기 전에 다이제스트를 다시 확인하십시오. 특정 빌드를 고정하려면 이미지 이름 뒤에 `@`와 해당 다이제스트를 사용합니다(예: `docker.io/speedle/speedle@sha256:f20947fc15fb342dbafe93403df99f909795ad66ac0866fd9252611268791d2c`).
 
 ## 이미지 내 명령
 
 인수 없이 실행하면 이미지는 세 개의 프로그램을 출력합니다:
 
 ```bash
-docker run --rm docker.io/speedle/speedle:1.7.0
+docker run --rm docker.io/speedle/speedle:1.9.0
 ```
 
 ```text
@@ -61,7 +61,7 @@ speedle-ads
 spctl
 ```
 
-`docker run --rm ghcr.io/teramoby/speedle:1.7.0`도 동일한 내용을 출력합니다. 아래 명령은 Docker Hub 이름을 사용합니다. GHCR 복사본을 사용하려면 GHCR 이름으로 대체하십시오. 이미지에는 셸이 없으므로 `docker exec`는 절대 경로 `/spctl`, `/speedle-pms` 또는 `/speedle-ads`를 호출해야 합니다.
+`docker run --rm ghcr.io/teramoby/speedle:1.9.0`도 동일한 내용을 출력합니다. 아래 명령은 Docker Hub 이름을 사용합니다. GHCR 복사본을 사용하려면 GHCR 이름으로 대체하십시오. 이미지에는 셸이 없으므로 `docker exec`는 절대 경로 `/spctl`, `/speedle-pms` 또는 `/speedle-ads`를 호출해야 합니다.
 
 ## PMS 및 ADS 실행
 
@@ -72,7 +72,7 @@ docker volume create speedle-policies
 docker run -d --name speedle-pms \
   -p 127.0.0.1:6733:6733 \
   -v speedle-policies:/data \
-  docker.io/speedle/speedle:1.7.0 \
+  docker.io/speedle/speedle:1.9.0 \
   speedle-pms --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6733 --insecure=true
 ```
 
@@ -97,7 +97,7 @@ curl --fail --silent --show-error --retry 30 --retry-all-errors --retry-delay 1 
 docker run -d --name speedle-ads \
   -p 127.0.0.1:6734:6734 \
   -v speedle-policies:/data \
-  docker.io/speedle/speedle:1.7.0 \
+  docker.io/speedle/speedle:1.9.0 \
   speedle-ads --store-type file --filestore-loc /data/policies.json --endpoint 0.0.0.0:6734 --insecure=true
 ```
 
@@ -204,7 +204,7 @@ alice get /docs/public: allowed=true
 ```yaml
 services:
   pms:
-    image: docker.io/speedle/speedle:1.7.0
+    image: docker.io/speedle/speedle:1.9.0
     command:
       - speedle-pms
       - --store-type
@@ -219,7 +219,7 @@ services:
     volumes:
       - speedle-policies:/data
   ads:
-    image: docker.io/speedle/speedle:1.7.0
+    image: docker.io/speedle/speedle:1.9.0
     command:
       - speedle-ads
       - --store-type
@@ -267,10 +267,10 @@ docker compose -f compose.yaml down -v
 배포 빌드에는 출처(Provenance) 및 SBOM(`docker buildx build --provenance=mode=max --sbom=true`)이 포함됩니다. 인덱스 검사:
 
 ```bash
-docker buildx imagetools inspect docker.io/speedle/speedle:1.7.0
+docker buildx imagetools inspect docker.io/speedle/speedle:1.9.0
 ```
 
-인덱스에는 `linux/amd64`, `linux/arm64` 및 두 개의 `unknown/unknown` 매니페스트가 나열됩니다. 이러한 unknown 플랫폼은 증명(attestation) 매니페스트입니다. 각각은 `vnd.docker.reference.type`을 `attestation-manifest`로 설정하고 `vnd.docker.reference.digest`를 해당 플랫폼 이미지로 설정합니다. `docker buildx imagetools inspect ghcr.io/teramoby/speedle:1.7.0`도 동일한 플랫폼 및 증명 다이제스트를 출력합니다.
+인덱스에는 `linux/amd64`, `linux/arm64` 및 두 개의 `unknown/unknown` 매니페스트가 나열됩니다. 이러한 unknown 플랫폼은 증명(attestation) 매니페스트입니다. 각각은 `vnd.docker.reference.type`을 `attestation-manifest`로 설정하고 `vnd.docker.reference.digest`를 해당 플랫폼 이미지로 설정합니다. `docker buildx imagetools inspect ghcr.io/teramoby/speedle:1.9.0`도 동일한 플랫폼 및 증명 다이제스트를 출력합니다.
 
 ## 컨테이너 중지
 

@@ -244,9 +244,9 @@ alice delete /docs/public: allowed=false reason=NoApplicablePolicies</code></pre
 
 <p><a href="https://www.npmjs.com/package/@speedle/mcp"><code>@speedle/mcp</code></a> is published on npm. Speedle MCP (launch preview) is one package with <code>check</code> and <code>manage</code> modes. Install it with npm:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">npm install @speedle/mcp@0.2.1</code></pre></div>
-<p>Or run the <code>speedle-mcp</code> binary directly:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">npx @speedle/mcp@0.2.1 check</code></pre></div>
-<p>Running <code>speedle-mcp</code> without a mode prints usage and exits with a non-zero status. Reference: <a href="https://github.com/teramoby/speedle-mcp">speedle-mcp</a>.</p>
+<p>Or run the <code>speedle-mcp</code> binary directly. The <code>check</code> mode reads the ADS URL from <code>SPEEDLE_ENDPOINT</code> and the service name from <code>SPEEDLE_SERVICE_NAME</code>; this example uses the local ADS from the <a href="/docs/sdks/#example-policy">SDKs overview</a>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">SPEEDLE_ENDPOINT</span><span style="color:#ff79c6">=</span>http://127.0.0.1:6734 <span style="color:#8be9fd;font-style:italic">SPEEDLE_SERVICE_NAME</span><span style="color:#ff79c6">=</span>docs npx @speedle/mcp@0.2.1 check</code></pre></div>
+<p>Without <code>SPEEDLE_ENDPOINT</code>, the command exits with <code>speedle-mcp: SPEEDLE_ENDPOINT is required</code>. The command starts a stdio MCP server and waits for a client, so a successful start prints nothing. Running <code>speedle-mcp</code> without a mode prints usage and exits with a non-zero status. Reference: <a href="https://github.com/teramoby/speedle-mcp">speedle-mcp</a>.</p>
 
 <h2 id="error-handling">Error handling</h2>
 

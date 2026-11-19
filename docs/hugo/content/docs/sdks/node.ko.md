@@ -80,13 +80,13 @@ alice delete /docs/public: allowed=false reason=NoApplicablePolicies
 npm install @speedle/mcp@0.2.1
 ```
 
-또는 `speedle-mcp` 바이너리를 직접 실행합니다:
+또는 `speedle-mcp` 바이너리를 직접 실행합니다. `check` 모드는 `SPEEDLE_ENDPOINT`에서 ADS URL을, `SPEEDLE_SERVICE_NAME`에서 서비스 이름을 읽습니다. 이 예제는 [SDK 개요](/docs/sdks/#example-policy)의 로컬 ADS에 대해 실행합니다:
 
 ```bash
-npx @speedle/mcp@0.2.1 check
+SPEEDLE_ENDPOINT=http://127.0.0.1:6734 SPEEDLE_SERVICE_NAME=docs npx @speedle/mcp@0.2.1 check
 ```
 
-모드를 지정하지 않고 `speedle-mcp`를 실행하면 사용법을 출력하고 0이 아닌 상태 코드로 종료합니다. 참조 문서: [speedle-mcp](https://github.com/teramoby/speedle-mcp).
+`SPEEDLE_ENDPOINT`가 없으면 명령은 `speedle-mcp: SPEEDLE_ENDPOINT is required`로 종료됩니다. 이 명령은 stdio MCP 서버를 시작해 클라이언트를 기다리므로 성공적으로 시작해도 아무것도 출력하지 않습니다. 모드를 지정하지 않고 `speedle-mcp`를 실행하면 사용법을 출력하고 0이 아닌 상태 코드로 종료합니다. 참조 문서: [speedle-mcp](https://github.com/teramoby/speedle-mcp).
 
 ## 오류 처리
 

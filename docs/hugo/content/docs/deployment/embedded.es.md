@@ -19,7 +19,7 @@ Para probar políticas básicas antes de escribir código, abra el [Playground](
 
 ## Requisitos previos
 
-Utilice Linux o macOS con un shell y **Go 1.27.4** (o un parche más reciente en la misma rama de lanzamiento), coincidiendo con el [Inicio rápido](/es/quick-start/). Esta guía utiliza módulos de Go y la versión publicada **Speedle v1.6.0**.
+Utilice Linux o macOS con un shell y **Go 1.27.4** (o un parche más reciente en la misma rama de lanzamiento), coincidiendo con el [Inicio rápido](/es/quick-start/). Esta guía utiliza módulos de Go y la versión publicada **Speedle v1.9.0**.
 
 Instale Go siguiendo las [instrucciones oficiales de instalación](https://go.dev/doc/install), luego verifique su versión:
 
@@ -39,7 +39,7 @@ Comience en un directorio con permisos de escritura fuera del código fuente de 
 mkdir speedle-embedded-demo
 cd speedle-embedded-demo
 go mod init example.com/speedle-embedded-demo
-go get github.com/teramoby/speedle-plus/pkg/eval@v1.6.0
+go get github.com/teramoby/speedle-plus/pkg/eval@v1.9.0
 ```
 
 En un módulo de Go existente, ejecute solo el comando `go get` final desde el directorio de ese módulo.

@@ -199,7 +199,15 @@
 
 <h2 id="speedle-发布版本">Speedle 发布版本</h2>
 
-<p>已发布版本及发行说明以 <a href="https://github.com/teramoby/speedle-plus/releases">GitHub Releases</a> 为准。<a href="https://github.com/teramoby/speedle-plus/releases/tag/v1.6.0">v1.6.0</a> 是当前嵌入式 Go 示例固定使用的版本。为确保模块依赖可复现，应指定已发布版本；安装方式见<a href="/zh/docs/deployment/embedded/">嵌入模式</a>。</p>
+<p>已发布版本及发行说明以 <a href="https://github.com/teramoby/speedle-plus/releases">GitHub Releases</a> 为准。</p>
+
+<ul>
+<li><a href="https://github.com/teramoby/speedle-plus/releases/tag/v1.9.0">v1.9.0</a>：自定义函数失败会使决策失败；函数可声明参数与返回值类型；MySQL 存储使用 schema 2；js/wasm 构建支持宿主注册的自定义函数调用器；应用与审计日志迁移到 Go <code>log/slog</code>。</li>
+<li><a href="https://github.com/teramoby/speedle-plus/releases/tag/v1.8.0">v1.8.0</a>：移除实验性的策略分发功能；源码构建需要 Go 1.27.4 或更新版本；容器映像包含公共 CA 证书包；文档新增日语、韩语和西班牙语。</li>
+<li><a href="https://github.com/teramoby/speedle-plus/releases/tag/v1.7.0">v1.7.0</a>：MySQL 策略存储、离线 <code>spctl check</code>、命令行帮助列出全部选项、在 panic 和存储故障时默认拒绝，以及 Docker Hub 和 GHCR 上的单一多架构映像。</li>
+</ul>
+
+<p><a href="https://github.com/teramoby/speedle-plus/releases/tag/v1.9.0">v1.9.0</a> 是当前嵌入式 Go 示例固定使用的版本。为确保模块依赖可复现，应指定已发布版本；安装方式见<a href="/zh/docs/deployment/embedded/">嵌入模式</a>。</p>
 
 <h2 id="oracle-speedle-历史版本">Oracle Speedle 历史版本</h2>
 

@@ -17,7 +17,7 @@
       
       <guid>https://engine.speedle.io/es/docs/versions/</guid>
       <description>Versiones de Speedle Consulte la página de GitHub Releases para ver las versiones publicadas y las notas de la versión.
-Versión histórica de Oracle Speedle La versión 0.1.0 fue el lanzamiento original de código abierto, que incluía gestión de políticas, decisiones de autorización, la herramienta de línea de comandos y muestras de integración.</description>
+ v1.9.0: los fallos de las funciones personalizadas hacen fallar la decisión, las funciones pueden declarar tipos de parámetros y de resultado, el almacén MySQL usa el esquema versión 2, la compilación js/wasm acepta un llamador de funciones personalizado del host y los registros de aplicación y auditoría pasan a Go log/slog.</description>
     </item>
     
   </channel>

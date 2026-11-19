@@ -68,6 +68,8 @@ Run the remaining commands in a third terminal. PMS and ADS share the file; watc
 
 The [fixture](https://github.com/teramoby/speedle-plus/blob/master/website/tests/examples/idd.json) grants `read` to GitHub's `user1`, `write` to Google's `user1`, and `rent` to `user1` from any domain. The lowercase domain values are demonstration namespaces.
 
+> **Note:** The files under `website/tests/examples/` used on this page come from a clone of the repository (Route B of the [Quick Start](/quick-start/)); `go install` does not include them.
+
 <!-- docs-check: idd-fixture -->
 ```bash
 ./bin/spctl --pms-endpoint http://127.0.0.1:6733/policy-mgmt/v1/ create service --json-file website/tests/examples/idd.json
