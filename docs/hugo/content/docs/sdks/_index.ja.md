@@ -31,12 +31,14 @@ Speedle SDK は、決定 API `POST /authz-check/v1/is-allowed` のクライア�
 
 | SDK | 最小バージョン | CI テストバージョン |
 | --- | --- | --- |
-| Go | Go 1.22 | 1.22, 1.27 |
+| Go | Go 1.26（v1.9.0）、v1.9.1 から Go 1.22 | 1.22, 1.27 |
 | Python | Python 3.10 | 3.10, 3.11, 3.12, 3.13, 3.14, 3.15 |
 | Node.js | Node.js 22 | 22, 24, 26 |
 | Java | Java 17 | 17, 21, 25, 27 |
 | .NET | .NET 8 | net8.0, net10.0, net11.0 |
 | Rust | Rust 1.75 | 1.75, stable |
+
+公開済みの Go モジュールは v1.9.0 で Go 1.26 を宣言しています。Go SDK が宣言する最低バージョンは v1.9.1 から Go 1.22 になります。
 
 ## 機能
 

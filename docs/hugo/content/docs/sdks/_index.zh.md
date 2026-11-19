@@ -31,12 +31,14 @@ Speedle SDK 是决策 API `POST /authz-check/v1/is-allowed` 的客户端库，�
 
 | SDK | 最低版本 | CI 测试版本 |
 | --- | --- | --- |
-| Go | Go 1.22 | 1.22、1.27 |
+| Go | Go 1.26（v1.9.0）；从 v1.9.1 起为 Go 1.22 | 1.22、1.27 |
 | Python | Python 3.10 | 3.10、3.11、3.12、3.13、3.14、3.15 |
 | Node.js | Node.js 22 | 22、24、26 |
 | Java | Java 17 | 17、21、25、27 |
 | .NET | .NET 8 | net8.0、net10.0、net11.0 |
 | Rust | Rust 1.75 | 1.75、stable |
+
+已发布的 Go 模块为 v1.9.0，声明 Go 1.26；从 v1.9.1 起，Go SDK 声明的最低版本为 Go 1.22。
 
 ## 功能
 

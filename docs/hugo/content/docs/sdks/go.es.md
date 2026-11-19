@@ -13,7 +13,7 @@ summary = "Añada github.com/teramoby/speedle-sdk/go v1.9.0 con go get, y llame 
 lastmod = 2026-11-07T19:43:15+08:00
 +++
 
-El SDK de Go requiere Go 1.22 o posterior, admite todas las versiones de Go publicadas en los últimos tres años y utiliza únicamente la biblioteca estándar. Módulo: [`github.com/teramoby/speedle-sdk/go`](https://pkg.go.dev/github.com/teramoby/speedle-sdk/go) v1.9.0, paquete `speedle`. Referencia: [speedle-sdk/go](https://github.com/teramoby/speedle-sdk/tree/main/go).
+El SDK de Go admite todas las versiones de Go publicadas en los últimos tres años. El módulo publicado v1.9.0 declara Go 1.26; a partir de v1.9.1, la versión mínima declarada es Go 1.22. Utiliza únicamente la biblioteca estándar. Módulo: [`github.com/teramoby/speedle-sdk/go`](https://pkg.go.dev/github.com/teramoby/speedle-sdk/go) v1.9.0, paquete `speedle`. Referencia: [speedle-sdk/go](https://github.com/teramoby/speedle-sdk/tree/main/go).
 
 Los ejemplos comprueban la política descrita en la [descripción general de los SDK](/es/docs/sdks/#example-policy).
 

@@ -31,12 +31,14 @@ Cada SDK admite todas las versiones del lenguaje o del entorno de ejecución pub
 
 | SDK | Versión mínima | Versiones probadas en CI |
 | --- | --- | --- |
-| Go | Go 1.22 | 1.22, 1.27 |
+| Go | Go 1.26 (v1.9.0); Go 1.22 desde v1.9.1 | 1.22, 1.27 |
 | Python | Python 3.10 | 3.10, 3.11, 3.12, 3.13, 3.14, 3.15 |
 | Node.js | Node.js 22 | 22, 24, 26 |
 | Java | Java 17 | 17, 21, 25, 27 |
 | .NET | .NET 8 | net8.0, net10.0, net11.0 |
 | Rust | Rust 1.75 | 1.75, stable |
+
+El módulo Go publicado es v1.9.0, que declara Go 1.26; la versión mínima declarada del SDK de Go pasa a Go 1.22 con v1.9.1.
 
 ## Funcionalidades
 

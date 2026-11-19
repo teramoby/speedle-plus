@@ -13,7 +13,7 @@ summary = "用 go get 添加 github.com/teramoby/speedle-sdk/go v1.9.0，再向�
 lastmod = 2026-11-08T11:21:16+08:00
 +++
 
-Go SDK 需要 Go 1.22 或更高版本，支持过去三年内发布的所有 Go 版本，只使用标准库。模块：[`github.com/teramoby/speedle-sdk/go`](https://pkg.go.dev/github.com/teramoby/speedle-sdk/go) v1.9.0，包名 `speedle`。参考文档：[speedle-sdk/go](https://github.com/teramoby/speedle-sdk/tree/main/go)。
+Go SDK 支持过去三年内发布的所有 Go 版本。已发布的 v1.9.0 模块声明 Go 1.26；从 v1.9.1 起，声明的最低版本为 Go 1.22。它只使用标准库。模块：[`github.com/teramoby/speedle-sdk/go`](https://pkg.go.dev/github.com/teramoby/speedle-sdk/go) v1.9.0，包名 `speedle`。参考文档：[speedle-sdk/go](https://github.com/teramoby/speedle-sdk/tree/main/go)。
 
 示例使用的策略见 [SDK 概览](/docs/sdks/#示例策略)。
 
