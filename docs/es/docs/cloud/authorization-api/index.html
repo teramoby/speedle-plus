@@ -24,7 +24,7 @@
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/cloud/authorization-api/">
 <meta property="og:type" content="article">
 <meta property="article:published_time" content="2026-11-08T00:00:00&#43;08:00">
-<meta property="article:modified_time" content="2026-11-12T00:00:00&#43;08:00">
+<meta property="article:modified_time" content="2026-11-21T00:00:00&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="API de autorización de Speedle Cloud · Speedle Engine">
 <meta property="og:description" content="Solicitud y respuesta de IsAllowed de Speedle Cloud ADS, integración con Node.js 22, instantáneas de políticas y restricciones de transporte.">
@@ -40,7 +40,7 @@
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/cloud/authorization-api/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-12T00:00:00+08:00","datePublished":"2026-11-08T00:00:00+08:00","description":"Solicitud y respuesta de IsAllowed de Speedle Cloud ADS, integración con Node.js 22, instantáneas de políticas y restricciones de transporte.","headline":"API de autorización de Speedle Cloud","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"es","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/es/docs/cloud/authorization-api/","@type":"WebPage"},"name":"API de autorización de Speedle Cloud","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/es/docs/cloud/authorization-api/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/cloud/authorization-api/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-21T00:00:00+08:00","datePublished":"2026-11-08T00:00:00+08:00","description":"Solicitud y respuesta de IsAllowed de Speedle Cloud ADS, integración con Node.js 22, instantáneas de políticas y restricciones de transporte.","headline":"API de autorización de Speedle Cloud","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"es","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/es/docs/cloud/authorization-api/","@type":"WebPage"},"name":"API de autorización de Speedle Cloud","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/es/docs/cloud/authorization-api/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/cloud/authorization-api/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/es/","name":"Inicio","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/","name":"Documentación","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/cloud/","name":"Speedle Cloud","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/cloud/authorization-api/","name":"API de autorización de Speedle Cloud","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -156,6 +156,7 @@
 <li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/es/docs/cloud/">Speedle Cloud</a></span>
 <ul class="sub-menu">
 <li data-docs-depth="1" class=""><a href="/es/docs/cloud/getting-started/">Primeros pasos</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/cloud/console/">Manual de consola</a></li>
 <li data-docs-depth="1" class=""><a href="/es/docs/cloud/tokens/">Claves API</a></li>
 <li data-docs-depth="1" class=""><a href="/es/docs/cloud/global-roles/">Roles globales</a></li>
 <li data-docs-depth="1" class="active"><a href="/es/docs/cloud/authorization-api/" aria-current="page">API de autorización</a></li>
@@ -185,7 +186,7 @@
 <div id="main">
 
   <h1>API de autorización de Speedle Cloud</h1>
-  <p class="docs-lead">Autorización del servidor con una clave API de cuenta.</p>
+  <p class="docs-lead">Autorización del servidor con una clave API de espacio de trabajo.</p>
 
 
 
@@ -200,11 +201,11 @@
 
 <p><strong>Speedle Cloud está en beta pública.</strong> Esta guía describe el flujo de trabajo del servicio en línea.</p>
 
-<p>Use una clave API de cuenta para llamadas de autorización desde el servidor. Inicie sesión en la cuenta para crear claves. Use <code>ads</code> o <code>pms:read+ads</code> para las comprobaciones ADS; <code>pms:read</code> y <code>pms:write</code> devuelven <code>403 insufficient_scope</code>. <code>pms:read+ads</code> también permite lecturas PMS y es necesario para sincronizar políticas con Speedle Cloud ADS (<code>speedle-cloud</code>); no permite escrituras.</p>
+<p>Use una clave API de espacio de trabajo para llamadas de autorización desde el servidor. Inicie sesión en su cuenta, seleccione el espacio de trabajo correspondiente y cree claves allí. Use <code>ads</code> o <code>pms:read+ads</code> para las comprobaciones ADS; <code>pms:read</code> y <code>pms:write</code> devuelven <code>403 insufficient_scope</code>. <code>pms:read+ads</code> también permite lecturas PMS y es necesario para sincronizar políticas con Speedle Cloud ADS (<code>speedle-cloud</code>); no permite escrituras.</p>
 
 <h2 id="invocar-isallowed-desde-su-servidor">Invocar IsAllowed desde su servidor</h2>
 
-<p>Envíe una clave API de cuenta con ámbito <code>ads</code> o <code>pms:read+ads</code> en un encabezado <code>Authorization: Bearer</code> y realice una solicitud POST:</p>
+<p>Envíe una clave API de espacio de trabajo con ámbito <code>ads</code> o <code>pms:read+ads</code> en un encabezado <code>Authorization: Bearer</code> y realice una solicitud POST:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-http" data-lang="http">POST /authz-check/v1/is-allowed
 Authorization: Bearer &lt;API key&gt;
 Content-Type: application/json
@@ -216,7 +217,7 @@ Content-Type: application/json
 
 <p>La política de primeros pasos, <code>grant user alice from corp get /books</code>, coincide con la solicitud anterior únicamente en el dominio <code>corp</code>. Una política sin <code>from</code> coincide con el nombre en todos los dominios. Una entidad principal sin <code>idd</code> coincide también con todos los dominios, lo que hace indistinguibles a dos usuarios distintos que compartan el mismo nombre cuando la aplicación acepta más de una fuente de identidades. Las integraciones multiinquilino deben enviar <code>idd</code> en cada solicitud.</p>
 
-<p><code>serviceName</code> es obligatorio y nunca se asigna por defecto. Elija un servicio de la cuenta de la clave API. Un nombre ausente, vacío, desconocido o de otra cuenta devuelve <code>404 {&quot;error&quot;:&quot;service_not_found&quot;}</code>. La clave API no se vincula a un solo servicio.</p>
+<p><code>serviceName</code> es obligatorio y nunca se asigna por defecto. Elija un servicio del espacio de trabajo de la clave API. Un nombre ausente, vacío, desconocido o de otro espacio de trabajo devuelve <code>404 {&quot;error&quot;:&quot;service_not_found&quot;}</code>. Una clave API de espacio de trabajo cubre el espacio de trabajo según su ámbito y no se vincula a un solo servicio.</p>
 
 <p>La <a href="/es/docs/cloud/getting-started/#crear-un-servicio-y-una-política">política de primeros pasos</a> autoriza la solicitud de ejemplo:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-json" data-lang="json">{<span style="color:#ff79c6">&#34;allowed&#34;</span>:<span style="color:#ff79c6">true</span>,<span style="color:#ff79c6">&#34;reason&#34;</span>:<span style="color:#bd93f9">0</span>}</code></pre></div>
@@ -224,7 +225,7 @@ Content-Type: application/json
 
 <p>Una denegación de política también devuelve HTTP 200, con <code>allowed</code> establecido en <code>false</code>. Su aplicación debe verificar <code>allowed</code> antes de ejecutar la acción protegida y debe fallar de forma restrictiva (fail closed) ante excepciones o respuestas no válidas.</p>
 
-<p>La aplicación determina las entidades principales mediante su propia autenticación de usuarios. La clave API identifica la cuenta y el ámbito permitido, no al usuario final. No confíe en identidades proporcionadas por un navegador no autenticado.</p>
+<p>La aplicación determina las entidades principales mediante su propia autenticación de usuarios. La clave API identifica el espacio de trabajo y el ámbito permitido, no al usuario final. No confíe en identidades proporcionadas por un navegador no autenticado.</p>
 
 <p>Speedle Cloud no valida tokens de sujetos. Al igual que el Speedle autohospedado sin un asertor de tokens, acepta <code>subject.token</code> y <code>tokenType</code> y los descarta sin validación, por lo que un campo de token no vacío nunca es prueba de que la autenticación haya tenido lugar; las decisiones solo utilizan las entidades principales. No reenvíe un token de usuario final ni trate la llamada como validada por aserción.</p>
 

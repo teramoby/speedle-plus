@@ -1,16 +1,16 @@
 +++
 title = "Speedle Cloud"
-description = "Hosted authorization, account API keys, request limits and integration guides."
+description = "Hosted authorization, workspaces, Console manual, API keys, request limits and integration guides."
 weight = 306
 draft = false
 toc = false
 linksection = true
 tocheading = "h2"
 categories = ["docs"]
-lastmod = 2026-11-12T21:00:00+08:00
+lastmod = 2026-11-21T00:00:00+08:00
 +++
 
-Speedle Cloud is a hosted authorization service built on the open-source Speedle engine. Manage services, SPDL authorization and role policies, test decisions in the Playground and call the API from your server.
+Speedle Cloud is a hosted authorization service built on the open-source Speedle engine. Manage workspaces, services, SPDL authorization and role policies, test decisions in the Playground and call the API from your server.
 
 Policy synchronization from Speedle Cloud uses Speedle Cloud ADS: the `speedle-cloud` binary and image. The self-hosted Speedle Engine `speedle-ads` binary no longer provides a `policy-source` store.
 
@@ -21,11 +21,12 @@ Sign in to use the console and create API keys. The free public beta is for tria
 ## Documentation
 
 - [Getting started](/docs/cloud/getting-started/): Sign in, create a service and policy in the console, create an API key, and check authorization from your application.
-- [API keys](/docs/cloud/tokens/): Account-level credentials, fixed scopes, a required expiry, Create and Revoke, one-time secret display and pagination.
-- [Global roles](/docs/cloud/global-roles/): Assign a role once for every service of the account and grant its permissions in each service.
+- [Console manual](/docs/cloud/console/): Task-oriented guide to the Speedle Cloud Console (SCC): workspaces, members, services, policies, Playground, API keys, custom functions, ADS fleet, audit logs and account settings.
+- [API keys](/docs/cloud/tokens/): Workspace credentials, fixed scopes, a required expiry, Create and Revoke, one-time secret display and pagination.
+- [Global roles](/docs/cloud/global-roles/): Assign a role once for every service in a workspace and grant its permissions in each service.
 - [Authorization API](/docs/cloud/authorization-api/): IsAllowed requests, caller identity, Node.js 22 and transport constraints.
 - [API reference](/docs/cloud/api-reference/): authorization checks and policy management with an API key. Requests run from your server; this page is read-only.
-- [Limits and errors](/docs/cloud/limits-and-errors/): Account caps, size limits, burst limits, daily quota, error codes and reset times.
+- [Limits and errors](/docs/cloud/limits-and-errors/): Workspace caps, size limits, burst limits, daily quota, error codes and reset times.
 
 ## Downloads
 

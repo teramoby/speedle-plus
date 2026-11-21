@@ -11,7 +11,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1"><title>Speedle Cloud · Speedle Engine</title>
-<meta name="description" content="托管授权、账号 API 密钥、请求限额与接入指南。">
+<meta name="description" content="托管授权、工作区、控制台手册、API 密钥、请求限额与接入指南。">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/zh/docs/cloud/">
@@ -25,7 +25,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Speedle Cloud · Speedle Engine">
-<meta property="og:description" content="托管授权、账号 API 密钥、请求限额与接入指南。">
+<meta property="og:description" content="托管授权、工作区、控制台手册、API 密钥、请求限额与接入指南。">
 <meta property="og:url" content="https://engine.speedle.io/zh/docs/cloud/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-zh.png">
 <meta property="og:image:width" content="1200">
@@ -34,11 +34,11 @@
 <meta property="og:image:alt" content="Speedle Engine — 快速、简单的权限控制">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Speedle Cloud · Speedle Engine">
-<meta name="twitter:description" content="托管授权、账号 API 密钥、请求限额与接入指南。">
+<meta name="twitter:description" content="托管授权、工作区、控制台手册、API 密钥、请求限额与接入指南。">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-zh.png">
 <meta name="twitter:image:alt" content="Speedle Engine — 快速、简单的权限控制">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/cloud/#webpage","@type":"WebPage","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-12T21:00:00+08:00","description":"托管授权、账号 API 密钥、请求限额与接入指南。","headline":"Speedle Cloud","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/cloud/","@type":"WebPage"},"name":"Speedle Cloud","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/cloud/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/cloud/#webpage","@type":"WebPage","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-21T00:00:00+08:00","description":"托管授权、工作区、控制台手册、API 密钥、请求限额与接入指南。","headline":"Speedle Cloud","image":"https://engine.speedle.io/img/social/engine-zh.png","inLanguage":"zh-CN","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/zh/docs/cloud/","@type":"WebPage"},"name":"Speedle Cloud","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/zh/docs/cloud/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/zh/docs/cloud/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/zh/","name":"首页","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/","name":"文档","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/zh/docs/cloud/","name":"Speedle Cloud","position":3}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -154,6 +154,7 @@
 <li data-docs-depth="0" class="docs-nav-section parent active"><span class="docs-nav-heading docs-nav-heading-link"><a href="/zh/docs/cloud/" aria-current="page">Speedle Cloud</a></span>
 <ul class="sub-menu">
 <li data-docs-depth="1" class=""><a href="/zh/docs/cloud/getting-started/">快速入门</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/cloud/console/">控制台手册</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/cloud/tokens/">API 密钥</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/cloud/global-roles/">全局角色</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/cloud/authorization-api/">授权 API</a></li>
@@ -183,7 +184,7 @@
   <h1>Speedle Cloud</h1>
   <p></p>
 
-<p>Speedle Cloud 是基于开源 Speedle 引擎的托管授权服务。你可以管理服务、SPDL 授权策略和角色策略，在 Playground 中测试判定，并从服务端调用 API。</p>
+<p>Speedle Cloud 是基于开源 Speedle 引擎的托管授权服务。你可以管理工作区、服务、SPDL 授权策略和角色策略，在策略试运行（Playground）中测试判定，并从服务端调用 API。</p>
 
 <p>从 Speedle Cloud 同步策略使用 Speedle Cloud ADS，即 <code>speedle-cloud</code> 二进制和镜像。自托管 Speedle Engine 的 <code>speedle-ads</code> 二进制不再提供 <code>policy-source</code> 存储。</p>
 
@@ -195,11 +196,12 @@
 
 <ul>
 <li><a href="/zh/docs/cloud/getting-started/">快速入门</a>：登录控制台，创建服务和策略，创建 API 密钥，从应用发起授权检查。</li>
-<li><a href="/zh/docs/cloud/tokens/">API 密钥</a>: 账号级凭据、固定权限范围、必须选择有效期、创建与撤销、一次性展示和分页。</li>
-<li><a href="/zh/docs/cloud/global-roles/">全局角色</a>：为账号内所有服务分配一次角色，并在各服务中授予相应权限。</li>
+<li><a href="/zh/docs/cloud/console/">控制台手册</a>：面向日常任务的 Speedle Cloud 控制台（SCC）指南，涵盖工作区、成员、服务与策略、策略试运行、API key、自定义函数、ADS 舰队、审计日志和账号设置。</li>
+<li><a href="/zh/docs/cloud/tokens/">API 密钥</a>: 工作区级凭据、固定权限范围、必须选择有效期、创建与撤销、一次性展示和分页。</li>
+<li><a href="/zh/docs/cloud/global-roles/">全局角色</a>：为工作区内所有服务分配一次角色，并在各服务中授予相应权限。</li>
 <li><a href="/zh/docs/cloud/authorization-api/">授权 API</a>: IsAllowed 请求、调用方身份、Node.js 22 和传输限制。</li>
 <li><a href="/zh/docs/cloud/api-reference/">API 参考</a>：使用 API key 进行授权检查和策略管理。请求从你的服务器发出；本页只读。</li>
-<li><a href="/zh/docs/cloud/limits-and-errors/">限额与错误</a>: 账号上限、大小限制、突发限流、每日额度、错误代码和重置时间。</li>
+<li><a href="/zh/docs/cloud/limits-and-errors/">限额与错误</a>: 工作区上限、大小限制、突发限流、每日额度、错误代码和重置时间。</li>
 </ul>
 
 <h2 id="下载">下载</h2>

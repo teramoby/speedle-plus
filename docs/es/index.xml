@@ -6,7 +6,7 @@
     <description>Recent content in Speedle: Motor de autorización rápido y sencillo on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>es-es</language>
-    <lastBuildDate>Tue, 17 Nov 2026 00:00:00 +0800</lastBuildDate>
+    <lastBuildDate>Sat, 21 Nov 2026 00:00:00 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/es/index.xml" rel="self" type="application/rss+xml" />
     
@@ -155,6 +155,16 @@ Crear un servicio y una política Abra el espacio de trabajo del servicio, intro
     </item>
     
     <item>
+      <title>Manual de usuario de Speedle Cloud Console</title>
+      <link>https://engine.speedle.io/es/docs/cloud/console/</link>
+      <pubDate>Sat, 21 Nov 2026 00:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/es/docs/cloud/console/</guid>
+      <description>Speedle Cloud está en beta pública. La beta pública gratuita es para evaluación y aprendizaje, no ofrece SLA y no se recomienda para producción. Las funciones y límites pueden cambiar.
+Este manual explica las tareas diarias en Speedle Cloud Console (SCC) en cloud.speedle.io. Para realizar rápidamente una llamada a la API desde su servidor, consulte Primeros pasos. Para conocer los cuerpos de solicitud, códigos de error y cuotas, consulte la API de autorización, la Referencia de la API y Límites y errores.</description>
+    </item>
+    
+    <item>
       <title>Guía de pruebas de rendimiento</title>
       <link>https://engine.speedle.io/es/docs/performance-testing/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -170,9 +180,8 @@ Primero pregúnteme qué proyectos de autorización de código abierto quiero co
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/es/docs/cloud/tokens/</guid>
-      <description>Las claves API pertenecen a la cuenta y acceden a sus servicios según su ámbito. Autentican la aplicación, no al usuario final. Administrar claves API, sesiones e identidades vinculadas requiere una sesión de consola iniciada.
-Speedle Cloud está en beta pública. Esta guía describe el flujo de trabajo del servicio en línea.
-Crear una clave API Abra Claves API, escriba un nombre de 1–128 caracteres después de quitar espacios al principio y al final, elija un ámbito y una caducidad (7d, 30d, 90d, 180d o 365d; la consola usa 3 meses de forma predeterminada) y seleccione Crear.</description>
+      <description>Las claves API pertenecen a un espacio de trabajo y acceden a sus servicios según su ámbito. Autentican la aplicación, no al usuario final. Administrar claves API, sesiones e identidades vinculadas requiere una sesión de consola iniciada. Quitar a un miembro o salir de un espacio de trabajo no revoca las claves API que creó; revíselas y revóquelas explícitamente cuando sea necesario.
+Speedle Cloud está en beta pública. Esta guía describe el flujo de trabajo del servicio en línea.</description>
     </item>
     
     <item>
@@ -212,7 +221,7 @@ El mismo índice de imágenes está disponible en ambos registros:
       
       <guid>https://engine.speedle.io/es/docs/cloud/global-roles/</guid>
       <description>Speedle Cloud está en beta pública. Esta guía describe el flujo de trabajo del servicio en línea.
-Una asignación de rol suele pertenecer a un servicio. Cuando varios servicios comparten la misma asignación, defínala una vez en el servicio Roles globales de la cuenta y use el rol en las políticas de autorización de cada servicio.
+Una asignación de rol suele pertenecer a un servicio. Cuando varios servicios del mismo espacio de trabajo comparten la misma asignación, defínala una vez en el servicio Roles globales del espacio de trabajo y use el rol en las políticas de autorización de cada servicio.
 Solo se admiten políticas de rol. Una asignación global no concede ninguna operación por sí misma: cada servicio sigue definiendo los permisos que permite.</description>
     </item>
     
@@ -223,7 +232,7 @@ Solo se admiten políticas de rol. Una asignación global no concede ninguna ope
       
       <guid>https://engine.speedle.io/es/docs/cloud/authorization-api/</guid>
       <description>Speedle Cloud está en beta pública. Esta guía describe el flujo de trabajo del servicio en línea.
-Use una clave API de cuenta para llamadas de autorización desde el servidor. Inicie sesión en la cuenta para crear claves. Use ads o pms:read+ads para las comprobaciones ADS; pms:read y pms:write devuelven 403 insufficient_scope. pms:read+ads también permite lecturas PMS y es necesario para sincronizar políticas con Speedle Cloud ADS (speedle-cloud); no permite escrituras.</description>
+Use una clave API de espacio de trabajo para llamadas de autorización desde el servidor. Inicie sesión en su cuenta, seleccione el espacio de trabajo correspondiente y cree claves allí. Use ads o pms:read+ads para las comprobaciones ADS; pms:read y pms:write devuelven 403 insufficient_scope. pms:read+ads también permite lecturas PMS y es necesario para sincronizar políticas con Speedle Cloud ADS (speedle-cloud); no permite escrituras.</description>
     </item>
     
     <item>
@@ -299,8 +308,8 @@ brew tap teramoby/tap brew trust teramoby/tap brew install teramoby/tap/spctl La
       
       <guid>https://engine.speedle.io/es/docs/cloud/limits-and-errors/</guid>
       <description>Speedle Cloud está en beta pública. Esta guía describe el flujo de trabajo del servicio en línea.
-Salvo que se indique lo contrario, los límites se comparten en toda la cuenta. Cambiar de clave API no aumenta la cuota diaria.
-Límites    Qué se limita Límite Qué hacer al alcanzarlo     Servicios de la cuenta 100 409 quota_exceeded; eliminar un servicio sin uso. Sin restablecimiento temporal.</description>
+Salvo que se indique lo contrario, los límites se comparten en todo el espacio de trabajo. Cambiar de clave API en el mismo espacio de trabajo no aumenta la cuota diaria.
+Límites    Qué se limita Límite Qué hacer al alcanzarlo     Servicios por espacio de trabajo 100 409 quota_exceeded; eliminar un servicio sin uso.</description>
     </item>
     
     <item>

@@ -11,7 +11,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1"><title>Speedle Cloud 認可 API · Speedle Engine</title>
-<meta name="description" content="アカウント API キーによる IsAllowed、呼び出し元の ID と Node.js 22 の例。">
+<meta name="description" content="ワークスペース API キーによる IsAllowed、呼び出し元の ID と Node.js 22 の例。">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/ja/docs/cloud/authorization-api/">
@@ -23,10 +23,10 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/cloud/authorization-api/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/cloud/authorization-api/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-11-12T00:00:00&#43;08:00">
+<meta property="article:modified_time" content="2026-11-21T00:00:00&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Speedle Cloud 認可 API · Speedle Engine">
-<meta property="og:description" content="アカウント API キーによる IsAllowed、呼び出し元の ID と Node.js 22 の例。">
+<meta property="og:description" content="ワークスペース API キーによる IsAllowed、呼び出し元の ID と Node.js 22 の例。">
 <meta property="og:url" content="https://engine.speedle.io/ja/docs/cloud/authorization-api/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta property="og:image:width" content="1200">
@@ -35,11 +35,11 @@
 <meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Speedle Cloud 認可 API · Speedle Engine">
-<meta name="twitter:description" content="アカウント API キーによる IsAllowed、呼び出し元の ID と Node.js 22 の例。">
+<meta name="twitter:description" content="ワークスペース API キーによる IsAllowed、呼び出し元の ID と Node.js 22 の例。">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/cloud/authorization-api/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-12T00:00:00+08:00","description":"アカウント API キーによる IsAllowed、呼び出し元の ID と Node.js 22 の例。","headline":"Speedle Cloud 認可 API","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ja","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ja/docs/cloud/authorization-api/","@type":"WebPage"},"name":"Speedle Cloud 認可 API","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ja/docs/cloud/authorization-api/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/cloud/authorization-api/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-21T00:00:00+08:00","description":"ワークスペース API キーによる IsAllowed、呼び出し元の ID と Node.js 22 の例。","headline":"Speedle Cloud 認可 API","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ja","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ja/docs/cloud/authorization-api/","@type":"WebPage"},"name":"Speedle Cloud 認可 API","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ja/docs/cloud/authorization-api/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/cloud/authorization-api/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/ja/","name":"ホーム","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/","name":"ドキュメント","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/cloud/","name":"Speedle Cloud","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/cloud/authorization-api/","name":"Speedle Cloud 認可 API","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -155,6 +155,7 @@
 <li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ja/docs/cloud/">Speedle Cloud</a></span>
 <ul class="sub-menu">
 <li data-docs-depth="1" class=""><a href="/ja/docs/cloud/getting-started/">Speedle Cloud クイックスタート</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/console/">コンソールマニュアル</a></li>
 <li data-docs-depth="1" class=""><a href="/ja/docs/cloud/tokens/">API キー</a></li>
 <li data-docs-depth="1" class=""><a href="/ja/docs/cloud/global-roles/">グローバルロール</a></li>
 <li data-docs-depth="1" class="active"><a href="/ja/docs/cloud/authorization-api/" aria-current="page">認可 API</a></li>
@@ -199,7 +200,7 @@
 
 <p><strong>Speedle Cloud はパブリックベータを提供中です。</strong> このガイドでは、稼働中のサービスでの手順を説明します。</p>
 
-<p>アカウント API キーを使い、サーバーから認可を確認します。キーの作成にはサインインが必要です。ADS チェックには <code>ads</code> または <code>pms:read+ads</code> を使用します。<code>pms:read</code> と <code>pms:write</code> は <code>403 insufficient_scope</code> です。<code>pms:read+ads</code> は PMS の読み取りも許可し、Speedle Cloud ADS（<code>speedle-cloud</code>）のポリシー同期に必要ですが、書き込みは許可しません。</p>
+<p>ワークスペース API キーを使い、サーバーから認可を確認します。サインインして対象ワークスペースを選択し、そこでキーを作成します。ADS チェックには <code>ads</code> または <code>pms:read+ads</code> を使用します。<code>pms:read</code> と <code>pms:write</code> は <code>403 insufficient_scope</code> です。<code>pms:read+ads</code> は PMS の読み取りも許可し、Speedle Cloud ADS（<code>speedle-cloud</code>）のポリシー同期に必要ですが、書き込みは許可しません。</p>
 
 <h2 id="サーバーから-isallowed-を呼び出す">サーバーから IsAllowed を呼び出す</h2>
 
@@ -213,13 +214,13 @@ Content-Type: application/json
 
 <p><code>idd</code> はアプリケーションが認証した ID ドメインです。信頼できるサーバー側の認証情報から設定してください。<code>grant user alice from corp get /books</code> は <code>corp</code> のみで一致します。<code>from</code> のないポリシーは全ドメインの同名ユーザーに一致します。<code>idd</code> を省略した principal も全ドメインに一致するため、複数の ID ソースでは必ず送信してください。</p>
 
-<p><code>serviceName</code> は必須で既定値はありません。キーのアカウント内のサービスを選びます。未指定、空、不明、別アカウントの場合は <code>404 {&quot;error&quot;:&quot;service_not_found&quot;}</code> です。キーは単一サービスには結び付きません。<a href="/ja/docs/cloud/getting-started/">入門ポリシー</a>の例では <code>books</code> を指定します。</p>
+<p><code>serviceName</code> は必須で既定値はありません。キーのワークスペース内のサービスを選びます。未指定、空、不明、別ワークスペースの場合は <code>404 {&quot;error&quot;:&quot;service_not_found&quot;}</code> です。キーはスコープに応じてワークスペース全体を対象とし、単一サービスには結び付きません。<a href="/ja/docs/cloud/getting-started/">入門ポリシー</a>の例では <code>books</code> を指定します。</p>
 
 <h2 id="判定とユーザー-id">判定とユーザー ID</h2>
 
 <p>成功時は <code>allowed</code> が真偽値、<code>reason</code> が数値です。ポリシーによる拒否も HTTP 200 になり、<code>allowed</code> は <code>false</code> です。保護対象の操作前に <code>allowed</code> を確認し、例外や無効な応答は拒否してください。</p>
 
-<p>API キーはアカウントと API スコープを認証し、エンドユーザーはアプリケーションで認証します。ブラウザから渡された principal を信用しないでください。Cloud は <code>subject.token</code> と <code>tokenType</code> を検証せず破棄します。principal のみで判定するので、これらのフィールドをユーザー認証の証拠にしないでください。</p>
+<p>API キーはワークスペースと API スコープを識別し、エンドユーザーはアプリケーションで認証します。ブラウザから渡された principal を信用しないでください。Cloud は <code>subject.token</code> と <code>tokenType</code> を検証せず破棄します。principal のみで判定するので、これらのフィールドをユーザー認証の証拠にしないでください。</p>
 
 <p>Playground は現在の保存済みポリシー、ADS は公開済みスナップショットを使用します。Playground の成功はすべての ADS 拠点への反映を保証しません。公開 ADS Diagnose API はありません。</p>
 

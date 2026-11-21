@@ -39,6 +39,7 @@ This file contains the complete English documentation published at https://engin
 - [Homebrew](https://engine.speedle.io/docs/deployment/homebrew/)
 - [Speedle Cloud](https://engine.speedle.io/docs/cloud/)
 - [Getting started with Speedle Cloud](https://engine.speedle.io/docs/cloud/getting-started/)
+- [Speedle Cloud Console user manual](https://engine.speedle.io/docs/cloud/console/)
 - [Speedle Cloud API keys](https://engine.speedle.io/docs/cloud/tokens/)
 - [Global roles](https://engine.speedle.io/docs/cloud/global-roles/)
 - [Speedle Cloud authorization API](https://engine.speedle.io/docs/cloud/authorization-api/)
@@ -3233,7 +3234,7 @@ brew services stop speedle-pms
 
 Source: https://engine.speedle.io/docs/cloud/
 
-Speedle Cloud is a hosted authorization service built on the open-source Speedle engine. Manage services, SPDL authorization and role policies, test decisions in the Playground and call the API from your server.
+Speedle Cloud is a hosted authorization service built on the open-source Speedle engine. Manage workspaces, services, SPDL authorization and role policies, test decisions in the Playground and call the API from your server.
 
 Policy synchronization from Speedle Cloud uses Speedle Cloud ADS: the `speedle-cloud` binary and image. The self-hosted Speedle Engine `speedle-ads` binary no longer provides a `policy-source` store.
 
@@ -3244,11 +3245,12 @@ Sign in to use the console and create API keys. The free public beta is for tria
 ### Documentation
 
 - [Getting started](https://engine.speedle.io/docs/cloud/getting-started/): Sign in, create a service and policy in the console, create an API key, and check authorization from your application.
-- [API keys](https://engine.speedle.io/docs/cloud/tokens/): Account-level credentials, fixed scopes, a required expiry, Create and Revoke, one-time secret display and pagination.
-- [Global roles](https://engine.speedle.io/docs/cloud/global-roles/): Assign a role once for every service of the account and grant its permissions in each service.
+- [Console manual](https://engine.speedle.io/docs/cloud/console/): Task-oriented guide to the Speedle Cloud Console (SCC): workspaces, members, services, policies, Playground, API keys, custom functions, ADS fleet, audit logs and account settings.
+- [API keys](https://engine.speedle.io/docs/cloud/tokens/): Workspace credentials, fixed scopes, a required expiry, Create and Revoke, one-time secret display and pagination.
+- [Global roles](https://engine.speedle.io/docs/cloud/global-roles/): Assign a role once for every service in a workspace and grant its permissions in each service.
 - [Authorization API](https://engine.speedle.io/docs/cloud/authorization-api/): IsAllowed requests, caller identity, Node.js 22 and transport constraints.
 - [API reference](https://engine.speedle.io/docs/cloud/api-reference/): authorization checks and policy management with an API key. Requests run from your server; this page is read-only.
-- [Limits and errors](https://engine.speedle.io/docs/cloud/limits-and-errors/): Account caps, size limits, burst limits, daily quota, error codes and reset times.
+- [Limits and errors](https://engine.speedle.io/docs/cloud/limits-and-errors/): Workspace caps, size limits, burst limits, daily quota, error codes and reset times.
 
 ### Downloads
 
@@ -3272,7 +3274,7 @@ Open the [Cloud console](https://cloud.speedle.io/) in your browser and sign in 
 
 Open the [Service workspace](https://cloud.speedle.io/service), enter `books`, and choose **Create service**. Use a new service for this example so existing policies do not affect the results; do not overwrite existing data.
 
-Choose **New policy**, name it `read-books`, and enter this SPDL:
+Choose **Create policy**, name it `read-books` (or leave the name blank to generate one automatically), and enter this SPDL:
 
 ```text
 grant user alice from corp get /books
@@ -3280,7 +3282,7 @@ grant user alice from corp get /books
 
 This lets `alice` in the `corp` identity domain perform `get` on `/books`. A grant without `from` matches the name in every domain. Derive the domain from trusted authentication data and send it as `idd` in each request. See [identity domains](https://engine.speedle.io/docs/idd/).
 
-Choose **Validate policy**, then **Save policy**. Validation checks syntax but does not save the draft. Allow approximately 60 seconds for saved policies to reach the authorization API.
+Wait for automatic live validation to confirm the syntax, then choose **Save policy**. Validation does not save the draft. Allow approximately 60 seconds for saved policies to reach the authorization API.
 
 ### Create an API key
 
@@ -3324,11 +3326,386 @@ Optionally, open the service's **Playground** and select **Is allowed**. Enter `
 
 Next steps: for programmatic management, create a separate key with the `pms:write` scope (or `pms:read` for reads), then use the [PMS API or spctl (Speedle Cloud)](https://engine.speedle.io/docs/pms/policy-mgmt/#speedle-cloud). The `ads` key from the previous step cannot manage policies.
 
+## Speedle Cloud Console user manual
+
+Source: https://engine.speedle.io/docs/cloud/console/
+
+**Speedle Cloud is in public beta.** The free public beta is for evaluation and learning, has no SLA and is not recommended for production use. Features and limits may change.
+
+This manual walks through everyday tasks in the **Speedle Cloud Console (SCC)** at [cloud.speedle.io](https://cloud.speedle.io/). For a quick end-to-end API call from your server, see [Getting started](https://engine.speedle.io/docs/cloud/getting-started/). For endpoint payloads, error codes and quotas, see the [Authorization API](https://engine.speedle.io/docs/cloud/authorization-api/), [API reference](https://engine.speedle.io/docs/cloud/api-reference/) and [Limits and errors](https://engine.speedle.io/docs/cloud/limits-and-errors/).
+
+> **About the screenshots:** Figures in this manual show the actual Speedle Cloud Console rendered in the English UI using demonstration data (`example.test` accounts, the `books` example service, sample endpoints and sample usage values).
+
+### Sign in and console layout
+
+#### Prerequisites
+
+- A browser with JavaScript and cookies enabled.
+- A GitHub or Google account with a verified email address.
+
+#### Sign in or create an account
+
+1. Open [cloud.speedle.io](https://cloud.speedle.io/) and choose **Get started** (or open `/login` directly).
+2. Choose **Sign in with GitHub** or **Sign in with Google** and complete authentication at the provider.
+3. If this is your first time signing in with an unused verified email address, review the Terms of Service and Privacy Policy links and confirm **Create account**.
+
+**Expected result:** The console opens your active workspace in **Services & policies** (at `/w/<workspaceId>/service`). New accounts start with a **Personal** workspace where your role is **Owner**.
+
+**Recovery:**
+
+- **Email already in use:** Sign in with the provider already linked to that email address, then connect the second provider in **Account settings**.
+- **Verified email required:** Verify your email address in your GitHub or Google account settings, then start sign-in again.
+- **Sign-ups are paused:** The beta has reached its new-account cap; existing accounts can still sign in.
+- **Session expired:** Sessions expire after 7 days of inactivity or 30 days from creation, whichever comes first. Sign in again to continue.
+
+#### Navigate the console
+
+The signed-in console has two navigation areas:
+
+- **Top bar:**
+  - **Speedle | Cloud** logo: returns to **Services & policies** in the active workspace.
+  - **Workspace** switcher: displays the active workspace name and your role (**Owner** or **Admin**), switches between workspaces and opens **Create workspace**.
+  - **Having trouble? Give us a shout!** help link, **Language** switcher and **Account** menu (email address, **Account overview**, **Account settings**, **Sign out** and **Sign out everywhere**).
+- **Left sidebar:**
+  - **Console:** **Services & policies**, **API keys**, **ADS fleet** and **Audit log** — all scoped to the active workspace.
+  - **Workspace settings:** **Members** — view or manage workspace membership.
+  - **Cloud docs:** opens this documentation.
+
+[![Speedle Cloud Console top bar with the Workspace switcher expanded and the left sidebar showing Console and Workspace settings sections](https://engine.speedle.io/img/cloud/console/01-console-shell-workspace-switcher.png)](https://engine.speedle.io/img/cloud/console/01-console-shell-workspace-switcher.png)
+
+Console layout with the **Workspace** switcher open and workspace-scoped navigation in the left sidebar (demonstration data, English UI).
+
+### Personal identity and workspaces
+
+Speedle Cloud separates your **personal account** from your **workspaces**:
+
+- Your **personal account** holds your verified email address, connected sign-in providers (GitHub and/or Google), browser sessions and **Personal activity** log (`/account/audit`).
+- A **workspace** is an isolated container for services, authorization and role policies (including **Global roles**), custom functions, API keys, ADS fleet instances, the workspace **Audit log** and daily API quota.
+
+> Some labels in the current Console UI still read "account" or "account-wide". Resource limits, policies, services, ADS instances and API keys apply to the selected workspace, while personal sign-in identity and sessions stay at the account level.
+
+Every account starts with a **Personal** workspace. You can belong to up to 10 workspaces, and each workspace can have up to 10 members (counting pending invitations).
+
+#### Switch or create a workspace
+
+1. In the top bar, open the **Workspace** menu.
+2. Select another workspace to switch to it, or choose **Create workspace**.
+3. When creating a workspace, enter a **Workspace name** (1–64 characters) and choose **Create workspace**.
+
+**Expected result:** The new workspace starts empty with its own services, policies, API keys and daily quota, and you become its **Owner**. The URL updates to `/w/<workspaceId>/service`. Switching workspaces clears any one-time secrets currently shown on screen.
+
+#### Manage workspace members and roles
+
+Open **Workspace settings → Members** in the left sidebar.
+
+[![Workspace Members page showing Owner and Admin members, Invite someone form, Pending invitations and Leave workspace card](https://engine.speedle.io/img/cloud/console/02-workspace-members-page.png)](https://engine.speedle.io/img/cloud/console/02-workspace-members-page.png)
+
+Workspace **Members** page with member roles, invitation form, pending invitations and **Leave workspace** controls (demonstration data, English UI).
+
+| Role | What the member can do |
+| --- | --- |
+| **Owner** | Everything an Admin can do, plus invite members, revoke pending invitations, promote or demote members and remove members. |
+| **Admin** | Manage services, policies, imports/exports, functions, Playground, API keys and ADS fleet; view the member list and workspace audit log; leave the workspace. |
+
+**Invite a member (Owner only):**
+
+1. Under **Invite someone**, enter the person's **Email address** and choose a **Role** (**Admin** or **Owner**).
+2. Choose **Send invitation**.
+
+**Expected result:** The console sends an email containing a single-use invitation link valid for 7 days and adds the entry to **Pending invitations** (which counts toward the 10-member limit; each inviter can send up to 20 invitations per UTC day). Owners see full invited email addresses; Admins see masked addresses. To cancel a pending invite, choose **Revoke** next to it.
+
+To accept an invitation, the recipient opens the emailed link, signs in with a GitHub or Google account that has that verified email address and chooses **Join workspace**.
+
+**Change roles, remove a member or leave a workspace:**
+
+- **Change role (Owner only):** Use the **Role** selector next to a member to promote an Admin to Owner or demote an Owner to Admin.
+- **Remove a member (Owner only):** Choose **Remove**, review the warning and confirm **Remove member**. Their console access ends on their next request.
+- **Leave workspace:** Choose **Leave workspace** and confirm.
+
+> **API keys stay active when a member leaves or is removed.** API keys belong to the workspace, not to the person who created them. After you remove a member, the console lists any active API keys that person created (name, ID and expiry, without secrets). Review them on the **API keys** page and revoke or rotate any key that should no longer be trusted.
+
+**Recovery:**
+
+- **Verify your identity (`reauth_required`):** Changing roles, removing members and leaving a workspace require a sign-in within the last 10 minutes. Choose a connected provider to verify, then repeat the action.
+- **Last owner (`last_owner`):** A workspace must keep at least one Owner. Promote another member to **Owner** before demoting yourself or leaving.
+- **Invitation mismatch or invalid link:** Ask the invited person to sign in with an account where the invited email is verified (any verified GitHub email qualifies), or send a new invitation if the 7-day link expired or was revoked.
+
+### Manage services and policies
+
+The walkthrough below uses a small `books` service with one role assignment and one authorization policy.
+
+#### Create a service
+
+1. Open **Services & policies** in the left sidebar.
+2. If the workspace has no services yet, enter `books` as the **Service name** and choose **Create service**. If services already exist, open the **Current service** selector, choose **Add another service**, enter `books` and choose **Create service**.
+
+Service names must be 1–64 characters using letters, numbers, dots, underscores or hyphens, starting with a letter or number. The name `global` is reserved for **Global roles**. Applications send this name as `serviceName` in authorization requests.
+
+#### Create authorization and role policies
+
+1. With `books` selected, open the **Policies** tab and choose **Create policy**.
+2. Optionally enter a **Policy name** (up to 128 Unicode characters), such as `reader-role`. Leave it empty to generate a name automatically.
+3. In **SPDL source**, enter one SPDL statement (up to 1,024 UTF-8 bytes):
+
+```text
+grant user alice from corp Reader
+```
+
+4. Wait briefly for live validation. The editor validates automatically after you pause typing and displays the detected policy type (**Valid · role policy** or **Valid · authorization policy**) along with any syntax errors or review warnings (such as an ungranted role or an unanchored regular expression).
+5. Choose **Save policy**.
+6. Repeat to create an authorization policy (for example `read-books`) that grants the role permission:
+
+```text
+grant role Reader get /books
+```
+
+**Expected result:** Both policies appear in the policy table for `books`. Saved policies are available immediately in the **Playground** and propagate to the hosted authorization API in roughly 60 seconds.
+
+[![Create policy editor with Policy name read-books, SPDL source, automatic Valid · authorization policy badge and Save policy button](https://engine.speedle.io/img/cloud/console/04-policy-editor-live-validation.png)](https://engine.speedle.io/img/cloud/console/04-policy-editor-live-validation.png)
+
+Policy editor showing automatic live SPDL validation (**Valid · authorization policy**) before saving `read-books` (demonstration data, English UI).
+
+[![Services & policies view for the books service listing reader-role and read-books policies with section tabs](https://engine.speedle.io/img/cloud/console/03-service-policies-list.png)](https://engine.speedle.io/img/cloud/console/03-service-policies-list.png)
+
+**Services & policies** table for `books` showing `reader-role` and `read-books` alongside the service tabs (demonstration data, English UI).
+
+You can switch between the code editor and **Use plain text editor**, search or filter the policy table by effect, principal, action, resource, role or condition, and open **Edit**, **Details**, **Test** or **Delete** from each row.
+
+#### Use Global roles across services
+
+When multiple services in the same workspace share a role assignment, define it once in **Global roles**:
+
+1. Open the **Current service** selector and choose **Global roles** at the top of the list.
+2. Create a role policy, such as `grant user alice from corp BookAdmin`.
+3. Switch to each ordinary service that should honor that role (such as `books`) and create an authorization policy granting permissions to `BookAdmin`.
+
+**Global roles** accepts role policies only; it cannot be renamed or deleted. A global role grants no permissions until an ordinary service defines an authorization policy for that role. See [Global roles](https://engine.speedle.io/docs/cloud/global-roles/) for full rules and ADS sync behavior.
+
+#### Inspect relationships in the Access map
+
+Open the **Access map** tab inside **Services & policies** to visualize how principals, roles and resources connect in the selected service's saved policies. You can filter the graph, switch to a table view, focus on a node and send a path directly to the **Playground** to run a **Diagnose** check.
+
+[![Access map graph for the books service showing user alice connected through role Reader to resource /books](https://engine.speedle.io/img/cloud/console/05-access-map.png)](https://engine.speedle.io/img/cloud/console/05-access-map.png)
+
+**Access map** for `books` visualizing `alice` → `Reader` → `/books` from saved policies (demonstration data, English UI).
+
+#### Import and export policies
+
+Open the **Import & export** tab inside **Services & policies**:
+
+- **Download SPDL** or **Download JSON:** Exports the selected service's saved policies. Keep downloaded files private and maintain your own backups during the beta.
+- **Import policies:** Choose a Speedle Cloud JSON export file (the console can read up to 32 MiB for local preview), review the preview counts and choose **Confirm policy import**. The submitted import request must not exceed 5,100,000 bytes; a larger request returns `413 request_too_large` (see [Limits and errors](https://engine.speedle.io/docs/cloud/limits-and-errors/)). Imports are atomic: existing policies are never overwritten, and duplicate display names (within the batch or matching existing policies) are allowed because every imported policy receives a new server-generated ID. Any invalid policy or excess over the 200-policy workspace cap rejects the entire batch.
+
+If an import's outcome is interrupted or uncertain, keep the page open and use **Retry the same import** — it reuses the same idempotency key so confirmed policies are not inserted twice. Starting a fresh import of the same file (with a new idempotency key) after a completed import creates duplicate policies and consumes policy slots.
+
+#### Rename or delete a service
+
+Use the **Service actions** menu next to the service header:
+
+- **Rename…:** Changes the service name. Policy IDs, API keys and ADS instance identities stay intact, but calling applications must update `serviceName` to the new name and propagation is not immediate.
+- **Delete service…:** Permanently deletes the service and all of its policies, and removes it from associated ADS instances. Type the service name to confirm. Deleting a service requires authentication within the last 10 minutes; if prompted, verify with a connected provider and confirm deletion again. Workspace API keys and ADS instances remain.
+
+**Recovery:**
+
+- **Editing cannot change policy type:** A saved authorization policy cannot be turned into a role policy (or vice versa) in place. Delete the policy and create a new one.
+- **Stale policy edit:** If another session modified or deleted the policy while you were editing, your draft stays on screen. Refresh the workspace and open the latest version before saving.
+- **Revision limit reached (`revision_exhausted`):** Export the service's policies, create a new service, import the export, switch callers to the new `serviceName` and optionally delete the old service. See [Limits and errors](https://engine.speedle.io/docs/cloud/limits-and-errors/#revision-exhausted).
+
+### Test decisions in the Playground
+
+1. Select `books` in **Services & policies** and open the **Playground** tab.
+2. Choose an **Operation**:
+   - **Is allowed:** Returns Allowed or Denied and the reason code.
+   - **Diagnose:** Shows the decision plus a trace of how policies, roles and conditions contributed.
+   - **All granted roles:** Lists all roles granted to the subject in this service (including Global roles).
+   - **All granted permissions:** Lists all granted resources and actions for the subject.
+3. Fill in the test inputs:
+   - **Principals (JSON):** `[{"type":"user","name":"alice","idd":"corp"}]`
+   - **Resource:** `/books`
+   - **Action:** `get`
+   - **Attributes (JSON):** `[]`
+4. Choose **Run test**.
+
+**Expected result:** **Is allowed** displays **Allowed.** with reason **A grant policy applies.** and the full JSON result. Changing **Action** to `delete` and running again displays **Denied.** with **No applicable policies were found.**
+
+[![Playground Is allowed test for alice in corp requesting get on /books returning Allowed. A grant policy applies. and Full result JSON](https://engine.speedle.io/img/cloud/console/06-playground-is-allowed-and-diagnose.png)](https://engine.speedle.io/img/cloud/console/06-playground-is-allowed-and-diagnose.png)
+
+**Playground** **Is allowed** check for `alice` (`corp`) on `/books` (`get`) showing **Allowed. A grant policy applies.** and **Full result (JSON)** (demonstration data, English UI).
+
+You can also click **Test** on a policy row or prefill a diagnosis from **Access map**; prefilling populates the inputs without spending an API call until you click **Run test**.
+
+**Keep in mind:**
+
+- Playground evaluates **saved** policies immediately; unsaved editor drafts are ignored.
+- Each Playground run uses one API call from the workspace's daily quota and never modifies policies.
+- Testing against **Global roles** itself always denies; test global roles in the Playground of an ordinary service.
+- A passing Playground check does not prove that published ADS snapshots have finished propagating (allow ~60 seconds for the hosted [Authorization API](https://engine.speedle.io/docs/cloud/authorization-api/)).
+
+### Manage workspace API keys
+
+API keys authenticate server-side applications and self-hosted ADS instances to the active workspace. Managing keys always requires a signed-in console session.
+
+#### Create an API key
+
+1. Open **API keys** in the left sidebar.
+2. Choose **Create API key**.
+3. Enter a descriptive **API key name** (1–128 characters, such as `books-app`). Do not enter a secret as the name.
+4. Select a **Scope** (fixed at creation):
+   - **Authorization checks only (ADS)** (`ads`, default): calls `/authz-check/v1/*` only.
+   - **Policy management: read** (`pms:read`): reads workspace services and policies.
+   - **Policy management: write** (`pms:write`): reads, creates and deletes workspace services and policies.
+   - **ADS sync** (`pms:read+ads`): syncs policy snapshots for Speedle Cloud ADS (`speedle-cloud`), reads policies and runs authorization checks; no writes.
+5. Select **Expires after** (`1 week`, `1 month`, `3 months` [default], `6 months` or `1 year`) and verify **Preview expiry (UTC)**. Non-expiring keys are not supported.
+6. Choose **Create API key**. Creating a key requires provider verification within the last 10 minutes; if prompted, choose **Verify with GitHub** or **Verify with Google**, then submit **Create API key** again.
+7. Copy the **One-time API key** immediately, store it in your server's secret manager (for example `SPEEDLE_API_KEY`) and choose **I have saved it — clear this display**.
+
+**Expected result:** The key appears under **Active API keys** with its ID, scope, creation time, approximate last-used time and **Expires (UTC)**. The secret is never shown again and cannot be recovered from metadata.
+
+[![API keys page showing the Create API key form with name, fixed scope, expiry preview and active key metadata list without secrets](https://engine.speedle.io/img/cloud/console/07-api-keys-list-and-create-form.png)](https://engine.speedle.io/img/cloud/console/07-api-keys-list-and-create-form.png)
+
+**API keys** page with the **Create API key** form (scope, expiry and UTC preview) and active key metadata (demonstration data, English UI; no secret shown).
+
+#### Rotate and revoke API keys
+
+Each workspace can have up to **10 active API keys** across all scopes. Keys expiring within 7 days are labeled **Expires soon**; expired keys move to **Expired API keys**.
+
+To rotate a key without downtime:
+
+1. Create a replacement key with the required scope and expiry.
+2. Update your application or ADS configuration to use the new key.
+3. On the **API keys** page, choose **Revoke** next to the old key, confirm the name and ID, and choose **Revoke API key**.
+
+**Recovery:**
+
+- **Propagation delay:** Cached verification can remain valid for up to 60 seconds after revocation; revocation is not instantaneous worldwide.
+- **Limit reached (`quota_exceeded`):** Revoke an unused key or let an expiring key lapse to free a slot. Revoked and expired keys remain listed for history and do not count toward the 10-key cap.
+- **Uncertain creation or revocation:** If a network error interrupts creation or revocation, refresh the metadata list and check the active and history groups before acting again. Never assume a matching name identifies a lost secret.
+
+For full API key contract details, see [API keys](https://engine.speedle.io/docs/cloud/tokens/).
+
+### Check usage and quotas
+
+In the public beta, resource caps and the daily API call allowance apply per workspace:
+
+- **Services:** 100 per workspace (including **Global roles**).
+- **Policies:** 200 authorization and role policies combined across all services in the workspace (each SPDL statement up to 1,024 UTF-8 bytes).
+- **Active API keys:** 10 per workspace across all scopes.
+- **Daily API calls:** 10,000 per workspace per UTC day (resets at `00:00 UTC`). Management reads/writes, live validation, Playground tests, imports/exports and authorization checks share this allowance.
+
+Where to check usage in the console:
+
+- **Account → Account overview (`/account`):** Displays the **Daily quota** card with a progress bar and the next UTC reset time for your Personal workspace.
+- **Services & policies:** Displays service counts, policy counts and approximate remaining daily calls for the active workspace after workspace operations.
+
+[![Account overview page displaying profile details and the Daily quota card with usage meter and UTC reset time](https://engine.speedle.io/img/cloud/console/10b-account-overview-quota.png)](https://engine.speedle.io/img/cloud/console/10b-account-overview-quota.png)
+
+**Account overview** showing profile metadata and the **Daily quota** meter for the Personal workspace (demonstration data, English UI).
+
+If you reach the daily allowance (`429 daily_quota_exceeded`), wait until `00:00 UTC`; switching API keys in the same workspace does not add quota. See [Limits and errors](https://engine.speedle.io/docs/cloud/limits-and-errors/) for burst rate limits and error recovery.
+
+### Custom functions (per service)
+
+> When custom functions are enabled on the stage, ordinary services display a **Functions** tab between **Access map** and **Playground**.
+
+Custom functions let SPDL conditions call external HTTPS endpoints during evaluation. Each ordinary service can register up to **20 functions**.
+
+#### Register and manage a function
+
+1. Select an ordinary service and open the **Functions** tab.
+2. Choose **Register function**.
+3. Configure:
+   - **Name:** 1–64 character SPDL identifier (cannot be a reserved word).
+   - **Endpoint URL:** HTTPS endpoint (up to 2,048 UTF-8 bytes; plain HTTP is not supported) that receives condition arguments. The console itself never calls the endpoint. URL rules depend on **Invocation**:
+     - **Hosted and ADS:** Requires `https://` on the default port `443` with a public, non-reserved DNS hostname (at least two labels; rejects IP literals, non-443 ports and internal or reserved hosts such as `localhost`, `*.local`, `*.internal`, `*.home.arpa`, `.test`, `.example`, `.invalid`, `.alt` and `.onion`).
+     - **ADS only:** Requires `https://`, and allows any port as well as IP literals and private or internal hostnames (for example `https://10.20.30.40:8443/func/check`).
+     - Both modes reject userinfo (`user@host`), fragments (`#...`), whitespace, control characters and backslashes.
+   - **Invocation:** **Hosted and ADS** (callable by hosted Cloud evaluation, Playground and self-hosted ADS) or **ADS only** (called only by self-hosted ADS; hosted evaluation and Playground fail if a condition reaches an ADS-only function).
+   - **Declared types (optional):** Add up to 16 **Parameters** and a **Result** type. Undeclared parameters skip type checking; declared type mismatches fail evaluation.
+   - **Cache results (optional):** Evaluator-local cache TTL (1–86,400 seconds; failures are not cached).
+   - **Hosted timeout (ms):** 100–2,000 ms (default 1,000 ms), applied to hosted calls only.
+   - **Sign hosted requests (optional):** Enables HMAC signing for hosted Cloud requests only. Self-hosted ADS always sends unsigned requests, even when **Hosted and ADS** is selected.
+4. Choose **Save function**. If signing is enabled, copy and store the one-time **Signing secret** before closing the dialog.
+
+From the functions table, you can **Edit** a function, **Rotate signing secret** (the previous secret stops working immediately; requires recent re-authentication if prompted) or **Delete function**.
+
+[![Functions tab for the books service listing Hosted and ADS and ADS only custom functions](https://engine.speedle.io/img/cloud/console/08-functions-tab.png)](https://engine.speedle.io/img/cloud/console/08-functions-tab.png)
+
+**Functions** tab for `books` showing both **Hosted and ADS** and **ADS only** example functions (demonstration data, English UI; no live endpoints called).
+
+**Important rules and recovery:**
+
+- **`function_url_rejected`:** Confirm the URL uses `https://` without userinfo, fragments, whitespace or backslashes. For IP literals, internal hostnames or non-443 ports, select **ADS only**; for **Hosted and ADS**, use a public DNS hostname on port `443`.
+- Register a function in the target service **before** saving or importing a policy that calls it. Policy exports do not include function definitions.
+- A function still referenced by a policy cannot be deleted; edit or delete the referencing policies first.
+
+### Monitor and control the ADS fleet
+
+Open **ADS fleet** in the left sidebar to monitor self-hosted Speedle Cloud ADS (`speedle-cloud`) instances that sync policies from the active workspace. Cloud never initiates connections into your network; commands travel over the channel each instance opens.
+
+#### Connect your first ADS instance
+
+There is no manual registration step. When the fleet is empty, the **ADS fleet** page shows a three-step onboarding guide and a copyable configuration snippet:
+
+1. Create an API key with the **ADS sync** (`pms:read+ads`) scope on the **API keys** page.
+2. Put the key into your ADS configuration (`0600` file permissions) with a persistent `CacheDir` so restarts keep the same instance identity.
+3. Start `speedle-cloud` with your configuration and application listener TLS settings. It appears automatically in **ADS fleet** on first connection.
+
+Each workspace supports up to **10 online ADS instances** and keeps up to **100 instance records** (instances offline for 7 days are removed automatically).
+
+#### Inspect instances and run distribution actions
+
+Use **Service filter** to view instances syncing a specific service, or **Refresh fleet** for an immediate update (the page auto-refreshes every 5 minutes while visible).
+
+[![ADS fleet page showing a live demonstration ADS instance syncing books with Service filter and Refresh fleet controls](https://engine.speedle.io/img/cloud/console/09-ads-fleet-view.png)](https://engine.speedle.io/img/cloud/console/09-ads-fleet-view.png)
+
+**ADS fleet** view listing a demonstration **Live** instance syncing `books` (demonstration data, English UI).
+
+Choose **Details** on an instance row to inspect:
+
+- **Live state**, **Last heartbeat received (UTC)**, **Channel** and **Transport** (WebSocket or Long poll).
+- **Service set** with head revision, reported revision, sync lag and **Global roles** (always synced).
+- **Distribution chain** (upstream and direct downstream instances, if any), **Event timeline**, **Fallback history** and reported **Host** details.
+
+Available actions (each requires confirmation):
+
+- **Assign services:** Sync **All services, including services created later** or **Only the selected services**. Changes apply on the next heartbeat without restarting the ADS.
+- **Resync from a snapshot:** Discards the instance's local copy and reloads from a snapshot. **Availability impact:** the affected service immediately stops serving local authorization decisions until a fresh snapshot has been downloaded and verified.
+- **Pause distribution / Resume distribution:** Stops or resumes serving policies to downstream ADS instances while local sync and evaluation continue.
+- **Stop this ADS:** Instructs the instance to deny authorization requests and stop reconnecting until restarted.
+- **Delete this instance:** Removes the instance record and history (a still-running instance re-registers on its next connection unless stopped or its API key is revoked).
+
+### Review audit logs and manage account settings
+
+#### Audit logs
+
+Speedle Cloud keeps two separate audit logs, both newest first with **180-day retention** and pagination (**Previous page**, **Next page**, **Restart audit log**):
+
+- **Workspace Audit log** (left sidebar → **Audit log**): Records administrative activity inside the active workspace — service and policy changes, API key creation/revocation, ADS actions, workspace creation/renaming and member/invitation changes. Readable by both Owners and Admins.
+- **Personal activity** (top-bar **Account** menu → **Account overview** → **Personal activity**, at `/account/audit`): Records your personal account events — sign-in, sign-out, sign-out everywhere, connecting/disconnecting sign-in providers and account creation/deletion.
+
+[![Workspace Audit log table listing recent administrative actions with UTC time, action, target and outcome](https://engine.speedle.io/img/cloud/console/10a-workspace-audit-log.png)](https://engine.speedle.io/img/cloud/console/10a-workspace-audit-log.png)
+
+Workspace **Audit log** showing recent administrative events in UTC (demonstration data, English UI).
+
+#### Account settings
+
+Open the top-bar **Account** menu and choose **Account settings** (`/account/settings`):
+
+- **Connected identities:** Connect both **GitHub** and **Google** so you have a backup sign-in method. You must keep at least one connected identity; disconnecting a provider requires authentication within the last 10 minutes.
+- **Sign out / Sign out everywhere:** Available from the top-bar **Account** menu to end either the current browser session or all active sessions.
+- **Delete account:** Permanently deletes your personal account, connected identities, personal-only workspaces and sessions. Choose **Delete account**, verify your identity if prompted, type `DELETE` and confirm **Permanently delete account**. Export any policies you want to keep first.
+
+[![Account settings page showing Connected identities for GitHub and Google and the Delete account card](https://engine.speedle.io/img/cloud/console/10c-account-settings.png)](https://engine.speedle.io/img/cloud/console/10c-account-settings.png)
+
+**Account settings** with **Connected identities** and **Delete account** controls (demonstration data, English UI).
+
+**Recovery for account deletion:** If you are the sole **Owner** of a workspace that still has other members, account deletion is blocked (`last_owner`). Open that workspace's **Members** page and promote another member to **Owner** before deleting your account.
+
 ## Speedle Cloud API keys
 
 Source: https://engine.speedle.io/docs/cloud/tokens/
 
-API keys belong to your account and can access its services according to their scope. They authenticate your application, not its end users. Managing API keys, sessions and linked identities always requires a signed-in console session.
+API keys belong to a workspace and can access its services according to their scope. They authenticate your application, not its end users. Managing API keys, sessions and linked identities always requires a signed-in console session. Removing a workspace member or leaving a workspace does not revoke API keys that person created; review and revoke them explicitly when needed.
 
 **Speedle Cloud is in public beta.** This guide describes the workflow for the live service.
 
@@ -3341,8 +3718,8 @@ Each key has one scope, fixed at creation:
 | Scope | Access |
 | --- | --- |
 | `ads` (default) | Authorization checks through `/authz-check/v1/*` only. |
-| `pms:read` | Read account services, policies and role policies through `/policy-mgmt/v1`. |
-| `pms:write` | Read, create and delete account services, policies and role policies through `/policy-mgmt/v1`. |
+| `pms:read` | Read workspace services, policies and role policies through `/policy-mgmt/v1`. |
+| `pms:write` | Read, create and delete workspace services, policies and role policies through `/policy-mgmt/v1`. |
 | `pms:read+ads` (ADS sync) | Authorization checks, read-only policy management and policy synchronization for Speedle Cloud ADS; no writes. |
 
 `pms:read` and `pms:write` cannot call ADS; `ads` cannot call policy management. Use `pms:read+ads` (ADS sync) for policy synchronization with Speedle Cloud ADS (`speedle-cloud`); it also permits ADS checks and PMS reads, but no writes. Using the wrong scope returns `403 insufficient_scope`.
@@ -3350,7 +3727,7 @@ Each key has one scope, fixed at creation:
 The console sends a session-authenticated request:
 
 ```http
-POST /api/tokens
+POST /api/workspaces/<workspaceId>/tokens
 Origin: https://cloud.speedle.io
 X-SC-CSRF: 1
 Content-Type: application/json
@@ -3372,18 +3749,18 @@ Every key expires at `expiresAt`, which the server computes and returns in Unix 
 
 This describes the format, not a usable key. Save the value immediately in a server-side secret store. Never put it in browser storage, frontend code, URLs, source control, screenshots or logs. Listing keys returns metadata only; a lost secret cannot be recovered.
 
-Your account can have **10 active API keys across all scopes**. Creating another returns `409 {"error":"quota_exceeded","limit":10}`. Revoke an unused key, or let it expire, to free a slot. The cap does not reset on a schedule. Revoked and expired keys remain listed and do not count toward the cap.
+Each workspace can have **10 active API keys across all scopes**. Creating another returns `409 {"error":"quota_exceeded","limit":10}`. Revoke an unused key, or let it expire, to free a slot. The cap does not reset on a schedule. Revoked and expired keys remain listed and do not count toward the cap.
 
 ### List API keys
 
-`GET /api/tokens` lists active, expired and revoked keys, newest first. The default page size is 25; `limit` accepts 1–100. Pass the last response's `nextCursor` as `cursor` until `nextCursor` is `null`. Each key includes `expiresAt` in Unix milliseconds. The console shows **Expires (UTC)**. A key that expires within 7 days is marked **Expires soon**. Expired keys appear in an **Expired** group. `lastUsedAt` is best-effort, normally updated at most hourly; it does not prove that a key is unused.
+`GET /api/workspaces/<workspaceId>/tokens` lists active, expired and revoked keys, newest first. The default page size is 25; `limit` accepts 1–100. Pass the last response's `nextCursor` as `cursor` until `nextCursor` is `null`. Each key includes `expiresAt` in Unix milliseconds. The console shows **Expires (UTC)**. A key that expires within 7 days is marked **Expires soon**. Expired keys appear in an **Expired** group. `lastUsedAt` is best-effort, normally updated at most hourly; it does not prove that a key is unused.
 
 ### Revoke an API key
 
 Choose **Revoke**, check the key name and ID, and confirm. Revocation does not require recent reauthentication. The console sends:
 
 ```http
-DELETE /api/tokens/<API key id>
+DELETE /api/workspaces/<workspaceId>/tokens/<API key id>
 Origin: https://cloud.speedle.io
 X-SC-CSRF: 1
 Content-Type: application/json
@@ -3391,9 +3768,9 @@ Content-Type: application/json
 {}
 ```
 
-The first revocation returns an empty HTTP 204. Unknown, other-account or already-revoked IDs return `404 not_found`. Previously verified requests may continue using a key for up to 60 seconds; revocation is not instantaneous everywhere.
+The first revocation returns an empty HTTP 204. Unknown, other-workspace or already-revoked IDs return `404 not_found`. Previously verified requests may continue using a key for up to 60 seconds; revocation is not instantaneous everywhere.
 
-The available actions are **Create** and **Revoke**. To change a secret, scope or expiry, create another key, update callers and revoke the old key. If all active keys are in use at the cap, plan for interruption before revoking one. Deleting a service does not revoke account API keys.
+The available actions are **Create** and **Revoke**. To change a secret, scope or expiry, create another key, update callers and revoke the old key. If all active keys are in use at the cap, plan for interruption before revoking one. Deleting a service does not revoke workspace API keys.
 
 If a creation or revocation response is lost, refresh the list before acting again. A matching name cannot recover a lost secret. See [Limits and errors](https://engine.speedle.io/docs/cloud/limits-and-errors/) and the [Authorization API](https://engine.speedle.io/docs/cloud/authorization-api/).
 
@@ -3403,9 +3780,9 @@ Source: https://engine.speedle.io/docs/cloud/global-roles/
 
 **Speedle Cloud is in public beta.** This guide describes the workflow for the live service.
 
-A role assignment usually belongs to one service. When several services share the same assignment, define it once in the account's **Global roles** service and use the role in each service's own authorization policies.
+A role assignment usually belongs to one service. When several services in the same workspace share the same assignment, define it once in the workspace's **Global roles** service and use the role in each service's own authorization policies.
 
-Only role policies are supported there. A global role assignment does not grant any operation by itself: every service still defines the permissions it allows. Global roles belong to one Cloud account and never cross accounts.
+Only role policies are supported there. A global role assignment does not grant any operation by itself: every service still defines the permissions it allows. Global roles belong to one workspace and never cross workspaces.
 
 ### Create the role assignment once
 
@@ -3417,7 +3794,7 @@ grant user Emma from corp AdminRole
 
 The `from corp` clause limits the assignment to the `corp` identity domain. Without it, a grant matches every user named Emma in every domain; see [Identity domains](https://engine.speedle.io/docs/idd/).
 
-The role `AdminRole` is now assigned to Emma in every service of the account.
+The role `AdminRole` is now assigned to Emma in every service of the workspace.
 
 ### Grant the permission in a service
 
@@ -3438,9 +3815,9 @@ The Global roles Playground is different: a check against the global service its
 ### Behaviour and limits
 
 - Global roles accept role policies only. An authorization policy in the global service returns `400 {"error":"global_authz_unsupported"}`.
-- The global service counts as one of the account's services, and its role policies count toward the combined account policy limit. See [Limits and errors](https://engine.speedle.io/docs/cloud/limits-and-errors/).
+- The global service counts as one of the workspace's services, and its role policies count toward the combined workspace policy limit. See [Limits and errors](https://engine.speedle.io/docs/cloud/limits-and-errors/).
 - The console names the special service **Global roles**; it cannot be created by hand, renamed or deleted.
-- Every Speedle Cloud ADS instance of the account always receives the global role policies, even when it synchronizes a selected set of services.
+- Every Speedle Cloud ADS instance of the workspace always receives the global role policies, even when it synchronizes a selected set of services.
 - Changes propagate like other policies: about a minute through published snapshots, and immediately in the Playground, which reads the current state.
 
 ## Speedle Cloud authorization API
@@ -3449,11 +3826,11 @@ Source: https://engine.speedle.io/docs/cloud/authorization-api/
 
 **Speedle Cloud is in public beta.** This guide describes the workflow for the live service.
 
-Use an account API key for server-side authorization calls. Sign in to the account to create keys. Use `ads` or `pms:read+ads` for ADS checks; `pms:read` and `pms:write` return `403 insufficient_scope`. The combined `pms:read+ads` scope also permits PMS reads and is required for policy synchronization with Speedle Cloud ADS (`speedle-cloud`); it cannot write policies.
+Use a workspace API key for server-side authorization calls. Sign in to your account, select the target workspace and create keys there. Use `ads` or `pms:read+ads` for ADS checks; `pms:read` and `pms:write` return `403 insufficient_scope`. The combined `pms:read+ads` scope also permits PMS reads and is required for policy synchronization with Speedle Cloud ADS (`speedle-cloud`); it cannot write policies.
 
 ### Call IsAllowed from your server
 
-Send an account API key with the `ads` or `pms:read+ads` scope in one `Authorization: Bearer` header and make a POST request:
+Send a workspace API key with the `ads` or `pms:read+ads` scope in one `Authorization: Bearer` header and make a POST request:
 
 ```http
 POST /authz-check/v1/is-allowed
@@ -3469,7 +3846,7 @@ The body is the Speedle REST request, with the same fields and types as a self-h
 
 The getting-started policy, `grant user alice from corp get /books`, matches the request above only in the `corp` domain. A policy without `from` matches the name in every domain. A principal without `idd` matches every domain as well, which makes two different users who share a name indistinguishable when the application accepts more than one identity source. Multi-tenant integrations must send `idd` in every request.
 
-`serviceName` is required in every request and is never defaulted. Select a service in the API key’s account. A missing, empty, unknown or other-account service name returns `404 {"error":"service_not_found"}`. An account API key is not bound to one service.
+`serviceName` is required in every request and is never defaulted. Select a service in the API key’s workspace. A missing, empty, unknown or other-workspace service name returns `404 {"error":"service_not_found"}`. A workspace API key covers the workspace according to its scope and is not bound to one service.
 
 The [getting-started policy](https://engine.speedle.io/docs/cloud/getting-started/#create-a-service-and-a-policy) allows the example request:
 
@@ -3481,7 +3858,7 @@ The [getting-started policy](https://engine.speedle.io/docs/cloud/getting-starte
 
 A policy denial also returns HTTP 200, with `allowed` set to `false`. Your application must check `allowed` before performing the protected action and must fail closed on exceptions or invalid responses.
 
-The application establishes the caller's principals through its own user authentication. The API key identifies the account and its permitted API scope, not the end user. Do not trust a principal name supplied by an unauthenticated browser.
+The application establishes the caller's principals through its own user authentication. The API key identifies the workspace and its permitted API scope, not the end user. Do not trust a principal name supplied by an unauthenticated browser.
 
 Speedle Cloud does not validate subject tokens. Like self-hosted Speedle without a token asserter, it accepts `subject.token` and `tokenType` and discards them without validation, so a non-empty token field is never evidence that authentication happened; decisions use the principals only. Do not forward an end-user token and treat the call as asserted.
 
@@ -3556,32 +3933,32 @@ Source: https://engine.speedle.io/docs/cloud/limits-and-errors/
 
 **Speedle Cloud is in public beta.** This guide describes the workflow for the live service.
 
-Limits apply to the whole account unless a row says otherwise. API keys are account credentials; changing keys does not increase the daily quota.
+Limits apply to the whole workspace unless a row says otherwise. API keys are workspace credentials; changing keys in the same workspace does not increase the daily quota.
 
 ### Limits
 
 | What is limited | Limit | When reached / how to recover |
 | --- | --- | --- |
-| Services per account | 100 | `409 quota_exceeded`; delete an unused service. No timed reset. |
-| Authorization and role policies combined, across all services | 200 per account | `409 quota_exceeded`; delete policies. No timed reset. |
+| Services per workspace | 100 | `409 quota_exceeded`; delete an unused service. No timed reset. |
+| Authorization and role policies combined, across all services | 200 per workspace | `409 quota_exceeded`; delete policies. No timed reset. |
 | Complete SPDL source for one policy | 1,024 UTF-8 bytes | `400 invalid_request` on console policy writes; shorten the source. This counts bytes, not characters. No timed reset. |
-| Active API keys, all scopes combined | 10 per account | `409 quota_exceeded` with `limit: 10`; revoke an unused key or let it expire. The cap does not reset on a schedule. Revoked and expired keys do not count. |
+| Active API keys, all scopes combined | 10 per workspace | `409 quota_exceeded` with `limit: 10`; revoke an unused key or let it expire. The cap does not reset on a schedule. Revoked and expired keys do not count. |
 | Policy name / API key name | 128 Unicode code points / 1–128 characters after trimming | `400 invalid_request`; shorten or correct the name. No timed reset. |
-| Billable policy-management and authorization calls | 10,000 per account per UTC day | `429 daily_quota_exceeded`; resets at 00:00 UTC. Follow `Retry-After`. |
+| Billable policy-management and authorization calls | 10,000 per workspace per UTC day | `429 daily_quota_exceeded`; resets at 00:00 UTC. Follow `Retry-After`. |
 | Short bursts of API-key requests | Approximately 600 per minute per key at each Cloud location | `429 rate_limited` with `Retry-After: 60`; wait before retrying. This is a short-term limit, not a guaranteed throughput or a separate daily allowance. |
 | Ordinary request body | 65,536 bytes (64 KiB) | `413 request_too_large`; send a smaller body. No timed reset. |
-| Atomic JSON import body (`POST /api/service/import` only) | 5,100,000 bytes | `413 request_too_large`; reduce the import. The policy and account limits still apply. No timed reset. |
+| Atomic JSON import body (`POST /api/workspaces/<workspaceId>/services/<serviceId>/import` only) | 5,100,000 bytes | `413 request_too_large`; reduce the import. The policy and workspace limits still apply. No timed reset. |
 | Incoming attributes | 50 attributes; 16,384 UTF-8 bytes of canonical JSON | `400 SPDL-0004`; send fewer or smaller attributes. No timed reset. |
 
 For scopes, expiry, creation and revocation, see [API keys](https://engine.speedle.io/docs/cloud/tokens/).
 
 ### Daily quota
 
-Reads, writes, validation, Playground tests, imports, exports and authorization checks share the daily allowance. A policy denial or invalid business input still counts. Authentication, session operations and `GET /api/me` do not count. Requests rejected by authentication, scope checks, routing, CSRF, body-size checks, burst limits or the daily quota do not count.
+Reads, writes, validation, Playground tests, imports, exports and authorization checks share the daily allowance. A policy denial or invalid business input still counts. Authentication, session operations, `GET /api/me` and `GET /api/workspaces/<workspaceId>/usage` do not count. Requests rejected by authentication, scope checks, routing, CSRF, body-size checks, burst limits or the daily quota do not count.
 
-Cloud-side failures may receive a quota refund, up to 1,000 per account per UTC day; if a refund cannot be confirmed, the call stays charged. Errors caused by the request still count. During a temporary quota-counter failure, authorization calls may continue at a reduced rate within an additional allowance of up to 10,000 calls per account per UTC day. That allowance is separate from the normal quota, is not guaranteed, and resets at 00:00 UTC along with the refund allowance. If it cannot be granted, the response is `503 quota_unavailable`.
+Cloud-side failures may receive a quota refund, up to 1,000 per workspace per UTC day; if a refund cannot be confirmed, the call stays charged. Errors caused by the request still count. During a temporary quota-counter failure, authorization calls may continue at a reduced rate within an additional allowance of up to 10,000 calls per workspace per UTC day. That allowance is separate from the normal quota, is not guaranteed, and resets at 00:00 UTC along with the refund allowance. If it cannot be granted, the response is `503 quota_unavailable`.
 
-Some daily capacity can be reserved but unused, so the usable total can be below 10,000. `GET /api/me` reports usage and the reset time. Do not retry continuously or switch keys to bypass account limits.
+Some daily capacity can be reserved but unused, so the usable total can be below 10,000. `GET /api/workspaces/<workspaceId>/usage` reports the workspace's usage and reset time (`GET /api/me` reports the personal workspace). Do not retry continuously or switch keys to bypass workspace limits.
 
 ### Errors and response headers
 
@@ -3595,14 +3972,14 @@ Errors are flat JSON, for example `{"error":"rate_limited"}`. An error is not an
 | `403 reauth_required` | Authenticate with a linked provider again before creating a key. |
 | `403 insufficient_scope` | Use a key with the required scope. |
 | `403 csrf_failed` | Use the console session with the required origin and CSRF header. |
-| `404 service_not_found` (ADS) / `404 not_found` (management) | Select an existing service in your account. Unknown, other-account or already-revoked key IDs also return `404 not_found`. |
+| `404 service_not_found` (ADS) / `404 not_found` (management) | Select an existing service in the matching workspace. Unknown, other-workspace or already-revoked key IDs also return `404 not_found`. |
 | `409 quota_exceeded` | Free a service or policy slot by deleting an unused item; time does not reset those caps. Free an API-key slot by revoking the key or letting it expire. |
 | `409 revision_exhausted` | The service's revision reached its maximum; it stays readable and exportable. [Follow the recovery steps](https://engine.speedle.io/docs/cloud/limits-and-errors/#revision-exhausted). |
 | `413 request_too_large` | Reduce the body size. |
 | `429 rate_limited` / `429 daily_quota_exceeded` | Respect `Retry-After` and use bounded backoff; the daily limit resets at UTC midnight. |
 | `503 quota_unavailable` / `503 snapshot_unavailable` / `500 internal_error` | Fail closed and retry with bounded backoff, respecting `Retry-After` when present. |
 
-For verified API-key requests, `X-RateLimit-Limit` is 600. There is no exact `X-RateLimit-Remaining`. `X-Quota-Daily-Remaining`, when present, is an approximate account-wide balance; concurrent calls and unused reservations can make it differ from what you can actually use. It does not guarantee that the next request will succeed, and early rejections omit it.
+For verified API-key requests, `X-RateLimit-Limit` is 600. There is no exact `X-RateLimit-Remaining`. `X-Quota-Daily-Remaining`, when present, is an approximate balance for the API key's workspace; concurrent calls and unused reservations can make it differ from what you can actually use. It does not guarantee that the next request will succeed, and early rejections omit it.
 
 ADS responses use `Cache-Control: no-store`. Keep decisions and credentials out of shared caches. Use POST; other methods can receive `405 method_not_allowed` or an earlier non-JSON block response. See the [Authorization API](https://engine.speedle.io/docs/cloud/authorization-api/).
 
@@ -3619,7 +3996,7 @@ To recover:
 4. Switch callers to the new service name.
 5. Optionally, delete the old service afterwards.
 
-Account service and policy limits still apply. Before steps 2 and 3, make sure the account has a free service slot and enough policy slots for the import; delete unused services or policies if necessary. If no other capacity can be freed, confirm the export, delete the old service, and then perform steps 2–4. Deleting the old service before the replacement is ready interrupts access for its callers.
+Workspace service and policy limits still apply. Before steps 2 and 3, make sure the workspace has a free service slot and enough policy slots for the import; delete unused services or policies if necessary. If no other capacity can be freed, confirm the export, delete the old service, and then perform steps 2–4. Deleting the old service before the replacement is ready interrupts access for its callers.
 
 ## Pluggable Storage
 

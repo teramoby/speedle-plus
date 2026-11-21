@@ -11,7 +11,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1"><title>Speedle Cloud API keys · Speedle Engine</title>
-<meta name="description" content="Create, protect, list and revoke account API keys and choose a fixed scope and expiry.">
+<meta name="description" content="Create, protect, list and revoke workspace API keys and choose a fixed scope and expiry.">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/docs/cloud/tokens/">
@@ -23,10 +23,10 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/cloud/tokens/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/cloud/tokens/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-11-12T00:00:00&#43;08:00">
+<meta property="article:modified_time" content="2026-11-21T00:00:00&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Speedle Cloud API keys · Speedle Engine">
-<meta property="og:description" content="Create, protect, list and revoke account API keys and choose a fixed scope and expiry.">
+<meta property="og:description" content="Create, protect, list and revoke workspace API keys and choose a fixed scope and expiry.">
 <meta property="og:url" content="https://engine.speedle.io/docs/cloud/tokens/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta property="og:image:width" content="1200">
@@ -35,11 +35,11 @@
 <meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Speedle Cloud API keys · Speedle Engine">
-<meta name="twitter:description" content="Create, protect, list and revoke account API keys and choose a fixed scope and expiry.">
+<meta name="twitter:description" content="Create, protect, list and revoke workspace API keys and choose a fixed scope and expiry.">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/cloud/tokens/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-12T00:00:00+08:00","description":"Create, protect, list and revoke account API keys and choose a fixed scope and expiry.","headline":"Speedle Cloud API keys","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/cloud/tokens/","@type":"WebPage"},"name":"Speedle Cloud API keys","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/cloud/tokens/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/cloud/tokens/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-21T00:00:00+08:00","description":"Create, protect, list and revoke workspace API keys and choose a fixed scope and expiry.","headline":"Speedle Cloud API keys","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/cloud/tokens/","@type":"WebPage"},"name":"Speedle Cloud API keys","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/cloud/tokens/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/cloud/tokens/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/","name":"Home","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/docs/","name":"Documentation","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/docs/cloud/","name":"Speedle Cloud","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/docs/cloud/tokens/","name":"Speedle Cloud API keys","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -155,6 +155,7 @@
 <li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/docs/cloud/">Speedle Cloud</a></span>
 <ul class="sub-menu">
 <li data-docs-depth="1" class=""><a href="/docs/cloud/getting-started/">Getting started</a></li>
+<li data-docs-depth="1" class=""><a href="/docs/cloud/console/">Console manual</a></li>
 <li data-docs-depth="1" class="active"><a href="/docs/cloud/tokens/" aria-current="page">API keys</a></li>
 <li data-docs-depth="1" class=""><a href="/docs/cloud/global-roles/">Global roles</a></li>
 <li data-docs-depth="1" class=""><a href="/docs/cloud/authorization-api/">Authorization API</a></li>
@@ -197,7 +198,7 @@
 
   <div id="kube-component" class="content">
 
-<p>API keys belong to your account and can access its services according to their scope. They authenticate your application, not its end users. Managing API keys, sessions and linked identities always requires a signed-in console session.</p>
+<p>API keys belong to a workspace and can access its services according to their scope. They authenticate your application, not its end users. Managing API keys, sessions and linked identities always requires a signed-in console session. Removing a workspace member or leaving a workspace does not revoke API keys that person created; review and revoke them explicitly when needed.</p>
 
 <p><strong>Speedle Cloud is in public beta.</strong> This guide describes the workflow for the live service.</p>
 
@@ -223,12 +224,12 @@
 
 <tr>
 <td><code>pms:read</code></td>
-<td>Read account services, policies and role policies through <code>/policy-mgmt/v1</code>.</td>
+<td>Read workspace services, policies and role policies through <code>/policy-mgmt/v1</code>.</td>
 </tr>
 
 <tr>
 <td><code>pms:write</code></td>
-<td>Read, create and delete account services, policies and role policies through <code>/policy-mgmt/v1</code>.</td>
+<td>Read, create and delete workspace services, policies and role policies through <code>/policy-mgmt/v1</code>.</td>
 </tr>
 
 <tr>
@@ -241,7 +242,7 @@
 <p><code>pms:read</code> and <code>pms:write</code> cannot call ADS; <code>ads</code> cannot call policy management. Use <code>pms:read+ads</code> (ADS sync) for policy synchronization with Speedle Cloud ADS (<code>speedle-cloud</code>); it also permits ADS checks and PMS reads, but no writes. Using the wrong scope returns <code>403 insufficient_scope</code>.</p>
 
 <p>The console sends a session-authenticated request:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-http" data-lang="http">POST /api/tokens
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-http" data-lang="http">POST /api/workspaces/&lt;workspaceId&gt;/tokens
 Origin: https://cloud.speedle.io
 X-SC-CSRF: 1
 Content-Type: application/json
@@ -257,24 +258,24 @@ Content-Type: application/json
 
 <p>This describes the format, not a usable key. Save the value immediately in a server-side secret store. Never put it in browser storage, frontend code, URLs, source control, screenshots or logs. Listing keys returns metadata only; a lost secret cannot be recovered.</p>
 
-<p>Your account can have <strong>10 active API keys across all scopes</strong>. Creating another returns <code>409 {&quot;error&quot;:&quot;quota_exceeded&quot;,&quot;limit&quot;:10}</code>. Revoke an unused key, or let it expire, to free a slot. The cap does not reset on a schedule. Revoked and expired keys remain listed and do not count toward the cap.</p>
+<p>Each workspace can have <strong>10 active API keys across all scopes</strong>. Creating another returns <code>409 {&quot;error&quot;:&quot;quota_exceeded&quot;,&quot;limit&quot;:10}</code>. Revoke an unused key, or let it expire, to free a slot. The cap does not reset on a schedule. Revoked and expired keys remain listed and do not count toward the cap.</p>
 
 <h2 id="list-api-keys">List API keys</h2>
 
-<p><code>GET /api/tokens</code> lists active, expired and revoked keys, newest first. The default page size is 25; <code>limit</code> accepts 1–100. Pass the last response&rsquo;s <code>nextCursor</code> as <code>cursor</code> until <code>nextCursor</code> is <code>null</code>. Each key includes <code>expiresAt</code> in Unix milliseconds. The console shows <strong>Expires (UTC)</strong>. A key that expires within 7 days is marked <strong>Expires soon</strong>. Expired keys appear in an <strong>Expired</strong> group. <code>lastUsedAt</code> is best-effort, normally updated at most hourly; it does not prove that a key is unused.</p>
+<p><code>GET /api/workspaces/&lt;workspaceId&gt;/tokens</code> lists active, expired and revoked keys, newest first. The default page size is 25; <code>limit</code> accepts 1–100. Pass the last response&rsquo;s <code>nextCursor</code> as <code>cursor</code> until <code>nextCursor</code> is <code>null</code>. Each key includes <code>expiresAt</code> in Unix milliseconds. The console shows <strong>Expires (UTC)</strong>. A key that expires within 7 days is marked <strong>Expires soon</strong>. Expired keys appear in an <strong>Expired</strong> group. <code>lastUsedAt</code> is best-effort, normally updated at most hourly; it does not prove that a key is unused.</p>
 
 <h2 id="revoke-an-api-key">Revoke an API key</h2>
 
 <p>Choose <strong>Revoke</strong>, check the key name and ID, and confirm. Revocation does not require recent reauthentication. The console sends:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-http" data-lang="http">DELETE /api/tokens/&lt;API key id&gt;
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-http" data-lang="http">DELETE /api/workspaces/&lt;workspaceId&gt;/tokens/&lt;API key id&gt;
 Origin: https://cloud.speedle.io
 X-SC-CSRF: 1
 Content-Type: application/json
 
 {}</code></pre></div>
-<p>The first revocation returns an empty HTTP 204. Unknown, other-account or already-revoked IDs return <code>404 not_found</code>. Previously verified requests may continue using a key for up to 60 seconds; revocation is not instantaneous everywhere.</p>
+<p>The first revocation returns an empty HTTP 204. Unknown, other-workspace or already-revoked IDs return <code>404 not_found</code>. Previously verified requests may continue using a key for up to 60 seconds; revocation is not instantaneous everywhere.</p>
 
-<p>The available actions are <strong>Create</strong> and <strong>Revoke</strong>. To change a secret, scope or expiry, create another key, update callers and revoke the old key. If all active keys are in use at the cap, plan for interruption before revoking one. Deleting a service does not revoke account API keys.</p>
+<p>The available actions are <strong>Create</strong> and <strong>Revoke</strong>. To change a secret, scope or expiry, create another key, update callers and revoke the old key. If all active keys are in use at the cap, plan for interruption before revoking one. Deleting a service does not revoke workspace API keys.</p>
 
 <p>If a creation or revocation response is lost, refresh the list before acting again. A matching name cannot recover a lost secret. See <a href="/docs/cloud/limits-and-errors/">Limits and errors</a> and the <a href="/docs/cloud/authorization-api/">Authorization API</a>.</p>
 </div>

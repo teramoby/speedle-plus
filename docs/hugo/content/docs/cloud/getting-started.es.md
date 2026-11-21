@@ -21,7 +21,7 @@ Abra la [consola Cloud](https://cloud.speedle.io/es/) en el navegador e inicie s
 
 Abra el [espacio de trabajo del servicio](https://cloud.speedle.io/es/service), introduzca `books` y seleccione **Crear servicio**. Use un servicio nuevo para que otras políticas no afecten a los resultados; no sobrescriba datos existentes.
 
-Seleccione **Nueva política**, asígnele el nombre `read-books` e introduzca este SPDL:
+Seleccione **Crear política**, asígnele el nombre `read-books` (o déjelo vacío para generarlo automáticamente) e introduzca este SPDL:
 
 ```text
 grant user alice from corp get /books
@@ -29,7 +29,7 @@ grant user alice from corp get /books
 
 Esta política permite que `alice`, del dominio de identidad `corp`, ejecute `get` sobre `/books`. Una concesión sin `from` coincide con el nombre en cualquier dominio. Obtenga el dominio de datos de autenticación fiables y envíelo como `idd` en cada solicitud. Consulte [Dominios de identidad](/es/docs/idd/).
 
-Seleccione **Validar política** y después **Guardar política**. La validación comprueba la sintaxis, pero no guarda el borrador. Espere aproximadamente 60 segundos para que la política guardada llegue a la API de autorización.
+Espere a que la validación automática en vivo confirme la sintaxis y seleccione **Guardar política**. La validación no guarda el borrador. Espere aproximadamente 60 segundos para que la política guardada llegue a la API de autorización.
 
 ## Crear una clave API
 

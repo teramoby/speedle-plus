@@ -3,22 +3,22 @@ title = "Speedle Cloud authorization API"
 linkTitle = "Authorization API"
 description = "Speedle Cloud ADS IsAllowed request and response, Node.js 22 integration, policy snapshots and transport constraints."
 date = 2026-11-08T00:00:00+08:00
-lastmod = 2026-11-12T00:00:00+08:00
+lastmod = 2026-11-21T00:00:00+08:00
 weight = 30
 draft = false
 toc = true
 tocheading = "h2"
 categories = ["docs"]
-bref = "Server-side authorization with an account API key."
+bref = "Server-side authorization with a workspace API key."
 +++
 
 **Speedle Cloud is in public beta.** This guide describes the workflow for the live service.
 
-Use an account API key for server-side authorization calls. Sign in to the account to create keys. Use `ads` or `pms:read+ads` for ADS checks; `pms:read` and `pms:write` return `403 insufficient_scope`. The combined `pms:read+ads` scope also permits PMS reads and is required for policy synchronization with Speedle Cloud ADS (`speedle-cloud`); it cannot write policies.
+Use a workspace API key for server-side authorization calls. Sign in to your account, select the target workspace and create keys there. Use `ads` or `pms:read+ads` for ADS checks; `pms:read` and `pms:write` return `403 insufficient_scope`. The combined `pms:read+ads` scope also permits PMS reads and is required for policy synchronization with Speedle Cloud ADS (`speedle-cloud`); it cannot write policies.
 
 ## Call IsAllowed from your server
 
-Send an account API key with the `ads` or `pms:read+ads` scope in one `Authorization: Bearer` header and make a POST request:
+Send a workspace API key with the `ads` or `pms:read+ads` scope in one `Authorization: Bearer` header and make a POST request:
 
 ```http
 POST /authz-check/v1/is-allowed
@@ -34,7 +34,7 @@ The body is the Speedle REST request, with the same fields and types as a self-h
 
 The getting-started policy, `grant user alice from corp get /books`, matches the request above only in the `corp` domain. A policy without `from` matches the name in every domain. A principal without `idd` matches every domain as well, which makes two different users who share a name indistinguishable when the application accepts more than one identity source. Multi-tenant integrations must send `idd` in every request.
 
-`serviceName` is required in every request and is never defaulted. Select a service in the API key’s account. A missing, empty, unknown or other-account service name returns `404 {"error":"service_not_found"}`. An account API key is not bound to one service.
+`serviceName` is required in every request and is never defaulted. Select a service in the API key’s workspace. A missing, empty, unknown or other-workspace service name returns `404 {"error":"service_not_found"}`. A workspace API key covers the workspace according to its scope and is not bound to one service.
 
 The [getting-started policy](/docs/cloud/getting-started/#create-a-service-and-a-policy) allows the example request:
 
@@ -46,7 +46,7 @@ The [getting-started policy](/docs/cloud/getting-started/#create-a-service-and-a
 
 A policy denial also returns HTTP 200, with `allowed` set to `false`. Your application must check `allowed` before performing the protected action and must fail closed on exceptions or invalid responses.
 
-The application establishes the caller's principals through its own user authentication. The API key identifies the account and its permitted API scope, not the end user. Do not trust a principal name supplied by an unauthenticated browser.
+The application establishes the caller's principals through its own user authentication. The API key identifies the workspace and its permitted API scope, not the end user. Do not trust a principal name supplied by an unauthenticated browser.
 
 Speedle Cloud does not validate subject tokens. Like self-hosted Speedle without a token asserter, it accepts `subject.token` and `tokenType` and discards them without validation, so a non-empty token field is never evidence that authentication happened; decisions use the principals only. Do not forward an end-user token and treat the call as asserted.
 

@@ -80,10 +80,24 @@
     
     <li>
   <h2 class="title2">
-    <a href="/ja/docs/idd/" itemprop="headline">ID ドメイン</a>
+    <a href="/ja/docs/pms/" itemprop="headline">Speedle ポリシー</a>
   </h2>
   
-  <p itemprop="about">複数の ID ドメインからのユーザー ID をサポート</p>
+  <p itemprop="about">認可ポリシーとグローバルロールポリシーの管理、アクセスパターンの検出、認可評価の診断</p>
+  
+  
+  <p itemprop="about">ポリシーの作成と管理、アクセスパターンの検出、認可評価の診断。</p>
+  
+  <hr />
+</li>
+
+    
+    <li>
+  <h2 class="title2">
+    <a href="/ja/docs/cloud/tokens/" itemprop="headline">Speedle Cloud API キー</a>
+  </h2>
+  
+  <p itemprop="about">ワークスペース API キーの作成、保護、一覧表示、失効と、固定スコープおよび必須の有効期限。</p>
   
   
   <hr />
@@ -92,13 +106,13 @@
     
     <li>
   <h2 class="title2">
-    <a href="/ja/docs/sdks/dotnet/" itemprop="headline">C#/.NET SDK</a>
+    <a href="/ja/docs/sdks/python/" itemprop="headline">Python SDK</a>
   </h2>
   
-  <p itemprop="about">Speedle .NET SDK を追加し、ローカルの Speedle に対して認可チェックを実行</p>
+  <p itemprop="about">Speedle Python SDK を追加し、ローカルの Speedle に対して認可チェックを実行</p>
   
   
-  <p itemprop="about">dotnet add package で Speedle.Sdk 1.9.0 を追加し、ローカルの Speedle に対して IsAllowedAsync と CheckAsync を呼び出します。</p>
+  <p itemprop="about">pip または uv で speedle 1.9.0 をインストールし、ローカルの Speedle に対して is_allowed と check を呼び出します。</p>
   
   <hr />
 </li>
@@ -106,25 +120,13 @@
     
     <li>
   <h2 class="title2">
-    <a href="/ja/docs/cloud/limits-and-errors/" itemprop="headline">Speedle Cloud 制限とエラー</a>
+    <a href="/ja/docs/store/etcd/" itemprop="headline">etcd セットアップ</a>
   </h2>
   
-  <p itemprop="about">アカウントの制限、エラーコード、リセット時刻、再試行の案内。</p>
+  <p itemprop="about">PMS および ADS 向けの etcd ポリシーストアの設定手順</p>
   
   
-  <hr />
-</li>
-
-    
-    <li>
-  <h2 class="title2">
-    <a href="/ja/docs/sdks/rust/" itemprop="headline">Rust SDK</a>
-  </h2>
-  
-  <p itemprop="about">Speedle Rust SDK を追加し、ローカルの Speedle に対して認可チェックを実行</p>
-  
-  
-  <p itemprop="about">cargo add で speedle 1.9.0 クレートを追加し、ローカルの Speedle に対して is_allowed と check を呼び出します。</p>
+  <p itemprop="about">独立した etcd サーバーを実行し、PMS と ADS を接続してライブポリシーの更新を確認し、バックアップを保存します。</p>
   
   <hr />
 </li>

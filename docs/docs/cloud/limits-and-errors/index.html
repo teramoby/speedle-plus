@@ -11,7 +11,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1"><title>Speedle Cloud Limits and errors · Speedle Engine</title>
-<meta name="description" content="Account limits, error codes, reset times and retry guidance.">
+<meta name="description" content="Workspace limits, error codes, reset times and retry guidance.">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/docs/cloud/limits-and-errors/">
@@ -23,10 +23,10 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/cloud/limits-and-errors/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/cloud/limits-and-errors/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-11-12T00:00:00&#43;08:00">
+<meta property="article:modified_time" content="2026-11-21T00:00:00&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Speedle Cloud Limits and errors · Speedle Engine">
-<meta property="og:description" content="Account limits, error codes, reset times and retry guidance.">
+<meta property="og:description" content="Workspace limits, error codes, reset times and retry guidance.">
 <meta property="og:url" content="https://engine.speedle.io/docs/cloud/limits-and-errors/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta property="og:image:width" content="1200">
@@ -35,11 +35,11 @@
 <meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Speedle Cloud Limits and errors · Speedle Engine">
-<meta name="twitter:description" content="Account limits, error codes, reset times and retry guidance.">
+<meta name="twitter:description" content="Workspace limits, error codes, reset times and retry guidance.">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/cloud/limits-and-errors/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-12T00:00:00+08:00","description":"Account limits, error codes, reset times and retry guidance.","headline":"Speedle Cloud Limits and errors","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/cloud/limits-and-errors/","@type":"WebPage"},"name":"Speedle Cloud Limits and errors","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/cloud/limits-and-errors/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/cloud/limits-and-errors/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-21T00:00:00+08:00","description":"Workspace limits, error codes, reset times and retry guidance.","headline":"Speedle Cloud Limits and errors","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/cloud/limits-and-errors/","@type":"WebPage"},"name":"Speedle Cloud Limits and errors","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/cloud/limits-and-errors/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/cloud/limits-and-errors/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/","name":"Home","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/docs/","name":"Documentation","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/docs/cloud/","name":"Speedle Cloud","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/docs/cloud/limits-and-errors/","name":"Speedle Cloud Limits and errors","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -155,6 +155,7 @@
 <li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/docs/cloud/">Speedle Cloud</a></span>
 <ul class="sub-menu">
 <li data-docs-depth="1" class=""><a href="/docs/cloud/getting-started/">Getting started</a></li>
+<li data-docs-depth="1" class=""><a href="/docs/cloud/console/">Console manual</a></li>
 <li data-docs-depth="1" class=""><a href="/docs/cloud/tokens/">API keys</a></li>
 <li data-docs-depth="1" class=""><a href="/docs/cloud/global-roles/">Global roles</a></li>
 <li data-docs-depth="1" class=""><a href="/docs/cloud/authorization-api/">Authorization API</a></li>
@@ -199,7 +200,7 @@
 
 <p><strong>Speedle Cloud is in public beta.</strong> This guide describes the workflow for the live service.</p>
 
-<p>Limits apply to the whole account unless a row says otherwise. API keys are account credentials; changing keys does not increase the daily quota.</p>
+<p>Limits apply to the whole workspace unless a row says otherwise. API keys are workspace credentials; changing keys in the same workspace does not increase the daily quota.</p>
 
 <h2 id="limits">Limits</h2>
 
@@ -214,14 +215,14 @@
 
 <tbody>
 <tr>
-<td>Services per account</td>
+<td>Services per workspace</td>
 <td>100</td>
 <td><code>409 quota_exceeded</code>; delete an unused service. No timed reset.</td>
 </tr>
 
 <tr>
 <td>Authorization and role policies combined, across all services</td>
-<td>200 per account</td>
+<td>200 per workspace</td>
 <td><code>409 quota_exceeded</code>; delete policies. No timed reset.</td>
 </tr>
 
@@ -233,7 +234,7 @@
 
 <tr>
 <td>Active API keys, all scopes combined</td>
-<td>10 per account</td>
+<td>10 per workspace</td>
 <td><code>409 quota_exceeded</code> with <code>limit: 10</code>; revoke an unused key or let it expire. The cap does not reset on a schedule. Revoked and expired keys do not count.</td>
 </tr>
 
@@ -245,7 +246,7 @@
 
 <tr>
 <td>Billable policy-management and authorization calls</td>
-<td>10,000 per account per UTC day</td>
+<td>10,000 per workspace per UTC day</td>
 <td><code>429 daily_quota_exceeded</code>; resets at 00:00 UTC. Follow <code>Retry-After</code>.</td>
 </tr>
 
@@ -262,9 +263,9 @@
 </tr>
 
 <tr>
-<td>Atomic JSON import body (<code>POST /api/service/import</code> only)</td>
+<td>Atomic JSON import body (<code>POST /api/workspaces/&lt;workspaceId&gt;/services/&lt;serviceId&gt;/import</code> only)</td>
 <td>5,100,000 bytes</td>
-<td><code>413 request_too_large</code>; reduce the import. The policy and account limits still apply. No timed reset.</td>
+<td><code>413 request_too_large</code>; reduce the import. The policy and workspace limits still apply. No timed reset.</td>
 </tr>
 
 <tr>
@@ -279,11 +280,11 @@
 
 <h2 id="daily-quota">Daily quota</h2>
 
-<p>Reads, writes, validation, Playground tests, imports, exports and authorization checks share the daily allowance. A policy denial or invalid business input still counts. Authentication, session operations and <code>GET /api/me</code> do not count. Requests rejected by authentication, scope checks, routing, CSRF, body-size checks, burst limits or the daily quota do not count.</p>
+<p>Reads, writes, validation, Playground tests, imports, exports and authorization checks share the daily allowance. A policy denial or invalid business input still counts. Authentication, session operations, <code>GET /api/me</code> and <code>GET /api/workspaces/&lt;workspaceId&gt;/usage</code> do not count. Requests rejected by authentication, scope checks, routing, CSRF, body-size checks, burst limits or the daily quota do not count.</p>
 
-<p>Cloud-side failures may receive a quota refund, up to 1,000 per account per UTC day; if a refund cannot be confirmed, the call stays charged. Errors caused by the request still count. During a temporary quota-counter failure, authorization calls may continue at a reduced rate within an additional allowance of up to 10,000 calls per account per UTC day. That allowance is separate from the normal quota, is not guaranteed, and resets at 00:00 UTC along with the refund allowance. If it cannot be granted, the response is <code>503 quota_unavailable</code>.</p>
+<p>Cloud-side failures may receive a quota refund, up to 1,000 per workspace per UTC day; if a refund cannot be confirmed, the call stays charged. Errors caused by the request still count. During a temporary quota-counter failure, authorization calls may continue at a reduced rate within an additional allowance of up to 10,000 calls per workspace per UTC day. That allowance is separate from the normal quota, is not guaranteed, and resets at 00:00 UTC along with the refund allowance. If it cannot be granted, the response is <code>503 quota_unavailable</code>.</p>
 
-<p>Some daily capacity can be reserved but unused, so the usable total can be below 10,000. <code>GET /api/me</code> reports usage and the reset time. Do not retry continuously or switch keys to bypass account limits.</p>
+<p>Some daily capacity can be reserved but unused, so the usable total can be below 10,000. <code>GET /api/workspaces/&lt;workspaceId&gt;/usage</code> reports the workspace&rsquo;s usage and reset time (<code>GET /api/me</code> reports the personal workspace). Do not retry continuously or switch keys to bypass workspace limits.</p>
 
 <h2 id="errors-and-response-headers">Errors and response headers</h2>
 
@@ -330,7 +331,7 @@
 
 <tr>
 <td><code>404 service_not_found</code> (ADS) / <code>404 not_found</code> (management)</td>
-<td>Select an existing service in your account. Unknown, other-account or already-revoked key IDs also return <code>404 not_found</code>.</td>
+<td>Select an existing service in the matching workspace. Unknown, other-workspace or already-revoked key IDs also return <code>404 not_found</code>.</td>
 </tr>
 
 <tr>
@@ -360,7 +361,7 @@
 </tbody>
 </table>
 
-<p>For verified API-key requests, <code>X-RateLimit-Limit</code> is 600. There is no exact <code>X-RateLimit-Remaining</code>. <code>X-Quota-Daily-Remaining</code>, when present, is an approximate account-wide balance; concurrent calls and unused reservations can make it differ from what you can actually use. It does not guarantee that the next request will succeed, and early rejections omit it.</p>
+<p>For verified API-key requests, <code>X-RateLimit-Limit</code> is 600. There is no exact <code>X-RateLimit-Remaining</code>. <code>X-Quota-Daily-Remaining</code>, when present, is an approximate balance for the API key&rsquo;s workspace; concurrent calls and unused reservations can make it differ from what you can actually use. It does not guarantee that the next request will succeed, and early rejections omit it.</p>
 
 <p>ADS responses use <code>Cache-Control: no-store</code>. Keep decisions and credentials out of shared caches. Use POST; other methods can receive <code>405 method_not_allowed</code> or an earlier non-JSON block response. See the <a href="/docs/cloud/authorization-api/">Authorization API</a>.</p>
 
@@ -380,7 +381,7 @@
 <li>Optionally, delete the old service afterwards.</li>
 </ol>
 
-<p>Account service and policy limits still apply. Before steps 2 and 3, make sure the account has a free service slot and enough policy slots for the import; delete unused services or policies if necessary. If no other capacity can be freed, confirm the export, delete the old service, and then perform steps 2–4. Deleting the old service before the replacement is ready interrupts access for its callers.</p>
+<p>Workspace service and policy limits still apply. Before steps 2 and 3, make sure the workspace has a free service slot and enough policy slots for the import; delete unused services or policies if necessary. If no other capacity can be freed, confirm the export, delete the old service, and then perform steps 2–4. Deleting the old service before the replacement is ready interrupts access for its callers.</p>
 </div>
 </div>
 </main>

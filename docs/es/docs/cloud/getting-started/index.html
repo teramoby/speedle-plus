@@ -155,6 +155,7 @@
 <li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/es/docs/cloud/">Speedle Cloud</a></span>
 <ul class="sub-menu">
 <li data-docs-depth="1" class="active"><a href="/es/docs/cloud/getting-started/" aria-current="page">Primeros pasos</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/cloud/console/">Manual de consola</a></li>
 <li data-docs-depth="1" class=""><a href="/es/docs/cloud/tokens/">Claves API</a></li>
 <li data-docs-depth="1" class=""><a href="/es/docs/cloud/global-roles/">Roles globales</a></li>
 <li data-docs-depth="1" class=""><a href="/es/docs/cloud/authorization-api/">API de autorización</a></li>
@@ -207,11 +208,11 @@
 
 <p>Abra el <a href="https://cloud.speedle.io/es/service">espacio de trabajo del servicio</a>, introduzca <code>books</code> y seleccione <strong>Crear servicio</strong>. Use un servicio nuevo para que otras políticas no afecten a los resultados; no sobrescriba datos existentes.</p>
 
-<p>Seleccione <strong>Nueva política</strong>, asígnele el nombre <code>read-books</code> e introduzca este SPDL:</p>
+<p>Seleccione <strong>Crear política</strong>, asígnele el nombre <code>read-books</code> (o déjelo vacío para generarlo automáticamente) e introduzca este SPDL:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant user alice from corp get /books</code></pre></div>
 <p>Esta política permite que <code>alice</code>, del dominio de identidad <code>corp</code>, ejecute <code>get</code> sobre <code>/books</code>. Una concesión sin <code>from</code> coincide con el nombre en cualquier dominio. Obtenga el dominio de datos de autenticación fiables y envíelo como <code>idd</code> en cada solicitud. Consulte <a href="/es/docs/idd/">Dominios de identidad</a>.</p>
 
-<p>Seleccione <strong>Validar política</strong> y después <strong>Guardar política</strong>. La validación comprueba la sintaxis, pero no guarda el borrador. Espere aproximadamente 60 segundos para que la política guardada llegue a la API de autorización.</p>
+<p>Espere a que la validación automática en vivo confirme la sintaxis y seleccione <strong>Guardar política</strong>. La validación no guarda el borrador. Espere aproximadamente 60 segundos para que la política guardada llegue a la API de autorización.</p>
 
 <h2 id="crear-una-clave-api">Crear una clave API</h2>
 

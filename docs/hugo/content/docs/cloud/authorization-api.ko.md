@@ -1,18 +1,18 @@
 +++
 title = "Speedle Cloud 인가 API"
 linkTitle = "인가 API"
-description = "계정 API 키를 사용한 IsAllowed, 호출자 신원, Node.js 22 예제."
+description = "워크스페이스 API 키를 사용한 IsAllowed, 호출자 신원, Node.js 22 예제."
 weight = 30
 draft = false
 toc = true
 tocheading = "h2"
 categories = ["docs"]
-lastmod = 2026-11-12T00:00:00+08:00
+lastmod = 2026-11-21T00:00:00+08:00
 +++
 
 **Speedle Cloud는 공개 베타로 제공 중입니다.** 이 가이드는 실제 서비스에서의 사용 절차를 설명합니다.
 
-계정 API 키로 서버에서 인가를 확인합니다. 키를 생성하려면 로그인이 필요합니다. ADS 확인에는 `ads` 또는 `pms:read+ads`를 사용합니다. `pms:read`와 `pms:write`는 `403 insufficient_scope`입니다. `pms:read+ads`는 PMS 읽기도 허용하며 Speedle Cloud ADS(`speedle-cloud`)의 정책 동기화에 필요하지만 쓰기는 허용하지 않습니다.
+워크스페이스 API 키로 서버에서 인가를 확인합니다. 로그인한 뒤 대상 워크스페이스를 선택해 키를 생성합니다. ADS 확인에는 `ads` 또는 `pms:read+ads`를 사용합니다. `pms:read`와 `pms:write`는 `403 insufficient_scope`입니다. `pms:read+ads`는 PMS 읽기도 허용하며 Speedle Cloud ADS(`speedle-cloud`)의 정책 동기화에 필요하지만 쓰기는 허용하지 않습니다.
 
 ## 서버에서 IsAllowed 호출
 
@@ -30,13 +30,13 @@ Content-Type: application/json
 
 `idd`는 애플리케이션이 사용자를 인증한 신원 도메인입니다. 신뢰할 수 있는 서버 인증 정보로 설정하세요. `grant user alice from corp get /books`는 `corp`에서만 일치합니다. `from`이 없는 정책은 모든 도메인의 같은 이름과 일치합니다. `idd`가 없는 principal도 모든 도메인과 일치하므로 여러 신원 소스를 사용하면 반드시 전송하세요.
 
-`serviceName`은 필수이며 기본값이 없습니다. 키 계정의 서비스를 선택하세요. 누락, 빈 값, 알 수 없거나 다른 계정의 이름은 `404 {"error":"service_not_found"}`입니다. 키는 한 서비스에 묶이지 않습니다. [시작 정책](/ko/docs/cloud/getting-started/)에서는 `books`를 지정합니다.
+`serviceName`은 필수이며 기본값이 없습니다. 키의 워크스페이스에 있는 서비스를 선택하세요. 누락, 빈 값, 알 수 없거나 다른 워크스페이스의 이름은 `404 {"error":"service_not_found"}`입니다. 키는 범위에 따라 워크스페이스 전체에 적용되며 한 서비스에 묶이지 않습니다. [시작 정책](/ko/docs/cloud/getting-started/)에서는 `books`를 지정합니다.
 
 ## 판정과 사용자 신원
 
 성공 응답에는 불리언 `allowed`와 숫자 `reason`이 있습니다. 정책 거부도 HTTP 200이며 `allowed`가 `false`입니다. 보호 작업 전에 `allowed`를 확인하고 예외나 잘못된 응답은 거부하세요.
 
-API 키는 계정과 API 범위를 인증하고 최종 사용자는 애플리케이션이 인증합니다. 브라우저가 제공한 principal을 신뢰하지 마세요. Cloud는 `subject.token`과 `tokenType`을 검증하지 않고 버립니다. principal만 판정에 사용하므로 이 필드를 사용자 인증의 증거로 사용하지 마세요.
+API 키는 워크스페이스와 API 범위를 식별하고 최종 사용자는 애플리케이션이 인증합니다. 브라우저가 제공한 principal을 신뢰하지 마세요. Cloud는 `subject.token`과 `tokenType`을 검증하지 않고 버립니다. principal만 판정에 사용하므로 이 필드를 사용자 인증의 증거로 사용하지 마세요.
 
 Playground는 현재 저장된 정책을, ADS는 게시된 스냅샷을 사용합니다. Playground 성공이 모든 ADS 위치에 반영되었음을 보장하지 않습니다. 공개 ADS Diagnose API는 없습니다.
 

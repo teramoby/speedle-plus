@@ -1,16 +1,16 @@
 +++
 title = "Speedle Cloud API keys"
 linkTitle = "API keys"
-description = "Create, protect, list and revoke account API keys and choose a fixed scope and expiry."
+description = "Create, protect, list and revoke workspace API keys and choose a fixed scope and expiry."
 weight = 20
 draft = false
 toc = true
 tocheading = "h2"
 categories = ["docs"]
-lastmod = 2026-11-12T00:00:00+08:00
+lastmod = 2026-11-21T00:00:00+08:00
 +++
 
-API keys belong to your account and can access its services according to their scope. They authenticate your application, not its end users. Managing API keys, sessions and linked identities always requires a signed-in console session.
+API keys belong to a workspace and can access its services according to their scope. They authenticate your application, not its end users. Managing API keys, sessions and linked identities always requires a signed-in console session. Removing a workspace member or leaving a workspace does not revoke API keys that person created; review and revoke them explicitly when needed.
 
 **Speedle Cloud is in public beta.** This guide describes the workflow for the live service.
 
@@ -23,8 +23,8 @@ Each key has one scope, fixed at creation:
 | Scope | Access |
 | --- | --- |
 | `ads` (default) | Authorization checks through `/authz-check/v1/*` only. |
-| `pms:read` | Read account services, policies and role policies through `/policy-mgmt/v1`. |
-| `pms:write` | Read, create and delete account services, policies and role policies through `/policy-mgmt/v1`. |
+| `pms:read` | Read workspace services, policies and role policies through `/policy-mgmt/v1`. |
+| `pms:write` | Read, create and delete workspace services, policies and role policies through `/policy-mgmt/v1`. |
 | `pms:read+ads` (ADS sync) | Authorization checks, read-only policy management and policy synchronization for Speedle Cloud ADS; no writes. |
 
 `pms:read` and `pms:write` cannot call ADS; `ads` cannot call policy management. Use `pms:read+ads` (ADS sync) for policy synchronization with Speedle Cloud ADS (`speedle-cloud`); it also permits ADS checks and PMS reads, but no writes. Using the wrong scope returns `403 insufficient_scope`.
@@ -32,7 +32,7 @@ Each key has one scope, fixed at creation:
 The console sends a session-authenticated request:
 
 ```http
-POST /api/tokens
+POST /api/workspaces/<workspaceId>/tokens
 Origin: https://cloud.speedle.io
 X-SC-CSRF: 1
 Content-Type: application/json
@@ -54,18 +54,18 @@ Every key expires at `expiresAt`, which the server computes and returns in Unix 
 
 This describes the format, not a usable key. Save the value immediately in a server-side secret store. Never put it in browser storage, frontend code, URLs, source control, screenshots or logs. Listing keys returns metadata only; a lost secret cannot be recovered.
 
-Your account can have **10 active API keys across all scopes**. Creating another returns `409 {"error":"quota_exceeded","limit":10}`. Revoke an unused key, or let it expire, to free a slot. The cap does not reset on a schedule. Revoked and expired keys remain listed and do not count toward the cap.
+Each workspace can have **10 active API keys across all scopes**. Creating another returns `409 {"error":"quota_exceeded","limit":10}`. Revoke an unused key, or let it expire, to free a slot. The cap does not reset on a schedule. Revoked and expired keys remain listed and do not count toward the cap.
 
 ## List API keys
 
-`GET /api/tokens` lists active, expired and revoked keys, newest first. The default page size is 25; `limit` accepts 1–100. Pass the last response's `nextCursor` as `cursor` until `nextCursor` is `null`. Each key includes `expiresAt` in Unix milliseconds. The console shows **Expires (UTC)**. A key that expires within 7 days is marked **Expires soon**. Expired keys appear in an **Expired** group. `lastUsedAt` is best-effort, normally updated at most hourly; it does not prove that a key is unused.
+`GET /api/workspaces/<workspaceId>/tokens` lists active, expired and revoked keys, newest first. The default page size is 25; `limit` accepts 1–100. Pass the last response's `nextCursor` as `cursor` until `nextCursor` is `null`. Each key includes `expiresAt` in Unix milliseconds. The console shows **Expires (UTC)**. A key that expires within 7 days is marked **Expires soon**. Expired keys appear in an **Expired** group. `lastUsedAt` is best-effort, normally updated at most hourly; it does not prove that a key is unused.
 
 ## Revoke an API key
 
 Choose **Revoke**, check the key name and ID, and confirm. Revocation does not require recent reauthentication. The console sends:
 
 ```http
-DELETE /api/tokens/<API key id>
+DELETE /api/workspaces/<workspaceId>/tokens/<API key id>
 Origin: https://cloud.speedle.io
 X-SC-CSRF: 1
 Content-Type: application/json
@@ -73,8 +73,8 @@ Content-Type: application/json
 {}
 ```
 
-The first revocation returns an empty HTTP 204. Unknown, other-account or already-revoked IDs return `404 not_found`. Previously verified requests may continue using a key for up to 60 seconds; revocation is not instantaneous everywhere.
+The first revocation returns an empty HTTP 204. Unknown, other-workspace or already-revoked IDs return `404 not_found`. Previously verified requests may continue using a key for up to 60 seconds; revocation is not instantaneous everywhere.
 
-The available actions are **Create** and **Revoke**. To change a secret, scope or expiry, create another key, update callers and revoke the old key. If all active keys are in use at the cap, plan for interruption before revoking one. Deleting a service does not revoke account API keys.
+The available actions are **Create** and **Revoke**. To change a secret, scope or expiry, create another key, update callers and revoke the old key. If all active keys are in use at the cap, plan for interruption before revoking one. Deleting a service does not revoke workspace API keys.
 
 If a creation or revocation response is lost, refresh the list before acting again. A matching name cannot recover a lost secret. See [Limits and errors](/docs/cloud/limits-and-errors/) and the [Authorization API](/docs/cloud/authorization-api/).

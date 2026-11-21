@@ -155,6 +155,7 @@
 <li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ko/docs/cloud/">Speedle Cloud</a></span>
 <ul class="sub-menu">
 <li data-docs-depth="1" class="active"><a href="/ko/docs/cloud/getting-started/" aria-current="page">Speedle Cloud 빠른 시작</a></li>
+<li data-docs-depth="1" class=""><a href="/ko/docs/cloud/console/">콘솔 매뉴얼</a></li>
 <li data-docs-depth="1" class=""><a href="/ko/docs/cloud/tokens/">API 키</a></li>
 <li data-docs-depth="1" class=""><a href="/ko/docs/cloud/global-roles/">전역 역할</a></li>
 <li data-docs-depth="1" class=""><a href="/ko/docs/cloud/authorization-api/">인가 API</a></li>
@@ -207,11 +208,11 @@
 
 <p><a href="https://cloud.speedle.io/ko/service">서비스 워크스페이스</a>를 열고 <code>books</code>를 입력한 뒤 <strong>서비스 생성</strong>을 선택합니다. 기존 정책이 결과에 영향을 주지 않도록 새 서비스로 예제를 실행하십시오. 기존 데이터를 덮어쓰지 마십시오.</p>
 
-<p><strong>새 정책</strong>을 선택하고 이름을 <code>read-books</code>로 지정한 뒤 다음 SPDL을 입력합니다.</p>
+<p><strong>정책 생성</strong>을 선택하고 이름을 <code>read-books</code>로 지정(또는 비워 두어 자동 생성)한 뒤 다음 SPDL을 입력합니다.</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant user alice from corp get /books</code></pre></div>
 <p>이 정책은 ID 도메인 <code>corp</code>의 <code>alice</code>가 <code>/books</code>에 대해 <code>get</code>을 실행하도록 허용합니다. <code>from</code>이 없으면 모든 도메인의 같은 이름을 가진 사용자와 일치합니다. 신뢰할 수 있는 인증 데이터에서 도메인을 가져와 각 요청의 <code>idd</code>로 전송하십시오. <a href="/ko/docs/idd/">ID 도메인</a>을 참조하십시오.</p>
 
-<p><strong>정책 검증</strong>을 선택한 다음 <strong>정책 저장</strong>을 선택합니다. 검증은 구문만 확인하며 초안을 저장하지 않습니다. 저장한 정책이 인가 API에 반영되기까지 약 60초가 걸립니다.</p>
+<p>자동 실시간 구문 검증이 통과하면 <strong>정책 저장</strong>을 선택합니다. 검증만으로는 초안이 저장되지 않습니다. 저장한 정책이 인가 API에 반영되기까지 약 60초가 걸립니다.</p>
 
 <h2 id="api-키-생성">API 키 생성</h2>
 

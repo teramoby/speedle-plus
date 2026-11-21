@@ -6,7 +6,7 @@
     <description>Recent content in Speedle：强大易用的权限控制引擎 on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>zh-cn</language>
-    <lastBuildDate>Tue, 17 Nov 2026 00:00:00 +0800</lastBuildDate>
+    <lastBuildDate>Sat, 21 Nov 2026 00:00:00 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/zh/index.xml" rel="self" type="application/rss+xml" />
     
@@ -183,9 +183,9 @@ go version Go 会自动配置 GOROOT 和默认的 GOPATH，无需手动指定。
       <description>Speedle Cloud 已开放公开测试版。 本文介绍线上服务的使用流程。
 使用 GitHub 或 Google 登录 在浏览器中打开 Cloud 控制台，选择可用的登录方式。新身份的已验证邮箱尚未被使用时，确认 创建账号。如果邮箱已被使用，请使用控制台提示的已关联登录方式登录。
 创建 service 和策略 打开服务工作区，输入 books，选择 创建服务。请用新服务运行示例，避免已有策略影响结果，不要覆盖已有数据。
-选择 新建策略，命名为 read-books，输入以下 SPDL：
+选择 创建策略，命名为 read-books（或留空自动生成名称），输入以下 SPDL：
 grant user alice from corp get /books 这条策略允许 corp 身份域中的 alice 对 /books 执行 get。不带 from 的授权会匹配所有身份域中同名的用户。应用应根据可信的认证结果确定身份域，并在每个请求的 idd 字段中发送相同的值。详见身份域。
-选择 验证策略，然后 保存策略。验证只检查语法，不会保存草稿。保存后，策略约需 60 秒才会在授权 API 中生效。
+等待实时语法校验通过后，选择 保存策略。校验不会保存草稿。保存后，策略约需 60 秒才会在授权 API 中生效。
 创建 API 密钥 打开 API 密钥页面，输入名称（如 books-app），选择 ads 权限范围（授权检查），选择有效期（控制台默认 3 个月，并显示 UTC 时间），然后选择 创建 API 密钥。如需验证身份，请完成验证后再次提交表单。复制仅展示一次的密钥值。每个密钥都会到期，包括在必须设置有效期之前创建的密钥。到期时间见 API 密钥管理。请查看列表中的到期时间，并在到期前创建新密钥。不再使用时请提前撤销。
 将密钥保存在服务端的密钥存储中，通过环境变量 SPEEDLE_API_KEY 提供给应用，不要写入浏览器代码或源码仓库。</description>
     </item>
@@ -226,6 +226,20 @@ grant user alice from corp get /books 这条策略允许 corp 身份域中的 al
     </item>
     
     <item>
+      <title>Speedle Cloud 控制台用户手册</title>
+      <link>https://engine.speedle.io/zh/docs/cloud/console/</link>
+      <pubDate>Sat, 21 Nov 2026 00:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/zh/docs/cloud/console/</guid>
+      <description>Speedle Cloud 已开放公开测试版。 免费公开测试版用于试用、学习和评估，不提供 SLA，不建议用于生产环境。功能和限额可能调整。
+本手册介绍 Speedle Cloud 控制台（SCC）（cloud.speedle.io）的日常操作流程。如需快速从服务端完成一次 API 调用，请参阅快速入门。接口载荷、错误码与配额详情请参阅授权 API、API 参考和限额与错误。
+ 关于配图： 本手册中的配图展示的是实际 Speedle Cloud 控制台在英文界面下使用演示数据渲染的效果（example.test 账号、books 示例服务、示例端点与示例用量数值）。
+ 登录与控制台布局 前置条件  启用了 JavaScript 与 Cookie 的浏览器。 拥有已验证邮箱的 GitHub 或 Google 账号。  登录或创建账号  打开 cloud.speedle.io，选择 开始使用（或直接访问 /login）。 选择 使用 GitHub 登录 或 使用 Google 登录，并在登录提供方处完成身份验证。 如果这是你首次使用尚未绑定的已验证邮箱登录，请查看服务条款与隐私政策链接，并确认 创建账号。  预期结果： 控制台打开当前工作区的 服务与策略 页面（路径为 /w/&amp;lt;workspaceId&amp;gt;/service）。新账号默认带有一个名为 个人 的工作区，你在其中的角色为 所有者。
+故障恢复：
+ 此邮箱已有账号： 请先用控制台提示的已关联登录方式登录，再前往 账号设置 关联第二种登录方式。 需要已验证邮箱： 请先在 GitHub 或 Google 账号设置中完成邮箱验证，再重新登录。 暂停新用户注册： 公测版已达到新账号上限；已有账号仍可正常登录。 会话已结束： 会话在连续 7 天无活动或创建满 30 天时失效（以先到者为准），重新登录即可继续。  控制台导航 登录后的控制台包含两个主要导航区域：</description>
+    </item>
+    
+    <item>
       <title>性能测试指南</title>
       <link>https://engine.speedle.io/zh/docs/performance-testing/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -241,11 +255,11 @@ grant user alice from corp get /books 这条策略允许 corp 身份域中的 al
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/zh/docs/cloud/tokens/</guid>
-      <description>API 密钥属于账号，按权限范围访问该账号下的服务。它认证的是应用，不是最终用户。管理 API 密钥、会话和关联身份始终需要已登录的控制台会话。
+      <description>API 密钥属于工作区，按权限范围访问该工作区下的服务。它认证的是应用，不是最终用户。管理 API 密钥、会话和关联身份始终需要已登录的控制台会话。移除工作区成员或成员退出工作区不会撤销其创建的 API 密钥，请按需核对并手动撤销。
 Speedle Cloud 已开放公开测试版。 本文介绍线上服务的使用流程。
 创建 API 密钥 打开 API 密钥，输入去除首尾空白后为 1–128 个字符的名称，选择权限范围和有效期（7d、30d、90d、180d 或 365d；控制台默认 3 个月），点击 创建。创建需要在最近 10 分钟内通过已关联的身份提供方认证。收到 403 reauth_required 时，重新认证后再次点击 创建；从身份提供方返回不会自动创建密钥。
 每个密钥只有一个权限范围，创建后不可修改：
-   权限范围 可访问的功能     ads（默认） 仅通过 /authz-check/v1/* 检查授权。   pms:read 通过 /policy-mgmt/v1 读取账号下的服务、授权策略和角色策略。   pms:write 通过 /policy-mgmt/v1 读取、创建和删除账号下的服务、授权策略和角色策略。   pms:read+ads（ADS 同步） 授权检查、只读策略管理，以及 Speedle Cloud ADS 的策略同步；不能写入。    pms:read 和 pms:write 不能调用 ADS；ads 不能管理策略。Speedle Cloud ADS（speedle-cloud）同步策略需要 pms:read+ads（ADS 同步）权限范围；它也可调用 ADS 和读取 PMS，但不能写入。权限范围不符时返回 403 insufficient_scope。</description>
+   权限范围 可访问的功能     ads（默认） 仅通过 /authz-check/v1/* 检查授权。   pms:read 通过 /policy-mgmt/v1 读取工作区下的服务、授权策略和角色策略。   pms:write 通过 /policy-mgmt/v1 读取、创建和删除工作区下的服务、授权策略和角色策略。   pms:read+ads（ADS 同步） 授权检查、只读策略管理，以及 Speedle Cloud ADS 的策略同步；不能写入。    pms:read 和 pms:write 不能调用 ADS；ads 不能管理策略。Speedle Cloud ADS（speedle-cloud）同步策略需要 pms:read+ads（ADS 同步）权限范围；它也可调用 ADS 和读取 PMS，但不能写入。权限范围不符时返回 403 insufficient_scope。</description>
     </item>
     
     <item>
@@ -293,16 +307,16 @@ docker run --name speedle-etcd --detach \  --publish 127.0.0.1:2379:2379 \  --vo
       
       <guid>https://engine.speedle.io/zh/docs/cloud/global-roles/</guid>
       <description> Speedle Cloud 已开放公开测试版。 本文介绍线上服务的使用流程。
-角色分配通常只属于一个服务。当多个服务共享同一个角色分配时，把它定义在账号的 全局角色 服务中一次，再在各服务自己的授权策略中使用该角色。
-全局角色只接受角色策略。全局角色分配本身不授予任何操作：每个服务仍然自己定义允许的权限。全局角色只属于一个 Cloud 账号，不会跨账号生效。
+角色分配通常只属于一个服务。当同一工作区内的多个服务共享同一个角色分配时，把它定义在工作区的 全局角色 服务中一次，再在各服务自己的授权策略中使用该角色。
+全局角色只接受角色策略。全局角色分配本身不授予任何操作：每个服务仍然自己定义允许的权限。全局角色只属于一个工作区，不会跨工作区生效。
 创建一次角色分配 在控制台的服务选择器顶部选择 全局角色，创建一条角色策略：
 grant user Emma from corp AdminRole from corp 让该分配只作用于 corp 身份域。省略 from 时，授权会匹配所有身份域中名为 Emma 的用户；详见身份域。
-角色 AdminRole 现在已在账号内的所有服务中分配给 Emma。
+角色 AdminRole 现在已在工作区内的所有服务中分配给 Emma。
 在服务中授予权限 切换到需要该权限的服务，例如 library，创建一条授权策略：
 grant role AdminRole borrow books 在每个需要允许该操作的服务中重复这一步。没有自己的授权策略的服务不授予任何权限，即使角色已分配给它。
 检查结果 打开 library 的 Playground，以 [{&amp;quot;type&amp;quot;:&amp;quot;user&amp;quot;,&amp;quot;name&amp;quot;:&amp;quot;Emma&amp;quot;,&amp;quot;idd&amp;quot;:&amp;quot;corp&amp;quot;}] 作为主体、books 作为资源、borrow 作为动作运行测试。请求通过 AdminRole 被允许；来自 Bob 的同一请求被拒绝。
 全局角色自己的 Playground 不同：直接对全局服务判定总是拒绝。全局角色在各服务的 Playground 中生效。
-行为与限制  全局角色只接受角色策略。在全局服务中创建授权策略返回 400 {&amp;quot;error&amp;quot;:&amp;quot;global_authz_unsupported&amp;quot;}。 全局服务计入账号的服务上限，其角色策略计入账号合并的策略上限。参见限额与错误。 控制台把该特殊服务显示为 全局角色；它不能手动创建、改名或删除。 账号的每个 Speedle Cloud ADS 实例都会收到全局角色策略，即使该实例只同步选定的服务集合。 修改与其他策略一样传播：通过已发布的快照约一分钟生效；Playground 直接读取当前状态，立即生效。  </description>
+行为与限制  全局角色只接受角色策略。在全局服务中创建授权策略返回 400 {&amp;quot;error&amp;quot;:&amp;quot;global_authz_unsupported&amp;quot;}。 全局服务计入工作区的服务上限，其角色策略计入工作区合并的策略上限。参见限额与错误。 控制台把该特殊服务显示为 全局角色；它不能手动创建、改名或删除。 工作区的每个 Speedle Cloud ADS 实例都会收到全局角色策略，即使该实例只同步选定的服务集合。 修改与其他策略一样传播：通过已发布的快照约一分钟生效；Playground 直接读取当前状态，立即生效。  </description>
     </item>
     
     <item>
@@ -312,8 +326,8 @@ grant role AdminRole borrow books 在每个需要允许该操作的服务中重�
       
       <guid>https://engine.speedle.io/zh/docs/cloud/authorization-api/</guid>
       <description>Speedle Cloud 已开放公开测试版。 本文介绍线上服务的使用流程。
-从应用服务端使用账号 API 密钥调用授权接口。创建密钥需要先登录账号。ADS 检查可使用 ads 或 pms:read+ads；pms:read 和 pms:write 返回 403 insufficient_scope。组合权限范围 pms:read+ads 还允许读取 PMS，是 Speedle Cloud ADS（speedle-cloud）同步策略所需的权限范围，不能写入策略。
-从应用服务端调用 IsAllowed 将具有 ads 或 pms:read+ads 权限范围的账号 API 密钥放入一个 Authorization: Bearer 请求头，并发送 POST 请求：
+从应用服务端使用工作区 API 密钥调用授权接口。请先登录个人账号，选择目标工作区后再创建密钥。ADS 检查可使用 ads 或 pms:read+ads；pms:read 和 pms:write 返回 403 insufficient_scope。组合权限范围 pms:read+ads 还允许读取 PMS，是 Speedle Cloud ADS（speedle-cloud）同步策略所需的权限范围，不能写入策略。
+从应用服务端调用 IsAllowed 将具有 ads 或 pms:read+ads 权限范围的工作区 API 密钥放入一个 Authorization: Bearer 请求头，并发送 POST 请求：
 POST /authz-check/v1/is-allowed Authorization: Bearer &amp;lt;API key&amp;gt; Content-Type: application/json {&amp;#34;subject&amp;#34;:{&amp;#34;principals&amp;#34;:[{&amp;#34;type&amp;#34;:&amp;#34;user&amp;#34;,&amp;#34;name&amp;#34;:&amp;#34;alice&amp;#34;,&amp;#34;idd&amp;#34;:&amp;#34;corp&amp;#34;}]},&amp;#34;serviceName&amp;#34;:&amp;#34;books&amp;#34;,&amp;#34;resource&amp;#34;:&amp;#34;/books&amp;#34;,&amp;#34;action&amp;#34;:&amp;#34;get&amp;#34;,&amp;#34;attributes&amp;#34;:[{&amp;#34;name&amp;#34;:&amp;#34;level&amp;#34;,&amp;#34;type&amp;#34;:&amp;#34;numeric&amp;#34;,&amp;#34;value&amp;#34;:3},{&amp;#34;name&amp;#34;:&amp;#34;when&amp;#34;,&amp;#34;type&amp;#34;:&amp;#34;datetime&amp;#34;,&amp;#34;value&amp;#34;:&amp;#34;2026-11-05T03:00:00Z&amp;#34;}]} 请求正文就是 Speedle REST 请求，字段和类型与自托管 Speedle ADS 相同。attributes 是由 {name, type, value} 组成的数组。属性类型支持 string、numeric、bool 和采用 RFC 3339 格式的 datetime。
 idd 是主体所属的身份域，也就是应用在哪个命名空间里完成对调用方的认证，例如某个身份提供方或某个租户。它必须由服务端根据可信的认证结果填写，不能取自浏览器提交的值。
 快速入门中的策略 grant user alice from corp get /books 只在 corp 身份域中匹配上述请求。不带 from 的策略匹配任意身份域中的同名主体。主体不带 idd 时同样匹配任意身份域，一旦应用接受多个身份来源，两个同名用户就无法区分。多租户接入必须在每个请求中发送 idd。</description>
@@ -414,8 +428,8 @@ printf &amp;#39;{}\n&amp;#39; &amp;gt; docs-policies.json 终端一启动 PMS，
       
       <guid>https://engine.speedle.io/zh/docs/cloud/limits-and-errors/</guid>
       <description>Speedle Cloud 已开放公开测试版。 本文介绍线上服务的使用流程。
-除表中另有说明外，限额由整个账号共用。API 密钥属于账号；更换密钥不会增加每日额度。
-限额    限制对象 上限 达到后如何处理     每个账号的服务 100 个 409 quota_exceeded；删除不用的服务。不会定时重置。   所有服务的授权策略与角色策略合计 每账号 200 条 409 quota_exceeded；删除策略。不会定时重置。   单条策略的完整 SPDL 源文本 1,024 个 UTF-8 字节 控制台策略写入返回 400 invalid_request；缩短源文本。按字节计数，不是按字符计数。不会定时重置。   所有权限范围的有效 API 密钥合计 每账号 10 个 409 quota_exceeded，带 limit: 10；撤销不用的密钥，或等它到期。名额不会按固定周期重置。已撤销和已到期的记录不占名额。   策略名称 / API 密钥名称 128 个 Unicode 码点 / 去除首尾空白后 1–128 个字符 400 invalid_request；缩短或修正名称。不会定时重置。   策略管理与授权调用的计费次数 每账号每 UTC 日 10,000 次 429 daily_quota_exceeded；00:00 UTC 重置。遵守 Retry-After。   API 密钥请求的短时突发 每个 Cloud 位置、每个密钥每分钟约 600 次 429 rate_limited，带 Retry-After: 60；等待后重试。这是短时限制，不保证吞吐量，也不是额外的每日额度。   普通请求正文 65,536 字节（64 KiB） 413 request_too_large；缩小正文。不会定时重置。   原子 JSON 导入正文（仅 POST /api/service/import） 5,100,000 字节 413 request_too_large；缩小导入内容。仍须满足单条策略和账号限额。不会定时重置。   输入属性 50 个属性；规范化 JSON 的 UTF-8 长度为 16,384 字节 400 SPDL-0004；减少属性或缩小属性值。不会定时重置。    权限范围、有效期、创建和撤销规则见 API 密钥。</description>
+除表中另有说明外，限额由整个工作区共用。API 密钥属于工作区；在同一工作区内更换密钥不会增加每日额度。
+限额    限制对象 上限 达到后如何处理     每个工作区的服务 100 个 409 quota_exceeded；删除不用的服务。不会定时重置。   所有服务的授权策略与角色策略合计 每工作区 200 条 409 quota_exceeded；删除策略。不会定时重置。   单条策略的完整 SPDL 源文本 1,024 个 UTF-8 字节 控制台策略写入返回 400 invalid_request；缩短源文本。按字节计数，不是按字符计数。不会定时重置。   所有权限范围的有效 API 密钥合计 每工作区 10 个 409 quota_exceeded，带 limit: 10；撤销不用的密钥，或等它到期。名额不会按固定周期重置。已撤销和已到期的记录不占名额。   策略名称 / API 密钥名称 128 个 Unicode 码点 / 去除首尾空白后 1–128 个字符 400 invalid_request；缩短或修正名称。不会定时重置。   策略管理与授权调用的计费次数 每工作区每 UTC 日 10,000 次 429 daily_quota_exceeded；00:00 UTC 重置。遵守 Retry-After。   API 密钥请求的短时突发 每个 Cloud 位置、每个密钥每分钟约 600 次 429 rate_limited，带 Retry-After: 60；等待后重试。这是短时限制，不保证吞吐量，也不是额外的每日额度。   普通请求正文 65,536 字节（64 KiB） 413 request_too_large；缩小正文。不会定时重置。   原子 JSON 导入正文（仅 POST /api/workspaces/&amp;lt;workspaceId&amp;gt;/services/&amp;lt;serviceId&amp;gt;/import） 5,100,000 字节 413 request_too_large；缩小导入内容。仍须满足单条策略和工作区限额。不会定时重置。   输入属性 50 个属性；规范化 JSON 的 UTF-8 长度为 16,384 字节 400 SPDL-0004；减少属性或缩小属性值。不会定时重置。    权限范围、有效期、创建和撤销规则见 API 密钥。</description>
     </item>
     
     <item>

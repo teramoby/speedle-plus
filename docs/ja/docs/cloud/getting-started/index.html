@@ -155,6 +155,7 @@
 <li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ja/docs/cloud/">Speedle Cloud</a></span>
 <ul class="sub-menu">
 <li data-docs-depth="1" class="active"><a href="/ja/docs/cloud/getting-started/" aria-current="page">Speedle Cloud クイックスタート</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/console/">コンソールマニュアル</a></li>
 <li data-docs-depth="1" class=""><a href="/ja/docs/cloud/tokens/">API キー</a></li>
 <li data-docs-depth="1" class=""><a href="/ja/docs/cloud/global-roles/">グローバルロール</a></li>
 <li data-docs-depth="1" class=""><a href="/ja/docs/cloud/authorization-api/">認可 API</a></li>
@@ -207,11 +208,11 @@
 
 <p><a href="https://cloud.speedle.io/ja/service">サービスワークスペース</a>を開き、<code>books</code> と入力して<strong>サービス作成</strong>を選択します。既存ポリシーが結果に影響しないよう、新しいサービスで試してください。既存データは上書きしないでください。</p>
 
-<p><strong>新しいポリシー</strong>を選択し、名前を <code>read-books</code> にして、次の SPDL を入力します。</p>
+<p><strong>ポリシーを作成</strong>を選択し、名前を <code>read-books</code> にする（または空欄にして自動生成する）とともに、次の SPDL を入力します。</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant user alice from corp get /books</code></pre></div>
 <p>このポリシーは、ID ドメイン <code>corp</code> の <code>alice</code> が <code>/books</code> に対して <code>get</code> を実行することを許可します。<code>from</code> を省略すると、すべてのドメインの同名ユーザーに一致します。信頼できる認証データからドメインを取得し、各リクエストの <code>idd</code> に設定してください。<a href="/ja/docs/idd/">ID ドメイン</a>を参照してください。</p>
 
-<p><strong>ポリシーの検証</strong>、<strong>ポリシーを保存</strong>の順に選択します。検証は構文を確認するだけで、下書きを保存しません。保存したポリシーが認可 API に反映されるまで約 60 秒かかります。</p>
+<p>自動のリアルタイム検証で構文が確認されたら、<strong>ポリシーを保存</strong>を選択します。検証だけでは下書きは保存されません。保存したポリシーが認可 API に反映されるまで約 60 秒かかります。</p>
 
 <h2 id="api-キーを作成する">API キーを作成する</h2>
 

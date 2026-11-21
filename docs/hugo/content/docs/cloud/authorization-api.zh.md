@@ -3,22 +3,22 @@ title = "Speedle Cloud 授权 API"
 linkTitle = "授权 API"
 description = "Speedle Cloud ADS 的 IsAllowed 请求与响应、Node.js 22 接入示例、策略快照和传输限制。"
 date = 2026-11-08T00:00:00+08:00
-lastmod = 2026-11-12T00:00:00+08:00
+lastmod = 2026-11-21T00:00:00+08:00
 weight = 30
 draft = false
 toc = true
 tocheading = "h2"
 categories = ["docs"]
-bref = "使用账号 API 密钥从服务端检查授权。"
+bref = "使用工作区 API 密钥从服务端检查授权。"
 +++
 
 **Speedle Cloud 已开放公开测试版。** 本文介绍线上服务的使用流程。
 
-从应用服务端使用账号 API 密钥调用授权接口。创建密钥需要先登录账号。ADS 检查可使用 `ads` 或 `pms:read+ads`；`pms:read` 和 `pms:write` 返回 `403 insufficient_scope`。组合权限范围 `pms:read+ads` 还允许读取 PMS，是 Speedle Cloud ADS（`speedle-cloud`）同步策略所需的权限范围，不能写入策略。
+从应用服务端使用工作区 API 密钥调用授权接口。请先登录个人账号，选择目标工作区后再创建密钥。ADS 检查可使用 `ads` 或 `pms:read+ads`；`pms:read` 和 `pms:write` 返回 `403 insufficient_scope`。组合权限范围 `pms:read+ads` 还允许读取 PMS，是 Speedle Cloud ADS（`speedle-cloud`）同步策略所需的权限范围，不能写入策略。
 
 ## 从应用服务端调用 IsAllowed
 
-将具有 `ads` 或 `pms:read+ads` 权限范围的账号 API 密钥放入一个 `Authorization: Bearer` 请求头，并发送 POST 请求：
+将具有 `ads` 或 `pms:read+ads` 权限范围的工作区 API 密钥放入一个 `Authorization: Bearer` 请求头，并发送 POST 请求：
 
 ```http
 POST /authz-check/v1/is-allowed
@@ -34,7 +34,7 @@ Content-Type: application/json
 
 快速入门中的策略 `grant user alice from corp get /books` 只在 `corp` 身份域中匹配上述请求。不带 `from` 的策略匹配任意身份域中的同名主体。主体不带 `idd` 时同样匹配任意身份域，一旦应用接受多个身份来源，两个同名用户就无法区分。多租户接入必须在每个请求中发送 `idd`。
 
-每个请求都必须填写 `serviceName`，系统不会自动取默认值。请选择 API 密钥所属账号中的服务。服务名缺失、为空、不存在或属于其他账号时，统一返回 `404 {"error":"service_not_found"}`。账号 API 密钥不绑定单个服务。
+每个请求都必须填写 `serviceName`，系统不会自动取默认值。请选择 API 密钥所属工作区中的服务。服务名缺失、为空、不存在或属于其他工作区时，统一返回 `404 {"error":"service_not_found"}`。工作区 API 密钥按其权限范围覆盖整个工作区，不绑定单个服务。
 
 [快速入门中的策略](/zh/docs/cloud/getting-started/#创建-service-和策略)会允许上述示例请求：
 
@@ -46,7 +46,7 @@ Content-Type: application/json
 
 策略拒绝同样返回 HTTP 200，但 `allowed` 为 `false`。应用必须检查 `allowed`，再执行受保护的操作；遇到异常或无效响应时应默认拒绝。
 
-应用通过自身的用户认证确定调用方的 principals。API 密钥标识账号和允许访问的 API 范围，不是最终用户身份。不要相信匿名浏览器自行提交的 principal 名称。
+应用通过自身的用户认证确定调用方的 principals。API 密钥标识工作区和允许访问的 API 范围，不是最终用户身份。不要相信匿名浏览器自行提交的 principal 名称。
 
 Speedle Cloud 不校验 subject token。与没有 token asserter 的自托管 Speedle 一样，它接受 `subject.token` 和 `tokenType`，但不做校验就丢弃，因此非空的 token 字段永远不能作为已经通过认证的证据，判定只使用 principals。不要把最终用户的令牌转发过来，并把它当成已完成断言。
 

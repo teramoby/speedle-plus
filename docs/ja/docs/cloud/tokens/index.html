@@ -11,7 +11,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1"><title>Speedle Cloud API キー · Speedle Engine</title>
-<meta name="description" content="アカウント API キーの作成、保護、一覧表示、失効と、固定スコープおよび必須の有効期限。">
+<meta name="description" content="ワークスペース API キーの作成、保護、一覧表示、失効と、固定スコープおよび必須の有効期限。">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/ja/docs/cloud/tokens/">
@@ -23,10 +23,10 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/cloud/tokens/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/cloud/tokens/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-11-12T00:00:00&#43;08:00">
+<meta property="article:modified_time" content="2026-11-21T00:00:00&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Speedle Cloud API キー · Speedle Engine">
-<meta property="og:description" content="アカウント API キーの作成、保護、一覧表示、失効と、固定スコープおよび必須の有効期限。">
+<meta property="og:description" content="ワークスペース API キーの作成、保護、一覧表示、失効と、固定スコープおよび必須の有効期限。">
 <meta property="og:url" content="https://engine.speedle.io/ja/docs/cloud/tokens/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta property="og:image:width" content="1200">
@@ -35,11 +35,11 @@
 <meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Speedle Cloud API キー · Speedle Engine">
-<meta name="twitter:description" content="アカウント API キーの作成、保護、一覧表示、失効と、固定スコープおよび必須の有効期限。">
+<meta name="twitter:description" content="ワークスペース API キーの作成、保護、一覧表示、失効と、固定スコープおよび必須の有効期限。">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/cloud/tokens/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-12T00:00:00+08:00","description":"アカウント API キーの作成、保護、一覧表示、失効と、固定スコープおよび必須の有効期限。","headline":"Speedle Cloud API キー","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ja","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ja/docs/cloud/tokens/","@type":"WebPage"},"name":"Speedle Cloud API キー","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ja/docs/cloud/tokens/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/cloud/tokens/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-21T00:00:00+08:00","description":"ワークスペース API キーの作成、保護、一覧表示、失効と、固定スコープおよび必須の有効期限。","headline":"Speedle Cloud API キー","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ja","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ja/docs/cloud/tokens/","@type":"WebPage"},"name":"Speedle Cloud API キー","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ja/docs/cloud/tokens/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ja/docs/cloud/tokens/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/ja/","name":"ホーム","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/","name":"ドキュメント","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/cloud/","name":"Speedle Cloud","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/ja/docs/cloud/tokens/","name":"Speedle Cloud API キー","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -155,6 +155,7 @@
 <li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/ja/docs/cloud/">Speedle Cloud</a></span>
 <ul class="sub-menu">
 <li data-docs-depth="1" class=""><a href="/ja/docs/cloud/getting-started/">Speedle Cloud クイックスタート</a></li>
+<li data-docs-depth="1" class=""><a href="/ja/docs/cloud/console/">コンソールマニュアル</a></li>
 <li data-docs-depth="1" class="active"><a href="/ja/docs/cloud/tokens/" aria-current="page">API キー</a></li>
 <li data-docs-depth="1" class=""><a href="/ja/docs/cloud/global-roles/">グローバルロール</a></li>
 <li data-docs-depth="1" class=""><a href="/ja/docs/cloud/authorization-api/">認可 API</a></li>
@@ -197,7 +198,7 @@
 
   <div id="kube-component" class="content">
 
-<p>API キーはアカウントに属し、スコープに応じてそのアカウントのサービスにアクセスします。アプリケーションを認証するもので、エンドユーザーの認証ではありません。API キー、セッション、連携 ID の管理にはログイン済みのコンソールセッションが必要です。</p>
+<p>API キーはワークスペースに属し、スコープに応じてそのワークスペースのサービスにアクセスします。アプリケーションを認証するもので、エンドユーザーの認証ではありません。API キー、セッション、連携 ID の管理にはログイン済みのコンソールセッションが必要です。メンバーを削除または退出しても、そのメンバーが作成した API キーは失効しません。必要に応じて確認し、明示的に取り消してください。</p>
 
 <p><strong>Speedle Cloud はパブリックベータを提供中です。</strong> このガイドでは、稼働中のサービスでの手順を説明します。</p>
 
@@ -223,12 +224,12 @@
 
 <tr>
 <td><code>pms:read</code></td>
-<td><code>/policy-mgmt/v1</code> によるアカウント内のサービス、認可ポリシー、ロールポリシーの読み取り。</td>
+<td><code>/policy-mgmt/v1</code> によるワークスペース内のサービス、認可ポリシー、ロールポリシーの読み取り。</td>
 </tr>
 
 <tr>
 <td><code>pms:write</code></td>
-<td><code>/policy-mgmt/v1</code> によるアカウント内のサービス、認可ポリシー、ロールポリシーの読み取り、作成、削除。</td>
+<td><code>/policy-mgmt/v1</code> によるワークスペース内のサービス、認可ポリシー、ロールポリシーの読み取り、作成、削除。</td>
 </tr>
 
 <tr>
@@ -241,7 +242,7 @@
 <p><code>pms:read</code> と <code>pms:write</code> は ADS を呼び出せず、<code>ads</code> はポリシーを管理できません。Speedle Cloud ADS（<code>speedle-cloud</code>）のポリシー同期には <code>pms:read+ads</code>（ADS 同期）が必要です。ADS チェックと PMS の読み取りも許可しますが、書き込みは許可しません。不適切なスコープは <code>403 insufficient_scope</code> です。</p>
 
 <p>コンソールはセッション認証付きのリクエストを送信します。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-http" data-lang="http">POST /api/tokens
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-http" data-lang="http">POST /api/workspaces/&lt;workspaceId&gt;/tokens
 Origin: https://cloud.speedle.io
 X-SC-CSRF: 1
 Content-Type: application/json
@@ -257,24 +258,24 @@ Content-Type: application/json
 
 <p>これは形式の説明であり、使用可能なキーではありません。すぐにサーバー側のシークレットストアへ保存してください。ブラウザストレージ、フロントエンド、URL、ソース管理、スクリーンショット、ログに含めないでください。一覧はメタデータのみを返し、紛失した値は復元できません。</p>
 
-<p>アカウント全体で、全スコープ合計 <strong>10 個の有効な API キー</strong>を持てます。上限を超える作成は <code>409 {&quot;error&quot;:&quot;quota_exceeded&quot;,&quot;limit&quot;:10}</code> です。未使用のキーを失効させるか、期限切れを待って枠を空けてください。上限は周期では戻りません。失効済みおよび期限切れのキーは一覧に残りますが上限には含まれません。</p>
+<p>ワークスペースごとに、全スコープ合計 <strong>10 個の有効な API キー</strong>を持てます。上限を超える作成は <code>409 {&quot;error&quot;:&quot;quota_exceeded&quot;,&quot;limit&quot;:10}</code> です。未使用のキーを失効させるか、期限切れを待って枠を空けてください。上限は周期では戻りません。失効済みおよび期限切れのキーは一覧に残りますが上限には含まれません。</p>
 
 <h2 id="api-キーを一覧表示する">API キーを一覧表示する</h2>
 
-<p><code>GET /api/tokens</code> は有効、期限切れ、失効済みのキーを新しい順に返します。既定は 25 件で、<code>limit</code> は 1–100 です。レスポンスの <code>nextCursor</code> を次の <code>cursor</code> に指定し、<code>null</code> になるまで進みます。各キーは Unix ミリ秒の <code>expiresAt</code> を含みます。コンソールは <strong>有効期限 (UTC)</strong> を表示します。7 日以内に期限を迎えるキーは <strong>まもなく期限切れ</strong> と表示されます。期限切れのキーは <strong>期限切れ</strong> のグループに入ります。<code>lastUsedAt</code> はベストエフォートで通常は 1 時間に最大 1 回の更新なので、未使用の証明にはなりません。</p>
+<p><code>GET /api/workspaces/&lt;workspaceId&gt;/tokens</code> は有効、期限切れ、失効済みのキーを新しい順に返します。既定は 25 件で、<code>limit</code> は 1–100 です。レスポンスの <code>nextCursor</code> を次の <code>cursor</code> に指定し、<code>null</code> になるまで進みます。各キーは Unix ミリ秒の <code>expiresAt</code> を含みます。コンソールは <strong>有効期限 (UTC)</strong> を表示します。7 日以内に期限を迎えるキーは <strong>まもなく期限切れ</strong> と表示されます。期限切れのキーは <strong>期限切れ</strong> のグループに入ります。<code>lastUsedAt</code> はベストエフォートで通常は 1 時間に最大 1 回の更新なので、未使用の証明にはなりません。</p>
 
 <h2 id="api-キーを失効させる">API キーを失効させる</h2>
 
 <p><strong>失効</strong>を選び、名前と ID を確認して確定します。最近の再認証は不要です。コンソールは次を送信します。</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-http" data-lang="http">DELETE /api/tokens/&lt;API key id&gt;
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-http" data-lang="http">DELETE /api/workspaces/&lt;workspaceId&gt;/tokens/&lt;API key id&gt;
 Origin: https://cloud.speedle.io
 X-SC-CSRF: 1
 Content-Type: application/json
 
 {}</code></pre></div>
-<p>最初の失効は本文なしの HTTP 204 です。不明、別アカウント、失効済みの ID は <code>404 not_found</code> です。確認済みの認証情報が最大 60 秒間有効な場合があり、すべての場所で即座に反映されるわけではありません。</p>
+<p>最初の失効は本文なしの HTTP 204 です。不明、別ワークスペース、失効済みの ID は <code>404 not_found</code> です。確認済みの認証情報が最大 60 秒間有効な場合があり、すべての場所で即座に反映されるわけではありません。</p>
 
-<p>操作は<strong>作成</strong>と<strong>失効</strong>です。値、スコープ、有効期限を変更するには別のキーを作成し、呼び出し元を更新してから古いキーを失効させます。上限時にすべて使用中の場合、失効前に中断を計画してください。サービスを削除してもアカウントの API キーは失効しません。</p>
+<p>操作は<strong>作成</strong>と<strong>失効</strong>です。値、スコープ、有効期限を変更するには別のキーを作成し、呼び出し元を更新してから古いキーを失効させます。上限時にすべて使用中の場合、失効前に中断を計画してください。サービスを削除してもワークスペースの API キーは失効しません。</p>
 
 <p>応答が失われた場合は一覧を更新してから操作してください。同じ名前でも紛失した値は復元できません。<a href="/ja/docs/cloud/limits-and-errors/">制限とエラー</a>と<a href="/ja/docs/cloud/authorization-api/">認可 API</a>も参照してください。</p>
 </div>

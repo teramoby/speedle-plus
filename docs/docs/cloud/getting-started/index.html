@@ -155,6 +155,7 @@
 <li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/docs/cloud/">Speedle Cloud</a></span>
 <ul class="sub-menu">
 <li data-docs-depth="1" class="active"><a href="/docs/cloud/getting-started/" aria-current="page">Getting started</a></li>
+<li data-docs-depth="1" class=""><a href="/docs/cloud/console/">Console manual</a></li>
 <li data-docs-depth="1" class=""><a href="/docs/cloud/tokens/">API keys</a></li>
 <li data-docs-depth="1" class=""><a href="/docs/cloud/global-roles/">Global roles</a></li>
 <li data-docs-depth="1" class=""><a href="/docs/cloud/authorization-api/">Authorization API</a></li>
@@ -207,11 +208,11 @@
 
 <p>Open the <a href="https://cloud.speedle.io/service">Service workspace</a>, enter <code>books</code>, and choose <strong>Create service</strong>. Use a new service for this example so existing policies do not affect the results; do not overwrite existing data.</p>
 
-<p>Choose <strong>New policy</strong>, name it <code>read-books</code>, and enter this SPDL:</p>
+<p>Choose <strong>Create policy</strong>, name it <code>read-books</code> (or leave the name blank to generate one automatically), and enter this SPDL:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant user alice from corp get /books</code></pre></div>
 <p>This lets <code>alice</code> in the <code>corp</code> identity domain perform <code>get</code> on <code>/books</code>. A grant without <code>from</code> matches the name in every domain. Derive the domain from trusted authentication data and send it as <code>idd</code> in each request. See <a href="/docs/idd/">identity domains</a>.</p>
 
-<p>Choose <strong>Validate policy</strong>, then <strong>Save policy</strong>. Validation checks syntax but does not save the draft. Allow approximately 60 seconds for saved policies to reach the authorization API.</p>
+<p>Wait for automatic live validation to confirm the syntax, then choose <strong>Save policy</strong>. Validation does not save the draft. Allow approximately 60 seconds for saved policies to reach the authorization API.</p>
 
 <h2 id="create-an-api-key">Create an API key</h2>
 
