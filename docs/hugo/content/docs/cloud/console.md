@@ -53,9 +53,9 @@ The signed-in console has two navigation areas:
   - **Workspace settings:** **Members** — view or manage workspace membership.
   - **Cloud docs:** opens this documentation.
 
-![Speedle Cloud Console top bar with the Workspace switcher expanded and the left sidebar showing Console and Workspace settings sections](/img/cloud/console/01-console-shell-workspace-switcher.png)
+[![Speedle Cloud Console top bar with the Workspace switcher expanded and the left sidebar showing Console and Workspace settings sections](/img/cloud/console/01-console-shell-workspace-switcher.png)](/img/cloud/console/01-console-shell-workspace-switcher.png)
 
-*Console layout with the **Workspace** switcher open and workspace-scoped navigation in the left sidebar (demonstration data, English UI).*
+Console layout with the **Workspace** switcher open and workspace-scoped navigation in the left sidebar (demonstration data, English UI).
 
 ## Personal identity and workspaces
 
@@ -80,9 +80,9 @@ Every account starts with a **Personal** workspace. You can belong to up to 10 w
 
 Open **Workspace settings → Members** in the left sidebar.
 
-![Workspace Members page showing Owner and Admin members, Invite someone form, Pending invitations and Leave workspace card](/img/cloud/console/02-workspace-members-page.png)
+[![Workspace Members page showing Owner and Admin members, Invite someone form, Pending invitations and Leave workspace card](/img/cloud/console/02-workspace-members-page.png)](/img/cloud/console/02-workspace-members-page.png)
 
-*Workspace **Members** page with member roles, invitation form, pending invitations and **Leave workspace** controls (demonstration data, English UI).*
+Workspace **Members** page with member roles, invitation form, pending invitations and **Leave workspace** controls (demonstration data, English UI).
 
 | Role | What the member can do |
 | --- | --- |
@@ -143,13 +143,13 @@ grant role Reader get /books
 
 **Expected result:** Both policies appear in the policy table for `books`. Saved policies are available immediately in the **Playground** and propagate to the hosted authorization API in roughly 60 seconds.
 
-![Create policy editor with Policy name read-books, SPDL source, automatic Valid · authorization policy badge and Save policy button](/img/cloud/console/04-policy-editor-live-validation.png)
+[![Create policy editor with Policy name read-books, SPDL source, automatic Valid · authorization policy badge and Save policy button](/img/cloud/console/04-policy-editor-live-validation.png)](/img/cloud/console/04-policy-editor-live-validation.png)
 
-*Policy editor showing automatic live SPDL validation (**Valid · authorization policy**) before saving `read-books` (demonstration data, English UI).*
+Policy editor showing automatic live SPDL validation (**Valid · authorization policy**) before saving `read-books` (demonstration data, English UI).
 
-![Services & policies view for the books service listing reader-role and read-books policies with section tabs](/img/cloud/console/03-service-policies-list.png)
+[![Services & policies view for the books service listing reader-role and read-books policies with section tabs](/img/cloud/console/03-service-policies-list.png)](/img/cloud/console/03-service-policies-list.png)
 
-***Services & policies** table for `books` showing `reader-role` and `read-books` alongside the service tabs (demonstration data, English UI).*
+**Services & policies** table for `books` showing `reader-role` and `read-books` alongside the service tabs (demonstration data, English UI).
 
 You can switch between the code editor and **Use plain text editor**, search or filter the policy table by effect, principal, action, resource, role or condition, and open **Edit**, **Details**, **Test** or **Delete** from each row.
 
@@ -167,9 +167,9 @@ When multiple services in the same workspace share a role assignment, define it 
 
 Open the **Access map** tab inside **Services & policies** to visualize how principals, roles and resources connect in the selected service's saved policies. You can filter the graph, switch to a table view, focus on a node and send a path directly to the **Playground** to run a **Diagnose** check.
 
-![Access map graph for the books service showing user alice connected through role Reader to resource /books](/img/cloud/console/05-access-map.png)
+[![Access map graph for the books service showing user alice connected through role Reader to resource /books](/img/cloud/console/05-access-map.png)](/img/cloud/console/05-access-map.png)
 
-***Access map** for `books` visualizing `alice` → `Reader` → `/books` from saved policies (demonstration data, English UI).*
+**Access map** for `books` visualizing `alice` → `Reader` → `/books` from saved policies (demonstration data, English UI).
 
 ### Import and export policies
 
@@ -210,9 +210,9 @@ Use the **Service actions** menu next to the service header:
 
 **Expected result:** **Is allowed** displays **Allowed.** with reason **A grant policy applies.** and the full JSON result. Changing **Action** to `delete` and running again displays **Denied.** with **No applicable policies were found.**
 
-![Playground Is allowed test for alice in corp requesting get on /books returning Allowed. A grant policy applies. and Full result JSON](/img/cloud/console/06-playground-is-allowed-and-diagnose.png)
+[![Playground Is allowed test for alice in corp requesting get on /books returning Allowed. A grant policy applies. and Full result JSON](/img/cloud/console/06-playground-is-allowed-and-diagnose.png)](/img/cloud/console/06-playground-is-allowed-and-diagnose.png)
 
-***Playground** **Is allowed** check for `alice` (`corp`) on `/books` (`get`) showing **Allowed. A grant policy applies.** and **Full result (JSON)** (demonstration data, English UI).*
+**Playground** **Is allowed** check for `alice` (`corp`) on `/books` (`get`) showing **Allowed. A grant policy applies.** and **Full result (JSON)** (demonstration data, English UI).
 
 You can also click **Test** on a policy row or prefill a diagnosis from **Access map**; prefilling populates the inputs without spending an API call until you click **Run test**.
 
@@ -243,9 +243,9 @@ API keys authenticate server-side applications and self-hosted ADS instances to 
 
 **Expected result:** The key appears under **Active API keys** with its ID, scope, creation time, approximate last-used time and **Expires (UTC)**. The secret is never shown again and cannot be recovered from metadata.
 
-![API keys page showing the Create API key form with name, fixed scope, expiry preview and active key metadata list without secrets](/img/cloud/console/07-api-keys-list-and-create-form.png)
+[![API keys page showing the Create API key form with name, fixed scope, expiry preview and active key metadata list without secrets](/img/cloud/console/07-api-keys-list-and-create-form.png)](/img/cloud/console/07-api-keys-list-and-create-form.png)
 
-***API keys** page with the **Create API key** form (scope, expiry and UTC preview) and active key metadata (demonstration data, English UI; no secret shown).*
+**API keys** page with the **Create API key** form (scope, expiry and UTC preview) and active key metadata (demonstration data, English UI; no secret shown).
 
 ### Rotate and revoke API keys
 
@@ -279,9 +279,9 @@ Where to check usage in the console:
 - **Account → Account overview (`/account`):** Displays the **Daily quota** card with a progress bar and the next UTC reset time for your Personal workspace.
 - **Services & policies:** Displays service counts, policy counts and approximate remaining daily calls for the active workspace after workspace operations.
 
-![Account overview page displaying profile details and the Daily quota card with usage meter and UTC reset time](/img/cloud/console/10b-account-overview-quota.png)
+[![Account overview page displaying profile details and the Daily quota card with usage meter and UTC reset time](/img/cloud/console/10b-account-overview-quota.png)](/img/cloud/console/10b-account-overview-quota.png)
 
-***Account overview** showing profile metadata and the **Daily quota** meter for the Personal workspace (demonstration data, English UI).*
+**Account overview** showing profile metadata and the **Daily quota** meter for the Personal workspace (demonstration data, English UI).
 
 If you reach the daily allowance (`429 daily_quota_exceeded`), wait until `00:00 UTC`; switching API keys in the same workspace does not add quota. See [Limits and errors](/docs/cloud/limits-and-errors/) for burst rate limits and error recovery.
 
@@ -310,9 +310,9 @@ Custom functions let SPDL conditions call external HTTPS endpoints during evalua
 
 From the functions table, you can **Edit** a function, **Rotate signing secret** (the previous secret stops working immediately; requires recent re-authentication if prompted) or **Delete function**.
 
-![Functions tab for the books service listing Hosted and ADS and ADS only custom functions](/img/cloud/console/08-functions-tab.png)
+[![Functions tab for the books service listing Hosted and ADS and ADS only custom functions](/img/cloud/console/08-functions-tab.png)](/img/cloud/console/08-functions-tab.png)
 
-***Functions** tab for `books` showing both **Hosted and ADS** and **ADS only** example functions (demonstration data, English UI; no live endpoints called).*
+**Functions** tab for `books` showing both **Hosted and ADS** and **ADS only** example functions (demonstration data, English UI; no live endpoints called).
 
 **Important rules and recovery:**
 
@@ -338,9 +338,9 @@ Each workspace supports up to **10 online ADS instances** and keeps up to **100 
 
 Use **Service filter** to view instances syncing a specific service, or **Refresh fleet** for an immediate update (the page auto-refreshes every 5 minutes while visible).
 
-![ADS fleet page showing a live demonstration ADS instance syncing books with Service filter and Refresh fleet controls](/img/cloud/console/09-ads-fleet-view.png)
+[![ADS fleet page showing a live demonstration ADS instance syncing books with Service filter and Refresh fleet controls](/img/cloud/console/09-ads-fleet-view.png)](/img/cloud/console/09-ads-fleet-view.png)
 
-***ADS fleet** view listing a demonstration **Live** instance syncing `books` (demonstration data, English UI).*
+**ADS fleet** view listing a demonstration **Live** instance syncing `books` (demonstration data, English UI).
 
 Choose **Details** on an instance row to inspect:
 
@@ -365,9 +365,9 @@ Speedle Cloud keeps two separate audit logs, both newest first with **180-day re
 - **Workspace Audit log** (left sidebar → **Audit log**): Records administrative activity inside the active workspace — service and policy changes, API key creation/revocation, ADS actions, workspace creation/renaming and member/invitation changes. Readable by both Owners and Admins.
 - **Personal activity** (top-bar **Account** menu → **Account overview** → **Personal activity**, at `/account/audit`): Records your personal account events — sign-in, sign-out, sign-out everywhere, connecting/disconnecting sign-in providers and account creation/deletion.
 
-![Workspace Audit log table listing recent administrative actions with UTC time, action, target and outcome](/img/cloud/console/10a-workspace-audit-log.png)
+[![Workspace Audit log table listing recent administrative actions with UTC time, action, target and outcome](/img/cloud/console/10a-workspace-audit-log.png)](/img/cloud/console/10a-workspace-audit-log.png)
 
-*Workspace **Audit log** showing recent administrative events in UTC (demonstration data, English UI).*
+Workspace **Audit log** showing recent administrative events in UTC (demonstration data, English UI).
 
 ### Account settings
 
@@ -377,8 +377,8 @@ Open the top-bar **Account** menu and choose **Account settings** (`/account/set
 - **Sign out / Sign out everywhere:** Available from the top-bar **Account** menu to end either the current browser session or all active sessions.
 - **Delete account:** Permanently deletes your personal account, connected identities, personal-only workspaces and sessions. Choose **Delete account**, verify your identity if prompted, type `DELETE` and confirm **Permanently delete account**. Export any policies you want to keep first.
 
-![Account settings page showing Connected identities for GitHub and Google and the Delete account card](/img/cloud/console/10c-account-settings.png)
+[![Account settings page showing Connected identities for GitHub and Google and the Delete account card](/img/cloud/console/10c-account-settings.png)](/img/cloud/console/10c-account-settings.png)
 
-***Account settings** with **Connected identities** and **Delete account** controls (demonstration data, English UI).*
+**Account settings** with **Connected identities** and **Delete account** controls (demonstration data, English UI).
 
 **Recovery for account deletion:** If you are the sole **Owner** of a workspace that still has other members, account deletion is blocked (`last_owner`). Open that workspace's **Members** page and promote another member to **Owner** before deleting your account.

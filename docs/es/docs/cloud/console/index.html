@@ -256,9 +256,9 @@
 </ul></li>
 </ul>
 
-<p><img src="/img/cloud/console/01-console-shell-workspace-switcher.png" alt="Barra superior de Speedle Cloud Console con el selector Espacio de trabajo desplegado y la barra lateral izquierda" /></p>
+<p><a href="/img/cloud/console/01-console-shell-workspace-switcher.png"><img src="/img/cloud/console/01-console-shell-workspace-switcher.png" alt="Barra superior de Speedle Cloud Console con el selector Espacio de trabajo desplegado y la barra lateral izquierda" /></a></p>
 
-<p>*Diseño de la consola con el menú <strong>Espacio de trabajo</strong> abierto y la navegación en la barra lateral izquierda (datos de demostración, interfaz en inglés).*</p>
+<p>Diseño de la consola con el menú <strong>Espacio de trabajo</strong> abierto y la navegación en la barra lateral izquierda (datos de demostración, interfaz en inglés).</p>
 
 <h2 id="identidad-personal-y-espacios-de-trabajo">Identidad personal y espacios de trabajo</h2>
 
@@ -289,9 +289,9 @@
 
 <p>Abra <strong>Ajustes del espacio de trabajo → Miembros</strong> en la barra lateral izquierda.</p>
 
-<p><img src="/img/cloud/console/02-workspace-members-page.png" alt="Página Miembros del espacio de trabajo con roles de Propietario y Administrador, formulario de invitación, invitaciones pendientes y Salir del espacio de trabajo" /></p>
+<p><a href="/img/cloud/console/02-workspace-members-page.png"><img src="/img/cloud/console/02-workspace-members-page.png" alt="Página Miembros del espacio de trabajo con roles de Propietario y Administrador, formulario de invitación, invitaciones pendientes y Salir del espacio de trabajo" /></a></p>
 
-<p>*Página <strong>Miembros</strong> con roles, formulario de invitación, invitaciones pendientes y <strong>Salir del espacio de trabajo</strong> (datos de demostración, interfaz en inglés).*</p>
+<p>Página <strong>Miembros</strong> con roles, formulario de invitación, invitaciones pendientes y <strong>Salir del espacio de trabajo</strong> (datos de demostración, interfaz en inglés).</p>
 
 <table>
 <thead>
@@ -374,13 +374,13 @@
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant role Reader get /books</code></pre></div>
 <p><strong>Resultado esperado:</strong> Ambas políticas aparecen en la tabla de <code>books</code>. Las políticas guardadas se aplican de inmediato en <strong>Playground</strong> y se propagan a la API de autorización alojada en unos 60 segundos.</p>
 
-<p><img src="/img/cloud/console/04-policy-editor-live-validation.png" alt="Editor Crear política con read-books, código SPDL, validación automática válida y botón Guardar política" /></p>
+<p><a href="/img/cloud/console/04-policy-editor-live-validation.png"><img src="/img/cloud/console/04-policy-editor-live-validation.png" alt="Editor Crear política con read-books, código SPDL, validación automática válida y botón Guardar política" /></a></p>
 
-<p><em>Editor de políticas mostrando la validación automática SPDL antes de guardar <code>read-books</code> (datos de demostración, interfaz en inglés).</em></p>
+<p>Editor de políticas mostrando la validación automática SPDL antes de guardar <code>read-books</code> (datos de demostración, interfaz en inglés).</p>
 
-<p><img src="/img/cloud/console/03-service-policies-list.png" alt="Vista Servicios y políticas para books con reader-role, read-books y pestañas del servicio" /></p>
+<p><a href="/img/cloud/console/03-service-policies-list.png"><img src="/img/cloud/console/03-service-policies-list.png" alt="Vista Servicios y políticas para books con reader-role, read-books y pestañas del servicio" /></a></p>
 
-<p>*Tabla <strong>Servicios y políticas</strong> de <code>books</code> con <code>reader-role</code> y <code>read-books</code> junto a las pestañas del servicio (datos de demostración, interfaz en inglés).*</p>
+<p>Tabla <strong>Servicios y políticas</strong> de <code>books</code> con <code>reader-role</code> y <code>read-books</code> junto a las pestañas del servicio (datos de demostración, interfaz en inglés).</p>
 
 <p>Puede alternar entre el editor de código y el editor de texto plano, buscar o filtrar por efecto, entidad principal, acción, recurso, rol o condición, y editar, inspeccionar detalles, probar o eliminar desde cada fila.</p>
 
@@ -400,9 +400,9 @@
 
 <p>Abra la pestaña <strong>Mapa de acceso</strong> dentro de <strong>Servicios y políticas</strong> para visualizar cómo se conectan entidades principales, roles y recursos en las políticas guardadas del servicio. Puede filtrar el grafo, cambiar a la vista de tabla, enfocar un nodo y enviar una ruta directamente a <strong>Playground</strong> para ejecutar un diagnóstico.</p>
 
-<p><img src="/img/cloud/console/05-access-map.png" alt="Grafo Mapa de acceso de books conectando a alice mediante el rol Reader con /books" /></p>
+<p><a href="/img/cloud/console/05-access-map.png"><img src="/img/cloud/console/05-access-map.png" alt="Grafo Mapa de acceso de books conectando a alice mediante el rol Reader con /books" /></a></p>
 
-<p>*<strong>Mapa de acceso</strong> de <code>books</code> mostrando <code>alice</code> → <code>Reader</code> → <code>/books</code> desde políticas guardadas (datos de demostración, interfaz en inglés).*</p>
+<p><strong>Mapa de acceso</strong> de <code>books</code> mostrando <code>alice</code> → <code>Reader</code> → <code>/books</code> desde políticas guardadas (datos de demostración, interfaz en inglés).</p>
 
 <h3 id="importar-y-exportar-políticas">Importar y exportar políticas</h3>
 
@@ -457,9 +457,9 @@
 
 <p><strong>Resultado esperado:</strong> <strong>Está permitido</strong> muestra permitido con el resultado JSON completo. Al cambiar <strong>Acción</strong> a <code>delete</code> y volver a ejecutar, muestra denegado porque ninguna política coincide.</p>
 
-<p><img src="/img/cloud/console/06-playground-is-allowed-and-diagnose.png" alt="Prueba Está permitido en Playground para alice en corp sobre /books devolviendo Allowed y resultado JSON completo" /></p>
+<p><a href="/img/cloud/console/06-playground-is-allowed-and-diagnose.png"><img src="/img/cloud/console/06-playground-is-allowed-and-diagnose.png" alt="Prueba Está permitido en Playground para alice en corp sobre /books devolviendo Allowed y resultado JSON completo" /></a></p>
 
-<p>*Comprobación <strong>Está permitido</strong> en <strong>Playground</strong> para <code>alice</code> (<code>corp</code>) en <code>/books</code> (<code>get</code>) con resultado permitido y JSON completo (datos de demostración, interfaz en inglés).*</p>
+<p>Comprobación <strong>Está permitido</strong> en <strong>Playground</strong> para <code>alice</code> (<code>corp</code>) en <code>/books</code> (<code>get</code>) con resultado permitido y JSON completo (datos de demostración, interfaz en inglés).</p>
 
 <p>También puede probar una fila de política o precargar un diagnóstico desde <strong>Mapa de acceso</strong> sin consumir una llamada hasta pulsar <strong>Ejecutar prueba</strong>.</p>
 
@@ -497,9 +497,9 @@
 
 <p><strong>Resultado esperado:</strong> La clave aparece en <strong>Claves de API activas</strong> con su ID, ámbito, creación, último uso aproximado y fecha de caducidad (UTC). El secreto nunca vuelve a mostrarse ni puede recuperarse desde los metadatos.</p>
 
-<p><img src="/img/cloud/console/07-api-keys-list-and-create-form.png" alt="Página Claves de API con el formulario Crear clave de API y la lista de metadatos activos sin secretos" /></p>
+<p><a href="/img/cloud/console/07-api-keys-list-and-create-form.png"><img src="/img/cloud/console/07-api-keys-list-and-create-form.png" alt="Página Claves de API con el formulario Crear clave de API y la lista de metadatos activos sin secretos" /></a></p>
 
-<p>*Página <strong>Claves de API</strong> con el formulario <strong>Crear clave de API</strong> y la lista de metadatos activos (datos de demostración, interfaz en inglés; no se muestra ningún secreto).*</p>
+<p>Página <strong>Claves de API</strong> con el formulario <strong>Crear clave de API</strong> y la lista de metadatos activos (datos de demostración, interfaz en inglés; no se muestra ningún secreto).</p>
 
 <h3 id="rotar-y-revocar-claves-de-api">Rotar y revocar claves de API</h3>
 
@@ -541,9 +541,9 @@
 <li><strong>Servicios y políticas:</strong> Muestra el recuento de servicios y políticas y las llamadas diarias restantes aproximadas del espacio de trabajo activo tras las operaciones.</li>
 </ul>
 
-<p><img src="/img/cloud/console/10b-account-overview-quota.png" alt="Resumen de la cuenta mostrando el perfil y la tarjeta Cuota diaria con barra de uso y hora de restablecimiento UTC" /></p>
+<p><a href="/img/cloud/console/10b-account-overview-quota.png"><img src="/img/cloud/console/10b-account-overview-quota.png" alt="Resumen de la cuenta mostrando el perfil y la tarjeta Cuota diaria con barra de uso y hora de restablecimiento UTC" /></a></p>
 
-<p>*<strong>Resumen de la cuenta</strong> con el perfil y el medidor de <strong>Cuota diaria</strong> del espacio de trabajo Personal (datos de demostración, interfaz en inglés).*</p>
+<p><strong>Resumen de la cuenta</strong> con el perfil y el medidor de <strong>Cuota diaria</strong> del espacio de trabajo Personal (datos de demostración, interfaz en inglés).</p>
 
 <p>Si agota la cuota diaria (<code>429 daily_quota_exceeded</code>), espere hasta las <code>00:00 UTC</code>; cambiar de clave de API en el mismo espacio de trabajo no añade cuota. Consulte <a href="/es/docs/cloud/limits-and-errors/">Límites y errores</a>.</p>
 
@@ -582,9 +582,9 @@
 
 <p>Desde la tabla de funciones puede editar una función, <strong>Rotar secreto de firma</strong> (el secreto anterior deja de funcionar de inmediato; puede requerir autenticación reciente) o <strong>Eliminar función</strong>.</p>
 
-<p><img src="/img/cloud/console/08-functions-tab.png" alt="Pestaña Funciones de books listando funciones personalizadas Alojado y ADS y Solo ADS" /></p>
+<p><a href="/img/cloud/console/08-functions-tab.png"><img src="/img/cloud/console/08-functions-tab.png" alt="Pestaña Funciones de books listando funciones personalizadas Alojado y ADS y Solo ADS" /></a></p>
 
-<p>*Pestaña <strong>Funciones</strong> de <code>books</code> mostrando funciones de ejemplo <strong>Alojado y ADS</strong> y <strong>Solo ADS</strong> (datos de demostración, interfaz en inglés; sin llamadas a endpoints reales).*</p>
+<p>Pestaña <strong>Funciones</strong> de <code>books</code> mostrando funciones de ejemplo <strong>Alojado y ADS</strong> y <strong>Solo ADS</strong> (datos de demostración, interfaz en inglés; sin llamadas a endpoints reales).</p>
 
 <p><strong>Reglas importantes y recuperación:</strong></p>
 
@@ -614,9 +614,9 @@
 
 <p>Use <strong>Filtro de servicio</strong> para ver instancias que sincronizan un servicio concreto o <strong>Actualizar flota</strong> para refrescar de inmediato (la página se actualiza automáticamente cada 5 minutos mientras es visible).</p>
 
-<p><img src="/img/cloud/console/09-ads-fleet-view.png" alt="Página Flota de ADS mostrando una instancia ADS en línea sincronizando books" /></p>
+<p><a href="/img/cloud/console/09-ads-fleet-view.png"><img src="/img/cloud/console/09-ads-fleet-view.png" alt="Página Flota de ADS mostrando una instancia ADS en línea sincronizando books" /></a></p>
 
-<p>*Vista <strong>Flota de ADS</strong> con una instancia en línea de demostración sincronizando <code>books</code> (datos de demostración, interfaz en inglés).*</p>
+<p>Vista <strong>Flota de ADS</strong> con una instancia en línea de demostración sincronizando <code>books</code> (datos de demostración, interfaz en inglés).</p>
 
 <p>Elija <strong>Detalles</strong> en una instancia para revisar el estado en tiempo real, el último latido (UTC), el canal y transporte (WebSocket o sondeo largo), el conjunto de servicios con retraso de revisión y <strong>Roles globales</strong> (siempre sincronizados), la cadena de distribución, la cronología de eventos, el historial de respaldo y los datos del host.</p>
 
@@ -641,9 +641,9 @@
 <li><strong>Actividad personal</strong> (barra superior → <strong>Cuenta</strong> → <strong>Resumen de la cuenta</strong> → <strong>Actividad personal</strong>, en <code>/account/audit</code>): Registra los eventos personales de su cuenta: inicio/cierre de sesión, cierre en todos los dispositivos, conexión/desconexión de proveedores y creación/eliminación de la cuenta.</li>
 </ul>
 
-<p><img src="/img/cloud/console/10a-workspace-audit-log.png" alt="Tabla del Registro de auditoría del espacio de trabajo con hora UTC, acción, objetivo y resultado" /></p>
+<p><a href="/img/cloud/console/10a-workspace-audit-log.png"><img src="/img/cloud/console/10a-workspace-audit-log.png" alt="Tabla del Registro de auditoría del espacio de trabajo con hora UTC, acción, objetivo y resultado" /></a></p>
 
-<p>*<strong>Registro de auditoría</strong> del espacio de trabajo con eventos administrativos recientes en UTC (datos de demostración, interfaz en inglés).*</p>
+<p><strong>Registro de auditoría</strong> del espacio de trabajo con eventos administrativos recientes en UTC (datos de demostración, interfaz en inglés).</p>
 
 <h3 id="configuración-de-la-cuenta">Configuración de la cuenta</h3>
 
@@ -655,9 +655,9 @@
 <li><strong>Eliminar cuenta:</strong> Elimina permanentemente su cuenta personal, identidades conectadas, espacios de trabajo en los que sea el único miembro y sesiones. Elija <strong>Eliminar cuenta</strong>, verifique su identidad si se solicita, escriba <code>DELETE</code> y confirme. Exporte antes las políticas que desee conservar.</li>
 </ul>
 
-<p><img src="/img/cloud/console/10c-account-settings.png" alt="Configuración de la cuenta mostrando Identidades conectadas (GitHub y Google) y la tarjeta Eliminar cuenta" /></p>
+<p><a href="/img/cloud/console/10c-account-settings.png"><img src="/img/cloud/console/10c-account-settings.png" alt="Configuración de la cuenta mostrando Identidades conectadas (GitHub y Google) y la tarjeta Eliminar cuenta" /></a></p>
 
-<p>*<strong>Configuración de la cuenta</strong> con <strong>Identidades conectadas</strong> y <strong>Eliminar cuenta</strong> (datos de demostración, interfaz en inglés).*</p>
+<p><strong>Configuración de la cuenta</strong> con <strong>Identidades conectadas</strong> y <strong>Eliminar cuenta</strong> (datos de demostración, interfaz en inglés).</p>
 
 <p><strong>Recuperación al eliminar la cuenta:</strong> Si es el único <strong>Propietario</strong> de un espacio de trabajo que aún tiene otros miembros, la eliminación queda bloqueada (<code>last_owner</code>). Abra <strong>Miembros</strong> en ese espacio de trabajo y ascienda a otro miembro a <strong>Propietario</strong> antes de eliminar su cuenta.</p>
 </div>

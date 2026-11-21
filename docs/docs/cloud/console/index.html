@@ -256,9 +256,9 @@
 </ul></li>
 </ul>
 
-<p><img src="/img/cloud/console/01-console-shell-workspace-switcher.png" alt="Speedle Cloud Console top bar with the Workspace switcher expanded and the left sidebar showing Console and Workspace settings sections" /></p>
+<p><a href="/img/cloud/console/01-console-shell-workspace-switcher.png"><img src="/img/cloud/console/01-console-shell-workspace-switcher.png" alt="Speedle Cloud Console top bar with the Workspace switcher expanded and the left sidebar showing Console and Workspace settings sections" /></a></p>
 
-<p>*Console layout with the <strong>Workspace</strong> switcher open and workspace-scoped navigation in the left sidebar (demonstration data, English UI).*</p>
+<p>Console layout with the <strong>Workspace</strong> switcher open and workspace-scoped navigation in the left sidebar (demonstration data, English UI).</p>
 
 <h2 id="personal-identity-and-workspaces">Personal identity and workspaces</h2>
 
@@ -289,9 +289,9 @@
 
 <p>Open <strong>Workspace settings → Members</strong> in the left sidebar.</p>
 
-<p><img src="/img/cloud/console/02-workspace-members-page.png" alt="Workspace Members page showing Owner and Admin members, Invite someone form, Pending invitations and Leave workspace card" /></p>
+<p><a href="/img/cloud/console/02-workspace-members-page.png"><img src="/img/cloud/console/02-workspace-members-page.png" alt="Workspace Members page showing Owner and Admin members, Invite someone form, Pending invitations and Leave workspace card" /></a></p>
 
-<p>*Workspace <strong>Members</strong> page with member roles, invitation form, pending invitations and <strong>Leave workspace</strong> controls (demonstration data, English UI).*</p>
+<p>Workspace <strong>Members</strong> page with member roles, invitation form, pending invitations and <strong>Leave workspace</strong> controls (demonstration data, English UI).</p>
 
 <table>
 <thead>
@@ -374,13 +374,13 @@
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant role Reader get /books</code></pre></div>
 <p><strong>Expected result:</strong> Both policies appear in the policy table for <code>books</code>. Saved policies are available immediately in the <strong>Playground</strong> and propagate to the hosted authorization API in roughly 60 seconds.</p>
 
-<p><img src="/img/cloud/console/04-policy-editor-live-validation.png" alt="Create policy editor with Policy name read-books, SPDL source, automatic Valid · authorization policy badge and Save policy button" /></p>
+<p><a href="/img/cloud/console/04-policy-editor-live-validation.png"><img src="/img/cloud/console/04-policy-editor-live-validation.png" alt="Create policy editor with Policy name read-books, SPDL source, automatic Valid · authorization policy badge and Save policy button" /></a></p>
 
-<p>*Policy editor showing automatic live SPDL validation (<strong>Valid · authorization policy</strong>) before saving <code>read-books</code> (demonstration data, English UI).*</p>
+<p>Policy editor showing automatic live SPDL validation (<strong>Valid · authorization policy</strong>) before saving <code>read-books</code> (demonstration data, English UI).</p>
 
-<p><img src="/img/cloud/console/03-service-policies-list.png" alt="Services &amp; policies view for the books service listing reader-role and read-books policies with section tabs" /></p>
+<p><a href="/img/cloud/console/03-service-policies-list.png"><img src="/img/cloud/console/03-service-policies-list.png" alt="Services &amp; policies view for the books service listing reader-role and read-books policies with section tabs" /></a></p>
 
-<p>*<strong>Services &amp; policies</strong> table for <code>books</code> showing <code>reader-role</code> and <code>read-books</code> alongside the service tabs (demonstration data, English UI).*</p>
+<p><strong>Services &amp; policies</strong> table for <code>books</code> showing <code>reader-role</code> and <code>read-books</code> alongside the service tabs (demonstration data, English UI).</p>
 
 <p>You can switch between the code editor and <strong>Use plain text editor</strong>, search or filter the policy table by effect, principal, action, resource, role or condition, and open <strong>Edit</strong>, <strong>Details</strong>, <strong>Test</strong> or <strong>Delete</strong> from each row.</p>
 
@@ -400,9 +400,9 @@
 
 <p>Open the <strong>Access map</strong> tab inside <strong>Services &amp; policies</strong> to visualize how principals, roles and resources connect in the selected service&rsquo;s saved policies. You can filter the graph, switch to a table view, focus on a node and send a path directly to the <strong>Playground</strong> to run a <strong>Diagnose</strong> check.</p>
 
-<p><img src="/img/cloud/console/05-access-map.png" alt="Access map graph for the books service showing user alice connected through role Reader to resource /books" /></p>
+<p><a href="/img/cloud/console/05-access-map.png"><img src="/img/cloud/console/05-access-map.png" alt="Access map graph for the books service showing user alice connected through role Reader to resource /books" /></a></p>
 
-<p>*<strong>Access map</strong> for <code>books</code> visualizing <code>alice</code> → <code>Reader</code> → <code>/books</code> from saved policies (demonstration data, English UI).*</p>
+<p><strong>Access map</strong> for <code>books</code> visualizing <code>alice</code> → <code>Reader</code> → <code>/books</code> from saved policies (demonstration data, English UI).</p>
 
 <h3 id="import-and-export-policies">Import and export policies</h3>
 
@@ -457,9 +457,9 @@
 
 <p><strong>Expected result:</strong> <strong>Is allowed</strong> displays <strong>Allowed.</strong> with reason <strong>A grant policy applies.</strong> and the full JSON result. Changing <strong>Action</strong> to <code>delete</code> and running again displays <strong>Denied.</strong> with <strong>No applicable policies were found.</strong></p>
 
-<p><img src="/img/cloud/console/06-playground-is-allowed-and-diagnose.png" alt="Playground Is allowed test for alice in corp requesting get on /books returning Allowed. A grant policy applies. and Full result JSON" /></p>
+<p><a href="/img/cloud/console/06-playground-is-allowed-and-diagnose.png"><img src="/img/cloud/console/06-playground-is-allowed-and-diagnose.png" alt="Playground Is allowed test for alice in corp requesting get on /books returning Allowed. A grant policy applies. and Full result JSON" /></a></p>
 
-<p>*<strong>Playground</strong> <strong>Is allowed</strong> check for <code>alice</code> (<code>corp</code>) on <code>/books</code> (<code>get</code>) showing <strong>Allowed. A grant policy applies.</strong> and <strong>Full result (JSON)</strong> (demonstration data, English UI).*</p>
+<p><strong>Playground</strong> <strong>Is allowed</strong> check for <code>alice</code> (<code>corp</code>) on <code>/books</code> (<code>get</code>) showing <strong>Allowed. A grant policy applies.</strong> and <strong>Full result (JSON)</strong> (demonstration data, English UI).</p>
 
 <p>You can also click <strong>Test</strong> on a policy row or prefill a diagnosis from <strong>Access map</strong>; prefilling populates the inputs without spending an API call until you click <strong>Run test</strong>.</p>
 
@@ -497,9 +497,9 @@
 
 <p><strong>Expected result:</strong> The key appears under <strong>Active API keys</strong> with its ID, scope, creation time, approximate last-used time and <strong>Expires (UTC)</strong>. The secret is never shown again and cannot be recovered from metadata.</p>
 
-<p><img src="/img/cloud/console/07-api-keys-list-and-create-form.png" alt="API keys page showing the Create API key form with name, fixed scope, expiry preview and active key metadata list without secrets" /></p>
+<p><a href="/img/cloud/console/07-api-keys-list-and-create-form.png"><img src="/img/cloud/console/07-api-keys-list-and-create-form.png" alt="API keys page showing the Create API key form with name, fixed scope, expiry preview and active key metadata list without secrets" /></a></p>
 
-<p>*<strong>API keys</strong> page with the <strong>Create API key</strong> form (scope, expiry and UTC preview) and active key metadata (demonstration data, English UI; no secret shown).*</p>
+<p><strong>API keys</strong> page with the <strong>Create API key</strong> form (scope, expiry and UTC preview) and active key metadata (demonstration data, English UI; no secret shown).</p>
 
 <h3 id="rotate-and-revoke-api-keys">Rotate and revoke API keys</h3>
 
@@ -541,9 +541,9 @@
 <li><strong>Services &amp; policies:</strong> Displays service counts, policy counts and approximate remaining daily calls for the active workspace after workspace operations.</li>
 </ul>
 
-<p><img src="/img/cloud/console/10b-account-overview-quota.png" alt="Account overview page displaying profile details and the Daily quota card with usage meter and UTC reset time" /></p>
+<p><a href="/img/cloud/console/10b-account-overview-quota.png"><img src="/img/cloud/console/10b-account-overview-quota.png" alt="Account overview page displaying profile details and the Daily quota card with usage meter and UTC reset time" /></a></p>
 
-<p>*<strong>Account overview</strong> showing profile metadata and the <strong>Daily quota</strong> meter for the Personal workspace (demonstration data, English UI).*</p>
+<p><strong>Account overview</strong> showing profile metadata and the <strong>Daily quota</strong> meter for the Personal workspace (demonstration data, English UI).</p>
 
 <p>If you reach the daily allowance (<code>429 daily_quota_exceeded</code>), wait until <code>00:00 UTC</code>; switching API keys in the same workspace does not add quota. See <a href="/docs/cloud/limits-and-errors/">Limits and errors</a> for burst rate limits and error recovery.</p>
 
@@ -582,9 +582,9 @@
 
 <p>From the functions table, you can <strong>Edit</strong> a function, <strong>Rotate signing secret</strong> (the previous secret stops working immediately; requires recent re-authentication if prompted) or <strong>Delete function</strong>.</p>
 
-<p><img src="/img/cloud/console/08-functions-tab.png" alt="Functions tab for the books service listing Hosted and ADS and ADS only custom functions" /></p>
+<p><a href="/img/cloud/console/08-functions-tab.png"><img src="/img/cloud/console/08-functions-tab.png" alt="Functions tab for the books service listing Hosted and ADS and ADS only custom functions" /></a></p>
 
-<p>*<strong>Functions</strong> tab for <code>books</code> showing both <strong>Hosted and ADS</strong> and <strong>ADS only</strong> example functions (demonstration data, English UI; no live endpoints called).*</p>
+<p><strong>Functions</strong> tab for <code>books</code> showing both <strong>Hosted and ADS</strong> and <strong>ADS only</strong> example functions (demonstration data, English UI; no live endpoints called).</p>
 
 <p><strong>Important rules and recovery:</strong></p>
 
@@ -614,9 +614,9 @@
 
 <p>Use <strong>Service filter</strong> to view instances syncing a specific service, or <strong>Refresh fleet</strong> for an immediate update (the page auto-refreshes every 5 minutes while visible).</p>
 
-<p><img src="/img/cloud/console/09-ads-fleet-view.png" alt="ADS fleet page showing a live demonstration ADS instance syncing books with Service filter and Refresh fleet controls" /></p>
+<p><a href="/img/cloud/console/09-ads-fleet-view.png"><img src="/img/cloud/console/09-ads-fleet-view.png" alt="ADS fleet page showing a live demonstration ADS instance syncing books with Service filter and Refresh fleet controls" /></a></p>
 
-<p>*<strong>ADS fleet</strong> view listing a demonstration <strong>Live</strong> instance syncing <code>books</code> (demonstration data, English UI).*</p>
+<p><strong>ADS fleet</strong> view listing a demonstration <strong>Live</strong> instance syncing <code>books</code> (demonstration data, English UI).</p>
 
 <p>Choose <strong>Details</strong> on an instance row to inspect:</p>
 
@@ -647,9 +647,9 @@
 <li><strong>Personal activity</strong> (top-bar <strong>Account</strong> menu → <strong>Account overview</strong> → <strong>Personal activity</strong>, at <code>/account/audit</code>): Records your personal account events — sign-in, sign-out, sign-out everywhere, connecting/disconnecting sign-in providers and account creation/deletion.</li>
 </ul>
 
-<p><img src="/img/cloud/console/10a-workspace-audit-log.png" alt="Workspace Audit log table listing recent administrative actions with UTC time, action, target and outcome" /></p>
+<p><a href="/img/cloud/console/10a-workspace-audit-log.png"><img src="/img/cloud/console/10a-workspace-audit-log.png" alt="Workspace Audit log table listing recent administrative actions with UTC time, action, target and outcome" /></a></p>
 
-<p>*Workspace <strong>Audit log</strong> showing recent administrative events in UTC (demonstration data, English UI).*</p>
+<p>Workspace <strong>Audit log</strong> showing recent administrative events in UTC (demonstration data, English UI).</p>
 
 <h3 id="account-settings">Account settings</h3>
 
@@ -661,9 +661,9 @@
 <li><strong>Delete account:</strong> Permanently deletes your personal account, connected identities, personal-only workspaces and sessions. Choose <strong>Delete account</strong>, verify your identity if prompted, type <code>DELETE</code> and confirm <strong>Permanently delete account</strong>. Export any policies you want to keep first.</li>
 </ul>
 
-<p><img src="/img/cloud/console/10c-account-settings.png" alt="Account settings page showing Connected identities for GitHub and Google and the Delete account card" /></p>
+<p><a href="/img/cloud/console/10c-account-settings.png"><img src="/img/cloud/console/10c-account-settings.png" alt="Account settings page showing Connected identities for GitHub and Google and the Delete account card" /></a></p>
 
-<p>*<strong>Account settings</strong> with <strong>Connected identities</strong> and <strong>Delete account</strong> controls (demonstration data, English UI).*</p>
+<p><strong>Account settings</strong> with <strong>Connected identities</strong> and <strong>Delete account</strong> controls (demonstration data, English UI).</p>
 
 <p><strong>Recovery for account deletion:</strong> If you are the sole <strong>Owner</strong> of a workspace that still has other members, account deletion is blocked (<code>last_owner</code>). Open that workspace&rsquo;s <strong>Members</strong> page and promote another member to <strong>Owner</strong> before deleting your account.</p>
 </div>
