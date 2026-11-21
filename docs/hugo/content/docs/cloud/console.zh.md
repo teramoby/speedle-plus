@@ -53,7 +53,7 @@ bref = "在 Speedle Cloud 控制台中管理工作区、服务、策略、策略
   - **工作区设置：** **成员**——查看或管理当前工作区成员。
   - **Cloud 文档：** 打开本文档站点。
 
-[![Speedle Cloud 控制台顶部栏展开工作区切换器与左侧导航栏](/img/cloud/console/01-console-shell-workspace-switcher.png)](/img/cloud/console/01-console-shell-workspace-switcher.png)
+[![Speedle Cloud 控制台顶部栏展开工作区切换器与左侧导航栏](/img/cloud/console/01-console-shell-workspace-switcher.png)](https://engine.speedle.io/img/cloud/console/01-console-shell-workspace-switcher.png)
 
 展开顶部 **工作区** 切换器后的控制台布局与左侧导航栏（演示数据，英文界面）。
 
@@ -80,7 +80,7 @@ Speedle Cloud 将**个人账号**与**工作区**清晰分离：
 
 在左侧导航栏打开 **工作区设置 → 成员**。
 
-[![工作区成员页面显示所有者与管理员成员、邀请表单、待接受邀请和退出工作区卡片](/img/cloud/console/02-workspace-members-page.png)](/img/cloud/console/02-workspace-members-page.png)
+[![工作区成员页面显示所有者与管理员成员、邀请表单、待接受邀请和退出工作区卡片](/img/cloud/console/02-workspace-members-page.png)](https://engine.speedle.io/img/cloud/console/02-workspace-members-page.png)
 
 工作区 **成员** 页面，展示成员角色、邀请表单、待接受邀请与 **退出工作区** 操作（演示数据，英文界面）。
 
@@ -143,11 +143,11 @@ grant role Reader get /books
 
 **预期结果：** 两条策略都会出现在 `books` 的策略列表中。已保存的策略会立即在 **策略试运行** 中生效，并约在 60 秒内同步到托管授权 API。
 
-[![创建策略编辑器显示策略名称 read-books、SPDL 源码、自动校验有效标记和保存策略按钮](/img/cloud/console/04-policy-editor-live-validation.png)](/img/cloud/console/04-policy-editor-live-validation.png)
+[![创建策略编辑器显示策略名称 read-books、SPDL 源码、自动校验有效标记和保存策略按钮](/img/cloud/console/04-policy-editor-live-validation.png)](https://engine.speedle.io/img/cloud/console/04-policy-editor-live-validation.png)
 
 策略编辑器在保存 `read-books` 前自动完成实时 SPDL 校验并显示有效标记（演示数据，英文界面）。
 
-[![books 服务的服务与策略列表显示 reader-role 和 read-books 策略以及服务标签页](/img/cloud/console/03-service-policies-list.png)](/img/cloud/console/03-service-policies-list.png)
+[![books 服务的服务与策略列表显示 reader-role 和 read-books 策略以及服务标签页](/img/cloud/console/03-service-policies-list.png)](https://engine.speedle.io/img/cloud/console/03-service-policies-list.png)
 
 `books` 服务的 **服务与策略** 列表，展示 `reader-role` 与 `read-books` 及各服务标签页（演示数据，英文界面）。
 
@@ -167,7 +167,7 @@ grant role Reader get /books
 
 在 **服务与策略** 中切换到 **权限关系图** 标签页，可直观查看当前服务已保存策略中主体、角色与资源的关联。你可以筛选图谱、切换表格视图、聚焦特定节点，并将某条路径直接带入 **策略试运行** 执行 **诊断**。
 
-[![books 服务的权限关系图展示用户 alice 通过角色 Reader 关联到资源 /books](/img/cloud/console/05-access-map.png)](/img/cloud/console/05-access-map.png)
+[![books 服务的权限关系图展示用户 alice 通过角色 Reader 关联到资源 /books](/img/cloud/console/05-access-map.png)](https://engine.speedle.io/img/cloud/console/05-access-map.png)
 
 `books` 服务的 **权限关系图**，可视化展示 `alice` → `Reader` → `/books`（演示数据，英文界面）。
 
@@ -210,7 +210,7 @@ grant role Reader get /books
 
 **预期结果：** **是否允许** 显示 **允许。**、原因 **命中允许策略。** 以及完整 JSON 结果。将 **操作** 改为 `delete` 后重新运行，会显示 **拒绝。** 和 **没有匹配的策略。**。
 
-[![策略试运行对 corp 域的 alice 访问 /books 执行 get 返回允许与完整 JSON 结果](/img/cloud/console/06-playground-is-allowed-and-diagnose.png)](/img/cloud/console/06-playground-is-allowed-and-diagnose.png)
+[![策略试运行对 corp 域的 alice 访问 /books 执行 get 返回允许与完整 JSON 结果](/img/cloud/console/06-playground-is-allowed-and-diagnose.png)](https://engine.speedle.io/img/cloud/console/06-playground-is-allowed-and-diagnose.png)
 
 **策略试运行** 中对 `alice`（`corp`）执行 `/books` 的 `get` 检查，返回允许判定与完整 JSON 结果（演示数据，英文界面）。
 
@@ -243,7 +243,7 @@ API key 用于让服务端应用和自托管 ADS 实例访问当前工作区。�
 
 **预期结果：** 新密钥出现在 **有效的 API key** 列表中，显示 ID、权限范围、创建时间、近似最近使用时间和 **到期时间（UTC）**。密钥明文仅此一次展示，无法从元数据找回。
 
-[![API key 页面展示创建表单（名称、权限范围、有效期预览）与有效密钥元数据列表，不含密钥明文](/img/cloud/console/07-api-keys-list-and-create-form.png)](/img/cloud/console/07-api-keys-list-and-create-form.png)
+[![API key 页面展示创建表单（名称、权限范围、有效期预览）与有效密钥元数据列表，不含密钥明文](/img/cloud/console/07-api-keys-list-and-create-form.png)](https://engine.speedle.io/img/cloud/console/07-api-keys-list-and-create-form.png)
 
 **API key** 页面，展示 **创建 API key** 表单（权限范围、有效期与 UTC 预计到期时间）及有效密钥元数据（演示数据，英文界面；不显示密钥明文）。
 
@@ -279,7 +279,7 @@ API key 用于让服务端应用和自托管 ADS 实例访问当前工作区。�
 - **账号 → 账号概览（`/account`）：** 展示个人工作区的 **每日额度** 卡片、进度条和下次 UTC 重置时间。
 - **服务与策略：** 显示当前工作区的服务数、策略数，并在执行工作区操作后显示当日剩余调用次数估计值。
 
-[![账号概览页面展示账号信息与每日额度进度条及 UTC 重置时间](/img/cloud/console/10b-account-overview-quota.png)](/img/cloud/console/10b-account-overview-quota.png)
+[![账号概览页面展示账号信息与每日额度进度条及 UTC 重置时间](/img/cloud/console/10b-account-overview-quota.png)](https://engine.speedle.io/img/cloud/console/10b-account-overview-quota.png)
 
 **账号概览** 页面，展示账号信息及个人工作区的 **每日额度** 进度条（演示数据，英文界面）。
 
@@ -310,7 +310,7 @@ API key 用于让服务端应用和自托管 ADS 实例访问当前工作区。�
 
 在函数列表中，你可以 **编辑** 函数、**轮换签名密钥**（旧密钥立即失效，可能需要近期身份验证）或 **删除函数**。
 
-[![books 服务的函数标签页展示托管与 ADS 及仅 ADS 自定义函数示例](/img/cloud/console/08-functions-tab.png)](/img/cloud/console/08-functions-tab.png)
+[![books 服务的函数标签页展示托管与 ADS 及仅 ADS 自定义函数示例](/img/cloud/console/08-functions-tab.png)](https://engine.speedle.io/img/cloud/console/08-functions-tab.png)
 
 `books` 服务的 **函数** 标签页，展示 **托管与 ADS** 与 **仅 ADS** 示例函数（演示数据，英文界面；未调用真实端点）。
 
@@ -338,7 +338,7 @@ API key 用于让服务端应用和自托管 ADS 实例访问当前工作区。�
 
 可使用 **服务筛选** 查看同步特定服务的实例，或点击 **刷新舰队** 立即更新（页面可见时每 5 分钟自动刷新）。
 
-[![ADS 舰队页面展示同步 books 服务的在线演示 ADS 实例以及服务筛选与刷新按钮](/img/cloud/console/09-ads-fleet-view.png)](/img/cloud/console/09-ads-fleet-view.png)
+[![ADS 舰队页面展示同步 books 服务的在线演示 ADS 实例以及服务筛选与刷新按钮](/img/cloud/console/09-ads-fleet-view.png)](https://engine.speedle.io/img/cloud/console/09-ads-fleet-view.png)
 
 **ADS 舰队** 视图，展示正在同步 `books` 的演示在线实例（演示数据，英文界面）。
 
@@ -365,7 +365,7 @@ Speedle Cloud 提供两类独立的审计日志，均按时间倒序排列、保
 - **工作区审计日志**（左侧导航栏 → **审计日志**）：记录当前工作区内的管理操作——服务与策略变更、API key 创建与撤销、ADS 操作、工作区创建与重命名以及成员和邀请变更。所有者与管理员均可查看。
 - **个人活动**（顶部栏 **账号** 菜单 → **账号概览** → **个人活动**，路径 `/account/audit`）：记录个人账号事件——登录、退出登录、在所有设备上退出、关联或取消关联登录方式以及账号创建与删除。
 
-[![工作区审计日志表格按 UTC 时间倒序展示近期管理操作、目标与结果](/img/cloud/console/10a-workspace-audit-log.png)](/img/cloud/console/10a-workspace-audit-log.png)
+[![工作区审计日志表格按 UTC 时间倒序展示近期管理操作、目标与结果](/img/cloud/console/10a-workspace-audit-log.png)](https://engine.speedle.io/img/cloud/console/10a-workspace-audit-log.png)
 
 工作区 **审计日志**，按 UTC 时间展示近期管理事件（演示数据，英文界面）。
 
@@ -377,7 +377,7 @@ Speedle Cloud 提供两类独立的审计日志，均按时间倒序排列、保
 - **退出登录 / 在所有设备上退出：** 在顶部栏 **账号** 菜单中可退出当前浏览器会话或全部设备上的会话。
 - **删除账号：** 永久删除个人账号、已关联登录方式、仅由你一人拥有的工作区以及所有会话。选择 **删除账号**，按提示验证身份后输入 `DELETE` 并确认 **永久删除账号**。删除前请先导出需要保留的策略。
 
-[![账号设置页面展示 GitHub 与 Google 已关联登录方式及删除账号卡片](/img/cloud/console/10c-account-settings.png)](/img/cloud/console/10c-account-settings.png)
+[![账号设置页面展示 GitHub 与 Google 已关联登录方式及删除账号卡片](/img/cloud/console/10c-account-settings.png)](https://engine.speedle.io/img/cloud/console/10c-account-settings.png)
 
 **账号设置** 页面，展示 **已关联的登录方式** 与 **删除账号** 操作（演示数据，英文界面）。
 

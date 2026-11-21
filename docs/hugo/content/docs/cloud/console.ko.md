@@ -53,7 +53,7 @@ bref = "Speedle Cloud Console에서 워크스페이스, 서비스, 정책, 플�
   - **워크스페이스 설정:** **멤버** — 워크스페이스 멤버십을 조회하거나 관리합니다.
   - **Cloud 문서:** 이 문서 사이트를 엽니다.
 
-[![Speedle Cloud Console 상단 바의 워크스페이스 전환기 확장 화면과 왼쪽 사이드바](/img/cloud/console/01-console-shell-workspace-switcher.png)](/img/cloud/console/01-console-shell-workspace-switcher.png)
+[![Speedle Cloud Console 상단 바의 워크스페이스 전환기 확장 화면과 왼쪽 사이드바](/img/cloud/console/01-console-shell-workspace-switcher.png)](https://engine.speedle.io/img/cloud/console/01-console-shell-workspace-switcher.png)
 
 상단 바 **워크스페이스** 전환기를 연 콘솔 레이아웃과 왼쪽 사이드바(데모 데이터, 영어 UI).
 
@@ -80,7 +80,7 @@ Speedle Cloud는 **개인 계정**과 **워크스페이스**를 분리합니다.
 
 왼쪽 사이드바에서 **워크스페이스 설정 → 멤버**를 엽니다.
 
-[![워크스페이스 멤버 페이지(소유자·관리자 목록, 멤버 초대 양식, 대기 중인 초대, 워크스페이스 나가기 카드)](/img/cloud/console/02-workspace-members-page.png)](/img/cloud/console/02-workspace-members-page.png)
+[![워크스페이스 멤버 페이지(소유자·관리자 목록, 멤버 초대 양식, 대기 중인 초대, 워크스페이스 나가기 카드)](/img/cloud/console/02-workspace-members-page.png)](https://engine.speedle.io/img/cloud/console/02-workspace-members-page.png)
 
 워크스페이스 **멤버** 페이지 — 멤버 역할, 초대 양식, 대기 중인 초대 및 **워크스페이스 나가기**(데모 데이터, 영어 UI).
 
@@ -143,11 +143,11 @@ grant role Reader get /books
 
 **예상 결과:** 두 정책이 `books` 정책 테이블에 표시됩니다. 저장된 정책은 **플레이그라운드**에 즉시 반영되며, 호스팅 인가 API에는 약 60초 내에 전파됩니다.
 
-[![read-books 정책 생성 편집기(자동 실시간 SPDL 유효성 표시 및 정책 저장 버튼)](/img/cloud/console/04-policy-editor-live-validation.png)](/img/cloud/console/04-policy-editor-live-validation.png)
+[![read-books 정책 생성 편집기(자동 실시간 SPDL 유효성 표시 및 정책 저장 버튼)](/img/cloud/console/04-policy-editor-live-validation.png)](https://engine.speedle.io/img/cloud/console/04-policy-editor-live-validation.png)
 
 `read-books` 저장 전 자동 실시간 SPDL 검증 결과를 표시하는 정책 편집기(데모 데이터, 영어 UI).
 
-[![books 서비스의 서비스 및 정책 테이블(reader-role, read-books 및 서비스 탭)](/img/cloud/console/03-service-policies-list.png)](/img/cloud/console/03-service-policies-list.png)
+[![books 서비스의 서비스 및 정책 테이블(reader-role, read-books 및 서비스 탭)](/img/cloud/console/03-service-policies-list.png)](https://engine.speedle.io/img/cloud/console/03-service-policies-list.png)
 
 `books` 서비스의 **서비스 및 정책** 목록(`reader-role`, `read-books` 및 서비스 탭. 데모 데이터, 영어 UI).
 
@@ -167,7 +167,7 @@ grant role Reader get /books
 
 **서비스 및 정책**의 **액세스 맵** 탭에서 저장된 정책의 주체, 역할, 리소스 연결을 시각화할 수 있습니다. 그래프 필터링, 테이블 보기 전환, 특정 노드 집중 보기를 지원하며 선택한 경로를 **플레이그라운드**로 바로 보내 **진단**을 실행할 수 있습니다.
 
-[![books 서비스의 액세스 맵 그래프(alice → Reader → /books)](/img/cloud/console/05-access-map.png)](/img/cloud/console/05-access-map.png)
+[![books 서비스의 액세스 맵 그래프(alice → Reader → /books)](/img/cloud/console/05-access-map.png)](https://engine.speedle.io/img/cloud/console/05-access-map.png)
 
 저장된 정책에서 `alice` → `Reader` → `/books`를 시각화한 **액세스 맵**(데모 데이터, 영어 UI).
 
@@ -210,7 +210,7 @@ grant role Reader get /books
 
 **예상 결과:** **허용 여부**가 허용 판정과 전체 JSON 결과를 표시합니다. **작업**을 `delete`로 바꾸고 다시 실행하면 일치하는 정책이 없어 거부가 반환됩니다.
 
-[![플레이그라운드에서 corp 도메인의 alice가 /books get 요청 시 허용 결과와 전체 JSON 표시](/img/cloud/console/06-playground-is-allowed-and-diagnose.png)](/img/cloud/console/06-playground-is-allowed-and-diagnose.png)
+[![플레이그라운드에서 corp 도메인의 alice가 /books get 요청 시 허용 결과와 전체 JSON 표시](/img/cloud/console/06-playground-is-allowed-and-diagnose.png)](https://engine.speedle.io/img/cloud/console/06-playground-is-allowed-and-diagnose.png)
 
 **플레이그라운드** **허용 여부** 테스트 결과(`alice`/`corp`, `/books`, `get` — 허용 판정과 전체 JSON. 데모 데이터, 영어 UI).
 
@@ -243,7 +243,7 @@ API 키는 서버 애플리케이션과 자체 호스팅 Speedle Cloud ADS 인�
 
 **예상 결과:** 새 키가 **활성 API 키** 목록에 ID, 범위, 생성 시각, 대략적 최근 사용 시각, 만료 시각(UTC)과 함께 표시됩니다. 비밀 값은 다시 표시되지 않으며 메타데이터로 복구할 수 없습니다.
 
-[![API 키 페이지(API 키 생성 양식과 활성 키 메타데이터 목록, 비밀 값 미표시)](/img/cloud/console/07-api-keys-list-and-create-form.png)](/img/cloud/console/07-api-keys-list-and-create-form.png)
+[![API 키 페이지(API 키 생성 양식과 활성 키 메타데이터 목록, 비밀 값 미표시)](/img/cloud/console/07-api-keys-list-and-create-form.png)](https://engine.speedle.io/img/cloud/console/07-api-keys-list-and-create-form.png)
 
 **API 키** 페이지 — **API 키 생성** 양식과 활성 키 메타데이터 목록(데모 데이터, 영어 UI, 비밀 값 미표시).
 
@@ -279,7 +279,7 @@ API 키는 서버 애플리케이션과 자체 호스팅 Speedle Cloud ADS 인�
 - **계정 → 계정 개요(`/account`):** 개인 워크스페이스의 **일일 할당량** 카드, 진행 막대, 다음 UTC 초기화 시각을 표시합니다.
 - **서비스 및 정책:** 활성 워크스페이스의 서비스·정책 수와 작업 후 남은 대략적 일일 호출 수를 표시합니다.
 
-[![계정 개요 페이지의 프로필과 일일 할당량 카드 및 UTC 초기화 시각](/img/cloud/console/10b-account-overview-quota.png)](/img/cloud/console/10b-account-overview-quota.png)
+[![계정 개요 페이지의 프로필과 일일 할당량 카드 및 UTC 초기화 시각](/img/cloud/console/10b-account-overview-quota.png)](https://engine.speedle.io/img/cloud/console/10b-account-overview-quota.png)
 
 **계정 개요** — 프로필과 개인 워크스페이스 **일일 할당량** 표시기(데모 데이터, 영어 UI).
 
@@ -310,7 +310,7 @@ API 키는 서버 애플리케이션과 자체 호스팅 Speedle Cloud ADS 인�
 
 함수 목록에서 함수 편집, **서명 비밀 키 교체**(이전 키는 즉시 무효화되며 최근 재인증이 필요할 수 있음), **함수 삭제**를 수행할 수 있습니다.
 
-[![books 서비스의 함수 탭(호스팅 및 ADS와 ADS 전용 예제 함수 목록)](/img/cloud/console/08-functions-tab.png)](/img/cloud/console/08-functions-tab.png)
+[![books 서비스의 함수 탭(호스팅 및 ADS와 ADS 전용 예제 함수 목록)](/img/cloud/console/08-functions-tab.png)](https://engine.speedle.io/img/cloud/console/08-functions-tab.png)
 
 `books` 서비스의 **함수** 탭 — **호스팅 및 ADS** 및 **ADS 전용** 예제 함수(데모 데이터, 영어 UI, 실제 엔드포인트 호출 없음).
 
@@ -338,7 +338,7 @@ API 키는 서버 애플리케이션과 자체 호스팅 Speedle Cloud ADS 인�
 
 **서비스 필터**로 특정 서비스를 동기화하는 인스턴스만 보거나 **플리트 새로고침**으로 즉시 갱신할 수 있습니다(페이지가 보이는 동안 5분마다 자동 새로고침).
 
-[![ADS 플리트 페이지에서 books를 동기화하는 온라인 데모 ADS 인스턴스 표시](/img/cloud/console/09-ads-fleet-view.png)](/img/cloud/console/09-ads-fleet-view.png)
+[![ADS 플리트 페이지에서 books를 동기화하는 온라인 데모 ADS 인스턴스 표시](/img/cloud/console/09-ads-fleet-view.png)](https://engine.speedle.io/img/cloud/console/09-ads-fleet-view.png)
 
 `books`를 동기화하는 데모 온라인 인스턴스를 표시한 **ADS 플리트** 화면(데모 데이터, 영어 UI).
 
@@ -361,7 +361,7 @@ Speedle Cloud는 최신순으로 정렬되고 **180일간 보관**되며 페이�
 - **워크스페이스 감사 로그**(왼쪽 사이드바 → **감사 로그**): 활성 워크스페이스 내 관리 활동(서비스·정책 변경, API 키 생성/취소, ADS 작업, 워크스페이스 변경, 멤버·초대 변경)을 기록합니다. 소유자와 관리자 모두 열람할 수 있습니다.
 - **개인 활동**(상단 바 **계정** 메뉴 → **계정 개요** → **개인 활동**, `/account/audit`): 로그인, 로그아웃, 모든 기기에서 로그아웃, 로그인 수단 연결/해제, 계정 생성/삭제 등 개인 계정 이벤트를 기록합니다.
 
-[![워크스페이스 감사 로그 테이블(UTC 시각, 작업, 대상, 결과)](/img/cloud/console/10a-workspace-audit-log.png)](/img/cloud/console/10a-workspace-audit-log.png)
+[![워크스페이스 감사 로그 테이블(UTC 시각, 작업, 대상, 결과)](/img/cloud/console/10a-workspace-audit-log.png)](https://engine.speedle.io/img/cloud/console/10a-workspace-audit-log.png)
 
 워크스페이스 **감사 로그** — 최근 관리 이벤트를 UTC 기준으로 표시(데모 데이터, 영어 UI).
 
@@ -373,7 +373,7 @@ Speedle Cloud는 최신순으로 정렬되고 **180일간 보관**되며 페이�
 - **로그아웃 / 모든 기기에서 로그아웃:** 상단 바 **계정** 메뉴에서 현재 세션 또는 모든 활성 세션을 종료합니다.
 - **계정 삭제:** 개인 계정, 연결된 로그인 수단, 본인만 속한 워크스페이스와 모든 세션을 영구 삭제합니다. **계정 삭제**를 선택하고 안내 시 재인증한 뒤 `DELETE`를 입력해 확정합니다. 보관할 정책은 먼저 내보내세요.
 
-[![계정 설정 페이지의 연결된 로그인 수단(GitHub·Google) 및 계정 삭제 카드](/img/cloud/console/10c-account-settings.png)](/img/cloud/console/10c-account-settings.png)
+[![계정 설정 페이지의 연결된 로그인 수단(GitHub·Google) 및 계정 삭제 카드](/img/cloud/console/10c-account-settings.png)](https://engine.speedle.io/img/cloud/console/10c-account-settings.png)
 
 **계정 설정** — **연결된 로그인 수단**과 **계정 삭제** 카드(데모 데이터, 영어 UI).
 

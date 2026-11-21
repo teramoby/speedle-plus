@@ -53,7 +53,7 @@ bref = "Speedle Cloud Console でワークスペース、サービス、ポリ�
   - **ワークスペース設定：** **メンバー** — ワークスペースのメンバーシップを表示・管理します。
   - **Cloud ドキュメント：** このドキュメントを開きます。
 
-[![Speedle Cloud Console のトップバーでワークスペース切替メニューを開いた状態と左サイドバー](/img/cloud/console/01-console-shell-workspace-switcher.png)](/img/cloud/console/01-console-shell-workspace-switcher.png)
+[![Speedle Cloud Console のトップバーでワークスペース切替メニューを開いた状態と左サイドバー](/img/cloud/console/01-console-shell-workspace-switcher.png)](https://engine.speedle.io/img/cloud/console/01-console-shell-workspace-switcher.png)
 
 トップバーの **ワークスペース** 切替メニューを開いたコンソール構成と左サイドバー（デモデータ、英語 UI）。
 
@@ -80,7 +80,7 @@ Speedle Cloud は**個人アカウント**と**ワークスペース**を分離�
 
 左サイドバーから **ワークスペース設定 → メンバー** を開きます。
 
-[![ワークスペースのメンバーページ（オーナーと管理者、招待フォーム、保留中の招待、ワークスペースを退出カード）](/img/cloud/console/02-workspace-members-page.png)](/img/cloud/console/02-workspace-members-page.png)
+[![ワークスペースのメンバーページ（オーナーと管理者、招待フォーム、保留中の招待、ワークスペースを退出カード）](/img/cloud/console/02-workspace-members-page.png)](https://engine.speedle.io/img/cloud/console/02-workspace-members-page.png)
 
 ワークスペースの **メンバー** ページ（メンバー一覧、招待フォーム、保留中の招待、**ワークスペースを退出** 操作。デモデータ、英語 UI）。
 
@@ -143,11 +143,11 @@ grant role Reader get /books
 
 **期待される結果：** 両方のポリシーが `books` のポリシー一覧に表示されます。保存されたポリシーは **プレイグラウンド** で即座に利用でき、ホスト型認可 API へは約 60 秒で反映されます。
 
-[![read-books ポリシー作成エディター（自動リアルタイム検証の有効表示とポリシーを保存ボタン）](/img/cloud/console/04-policy-editor-live-validation.png)](/img/cloud/console/04-policy-editor-live-validation.png)
+[![read-books ポリシー作成エディター（自動リアルタイム検証の有効表示とポリシーを保存ボタン）](/img/cloud/console/04-policy-editor-live-validation.png)](https://engine.speedle.io/img/cloud/console/04-policy-editor-live-validation.png)
 
 `read-books` 保存前に自動リアルタイム SPDL 検証結果を表示するポリシーエディター（デモデータ、英語 UI）。
 
-[![books サービスのサービスとポリシー一覧（reader-role と read-books および各タブ）](/img/cloud/console/03-service-policies-list.png)](/img/cloud/console/03-service-policies-list.png)
+[![books サービスのサービスとポリシー一覧（reader-role と read-books および各タブ）](/img/cloud/console/03-service-policies-list.png)](https://engine.speedle.io/img/cloud/console/03-service-policies-list.png)
 
 `books` サービスの **サービスとポリシー** 一覧（`reader-role` と `read-books`、サービスタブ。デモデータ、英語 UI）。
 
@@ -167,7 +167,7 @@ grant role Reader get /books
 
 **サービスとポリシー** 内の **アクセスマップ** タブでは、保存済みポリシーのプリンシパル・ロール・リソースの関係を可視化できます。フィルター、テーブル表示切替、ノードフォーカスに対応し、選択パスを **プレイグラウンド** に送って **診断** を実行できます。
 
-[![books サービスのアクセスマップ（alice → Reader → /books の関係グラフ）](/img/cloud/console/05-access-map.png)](/img/cloud/console/05-access-map.png)
+[![books サービスのアクセスマップ（alice → Reader → /books の関係グラフ）](/img/cloud/console/05-access-map.png)](https://engine.speedle.io/img/cloud/console/05-access-map.png)
 
 保存済みポリシーから `alice` → `Reader` → `/books` を可視化した **アクセスマップ**（デモデータ、英語 UI）。
 
@@ -210,7 +210,7 @@ grant role Reader get /books
 
 **期待される結果：** **許可確認** で許可判定と完全な JSON 結果が表示されます。**アクション** を `delete` に変えて再実行すると、一致するポリシーがないため拒否になります。
 
-[![プレイグラウンドで corp ドメインの alice の /books get に対する許可確認結果と完全な JSON](/img/cloud/console/06-playground-is-allowed-and-diagnose.png)](/img/cloud/console/06-playground-is-allowed-and-diagnose.png)
+[![プレイグラウンドで corp ドメインの alice の /books get に対する許可確認結果と完全な JSON](/img/cloud/console/06-playground-is-allowed-and-diagnose.png)](https://engine.speedle.io/img/cloud/console/06-playground-is-allowed-and-diagnose.png)
 
 **プレイグラウンド** の **許可確認** 実行結果（`alice` / `corp`、`/books`、`get` に対する許可判定と完全な JSON。デモデータ、英語 UI）。
 
@@ -243,7 +243,7 @@ API キーはサーバー側アプリケーションやセルフホスト型 Spe
 
 **期待される結果：** 新しいキーが **有効な API キー** に ID、スコープ、作成日時、おおよその最終使用日時、有効期限（UTC）とともに表示されます。シークレットは二度と表示されず、メタデータから復元できません。
 
-[![API キーページ（作成フォームと有効なキーのメタデータ一覧、シークレット非表示）](/img/cloud/console/07-api-keys-list-and-create-form.png)](/img/cloud/console/07-api-keys-list-and-create-form.png)
+[![API キーページ（作成フォームと有効なキーのメタデータ一覧、シークレット非表示）](/img/cloud/console/07-api-keys-list-and-create-form.png)](https://engine.speedle.io/img/cloud/console/07-api-keys-list-and-create-form.png)
 
 **API キー** ページ（**API キーを作成** フォームと有効なキーのメタデータ一覧。デモデータ、英語 UI、シークレット非表示）。
 
@@ -279,7 +279,7 @@ API キーはサーバー側アプリケーションやセルフホスト型 Spe
 - **アカウント → アカウント概要（`/account`）：** パーソナルワークスペースの **1日の割り当て** カード、使用メーター、次回 UTC リセット時刻を表示します。
 - **サービスとポリシー：** アクティブなワークスペースのサービス数・ポリシー数と、操作後の残り呼び出し回数目安を表示します。
 
-[![アカウント概要ページ（プロフィールと 1 日の割り当てメーター、UTC リセット時刻）](/img/cloud/console/10b-account-overview-quota.png)](/img/cloud/console/10b-account-overview-quota.png)
+[![アカウント概要ページ（プロフィールと 1 日の割り当てメーター、UTC リセット時刻）](/img/cloud/console/10b-account-overview-quota.png)](https://engine.speedle.io/img/cloud/console/10b-account-overview-quota.png)
 
 **アカウント概要** のプロフィールとパーソナルワークスペースの **1日の割り当て** メーター（デモデータ、英語 UI）。
 
@@ -310,7 +310,7 @@ API キーはサーバー側アプリケーションやセルフホスト型 Spe
 
 一覧から関数の編集、**署名シークレットを更新**（旧シークレットは即時失効、最近の再認証が必要な場合あり）、**関数を削除** を行えます。
 
-[![books サービスの関数タブ（ホスト型と ADS および ADS のみのサンプル関数一覧）](/img/cloud/console/08-functions-tab.png)](/img/cloud/console/08-functions-tab.png)
+[![books サービスの関数タブ（ホスト型と ADS および ADS のみのサンプル関数一覧）](/img/cloud/console/08-functions-tab.png)](https://engine.speedle.io/img/cloud/console/08-functions-tab.png)
 
 `books` サービスの **関数** タブ（**ホスト型と ADS** と **ADS のみ** のサンプル関数。デモデータ、英語 UI、実エンドポイント未呼出）。
 
@@ -338,7 +338,7 @@ API キーはサーバー側アプリケーションやセルフホスト型 Spe
 
 **サービスフィルター** で特定サービスを同期するインスタンスを絞り込むか、**フリートを更新** で即時更新できます（表示中は 5 分ごとに自動更新）。
 
-[![ADS フリートページ（books を同期中のオンラインデモ ADS インスタンス一覧）](/img/cloud/console/09-ads-fleet-view.png)](/img/cloud/console/09-ads-fleet-view.png)
+[![ADS フリートページ（books を同期中のオンラインデモ ADS インスタンス一覧）](/img/cloud/console/09-ads-fleet-view.png)](https://engine.speedle.io/img/cloud/console/09-ads-fleet-view.png)
 
 `books` を同期中のデモオンラインインスタンスを表示する **ADS フリート** 画面（デモデータ、英語 UI）。
 
@@ -361,7 +361,7 @@ Speedle Cloud には最新順・**180 日間保持**・ページング対応の 
 - **ワークスペース監査ログ**（左サイドバー → **監査ログ**）：アクティブなワークスペース内の管理操作（サービス・ポリシー変更、API キー作成/取り消し、ADS 操作、ワークスペース変更、メンバー・招待変更）を記録します。オーナーと管理者の双方が閲覧できます。
 - **個人のアクティビティ**（トップバー **アカウント** メニュー → **アカウント概要** → **個人のアクティビティ**、`/account/audit`）：サインイン、サインアウト、全デバイスからのサインアウト、ログインプロバイダーの接続/解除、アカウント作成/削除など個人イベントを記録します。
 
-[![ワークスペース監査ログテーブル（UTC 時刻、操作、対象、結果）](/img/cloud/console/10a-workspace-audit-log.png)](/img/cloud/console/10a-workspace-audit-log.png)
+[![ワークスペース監査ログテーブル（UTC 時刻、操作、対象、結果）](/img/cloud/console/10a-workspace-audit-log.png)](https://engine.speedle.io/img/cloud/console/10a-workspace-audit-log.png)
 
 ワークスペース **監査ログ**（最近の管理イベントを UTC で表示。デモデータ、英語 UI）。
 
@@ -373,7 +373,7 @@ Speedle Cloud には最新順・**180 日間保持**・ページング対応の 
 - **サインアウト / すべてのデバイスからサインアウト：** トップバーの **アカウント** メニューから現在のセッションまたは全セッションを終了できます。
 - **アカウントの削除：** 個人アカウント、接続済み ID、自分のみが所属するワークスペース、全セッションを完全削除します。**アカウントの削除** を選択し、求められた場合は再認証のうえ `DELETE` と入力して確定します。残したいポリシーは事前にエクスポートしてください。
 
-[![アカウント設定ページ（GitHub と Google の接続済み ID とアカウント削除カード）](/img/cloud/console/10c-account-settings.png)](/img/cloud/console/10c-account-settings.png)
+[![アカウント設定ページ（GitHub と Google の接続済み ID とアカウント削除カード）](/img/cloud/console/10c-account-settings.png)](https://engine.speedle.io/img/cloud/console/10c-account-settings.png)
 
 **アカウント設定** ページ（**接続済みのID** と **アカウントの削除**。デモデータ、英語 UI）。
 
