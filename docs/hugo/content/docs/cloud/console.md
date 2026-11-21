@@ -152,9 +152,9 @@ Open the **Access map** tab inside **Services & policies** to visualize how prin
 Open the **Import & export** tab inside **Services & policies**:
 
 - **Download SPDL** or **Download JSON:** Exports the selected service's saved policies. Keep downloaded files private and maintain your own backups during the beta.
-- **Import policies:** Choose a Speedle Cloud JSON export file (up to 32 MiB), review the preview counts and choose **Confirm policy import**. Imports are atomic: existing policies are never overwritten, and any invalid policy, name conflict or excess over the 200-policy workspace cap rejects the entire batch.
+- **Import policies:** Choose a Speedle Cloud JSON export file (up to 32 MiB), review the preview counts and choose **Confirm policy import**. Imports are atomic: existing policies are never overwritten, and duplicate display names (within the batch or matching existing policies) are allowed because every imported policy receives a new server-generated ID. Any invalid policy or excess over the 200-policy workspace cap rejects the entire batch.
 
-If an import's outcome is interrupted or uncertain, keep the page open and use **Retry the same import** (it uses an idempotency key so confirmed policies are not inserted twice).
+If an import's outcome is interrupted or uncertain, keep the page open and use **Retry the same import** — it reuses the same idempotency key so confirmed policies are not inserted twice. Starting a fresh import of the same file (with a new idempotency key) after a completed import creates duplicate policies and consumes policy slots.
 
 ### Rename or delete a service
 
@@ -261,18 +261,22 @@ Custom functions let SPDL conditions call external HTTPS endpoints during evalua
 2. Choose **Register function**.
 3. Configure:
    - **Name:** 1–64 character SPDL identifier (cannot be a reserved word).
-   - **Endpoint URL:** HTTPS endpoint that receives condition arguments. The console itself never calls the endpoint.
+   - **Endpoint URL:** HTTPS endpoint (up to 2,048 UTF-8 bytes; plain HTTP is not supported) that receives condition arguments. The console itself never calls the endpoint. URL rules depend on **Invocation**:
+     - **Hosted and ADS:** Requires `https://` on the default port `443` with a public, non-reserved DNS hostname (at least two labels; rejects IP literals, non-443 ports and internal or reserved hosts such as `localhost`, `*.local`, `*.internal`, `*.home.arpa`, `.test`, `.example`, `.invalid`, `.alt` and `.onion`).
+     - **ADS only:** Requires `https://`, and allows any port as well as IP literals and private or internal hostnames (for example `https://10.20.30.40:8443/func/check`).
+     - Both modes reject userinfo (`user@host`), fragments (`#...`), whitespace, control characters and backslashes.
    - **Invocation:** **Hosted and ADS** (callable by hosted Cloud evaluation, Playground and self-hosted ADS) or **ADS only** (called only by self-hosted ADS; hosted evaluation and Playground fail if a condition reaches an ADS-only function).
    - **Declared types (optional):** Add up to 16 **Parameters** and a **Result** type. Undeclared parameters skip type checking; declared type mismatches fail evaluation.
    - **Cache results (optional):** Evaluator-local cache TTL (1–86,400 seconds; failures are not cached).
    - **Hosted timeout (ms):** 100–2,000 ms (default 1,000 ms), applied to hosted calls only.
-   - **Sign hosted requests (optional):** Enables HMAC signing for hosted calls.
+   - **Sign hosted requests (optional):** Enables HMAC signing for hosted Cloud requests only. Self-hosted ADS always sends unsigned requests, even when **Hosted and ADS** is selected.
 4. Choose **Save function**. If signing is enabled, copy and store the one-time **Signing secret** before closing the dialog.
 
 From the functions table, you can **Edit** a function, **Rotate signing secret** (the previous secret stops working immediately; requires recent re-authentication if prompted) or **Delete function**.
 
-**Important rules:**
+**Important rules and recovery:**
 
+- **`function_url_rejected`:** Confirm the URL uses `https://` without userinfo, fragments, whitespace or backslashes. For IP literals, internal hostnames or non-443 ports, select **ADS only**; for **Hosted and ADS**, use a public DNS hostname on port `443`.
 - Register a function in the target service **before** saving or importing a policy that calls it. Policy exports do not include function definitions.
 - A function still referenced by a policy cannot be deleted; edit or delete the referencing policies first.
 
@@ -303,7 +307,7 @@ Choose **Details** on an instance row to inspect:
 Available actions (each requires confirmation):
 
 - **Assign services:** Sync **All services, including services created later** or **Only the selected services**. Changes apply on the next heartbeat without restarting the ADS.
-- **Resync from a snapshot:** Discards the instance's local copy and reloads from a snapshot.
+- **Resync from a snapshot:** Discards the instance's local copy and reloads from a snapshot. **Availability impact:** the affected service immediately stops serving local authorization decisions until a fresh snapshot has been downloaded and verified.
 - **Pause distribution / Resume distribution:** Stops or resumes serving policies to downstream ADS instances while local sync and evaluation continue.
 - **Stop this ADS:** Instructs the instance to deny authorization requests and stop reconnecting until restarted.
 - **Delete this instance:** Removes the instance record and history (a still-running instance re-registers on its next connection unless stopped or its API key is revoked).

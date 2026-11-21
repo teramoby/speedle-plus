@@ -21,7 +21,7 @@ Open the [Cloud console](https://cloud.speedle.io/) in your browser and sign in 
 
 Open the [Service workspace](https://cloud.speedle.io/service), enter `books`, and choose **Create service**. Use a new service for this example so existing policies do not affect the results; do not overwrite existing data.
 
-Choose **New policy**, name it `read-books`, and enter this SPDL:
+Choose **Create policy**, name it `read-books` (or leave the name blank to generate one automatically), and enter this SPDL:
 
 ```text
 grant user alice from corp get /books
@@ -29,7 +29,7 @@ grant user alice from corp get /books
 
 This lets `alice` in the `corp` identity domain perform `get` on `/books`. A grant without `from` matches the name in every domain. Derive the domain from trusted authentication data and send it as `idd` in each request. See [identity domains](/docs/idd/).
 
-Choose **Validate policy**, then **Save policy**. Validation checks syntax but does not save the draft. Allow approximately 60 seconds for saved policies to reach the authorization API.
+Wait for automatic live validation to confirm the syntax, then choose **Save policy**. Validation does not save the draft. Allow approximately 60 seconds for saved policies to reach the authorization API.
 
 ## Create an API key
 

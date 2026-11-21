@@ -6,7 +6,7 @@
     <description>Recent content in Speedle: 빠르고 간단한 인가 엔진 on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>ko-kr</language>
-    <lastBuildDate>Tue, 17 Nov 2026 00:00:00 +0800</lastBuildDate>
+    <lastBuildDate>Sat, 21 Nov 2026 00:00:00 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/ko/index.xml" rel="self" type="application/rss+xml" />
     
@@ -161,6 +161,17 @@ speedle-users 및 speedle-developers 메일링 리스트에도 참여하실 수 
     </item>
     
     <item>
+      <title>Speedle Cloud Console 사용자 매뉴얼</title>
+      <link>https://engine.speedle.io/ko/docs/cloud/console/</link>
+      <pubDate>Sat, 21 Nov 2026 00:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/ko/docs/cloud/console/</guid>
+      <description>Speedle Cloud는 공개 베타로 제공 중입니다. 무료 공개 베타는 평가와 학습용이며 SLA를 제공하지 않고 프로덕션 사용은 권장하지 않습니다. 기능과 한도는 변경될 수 있습니다.
+이 매뉴얼은 cloud.speedle.io의 Speedle Cloud Console(SCC) 일상 작업을 안내합니다. 서버에서 빠르게 API를 호출해 보려면 빠른 시작을 참고하세요. 요청 본문, 오류 코드, 할당량 상세는 인가 API, API 레퍼런스, 제한과 오류에서 확인할 수 있습니다.
+로그인 및 콘솔 구성 사전 요구 사항  JavaScript와 쿠키가 활성화된 브라우저. 이메일이 인증된 GitHub 또는 Google 계정.</description>
+    </item>
+    
+    <item>
       <title>성능 테스트 가이드</title>
       <link>https://engine.speedle.io/ko/docs/performance-testing/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -176,9 +187,9 @@ speedle-users 및 speedle-developers 메일링 리스트에도 참여하실 수 
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/ko/docs/cloud/tokens/</guid>
-      <description>API 키는 계정에 속하며 범위에 따라 해당 계정의 서비스에 접근합니다. 최종 사용자가 아닌 애플리케이션을 인증합니다. API 키, 세션, 연결된 신원 관리에는 로그인한 콘솔 세션이 필요합니다.
+      <description>API 키는 워크스페이스에 속하며 범위에 따라 해당 워크스페이스의 서비스에 접근합니다. 최종 사용자가 아닌 애플리케이션을 인증합니다. API 키, 세션, 연결된 신원 관리에는 로그인한 콘솔 세션이 필요합니다. 워크스페이스 멤버를 제거하거나 멤버가 나가도 그 멤버가 생성한 API 키는 폐기되지 않으므로 필요 시 직접 확인하여 폐기하세요.
 Speedle Cloud는 공개 베타로 제공 중입니다. 이 가이드는 실제 서비스에서의 사용 절차를 설명합니다.
-API 키 생성 API 키에서 앞뒤 공백을 제외한 1–128자 이름, 범위, 만료 기간(7d, 30d, 90d, 180d, 365d. 콘솔 기본값은 3개월)을 지정하고 생성을 선택합니다. 생성하려면 최근 10분 이내에 연결된 제공자로 인증해야 합니다. 403 reauth_required이면 다시 인증한 뒤 생성을 다시 선택하세요.</description>
+API 키 생성 API 키에서 앞뒤 공백을 제외한 1–128자 이름, 범위, 만료 기간(7d, 30d, 90d, 180d, 365d.</description>
     </item>
     
     <item>
@@ -220,9 +231,8 @@ git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus
       
       <guid>https://engine.speedle.io/ko/docs/cloud/global-roles/</guid>
       <description>Speedle Cloud는 공개 베타로 제공 중입니다. 이 가이드는 실제 서비스에서의 사용 절차를 설명합니다.
-역할 할당은 보통 하나의 서비스에 속합니다. 여러 서비스가 같은 할당을 공유할 때는 계정의 전역 역할 서비스에 한 번 정의하고 각 서비스의 인가 정책에서 그 역할을 사용합니다.
-전역 역할은 역할 정책만 허용합니다. 전역 역할 할당 자체는 어떤 작업도 허용하지 않습니다. 허용할 권한은 여전히 각 서비스가 정의합니다. 전역 역할은 하나의 Cloud 계정에 속하며 계정 간에 적용되지 않습니다.
-역할 할당을 한 번 만들기 콘솔 서비스 선택기 맨 위에서 전역 역할을 선택하고 역할 정책을 만듭니다.</description>
+역할 할당은 보통 하나의 서비스에 속합니다. 같은 워크스페이스의 여러 서비스가 같은 할당을 공유할 때는 워크스페이스의 전역 역할 서비스에 한 번 정의하고 각 서비스의 인가 정책에서 그 역할을 사용합니다.
+전역 역할은 역할 정책만 허용합니다. 전역 역할 할당 자체는 어떤 작업도 허용하지 않습니다. 허용할 권한은 여전히 각 서비스가 정의합니다. 전역 역할은 하나의 워크스페이스에 속하며 워크스페이스 간에 적용되지 않습니다.</description>
     </item>
     
     <item>
@@ -314,8 +324,8 @@ POST /authz-check/v1/is-allowed Authorization: Bearer &amp;lt;API key&amp;gt; Co
       
       <guid>https://engine.speedle.io/ko/docs/cloud/limits-and-errors/</guid>
       <description>Speedle Cloud는 공개 베타로 제공 중입니다. 이 가이드는 실제 서비스에서의 사용 절차를 설명합니다.
-별도 표시가 없으면 한도는 계정 전체에서 공유합니다. API 키를 바꿔도 일일 할당량은 늘지 않습니다.
-제한    대상 한도 도달 시 처리     계정 서비스 100개 409 quota_exceeded. 미사용 서비스 삭제. 시간에 따른 초기화 없음.   모든 서비스의 인가 정책과 역할 정책 합계 계정당 200개 409 quota_exceeded. 정책 삭제. 시간에 따른 초기화 없음.</description>
+별도 표시가 없으면 한도는 워크스페이스 전체에서 공유합니다. 같은 워크스페이스에서 API 키를 바꿔도 일일 할당량은 늘지 않습니다.
+제한    대상 한도 도달 시 처리     워크스페이스 서비스 100개 409 quota_exceeded. 미사용 서비스 삭제. 시간에 따른 초기화 없음.   모든 서비스의 인가 정책과 역할 정책 합계 워크스페이스당 200개 409 quota_exceeded. 정책 삭제. 시간에 따른 초기화 없음.</description>
     </item>
     
     <item>

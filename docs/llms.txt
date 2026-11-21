@@ -47,13 +47,14 @@ All six SDKs are published: Maven Central `io.speedle:speedle-sdk` 1.9.0, PyPI `
 
 ## Speedle Cloud
 
-- [Speedle Cloud](https://engine.speedle.io/docs/cloud/): Hosted authorization for developers: sign-in and account management, SPDL policies, account API keys, the authorization API, limits, errors and downloads.
-- [Getting started with Speedle Cloud](https://engine.speedle.io/docs/cloud/getting-started/): The console workflow: sign-in and account settings, a service, SPDL policies, session management requests, Playground tests and policy export.
-- [Speedle Cloud API keys](https://engine.speedle.io/docs/cloud/tokens/): Create, protect, list and revoke account API keys with a required expiry and a fixed scope, with one-time secret disclosure and recent authentication.
-- [Global roles](https://engine.speedle.io/docs/cloud/global-roles/): Assign a role once in the account's global service and grant its permissions in each service's own authorization policies.
+- [Speedle Cloud](https://engine.speedle.io/docs/cloud/): Hosted authorization for developers: workspaces, Console manual, SPDL policies, workspace API keys, the authorization API, limits, errors and downloads.
+- [Getting started with Speedle Cloud](https://engine.speedle.io/docs/cloud/getting-started/): The quick-start workflow: sign in, create a service and SPDL policy, create a workspace API key, call IsAllowed from your server and test in the Playground.
+- [Speedle Cloud Console user manual](https://engine.speedle.io/docs/cloud/console/): Task-oriented Speedle Cloud Console (SCC) user manual: workspaces, members, services, SPDL policies, Access map, Playground, API keys, custom functions, ADS fleet, audit logs and account settings.
+- [Speedle Cloud API keys](https://engine.speedle.io/docs/cloud/tokens/): Create, protect, list and revoke workspace API keys with a required expiry and a fixed scope, with one-time secret disclosure and recent authentication.
+- [Global roles](https://engine.speedle.io/docs/cloud/global-roles/): Assign a role once in the workspace's Global roles service and grant its permissions in each service's own authorization policies.
 - [Speedle Cloud authorization API](https://engine.speedle.io/docs/cloud/authorization-api/): The published ADS IsAllowed request and response contract, with caller identity, a Node.js 22 example, policy snapshots and transport constraints.
 - [API reference](https://engine.speedle.io/docs/cloud/api-reference/): Reference for the Speedle Cloud API: authorization checks and policy management with an API key. Requests run from your server; this page is read-only.
-- [Speedle Cloud Limits and errors](https://engine.speedle.io/docs/cloud/limits-and-errors/): Account quotas, request limits, flat JSON errors, rate and quota headers, daily accounting and retry guidance.
+- [Speedle Cloud Limits and errors](https://engine.speedle.io/docs/cloud/limits-and-errors/): Workspace quotas, request limits, flat JSON errors, rate and quota headers, daily accounting and retry guidance.
 - [cloud.speedle.io](https://cloud.speedle.io/): Speedle Cloud, a hosted authorization service. Free public beta; sign-in is open.
 
 ## Speedle AI

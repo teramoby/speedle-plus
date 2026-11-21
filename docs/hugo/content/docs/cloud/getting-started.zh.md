@@ -21,7 +21,7 @@ lastmod = 2026-11-12T00:00:00+08:00
 
 打开[服务工作区](https://cloud.speedle.io/zh-CN/service)，输入 `books`，选择 **创建服务**。请用新服务运行示例，避免已有策略影响结果，不要覆盖已有数据。
 
-选择 **新建策略**，命名为 `read-books`，输入以下 SPDL：
+选择 **创建策略**，命名为 `read-books`（或留空自动生成名称），输入以下 SPDL：
 
 ```text
 grant user alice from corp get /books
@@ -29,7 +29,7 @@ grant user alice from corp get /books
 
 这条策略允许 `corp` 身份域中的 `alice` 对 `/books` 执行 `get`。不带 `from` 的授权会匹配所有身份域中同名的用户。应用应根据可信的认证结果确定身份域，并在每个请求的 `idd` 字段中发送相同的值。详见[身份域](/zh/docs/idd/)。
 
-选择 **验证策略**，然后 **保存策略**。验证只检查语法，不会保存草稿。保存后，策略约需 60 秒才会在授权 API 中生效。
+等待实时语法校验通过后，选择 **保存策略**。校验不会保存草稿。保存后，策略约需 60 秒才会在授权 API 中生效。
 
 ## 创建 API 密钥
 

@@ -76,7 +76,7 @@ for (const locale of LOCALES) {
   const html = fs.readFileSync(path.join(output, `${locale}docs/api/management_api/index.html`), 'utf8');
   assert.ok(html.includes('/css/swagger-ui.css') && html.includes('/css/swagger-custom.css'), `Swagger styles in ${locale || 'en'}`);
 }
-const cloudRoutes = ['', 'getting-started/', 'tokens/', 'global-roles/', 'authorization-api/', 'api-reference/', 'limits-and-errors/'];
+const cloudRoutes = ['', 'getting-started/', 'console/', 'tokens/', 'global-roles/', 'authorization-api/', 'api-reference/', 'limits-and-errors/'];
 const navPages = ['docs/index.html', 'docs/spdl/index.html', 'docs/extending-decision-service/index.html', ...cloudRoutes.map(route => `docs/cloud/${route}index.html`)];
 for (const locale of LOCALES) {
   const lang = locale.replace(/\/$/, '');
@@ -209,7 +209,7 @@ function checkDocsAlternates(directory) {
   }
 }
 for (const locale of LOCALES) checkDocsAlternates(path.join(output, `${locale}docs`));
-assert.equal(docsAlternates, 265, 'Every canonical docs page and redirect alias has hreflang alternates for en, ja, ko, es, zh-CN and x-default');
+assert.equal(docsAlternates, 270, 'Every canonical docs page and redirect alias has hreflang alternates for en, ja, ko, es, zh-CN and x-default');
 console.log('PASS Hugo 0.48 output: editor, navigation, sitemap, footer stylesheet and matching release assets');
 
 // The Cloud section is documented in every site language.
@@ -301,7 +301,7 @@ for (const [locale, copy] of Object.entries(cloudCopy)) {
   assert.ok(api.includes('POST /authz-check/v1/is-allowed'), `ADS preview route in ${locale || 'en'}`);
   if (copy.samples) {
     assert.ok(tokens.includes('spdl_&lt;canonical uppercase ULID id&gt;_&lt;43 base62 digits&gt;'), `Current token format in ${locale || 'en'}`);
-    assert.ok(tokens.includes('reauth_required') && tokens.includes('DELETE /api/tokens/') && tokens.includes('nextCursor'), `Token creation, revocation and pagination in ${locale || 'en'}`);
+    assert.ok(tokens.includes('reauth_required') && tokens.includes('DELETE /api/workspaces/&lt;workspaceId&gt;/tokens/') && tokens.includes('nextCursor'), `Token creation, revocation and pagination in ${locale || 'en'}`);
     assert.ok(api.includes('service_not_found') && api.includes('subject.token'), `ADS contract in ${locale || 'en'}`);
     assert.ok(api.includes('AbortSignal.timeout') && api.includes('SPEEDLE_API_KEY'), `Node.js ADS example in ${locale || 'en'}`);
     assert.ok(limits.includes('X-Quota-Daily-Remaining') && limits.includes('daily_quota_exceeded') && limits.includes('snapshot_unavailable'), `Cloud limits and errors in ${locale || 'en'}`);

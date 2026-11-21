@@ -6,7 +6,7 @@
     <description>Recent content in Docs on Speedle</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Tue, 17 Nov 2026 10:00:00 +0800</lastBuildDate>
+    <lastBuildDate>Sat, 21 Nov 2026 00:00:00 +0800</lastBuildDate>
     
 	<atom:link href="https://engine.speedle.io/categories/docs/index.xml" rel="self" type="application/rss+xml" />
     
@@ -64,6 +64,76 @@ Before running the examples Build ./bin/spctl, ./bin/speedle-pms and ./bin/speed
     </item>
     
     <item>
+      <title>Getting started with Speedle Cloud</title>
+      <link>https://engine.speedle.io/docs/cloud/getting-started/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/cloud/getting-started/</guid>
+      <description>Speedle Cloud is in public beta. This guide describes the workflow for the live service.
+Sign in with GitHub or Google Open the Cloud console in your browser and sign in with an available provider. For a new identity with an unused verified email address, confirm Create account. If the email is already in use, sign in with the linked provider shown by the console.
+Create a service and a policy Open the Service workspace, enter books, and choose Create service.</description>
+    </item>
+    
+    <item>
+      <title>Java SDK</title>
+      <link>https://engine.speedle.io/docs/sdks/java/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/sdks/java/</guid>
+      <description>Add io.speedle:speedle-sdk 1.9.0 with Maven or Gradle, then call isAllowed and check against a local Speedle.</description>
+    </item>
+    
+    <item>
+      <title>MySQL Setup</title>
+      <link>https://engine.speedle.io/docs/store/mysql/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/store/mysql/</guid>
+      <description>This guide uses MySQL 8.4 LTS and two native Speedle processes: PMS writes policies, and ADS reads the same database with a separate read-only account. The local example uses Docker and plain HTTP on loopback. For a remote deployment, use your existing MySQL server and the Security guide.
+1. Build Speedle with the MySQL backend Install Git, Bash, curl, Docker and a supported Go toolchain (Go 1.26.0). Docker must be running.</description>
+    </item>
+    
+    <item>
+      <title>Policy Discovery</title>
+      <link>https://engine.speedle.io/docs/pms/discover/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/pms/discover/</guid>
+      <description>What discovery does Discovery records requests and returns allowed=true with reason 5 for a successful recording operation. It does not prove that an existing policy authorized the operation. Use it only in an isolated test environment, review generated grants, and restore normal is-allowed enforcement afterwards. Assertion or storage errors must still be handled; never treat an error as an authorization grant.
+Start a reproducible local example Build the binaries using Quick Start, then run all terminals from the checkout root.</description>
+    </item>
+    
+    <item>
+      <title>SPDL - Speedle Policy Definition Language</title>
+      <link>https://engine.speedle.io/docs/spdl/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/spdl/</guid>
+      <description>SPDL is the language for writing Speedle policies and role policies. This page covers the syntax, naming rules and examples. </description>
+    </item>
+    
+    <item>
+      <title>Speedle Cloud Console user manual</title>
+      <link>https://engine.speedle.io/docs/cloud/console/</link>
+      <pubDate>Sat, 21 Nov 2026 00:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/cloud/console/</guid>
+      <description>Speedle Cloud is in public beta. The free public beta is for evaluation and learning, has no SLA and is not recommended for production use. Features and limits may change.
+This manual walks through everyday tasks in the Speedle Cloud Console (SCC) at cloud.speedle.io. For a quick end-to-end API call from your server, see Getting started. For endpoint payloads, error codes and quotas, see the Authorization API, API reference and Limits and errors.</description>
+    </item>
+    
+    <item>
+      <title>Authorization Runtime/Decision API</title>
+      <link>https://engine.speedle.io/docs/api/decision_api/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/api/decision_api/</guid>
+      <description>Reference for your configured ADS. Request attributes are typed arrays; diagnostic attributes are objects.
+Security and endpoint configuration. This is a contract reference, not a backend hosted by speedle.io. Try it out is disabled because this specification has no server host, so a request would otherwise be sent to this documentation site.
+   document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/swagger/policy-check.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.</description>
+    </item>
+    
+    <item>
       <title>Docker image</title>
       <link>https://engine.speedle.io/docs/deployment/docker/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -76,14 +146,102 @@ Pull the image docker pull docker.io/speedle/speedle:1.9.0 docker pull ghcr.</de
     </item>
     
     <item>
-      <title>Getting started with Speedle Cloud</title>
-      <link>https://engine.speedle.io/docs/cloud/getting-started/</link>
+      <title>Documentation</title>
+      <link>https://engine.speedle.io/docs/</link>
+      <pubDate>Sun, 08 Nov 2026 05:25:30 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Performance testing guide</title>
+      <link>https://engine.speedle.io/docs/performance-testing/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
-      <guid>https://engine.speedle.io/docs/cloud/getting-started/</guid>
+      <guid>https://engine.speedle.io/docs/performance-testing/</guid>
+      <description>We publish no performance report here; results depend on your hardware, policies and pinned versions.
+First ask me which open-source authorization projects I want to compare with Speedle. Also ask for policy-set sizes and a time budget, offering defaults of 10, 100 and 1,000 policies and 30 minutes. Wait for my answer before doing anything else. Then work in a fresh local directory and run a fair comparison on the same machine within that budget.</description>
+    </item>
+    
+    <item>
+      <title>Python SDK</title>
+      <link>https://engine.speedle.io/docs/sdks/python/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/sdks/python/</guid>
+      <description>Install speedle 1.9.0 with pip or uv, then call is_allowed and check against a local Speedle.</description>
+    </item>
+    
+    <item>
+      <title>Speedle Cloud API keys</title>
+      <link>https://engine.speedle.io/docs/cloud/tokens/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/cloud/tokens/</guid>
+      <description>API keys belong to a workspace and can access its services according to their scope. They authenticate your application, not its end users. Managing API keys, sessions and linked identities always requires a signed-in console session. Removing a workspace member or leaving a workspace does not revoke API keys that person created; review and revoke them explicitly when needed.
+Speedle Cloud is in public beta. This guide describes the workflow for the live service.</description>
+    </item>
+    
+    <item>
+      <title>Speedle Policy</title>
+      <link>https://engine.speedle.io/docs/pms/</link>
+      <pubDate>Wed, 28 Oct 2026 13:16:58 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/pms/</guid>
+      <description> Policy Management Global Policy Policy Discovery Policy Diagnosis  </description>
+    </item>
+    
+    <item>
+      <title>etcd Setup</title>
+      <link>https://engine.speedle.io/docs/store/etcd/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/store/etcd/</guid>
+      <description>This walkthrough uses an external etcd v3.6.14 server with a persistent Docker volume. PMS writes policies and ADS watches the same key prefix. The single-node example listens on loopback and uses plain HTTP for local development. Production TLS and cluster configuration follow the walkthrough.
+1. Build Speedle Prepare Bash, Git, curl, Docker and Go 1.26.0. Start Docker, then build the native services:
+git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o .</description>
+    </item>
+    
+    <item>
+      <title>Global roles</title>
+      <link>https://engine.speedle.io/docs/cloud/global-roles/</link>
+      <pubDate>Tue, 17 Nov 2026 00:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/cloud/global-roles/</guid>
       <description>Speedle Cloud is in public beta. This guide describes the workflow for the live service.
-Sign in with GitHub or Google Open the Cloud console in your browser and sign in with an available provider. For a new identity with an unused verified email address, confirm Create account. If the email is already in use, sign in with the linked provider shown by the console.
-Create a service and a policy Open the Service workspace, enter books, and choose Create service.</description>
+A role assignment usually belongs to one service. When several services in the same workspace share the same assignment, define it once in the workspace&amp;rsquo;s Global roles service and use the role in each service&amp;rsquo;s own authorization policies.
+Only role policies are supported there. A global role assignment does not grant any operation by itself: every service still defines the permissions it allows.</description>
+    </item>
+    
+    <item>
+      <title>Speedle Cloud authorization API</title>
+      <link>https://engine.speedle.io/docs/cloud/authorization-api/</link>
+      <pubDate>Sun, 08 Nov 2026 00:00:00 +0800</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/cloud/authorization-api/</guid>
+      <description>Speedle Cloud is in public beta. This guide describes the workflow for the live service.
+Use an account API key for server-side authorization calls. Sign in to the account to create keys. Use ads or pms:read+ads for ADS checks; pms:read and pms:write return 403 insufficient_scope. The combined pms:read+ads scope also permits PMS reads and is required for policy synchronization with Speedle Cloud ADS (speedle-cloud); it cannot write policies.
+Call IsAllowed from your server Send an account API key with the ads or pms:read+ads scope in one Authorization: Bearer header and make a POST request:</description>
+    </item>
+    
+    <item>
+      <title>Authorization Decisions</title>
+      <link>https://engine.speedle.io/docs/decisions/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/decisions/</guid>
+      <description>What is an authorization decision? Speedle evaluates a subject, action and resource within a service. The application must enforce the result. Treat an evaluation error or timeout separately from a normal Deny and fail closed. REST, gRPC and embedded Go APIs have different wire representations; use their respective contracts.
+Before running the examples Build ./bin/spctl, ./bin/speedle-pms and ./bin/speedle-ads using the quick start. Use Go 1.26.0 (or a newer patch on the same release branch), Bash, curl and Python 3.</description>
+    </item>
+    
+    <item>
+      <title>Go SDK</title>
+      <link>https://engine.speedle.io/docs/sdks/go/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://engine.speedle.io/docs/sdks/go/</guid>
+      <description>Add github.com/teramoby/speedle-sdk/go v1.9.1 with go get, then call IsAllowed and Check against a local Speedle.</description>
     </item>
     
     <item>
@@ -94,15 +252,6 @@ Create a service and a policy Open the Service workspace, enter books, and choos
       <guid>https://engine.speedle.io/docs/deployment/homebrew/</guid>
       <description>Install the Speedle command-line tool with Homebrew on macOS or Linux. Homebrew does not install or start formulas from a tap outside the official Homebrew organization until that tap is trusted.
 brew tap teramoby/tap brew trust teramoby/tap brew install teramoby/tap/spctl The formula is named spctl. On macOS the command is speedle-spctl, so the install does not replace Apple Gatekeeper at /usr/sbin/spctl. On Linux the same program is also available as spctl.</description>
-    </item>
-    
-    <item>
-      <title>Java SDK</title>
-      <link>https://engine.speedle.io/docs/sdks/java/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/docs/sdks/java/</guid>
-      <description>Add io.speedle:speedle-sdk 1.9.0 with Maven or Gradle, then call isAllowed and check against a local Speedle.</description>
     </item>
     
     <item>
@@ -160,8 +309,8 @@ Represent domains in policies and requests grant user user1 from github read boo
       
       <guid>https://engine.speedle.io/docs/cloud/limits-and-errors/</guid>
       <description>Speedle Cloud is in public beta. This guide describes the workflow for the live service.
-Limits apply to the whole account unless a row says otherwise. API keys are account credentials; changing keys does not increase the daily quota.
-Limits    What is limited Limit When reached / how to recover     Services per account 100 409 quota_exceeded; delete an unused service. No timed reset.</description>
+Limits apply to the whole workspace unless a row says otherwise. API keys are workspace credentials; changing keys in the same workspace does not increase the daily quota.
+Limits    What is limited Limit When reached / how to recover     Services per workspace 100 409 quota_exceeded; delete an unused service.</description>
     </item>
     
     <item>
@@ -196,15 +345,6 @@ REST APIs These are reference contracts for your configured PMS/ADS or asserter 
     </item>
     
     <item>
-      <title>Documentation</title>
-      <link>https://engine.speedle.io/docs/</link>
-      <pubDate>Sun, 08 Nov 2026 05:25:30 +0800</pubDate>
-      
-      <guid>https://engine.speedle.io/docs/</guid>
-      <description></description>
-    </item>
-    
-    <item>
       <title>Extending the decision service</title>
       <link>https://engine.speedle.io/docs/extending-decision-service/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
@@ -235,32 +375,12 @@ Logging configuration All existing --log-* and --auditlog-* flags, SPDL_* enviro
     </item>
     
     <item>
-      <title>MySQL Setup</title>
-      <link>https://engine.speedle.io/docs/store/mysql/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/docs/store/mysql/</guid>
-      <description>This guide uses MySQL 8.4 LTS and two native Speedle processes: PMS writes policies, and ADS reads the same database with a separate read-only account. The local example uses Docker and plain HTTP on loopback. For a remote deployment, use your existing MySQL server and the Security guide.
-1. Build Speedle with the MySQL backend Install Git, Bash, curl, Docker and a supported Go toolchain (Go 1.26.0). Docker must be running.</description>
-    </item>
-    
-    <item>
       <title>Node.js/TypeScript SDK</title>
       <link>https://engine.speedle.io/docs/sdks/node/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       
       <guid>https://engine.speedle.io/docs/sdks/node/</guid>
       <description>Install @speedle/sdk with npm, then call isAllowed and check against a local Speedle.</description>
-    </item>
-    
-    <item>
-      <title>Performance testing guide</title>
-      <link>https://engine.speedle.io/docs/performance-testing/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/docs/performance-testing/</guid>
-      <description>We publish no performance report here; results depend on your hardware, policies and pinned versions.
-First ask me which open-source authorization projects I want to compare with Speedle. Also ask for policy-set sizes and a time budget, offering defaults of 10, 100 and 1,000 policies and 30 minutes. Wait for my answer before doing anything else. Then work in a fresh local directory and run a fair comparison on the same machine within that budget.</description>
     </item>
     
     <item>
@@ -271,16 +391,6 @@ First ask me which open-source authorization projects I want to compare with Spe
       <guid>https://engine.speedle.io/docs/store/</guid>
       <description>Built-in stores and extension contracts The standalone binaries register file, etcd, MongoDB and MySQL implementations under pkg/store. Availability does not mean identical operational guarantees; review backend authentication, persistence, transaction and watch behavior for your deployment. The configuration below illustrates property names; running etcd/MongoDB deployments is outside this local example.
 A full backend implements pms.PolicyStoreManager: service, authorization-policy, role-policy and function management, snapshot reads and watch/stop. ADS accepts the narrower PolicyStoreManagerADS read/watch interface.</description>
-    </item>
-    
-    <item>
-      <title>Policy Discovery</title>
-      <link>https://engine.speedle.io/docs/pms/discover/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/docs/pms/discover/</guid>
-      <description>What discovery does Discovery records requests and returns allowed=true with reason 5 for a successful recording operation. It does not prove that an existing policy authorized the operation. Use it only in an isolated test environment, review generated grants, and restore normal is-allowed enforcement afterwards. Assertion or storage errors must still be handled; never treat an error as an authorization grant.
-Start a reproducible local example Build the binaries using Quick Start, then run all terminals from the checkout root.</description>
     </item>
     
     <item>
@@ -295,15 +405,6 @@ Security and endpoint configuration. This is a contract reference, not a backend
     </item>
     
     <item>
-      <title>Python SDK</title>
-      <link>https://engine.speedle.io/docs/sdks/python/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/docs/sdks/python/</guid>
-      <description>Install speedle 1.9.0 with pip or uv, then call is_allowed and check against a local Speedle.</description>
-    </item>
-    
-    <item>
       <title>SDKs</title>
       <link>https://engine.speedle.io/docs/sdks/</link>
       <pubDate>Tue, 10 Nov 2026 14:45:43 +0800</pubDate>
@@ -311,15 +412,6 @@ Security and endpoint configuration. This is a contract reference, not a backend
       <guid>https://engine.speedle.io/docs/sdks/</guid>
       <description>The Speedle SDKs are client libraries for the decision API POST /authz-check/v1/is-allowed. They work with a self-hosted Speedle ADS. Each language page shows how to add the package and gives a complete, tested program for a self-hosted ADS. The source and the full reference are in teramoby/speedle-sdk. To run PMS and ADS for these examples, see Deployment and the Docker image.
 Packages All six SDKs are published: the Go module is v1.</description>
-    </item>
-    
-    <item>
-      <title>SPDL - Speedle Policy Definition Language</title>
-      <link>https://engine.speedle.io/docs/spdl/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/docs/spdl/</guid>
-      <description>SPDL is the language for writing Speedle policies and role policies. This page covers the syntax, naming rules and examples. </description>
     </item>
     
     <item>
@@ -335,84 +427,12 @@ TLS encrypts the connection and authenticates the server. To require authenticat
     <item>
       <title>Speedle Cloud</title>
       <link>https://engine.speedle.io/docs/cloud/</link>
-      <pubDate>Tue, 17 Nov 2026 00:00:00 +0800</pubDate>
+      <pubDate>Sat, 21 Nov 2026 00:00:00 +0800</pubDate>
       
       <guid>https://engine.speedle.io/docs/cloud/</guid>
-      <description>Speedle Cloud is a hosted authorization service built on the open-source Speedle engine. Manage services, SPDL authorization and role policies, test decisions in the Playground and call the API from your server.
+      <description>Speedle Cloud is a hosted authorization service built on the open-source Speedle engine. Manage workspaces, services, SPDL authorization and role policies, test decisions in the Playground and call the API from your server.
 Policy synchronization from Speedle Cloud uses Speedle Cloud ADS: the speedle-cloud binary and image. The self-hosted Speedle Engine speedle-ads binary no longer provides a policy-source store.
 Speedle Cloud is in public beta. This guide describes the workflow for the live service.</description>
-    </item>
-    
-    <item>
-      <title>Speedle Cloud API keys</title>
-      <link>https://engine.speedle.io/docs/cloud/tokens/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/docs/cloud/tokens/</guid>
-      <description>API keys belong to your account and can access its services according to their scope. They authenticate your application, not its end users. Managing API keys, sessions and linked identities always requires a signed-in console session.
-Speedle Cloud is in public beta. This guide describes the workflow for the live service.
-Create an API key Open API keys, enter a name of 1–128 characters after trimming whitespace, select a scope and an expiry (7d, 30d, 90d, 180d or 365d; the console defaults to 3 months), and choose Create.</description>
-    </item>
-    
-    <item>
-      <title>Speedle Policy</title>
-      <link>https://engine.speedle.io/docs/pms/</link>
-      <pubDate>Wed, 28 Oct 2026 13:16:58 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/docs/pms/</guid>
-      <description> Policy Management Global Policy Policy Discovery Policy Diagnosis  </description>
-    </item>
-    
-    <item>
-      <title>etcd Setup</title>
-      <link>https://engine.speedle.io/docs/store/etcd/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/docs/store/etcd/</guid>
-      <description>This walkthrough uses an external etcd v3.6.14 server with a persistent Docker volume. PMS writes policies and ADS watches the same key prefix. The single-node example listens on loopback and uses plain HTTP for local development. Production TLS and cluster configuration follow the walkthrough.
-1. Build Speedle Prepare Bash, Git, curl, Docker and Go 1.26.0. Start Docker, then build the native services:
-git clone --depth 1 https://github.com/teramoby/speedle-plus.git cd speedle-plus mkdir -p bin go build -o .</description>
-    </item>
-    
-    <item>
-      <title>Global roles</title>
-      <link>https://engine.speedle.io/docs/cloud/global-roles/</link>
-      <pubDate>Tue, 17 Nov 2026 00:00:00 +0800</pubDate>
-      
-      <guid>https://engine.speedle.io/docs/cloud/global-roles/</guid>
-      <description>Speedle Cloud is in public beta. This guide describes the workflow for the live service.
-A role assignment usually belongs to one service. When several services share the same assignment, define it once in the account&amp;rsquo;s Global roles service and use the role in each service&amp;rsquo;s own authorization policies.
-Only role policies are supported there. A global role assignment does not grant any operation by itself: every service still defines the permissions it allows.</description>
-    </item>
-    
-    <item>
-      <title>Speedle Cloud authorization API</title>
-      <link>https://engine.speedle.io/docs/cloud/authorization-api/</link>
-      <pubDate>Sun, 08 Nov 2026 00:00:00 +0800</pubDate>
-      
-      <guid>https://engine.speedle.io/docs/cloud/authorization-api/</guid>
-      <description>Speedle Cloud is in public beta. This guide describes the workflow for the live service.
-Use an account API key for server-side authorization calls. Sign in to the account to create keys. Use ads or pms:read+ads for ADS checks; pms:read and pms:write return 403 insufficient_scope. The combined pms:read+ads scope also permits PMS reads and is required for policy synchronization with Speedle Cloud ADS (speedle-cloud); it cannot write policies.
-Call IsAllowed from your server Send an account API key with the ads or pms:read+ads scope in one Authorization: Bearer header and make a POST request:</description>
-    </item>
-    
-    <item>
-      <title>Authorization Decisions</title>
-      <link>https://engine.speedle.io/docs/decisions/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/docs/decisions/</guid>
-      <description>What is an authorization decision? Speedle evaluates a subject, action and resource within a service. The application must enforce the result. Treat an evaluation error or timeout separately from a normal Deny and fail closed. REST, gRPC and embedded Go APIs have different wire representations; use their respective contracts.
-Before running the examples Build ./bin/spctl, ./bin/speedle-pms and ./bin/speedle-ads using the quick start. Use Go 1.26.0 (or a newer patch on the same release branch), Bash, curl and Python 3.</description>
-    </item>
-    
-    <item>
-      <title>Go SDK</title>
-      <link>https://engine.speedle.io/docs/sdks/go/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/docs/sdks/go/</guid>
-      <description>Add github.com/teramoby/speedle-sdk/go v1.9.1 with go get, then call IsAllowed and Check against a local Speedle.</description>
     </item>
     
     <item>
@@ -433,17 +453,6 @@ Before running the examples Build ./bin/spctl, ./bin/speedle-pms and ./bin/speed
       <guid>https://engine.speedle.io/docs/custom-function/</guid>
       <description>Why use a custom function? SPDL conditions can call a configured function when built-in operators or functions do not express the required rule. Speedle calls its REST endpoint with POST {&amp;quot;params&amp;quot;:[...]} and expects {&amp;quot;result&amp;quot;:...} or {&amp;quot;error&amp;quot;:&amp;quot;...&amp;quot;}. Parameter order/types and the result type must match the condition. Function failures are evaluation errors; applications must fail closed.
 Start the local example This example accepts numeric values from 100 to 50000. Wrong parameter types or an empty parameter list return an HTTP error.</description>
-    </item>
-    
-    <item>
-      <title>Authorization Runtime/Decision API</title>
-      <link>https://engine.speedle.io/docs/api/decision_api/</link>
-      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
-      
-      <guid>https://engine.speedle.io/docs/api/decision_api/</guid>
-      <description>Reference for your configured ADS. Request attributes are typed arrays; diagnostic attributes are objects.
-Security and endpoint configuration. This is a contract reference, not a backend hosted by speedle.io. Try it out is disabled because this specification has no server host, so a request would otherwise be sent to this documentation site.
-   document.addEventListener(&#39;DOMContentLoaded&#39;, function() { var ui = SwaggerUIBundle({ url: &#34;/swagger/policy-check.yaml&#34;, dom_id: &#39;#swagger-ui&#39;, deepLinking: true, presets: [ SwaggerUIBundle.</description>
     </item>
     
     <item>

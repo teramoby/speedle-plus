@@ -11,7 +11,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1"><title>Speedle Cloud · Speedle Engine</title>
-<meta name="description" content="Autorización alojada, claves API de cuenta, límites y guías de integración.">
+<meta name="description" content="Autorización alojada, espacios de trabajo, manual de consola, claves API, límites y guías de integración.">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/es/docs/cloud/">
@@ -25,7 +25,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Speedle Cloud · Speedle Engine">
-<meta property="og:description" content="Autorización alojada, claves API de cuenta, límites y guías de integración.">
+<meta property="og:description" content="Autorización alojada, espacios de trabajo, manual de consola, claves API, límites y guías de integración.">
 <meta property="og:url" content="https://engine.speedle.io/es/docs/cloud/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta property="og:image:width" content="1200">
@@ -34,11 +34,11 @@
 <meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Speedle Cloud · Speedle Engine">
-<meta name="twitter:description" content="Autorización alojada, claves API de cuenta, límites y guías de integración.">
+<meta name="twitter:description" content="Autorización alojada, espacios de trabajo, manual de consola, claves API, límites y guías de integración.">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/cloud/#webpage","@type":"WebPage","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-12T21:00:00+08:00","description":"Autorización alojada, claves API de cuenta, límites y guías de integración.","headline":"Speedle Cloud","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"es","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/es/docs/cloud/","@type":"WebPage"},"name":"Speedle Cloud","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/es/docs/cloud/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/cloud/#webpage","@type":"WebPage","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-21T00:00:00+08:00","description":"Autorización alojada, espacios de trabajo, manual de consola, claves API, límites y guías de integración.","headline":"Speedle Cloud","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"es","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/es/docs/cloud/","@type":"WebPage"},"name":"Speedle Cloud","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/es/docs/cloud/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/cloud/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/es/","name":"Inicio","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/","name":"Documentación","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/cloud/","name":"Speedle Cloud","position":3}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -154,6 +154,7 @@
 <li data-docs-depth="0" class="docs-nav-section parent active"><span class="docs-nav-heading docs-nav-heading-link"><a href="/es/docs/cloud/" aria-current="page">Speedle Cloud</a></span>
 <ul class="sub-menu">
 <li data-docs-depth="1" class=""><a href="/es/docs/cloud/getting-started/">Primeros pasos</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/cloud/console/">Manual de consola</a></li>
 <li data-docs-depth="1" class=""><a href="/es/docs/cloud/tokens/">Claves API</a></li>
 <li data-docs-depth="1" class=""><a href="/es/docs/cloud/global-roles/">Roles globales</a></li>
 <li data-docs-depth="1" class=""><a href="/es/docs/cloud/authorization-api/">API de autorización</a></li>
@@ -183,7 +184,7 @@
   <h1>Speedle Cloud</h1>
   <p></p>
 
-<p>Speedle Cloud es un servicio de autorización alojado basado en el motor Speedle de código abierto. Gestione servicios y políticas SPDL de autorización y roles, pruebe decisiones en Playground y llame a la API desde su servidor.</p>
+<p>Speedle Cloud es un servicio de autorización alojado basado en el motor Speedle de código abierto. Gestione espacios de trabajo, servicios y políticas SPDL de autorización y roles, pruebe decisiones en Playground y llame a la API desde su servidor.</p>
 
 <p>La sincronización de políticas desde Speedle Cloud usa Speedle Cloud ADS: el binario y la imagen <code>speedle-cloud</code>. El binario <code>speedle-ads</code> de Speedle Engine autoalojado ya no proporciona un almacén <code>policy-source</code>.</p>
 
@@ -195,11 +196,12 @@
 
 <ul>
 <li><a href="/es/docs/cloud/getting-started/">Primeros pasos</a>: inicie sesión, cree un servicio y una política en la consola, cree una clave API y compruebe la autorización desde su aplicación.</li>
-<li><a href="/es/docs/cloud/tokens/">Claves API</a>: Credenciales de cuenta, ámbitos fijos, caducidad obligatoria, Crear y Revocar, secreto mostrado una vez y paginación.</li>
-<li><a href="/es/docs/cloud/global-roles/">Roles globales</a>: Asigne un rol una vez para todos los servicios de la cuenta y conceda sus permisos en cada servicio.</li>
+<li><a href="/es/docs/cloud/console/">Manual de consola</a>: Guía práctica de Speedle Cloud Console (SCC): espacios de trabajo, miembros, servicios, políticas, Playground, claves de API, funciones personalizadas, flota de ADS, registros de auditoría y configuración de la cuenta.</li>
+<li><a href="/es/docs/cloud/tokens/">Claves API</a>: Credenciales de espacio de trabajo, ámbitos fijos, caducidad obligatoria, Crear y Revocar, secreto mostrado una vez y paginación.</li>
+<li><a href="/es/docs/cloud/global-roles/">Roles globales</a>: Asigne un rol una vez para todos los servicios del espacio de trabajo y conceda sus permisos en cada servicio.</li>
 <li><a href="/es/docs/cloud/authorization-api/">API de autorización</a>: Solicitudes IsAllowed, identidad del emisor, Node.js 22 y restricciones de transporte.</li>
 <li><a href="/es/docs/cloud/api-reference/">Referencia de la API</a>: comprobaciones de autorización y gestión de políticas con una API key. Las solicitudes salen de su servidor; esta página es de solo lectura.</li>
-<li><a href="/es/docs/cloud/limits-and-errors/">Límites y errores</a>: Límites de cuenta, tamaños, ráfagas, cuota diaria, errores y restablecimiento.</li>
+<li><a href="/es/docs/cloud/limits-and-errors/">Límites y errores</a>: Límites del espacio de trabajo, tamaños, ráfagas, cuota diaria, errores y restablecimiento.</li>
 </ul>
 
 <h2 id="descargas">Descargas</h2>

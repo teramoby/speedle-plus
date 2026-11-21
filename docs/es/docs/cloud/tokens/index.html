@@ -11,7 +11,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1"><title>Speedle Cloud Claves API · Speedle Engine</title>
-<meta name="description" content="Crear, proteger, listar y revocar claves API de cuenta con un ámbito fijo y una caducidad obligatoria.">
+<meta name="description" content="Crear, proteger, listar y revocar claves API de espacio de trabajo con un ámbito fijo y una caducidad obligatoria.">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/es/docs/cloud/tokens/">
@@ -23,10 +23,10 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/cloud/tokens/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/cloud/tokens/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-11-12T00:00:00&#43;08:00">
+<meta property="article:modified_time" content="2026-11-21T00:00:00&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Speedle Cloud Claves API · Speedle Engine">
-<meta property="og:description" content="Crear, proteger, listar y revocar claves API de cuenta con un ámbito fijo y una caducidad obligatoria.">
+<meta property="og:description" content="Crear, proteger, listar y revocar claves API de espacio de trabajo con un ámbito fijo y una caducidad obligatoria.">
 <meta property="og:url" content="https://engine.speedle.io/es/docs/cloud/tokens/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta property="og:image:width" content="1200">
@@ -35,11 +35,11 @@
 <meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Speedle Cloud Claves API · Speedle Engine">
-<meta name="twitter:description" content="Crear, proteger, listar y revocar claves API de cuenta con un ámbito fijo y una caducidad obligatoria.">
+<meta name="twitter:description" content="Crear, proteger, listar y revocar claves API de espacio de trabajo con un ámbito fijo y una caducidad obligatoria.">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/cloud/tokens/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-12T00:00:00+08:00","description":"Crear, proteger, listar y revocar claves API de cuenta con un ámbito fijo y una caducidad obligatoria.","headline":"Speedle Cloud Claves API","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"es","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/es/docs/cloud/tokens/","@type":"WebPage"},"name":"Speedle Cloud Claves API","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/es/docs/cloud/tokens/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/cloud/tokens/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-21T00:00:00+08:00","description":"Crear, proteger, listar y revocar claves API de espacio de trabajo con un ámbito fijo y una caducidad obligatoria.","headline":"Speedle Cloud Claves API","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"es","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/es/docs/cloud/tokens/","@type":"WebPage"},"name":"Speedle Cloud Claves API","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/es/docs/cloud/tokens/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/es/docs/cloud/tokens/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/es/","name":"Inicio","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/","name":"Documentación","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/cloud/","name":"Speedle Cloud","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/es/docs/cloud/tokens/","name":"Speedle Cloud Claves API","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -155,6 +155,7 @@
 <li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/es/docs/cloud/">Speedle Cloud</a></span>
 <ul class="sub-menu">
 <li data-docs-depth="1" class=""><a href="/es/docs/cloud/getting-started/">Primeros pasos</a></li>
+<li data-docs-depth="1" class=""><a href="/es/docs/cloud/console/">Manual de consola</a></li>
 <li data-docs-depth="1" class="active"><a href="/es/docs/cloud/tokens/" aria-current="page">Claves API</a></li>
 <li data-docs-depth="1" class=""><a href="/es/docs/cloud/global-roles/">Roles globales</a></li>
 <li data-docs-depth="1" class=""><a href="/es/docs/cloud/authorization-api/">API de autorización</a></li>
@@ -197,7 +198,7 @@
 
   <div id="kube-component" class="content">
 
-<p>Las claves API pertenecen a la cuenta y acceden a sus servicios según su ámbito. Autentican la aplicación, no al usuario final. Administrar claves API, sesiones e identidades vinculadas requiere una sesión de consola iniciada.</p>
+<p>Las claves API pertenecen a un espacio de trabajo y acceden a sus servicios según su ámbito. Autentican la aplicación, no al usuario final. Administrar claves API, sesiones e identidades vinculadas requiere una sesión de consola iniciada. Quitar a un miembro o salir de un espacio de trabajo no revoca las claves API que creó; revíselas y revóquelas explícitamente cuando sea necesario.</p>
 
 <p><strong>Speedle Cloud está en beta pública.</strong> Esta guía describe el flujo de trabajo del servicio en línea.</p>
 
@@ -223,12 +224,12 @@
 
 <tr>
 <td><code>pms:read</code></td>
-<td>Leer servicios, políticas de autorización y de roles de la cuenta mediante <code>/policy-mgmt/v1</code>.</td>
+<td>Leer servicios, políticas de autorización y de roles del espacio de trabajo mediante <code>/policy-mgmt/v1</code>.</td>
 </tr>
 
 <tr>
 <td><code>pms:write</code></td>
-<td>Leer, crear y eliminar servicios, políticas de autorización y de roles de la cuenta mediante <code>/policy-mgmt/v1</code>.</td>
+<td>Leer, crear y eliminar servicios, políticas de autorización y de roles del espacio de trabajo mediante <code>/policy-mgmt/v1</code>.</td>
 </tr>
 
 <tr>
@@ -241,7 +242,7 @@
 <p><code>pms:read</code> y <code>pms:write</code> no pueden llamar a ADS; <code>ads</code> no puede gestionar políticas. La sincronización de políticas con Speedle Cloud ADS (<code>speedle-cloud</code>) requiere <code>pms:read+ads</code> (ADS sync). También permite comprobaciones ADS y lecturas PMS, pero no escrituras. Un ámbito incorrecto devuelve <code>403 insufficient_scope</code>.</p>
 
 <p>La consola envía una solicitud autenticada por sesión:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-http" data-lang="http">POST /api/tokens
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-http" data-lang="http">POST /api/workspaces/&lt;workspaceId&gt;/tokens
 Origin: https://cloud.speedle.io
 X-SC-CSRF: 1
 Content-Type: application/json
@@ -257,24 +258,24 @@ Content-Type: application/json
 
 <p>Es una descripción del formato, no una clave utilizable. Guárdela inmediatamente en un almacén de secretos del servidor. No la incluya en el almacenamiento del navegador, frontend, URL, control de versiones, capturas ni registros. El listado solo devuelve metadatos; un secreto perdido no se recupera.</p>
 
-<p>La cuenta admite <strong>10 claves API activas entre todos los ámbitos</strong>. Crear otra devuelve <code>409 {&quot;error&quot;:&quot;quota_exceeded&quot;,&quot;limit&quot;:10}</code>. Revoque una clave sin uso, o deje que caduque, para liberar una plaza. El límite no se restablece en un ciclo. Las claves revocadas y caducadas siguen listadas y no cuentan para el límite.</p>
+<p>Cada espacio de trabajo admite <strong>10 claves API activas entre todos los ámbitos</strong>. Crear otra devuelve <code>409 {&quot;error&quot;:&quot;quota_exceeded&quot;,&quot;limit&quot;:10}</code>. Revoque una clave sin uso, o deje que caduque, para liberar una plaza. El límite no se restablece en un ciclo. Las claves revocadas y caducadas siguen listadas y no cuentan para el límite.</p>
 
 <h2 id="listar-claves-api">Listar claves API</h2>
 
-<p><code>GET /api/tokens</code> devuelve claves activas, caducadas y revocadas, de más reciente a más antigua. La página predeterminada tiene 25 entradas; <code>limit</code> acepta 1–100. Envíe el <code>nextCursor</code> anterior como <code>cursor</code> hasta recibir <code>null</code>. Cada clave incluye <code>expiresAt</code> en milisegundos Unix. La consola muestra <strong>Caducidad (UTC)</strong>. Una clave que caduca en un plazo de 7 días se marca <strong>Caduca pronto</strong>. Las claves caducadas aparecen en el grupo <strong>Caducada</strong>. <code>lastUsedAt</code> se actualiza por mejor esfuerzo, normalmente como máximo una vez por hora; no demuestra que una clave esté sin uso.</p>
+<p><code>GET /api/workspaces/&lt;workspaceId&gt;/tokens</code> devuelve claves activas, caducadas y revocadas, de más reciente a más antigua. La página predeterminada tiene 25 entradas; <code>limit</code> acepta 1–100. Envíe el <code>nextCursor</code> anterior como <code>cursor</code> hasta recibir <code>null</code>. Cada clave incluye <code>expiresAt</code> en milisegundos Unix. La consola muestra <strong>Caducidad (UTC)</strong>. Una clave que caduca en un plazo de 7 días se marca <strong>Caduca pronto</strong>. Las claves caducadas aparecen en el grupo <strong>Caducada</strong>. <code>lastUsedAt</code> se actualiza por mejor esfuerzo, normalmente como máximo una vez por hora; no demuestra que una clave esté sin uso.</p>
 
 <h2 id="revocar-una-clave-api">Revocar una clave API</h2>
 
 <p>Seleccione <strong>Revocar</strong>, compruebe nombre e ID y confirme. La revocación no requiere reautenticación reciente. La consola envía:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-http" data-lang="http">DELETE /api/tokens/&lt;API key id&gt;
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-http" data-lang="http">DELETE /api/workspaces/&lt;workspaceId&gt;/tokens/&lt;API key id&gt;
 Origin: https://cloud.speedle.io
 X-SC-CSRF: 1
 Content-Type: application/json
 
 {}</code></pre></div>
-<p>La primera revocación devuelve HTTP 204 sin cuerpo. Los ID desconocidos, ajenos o ya revocados devuelven <code>404 not_found</code>. Una verificación previa puede seguir siendo válida durante un máximo de 60 segundos; la revocación no es instantánea en todas las ubicaciones.</p>
+<p>La primera revocación devuelve HTTP 204 sin cuerpo. Los ID desconocidos, de otro espacio de trabajo o ya revocados devuelven <code>404 not_found</code>. Una verificación previa puede seguir siendo válida durante un máximo de 60 segundos; la revocación no es instantánea en todas las ubicaciones.</p>
 
-<p>Las acciones disponibles son <strong>Crear</strong> y <strong>Revocar</strong>. Para cambiar el secreto, el ámbito o la caducidad, cree otra clave, actualice los emisores y revoque la anterior. Si todas las claves están en uso al llegar al límite, planifique una interrupción antes de revocar una. Eliminar un servicio no revoca las claves API de la cuenta.</p>
+<p>Las acciones disponibles son <strong>Crear</strong> y <strong>Revocar</strong>. Para cambiar el secreto, el ámbito o la caducidad, cree otra clave, actualice los emisores y revoque la anterior. Si todas las claves están en uso al llegar al límite, planifique una interrupción antes de revocar una. Eliminar un servicio no revoca las claves API del espacio de trabajo.</p>
 
 <p>Si se pierde una respuesta, actualice la lista antes de actuar. Un nombre coincidente no recupera el secreto perdido. Consulte <a href="/es/docs/cloud/limits-and-errors/">Límites y errores</a> y la <a href="/es/docs/cloud/authorization-api/">API de autorización</a>.</p>
 </div>

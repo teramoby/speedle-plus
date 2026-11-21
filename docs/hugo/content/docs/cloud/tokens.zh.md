@@ -1,16 +1,16 @@
 +++
 title = "Speedle Cloud API 密钥"
 linkTitle = "API 密钥"
-description = "创建、保护、列出和撤销账号级 API 密钥，选择固定权限范围和有效期。"
+description = "创建、保护、列出和撤销工作区级 API 密钥，选择固定权限范围和有效期。"
 weight = 20
 draft = false
 toc = true
 tocheading = "h2"
 categories = ["docs"]
-lastmod = 2026-11-12T00:00:00+08:00
+lastmod = 2026-11-21T00:00:00+08:00
 +++
 
-API 密钥属于账号，按权限范围访问该账号下的服务。它认证的是应用，不是最终用户。管理 API 密钥、会话和关联身份始终需要已登录的控制台会话。
+API 密钥属于工作区，按权限范围访问该工作区下的服务。它认证的是应用，不是最终用户。管理 API 密钥、会话和关联身份始终需要已登录的控制台会话。移除工作区成员或成员退出工作区不会撤销其创建的 API 密钥，请按需核对并手动撤销。
 
 **Speedle Cloud 已开放公开测试版。** 本文介绍线上服务的使用流程。
 
@@ -23,8 +23,8 @@ API 密钥属于账号，按权限范围访问该账号下的服务。它认证�
 | 权限范围 | 可访问的功能 |
 | --- | --- |
 | `ads`（默认） | 仅通过 `/authz-check/v1/*` 检查授权。 |
-| `pms:read` | 通过 `/policy-mgmt/v1` 读取账号下的服务、授权策略和角色策略。 |
-| `pms:write` | 通过 `/policy-mgmt/v1` 读取、创建和删除账号下的服务、授权策略和角色策略。 |
+| `pms:read` | 通过 `/policy-mgmt/v1` 读取工作区下的服务、授权策略和角色策略。 |
+| `pms:write` | 通过 `/policy-mgmt/v1` 读取、创建和删除工作区下的服务、授权策略和角色策略。 |
 | `pms:read+ads`（ADS 同步） | 授权检查、只读策略管理，以及 Speedle Cloud ADS 的策略同步；不能写入。 |
 
 `pms:read` 和 `pms:write` 不能调用 ADS；`ads` 不能管理策略。Speedle Cloud ADS（`speedle-cloud`）同步策略需要 `pms:read+ads`（ADS 同步）权限范围；它也可调用 ADS 和读取 PMS，但不能写入。权限范围不符时返回 `403 insufficient_scope`。
@@ -32,7 +32,7 @@ API 密钥属于账号，按权限范围访问该账号下的服务。它认证�
 控制台使用已登录会话发送请求：
 
 ```http
-POST /api/tokens
+POST /api/workspaces/<workspaceId>/tokens
 Origin: https://cloud.speedle.io
 X-SC-CSRF: 1
 Content-Type: application/json
@@ -54,18 +54,18 @@ spdl_<canonical uppercase ULID id>_<43 base62 digits>
 
 这只是格式说明，不能作为实际密钥使用。请立即保存到服务端的密钥存储中。不要放入浏览器存储、前端代码、URL、源码、截图或日志。列表只返回元数据，丢失的密钥值无法找回。
 
-每个账号所有权限范围合计最多 **10 个有效 API 密钥**。继续创建会返回 `409 {"error":"quota_exceeded","limit":10}`。撤销不再使用的密钥，或等它到期，可释放名额。名额不会按固定周期重置。已撤销和已到期的密钥仍保留在列表中，不占有效名额。
+每个工作区所有权限范围合计最多 **10 个有效 API 密钥**。继续创建会返回 `409 {"error":"quota_exceeded","limit":10}`。撤销不再使用的密钥，或等它到期，可释放名额。名额不会按固定周期重置。已撤销和已到期的密钥仍保留在列表中，不占有效名额。
 
 ## 列出 API 密钥
 
-`GET /api/tokens` 按最新在前列出有效、已到期和已撤销的密钥。默认每页 25 条，`limit` 可设为 1–100。将上次响应的 `nextCursor` 作为 `cursor` 继续请求，直到 `nextCursor` 为 `null`。每条记录都包含 Unix 毫秒 `expiresAt`。控制台显示 **到期时间（UTC）**。7 天内到期的密钥标为 **即将到期**。已到期的密钥列在 **已到期** 分组中。`lastUsedAt` 尽力更新，通常每小时最多一次，不能据此断定密钥已无人使用。
+`GET /api/workspaces/<workspaceId>/tokens` 按最新在前列出有效、已到期和已撤销的密钥。默认每页 25 条，`limit` 可设为 1–100。将上次响应的 `nextCursor` 作为 `cursor` 继续请求，直到 `nextCursor` 为 `null`。每条记录都包含 Unix 毫秒 `expiresAt`。控制台显示 **到期时间（UTC）**。7 天内到期的密钥标为 **即将到期**。已到期的密钥列在 **已到期** 分组中。`lastUsedAt` 尽力更新，通常每小时最多一次，不能据此断定密钥已无人使用。
 
 ## 撤销 API 密钥
 
 选择 **撤销**，核对密钥名称和 ID 后确认。撤销无需最近重新认证。控制台发送：
 
 ```http
-DELETE /api/tokens/<API key id>
+DELETE /api/workspaces/<workspaceId>/tokens/<API key id>
 Origin: https://cloud.speedle.io
 X-SC-CSRF: 1
 Content-Type: application/json
@@ -73,8 +73,8 @@ Content-Type: application/json
 {}
 ```
 
-首次撤销返回空的 HTTP 204。ID 未知、不属于当前账号或已撤销时返回 `404 not_found`。先前已通过验证的请求仍可能在最长 60 秒内使用该密钥，因此撤销不会在所有位置立即生效。
+首次撤销返回空的 HTTP 204。ID 未知、不属于当前工作区或已撤销时返回 `404 not_found`。先前已通过验证的请求仍可能在最长 60 秒内使用该密钥，因此撤销不会在所有位置立即生效。
 
-可用操作是 **创建** 和 **撤销**。如需更换密钥值、权限范围或有效期，请创建另一个密钥，更新调用方后撤销旧密钥。达到上限且所有密钥仍在使用时，撤销前需安排调用中断。删除服务不会撤销账号的 API 密钥。
+可用操作是 **创建** 和 **撤销**。如需更换密钥值、权限范围或有效期，请创建另一个密钥，更新调用方后撤销旧密钥。达到上限且所有密钥仍在使用时，撤销前需安排调用中断。删除服务不会撤销工作区的 API 密钥。
 
 创建或撤销的响应丢失时，先刷新列表再操作。同名记录不能找回丢失的密钥值。参见[限额与错误](/zh/docs/cloud/limits-and-errors/)和[授权 API](/zh/docs/cloud/authorization-api/)。

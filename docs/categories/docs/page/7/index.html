@@ -80,13 +80,13 @@
     
     <li>
   <h2 class="title2">
-    <a href="/docs/pms/discover/" itemprop="headline">Policy Discovery</a>
+    <a href="/docs/store/mongodb/" itemprop="headline">MongoDB Setup</a>
   </h2>
   
-  <p itemprop="about">Discover policies on the fly!</p>
+  <p itemprop="about">Set up MongoDB policy storage for PMS and ADS, step by step.</p>
   
   
-  <p itemprop="about">Speedle can be used for authorization decisions in systems with a large number of protected resources. Before those protected resources can be accessed, the Speedle authorization decision API (is-allowed API) is called. Defining the authorization policies for those protected resources is difficult if you don&#39;t know what actions are occuring on the protected resources, or how a protected resource is expressed in an authorization decision request. Policy discovery mode can make this task much easier</p>
+  <p itemprop="about">Run a MongoDB replica set, connect PMS and ADS, verify live policy updates, and save a backup.</p>
   
   <hr />
 </li>
@@ -94,13 +94,13 @@
     
     <li>
   <h2 class="title2">
-    <a href="/docs/performance-testing/" itemprop="headline">Performance testing guide</a>
+    <a href="/docs/cloud/api-reference/" itemprop="headline">API reference</a>
   </h2>
   
-  <p itemprop="about">Run a fair, reproducible authorization-engine comparison on your own machine with the help of an AI coding tool.</p>
+  <p itemprop="about">Reference for the Speedle Cloud API: authorization checks and policy management with an API key. Requests run from your server; this page is read-only.</p>
   
   
-  <p itemprop="about">Paste this prompt into your AI coding agent to compare Speedle with authorization projects you choose on your own machine.</p>
+  <p itemprop="about">Reference for the Speedle Cloud API: authorization checks and policy management with an API key. Requests run from your server; this page is read-only.</p>
   
   <hr />
 </li>
@@ -108,13 +108,11 @@
     
     <li>
   <h2 class="title2">
-    <a href="/docs/store/" itemprop="headline">Pluggable Storage</a>
+    <a href="/docs/idd/" itemprop="headline">Identity Domain</a>
   </h2>
   
-  <p itemprop="about">Bring your own persistence store!</p>
+  <p itemprop="about">Speedle supports user identities from multiple identity domains</p>
   
-  
-  <p itemprop="about">Speedle includes file, etcd, MongoDB and MySQL policy stores. This document describes their configuration and how to implement or register a different store.</p>
   
   <hr />
 </li>
@@ -122,11 +120,13 @@
     
     <li>
   <h2 class="title2">
-    <a href="/docs/api/management_api/" itemprop="headline">Policy Management API</a>
+    <a href="/docs/sdks/dotnet/" itemprop="headline">C#/.NET SDK</a>
   </h2>
   
-  <p itemprop="about">Swagger documentation for the management endpoint. CRUD on services, functions, policies and role-policies. Handle your simple and complex usecases using a simple declarative way!</p>
+  <p itemprop="about">Add the Speedle .NET SDK and check authorization against a local Speedle.</p>
   
+  
+  <p itemprop="about">Add Speedle.Sdk 1.9.0 with dotnet add package, then call IsAllowedAsync and CheckAsync against a local Speedle.</p>
   
   <hr />
 </li>

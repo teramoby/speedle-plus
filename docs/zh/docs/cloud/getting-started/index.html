@@ -155,6 +155,7 @@
 <li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/zh/docs/cloud/">Speedle Cloud</a></span>
 <ul class="sub-menu">
 <li data-docs-depth="1" class="active"><a href="/zh/docs/cloud/getting-started/" aria-current="page">快速入门</a></li>
+<li data-docs-depth="1" class=""><a href="/zh/docs/cloud/console/">控制台手册</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/cloud/tokens/">API 密钥</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/cloud/global-roles/">全局角色</a></li>
 <li data-docs-depth="1" class=""><a href="/zh/docs/cloud/authorization-api/">授权 API</a></li>
@@ -207,11 +208,11 @@
 
 <p>打开<a href="https://cloud.speedle.io/zh-CN/service">服务工作区</a>，输入 <code>books</code>，选择 <strong>创建服务</strong>。请用新服务运行示例，避免已有策略影响结果，不要覆盖已有数据。</p>
 
-<p>选择 <strong>新建策略</strong>，命名为 <code>read-books</code>，输入以下 SPDL：</p>
+<p>选择 <strong>创建策略</strong>，命名为 <code>read-books</code>（或留空自动生成名称），输入以下 SPDL：</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant user alice from corp get /books</code></pre></div>
 <p>这条策略允许 <code>corp</code> 身份域中的 <code>alice</code> 对 <code>/books</code> 执行 <code>get</code>。不带 <code>from</code> 的授权会匹配所有身份域中同名的用户。应用应根据可信的认证结果确定身份域，并在每个请求的 <code>idd</code> 字段中发送相同的值。详见<a href="/zh/docs/idd/">身份域</a>。</p>
 
-<p>选择 <strong>验证策略</strong>，然后 <strong>保存策略</strong>。验证只检查语法，不会保存草稿。保存后，策略约需 60 秒才会在授权 API 中生效。</p>
+<p>等待实时语法校验通过后，选择 <strong>保存策略</strong>。校验不会保存草稿。保存后，策略约需 60 秒才会在授权 API 中生效。</p>
 
 <h2 id="创建-api-密钥">创建 API 密钥</h2>
 

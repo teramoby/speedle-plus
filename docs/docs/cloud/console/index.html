@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <script>document.documentElement.classList.add('docs-js','navigation-js');addEventListener('DOMContentLoaded',function(){if(!document.querySelector('header.site-header.navigation-ready'))document.documentElement.classList.remove('navigation-js')});</script>
+    <meta name="generator" content="Hugo 0.48" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1"><title>Speedle Cloud Console user manual · Speedle Engine</title>
+<meta name="description" content="Task-oriented guide to the Speedle Cloud Console (SCC): workspaces, members, services, SPDL policies, Playground, API keys, functions, ADS fleet, audit logs and account settings.">
+<meta name="generator" content="Hugo 0.48" />
+<link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://engine.speedle.io/docs/cloud/console/">
+
+<link rel="alternate" hreflang="en" href="https://engine.speedle.io/docs/cloud/console/">
+<link rel="alternate" hreflang="es" href="https://engine.speedle.io/es/docs/cloud/console/">
+<link rel="alternate" hreflang="ja" href="https://engine.speedle.io/ja/docs/cloud/console/">
+<link rel="alternate" hreflang="ko" href="https://engine.speedle.io/ko/docs/cloud/console/">
+<link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/cloud/console/">
+<link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/cloud/console/">
+<meta property="og:type" content="article">
+<meta property="article:published_time" content="2026-11-21T00:00:00&#43;08:00">
+<meta property="article:modified_time" content="2026-11-21T00:00:00&#43;08:00">
+<meta property="og:site_name" content="Speedle Engine">
+<meta property="og:title" content="Speedle Cloud Console user manual · Speedle Engine">
+<meta property="og:description" content="Task-oriented guide to the Speedle Cloud Console (SCC): workspaces, members, services, SPDL policies, Playground, API keys, functions, ADS fleet, audit logs and account settings.">
+<meta property="og:url" content="https://engine.speedle.io/docs/cloud/console/">
+<meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Speedle Cloud Console user manual · Speedle Engine">
+<meta name="twitter:description" content="Task-oriented guide to the Speedle Cloud Console (SCC): workspaces, members, services, SPDL policies, Playground, API keys, functions, ADS fleet, audit logs and account settings.">
+<meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
+<meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
+
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/cloud/console/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-21T00:00:00+08:00","datePublished":"2026-11-21T00:00:00+08:00","description":"Task-oriented guide to the Speedle Cloud Console (SCC): workspaces, members, services, SPDL policies, Playground, API keys, functions, ADS fleet, audit logs and account settings.","headline":"Speedle Cloud Console user manual","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"en","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/docs/cloud/console/","@type":"WebPage"},"name":"Speedle Cloud Console user manual","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/docs/cloud/console/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/docs/cloud/console/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/","name":"Home","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/docs/","name":"Documentation","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/docs/cloud/","name":"Speedle Cloud","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/docs/cloud/console/","name":"Speedle Cloud Console user manual","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
+
+
+    <link href="/css/navigation.css?v=header-20261106-v8" rel="stylesheet">
+    <script src="/js/navigation.js?v=header-20261106-v8" defer></script>
+    <script src="/js/docs.js" defer></script>
+
+</head>
+
+<body class="page-kube docs-page">
+    <header class="site-header">
+    <div class="wrap nav">
+      <a class="brand" href="/#top" aria-label="Speedle Engine home"><img class="brand-logo" src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt=""><span class="brand-divider" aria-hidden="true"></span><span class="brand-product">Engine</span></a>
+      <button class="menu" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Open navigation">☰</button>
+      <nav class="nav-links" id="nav-links" aria-label="Main navigation">
+        <div class="products"><button class="products-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="products-panel">Products<svg class="products-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="products-heading" aria-hidden="true">Products</span><div class="products-panel" id="products-panel" role="group" aria-label="Products"><a class="product-row" href="https://engine.speedle.io/" aria-current="page"><img class="product-mark" src="/img/speedle/speedle-mark-engine.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Engine</span><span class="product-desc">Open-source authorization engine</span></span><svg class="product-check" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a><a class="product-row" href="https://cloud.speedle.io/"><img class="product-mark" src="/img/speedle/speedle-mark-cloud.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle Cloud <span class="product-badge">Beta</span></span><span class="product-desc">Hosted authorization for developers</span></span></a><a class="product-row" href="https://ai.speedle.io/"><img class="product-mark" src="/img/speedle/speedle-mark-ai.svg" alt="" width="20" height="20"><span class="product-text"><span class="product-name">Speedle AI</span><span class="product-desc">AI for access control, access control for AI</span></span></a></div></div>
+        <a href="/#about">About</a><a href="/#features">Features</a>
+        <a href="/quick-start/">Getting started</a><a href="/docs/">Docs</a><a href="/playground/">Playground</a>
+        <div class="languages"><button class="languages-button" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="languages-panel">English<svg class="languages-chevron" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false"><path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="languages-heading" aria-hidden="true">Languages</span><div class="languages-panel" id="languages-panel" role="group" aria-label="Languages"><a class="language-row" href="/docs/cloud/console/" lang="en" hreflang="en" aria-current="page">English</a><a class="language-row" href="/ja/docs/cloud/console/" lang="ja" hreflang="ja">日本語</a><a class="language-row" href="/ko/docs/cloud/console/" lang="ko" hreflang="ko">한국어</a><a class="language-row" href="/es/docs/cloud/console/" lang="es" hreflang="es">Español</a><a class="language-row" href="/zh/docs/cloud/console/" lang="zh-CN" hreflang="zh-CN">中文</a></div></div>
+        <a class="nav-github" href="https://github.com/teramoby/speedle-plus">GitHub</a>
+      </nav>
+    </div>
+  </header>
+    <div class="container">
+        <button class="docs-nav-toggle" type="button" aria-expanded="false" aria-controls="docs-navigation">
+            <span>Menu</span>
+            <svg class="docs-nav-toggle-icon" viewBox="0 0 18 14" width="18" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M1 1h16M1 7h16M1 13h16"/></svg>
+        </button>
+        <div class="content-container"><aside class="docs-sidebar" id="docs-navigation" aria-label="Documentation navigation">
+<div class="docs-nav-head">
+<span class="docs-nav-title">Documentation</span>
+<button class="docs-nav-close" type="button" aria-label="Close menu"><svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="m3 3 10 10M13 3 3 13"/></svg></button>
+</div>
+<div class="sidebar">
+<nav>
+<ul>
+
+
+
+
+
+<li data-docs-depth="-1" class="docs-nav-section parent"><span class="docs-nav-heading">Documentation</span>
+<ul class="sub-menu">
+<li data-docs-depth="0" class=""><a href="/docs/usecases/">Usecases</a></li>
+<li data-docs-depth="0" class=""><a href="/docs/overview/">Overview</a></li>
+<li data-docs-depth="0" class=""><a href="/docs/spdl/">SPDL - Speedle Policy Definition Language</a></li>
+<li data-docs-depth="0" class=""><a href="/docs/architecture/">Architecture</a></li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">Speedle Policy</span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/docs/pms/policy-mgmt/">Policy Management</a></li>
+<li data-docs-depth="1" class=""><a href="/docs/pms/global-policy/">Global Policy</a></li>
+<li data-docs-depth="1" class=""><a href="/docs/pms/diagnosis/">Policy Diagnosis</a></li>
+<li data-docs-depth="1" class=""><a href="/docs/pms/discover/">Policy Discovery</a></li>
+</ul>
+
+</li>
+<li data-docs-depth="0" class=""><a href="/docs/decisions/">Authorization Decisions</a></li>
+<li data-docs-depth="0" class=""><a href="/docs/idd/">Identity Domain</a></li>
+<li data-docs-depth="0" class=""><a href="/docs/assertor/">Token asserter</a></li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/docs/store/">Pluggable Storage</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/docs/store/mysql/">MySQL Setup</a></li>
+<li data-docs-depth="1" class=""><a href="/docs/store/etcd/">etcd Setup</a></li>
+<li data-docs-depth="1" class=""><a href="/docs/store/mongodb/">MongoDB Setup</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">API</span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/docs/api/decision_api/">Authorization Runtime/Decision API</a></li>
+<li data-docs-depth="1" class=""><a href="/docs/api/management_api/">Policy Management API</a></li>
+<li data-docs-depth="1" class=""><a href="/docs/api/asserter_api/">Token Assertion Plugin API</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/docs/deployment/">Deployment</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/docs/deployment/embedded/">Speedle embedded mode</a></li>
+<li data-docs-depth="1" class=""><a href="/docs/deployment/docker/">Docker image</a></li>
+<li data-docs-depth="1" class=""><a href="/docs/deployment/homebrew/">Homebrew</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading docs-nav-heading-link"><a href="/docs/sdks/">SDKs</a></span>
+<ul class="">
+<li data-docs-depth="1" class=""><a href="/docs/sdks/java/">Java SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/docs/sdks/python/">Python SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/docs/sdks/go/">Go SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/docs/sdks/dotnet/">C#/.NET SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/docs/sdks/rust/">Rust SDK</a></li>
+<li data-docs-depth="1" class=""><a href="/docs/sdks/node/">Node.js/TypeScript SDK</a></li>
+</ul>
+
+</li>
+
+
+
+<li data-docs-depth="0" class="docs-nav-section parent"><span class="docs-nav-heading docs-nav-heading-link"><a href="/docs/cloud/">Speedle Cloud</a></span>
+<ul class="sub-menu">
+<li data-docs-depth="1" class=""><a href="/docs/cloud/getting-started/">Getting started</a></li>
+<li data-docs-depth="1" class="active"><a href="/docs/cloud/console/" aria-current="page">Console manual</a></li>
+<li data-docs-depth="1" class=""><a href="/docs/cloud/tokens/">API keys</a></li>
+<li data-docs-depth="1" class=""><a href="/docs/cloud/global-roles/">Global roles</a></li>
+<li data-docs-depth="1" class=""><a href="/docs/cloud/authorization-api/">Authorization API</a></li>
+<li data-docs-depth="1" class=""><a href="/docs/cloud/api-reference/">API reference</a></li>
+<li data-docs-depth="1" class=""><a href="/docs/cloud/limits-and-errors/">Limits and errors</a></li>
+</ul>
+
+</li>
+<li data-docs-depth="0" class=""><a href="/docs/extending-decision-service/">Extending the decision service</a></li>
+<li data-docs-depth="0" class=""><a href="/docs/security/">Security</a></li>
+<li data-docs-depth="0" class=""><a href="/docs/logging/">Logging Framework</a></li>
+<li data-docs-depth="0" class=""><a href="/docs/versions/">Versions</a></li>
+<li data-docs-depth="0" class=""><a href="/docs/custom-function/">Custom Function</a></li><li data-docs-depth="0" class="docs-nav-section"><span class="docs-nav-heading">Misc</span>
+<ul>
+<li data-docs-depth="1" class=""><a href="/docs/performance-testing/">Performance testing guide</a></li></ul>
+</li>
+</ul>
+
+</li>
+</ul>
+</nav>
+
+
+</div>
+</aside>
+<main>
+<div id="main">
+
+  <h1>Speedle Cloud Console user manual</h1>
+  <p class="docs-lead">Manage workspaces, services, policies, Playground tests, API keys, functions, ADS instances and audit logs in the Speedle Cloud Console.</p>
+
+
+
+
+<nav id="contents" class="docs-toc" data-docs-toc="h2" aria-label="On this page">
+  <ol></ol>
+</nav>
+
+
+
+  <div id="kube-component" class="content">
+
+<p><strong>Speedle Cloud is in public beta.</strong> The free public beta is for evaluation and learning, has no SLA and is not recommended for production use. Features and limits may change.</p>
+
+<p>This manual walks through everyday tasks in the <strong>Speedle Cloud Console (SCC)</strong> at <a href="https://cloud.speedle.io/">cloud.speedle.io</a>. For a quick end-to-end API call from your server, see <a href="/docs/cloud/getting-started/">Getting started</a>. For endpoint payloads, error codes and quotas, see the <a href="/docs/cloud/authorization-api/">Authorization API</a>, <a href="/docs/cloud/api-reference/">API reference</a> and <a href="/docs/cloud/limits-and-errors/">Limits and errors</a>.</p>
+
+<h2 id="sign-in-and-console-layout">Sign in and console layout</h2>
+
+<h3 id="prerequisites">Prerequisites</h3>
+
+<ul>
+<li>A browser with JavaScript and cookies enabled.</li>
+<li>A GitHub or Google account with a verified email address.</li>
+</ul>
+
+<h3 id="sign-in-or-create-an-account">Sign in or create an account</h3>
+
+<ol>
+<li>Open <a href="https://cloud.speedle.io/">cloud.speedle.io</a> and choose <strong>Get started</strong> (or open <code>/login</code> directly).</li>
+<li>Choose <strong>Sign in with GitHub</strong> or <strong>Sign in with Google</strong> and complete authentication at the provider.</li>
+<li>If this is your first time signing in with an unused verified email address, review the Terms of Service and Privacy Policy links and confirm <strong>Create account</strong>.</li>
+</ol>
+
+<p><strong>Expected result:</strong> The console opens your active workspace in <strong>Services &amp; policies</strong> (at <code>/w/&lt;workspaceId&gt;/service</code>). New accounts start with a <strong>Personal</strong> workspace where your role is <strong>Owner</strong>.</p>
+
+<p><strong>Recovery:</strong></p>
+
+<ul>
+<li><strong>Email already in use:</strong> Sign in with the provider already linked to that email address, then connect the second provider in <strong>Account settings</strong>.</li>
+<li><strong>Verified email required:</strong> Verify your email address in your GitHub or Google account settings, then start sign-in again.</li>
+<li><strong>Sign-ups are paused:</strong> The beta has reached its new-account cap; existing accounts can still sign in.</li>
+<li><strong>Session expired:</strong> Sessions expire after 7 days of inactivity or 30 days from creation, whichever comes first. Sign in again to continue.</li>
+</ul>
+
+<h3 id="navigate-the-console">Navigate the console</h3>
+
+<p>The signed-in console has two navigation areas:</p>
+
+<ul>
+<li><strong>Top bar:</strong>
+
+<ul>
+<li><strong>Speedle | Cloud</strong> logo: returns to <strong>Services &amp; policies</strong> in the active workspace.</li>
+<li><strong>Workspace</strong> switcher: displays the active workspace name and your role (<strong>Owner</strong> or <strong>Admin</strong>), switches between workspaces and opens <strong>Create workspace</strong>.</li>
+<li><strong>Need help?</strong> link, <strong>Language</strong> switcher and <strong>Account</strong> menu (email address, <strong>Account overview</strong>, <strong>Account settings</strong>, <strong>Sign out</strong> and <strong>Sign out everywhere</strong>).</li>
+</ul></li>
+<li><strong>Left sidebar:</strong>
+
+<ul>
+<li><strong>Console:</strong> <strong>Services &amp; policies</strong>, <strong>API keys</strong>, <strong>ADS fleet</strong> and <strong>Audit log</strong> — all scoped to the active workspace.</li>
+<li><strong>Workspace settings:</strong> <strong>Members</strong> — view or manage workspace membership.</li>
+<li><strong>Cloud docs:</strong> opens this documentation.</li>
+</ul></li>
+</ul>
+
+<h2 id="personal-identity-and-workspaces">Personal identity and workspaces</h2>
+
+<p>Speedle Cloud separates your <strong>personal account</strong> from your <strong>workspaces</strong>:</p>
+
+<ul>
+<li>Your <strong>personal account</strong> holds your verified email address, connected sign-in providers (GitHub and/or Google), browser sessions and <strong>Personal activity</strong> log (<code>/account/audit</code>).</li>
+<li>A <strong>workspace</strong> is an isolated container for services, authorization and role policies (including <strong>Global roles</strong>), custom functions, API keys, ADS fleet instances, the workspace <strong>Audit log</strong> and daily API quota.</li>
+</ul>
+
+<p>Every account starts with a <strong>Personal</strong> workspace. You can belong to up to 10 workspaces, and each workspace can have up to 10 members (counting pending invitations).</p>
+
+<h3 id="switch-or-create-a-workspace">Switch or create a workspace</h3>
+
+<ol>
+<li>In the top bar, open the <strong>Workspace</strong> menu.</li>
+<li>Select another workspace to switch to it, or choose <strong>Create workspace</strong>.</li>
+<li>When creating a workspace, enter a <strong>Workspace name</strong> (1–64 characters) and choose <strong>Create workspace</strong>.</li>
+</ol>
+
+<p><strong>Expected result:</strong> The new workspace starts empty with its own services, policies, API keys and daily quota, and you become its <strong>Owner</strong>. The URL updates to <code>/w/&lt;workspaceId&gt;/service</code>. Switching workspaces clears any one-time secrets currently shown on screen.</p>
+
+<h3 id="manage-workspace-members-and-roles">Manage workspace members and roles</h3>
+
+<p>Open <strong>Workspace settings → Members</strong> in the left sidebar.</p>
+
+<table>
+<thead>
+<tr>
+<th>Role</th>
+<th>What the member can do</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td><strong>Owner</strong></td>
+<td>Everything an Admin can do, plus invite members, revoke pending invitations, promote or demote members and remove members.</td>
+</tr>
+
+<tr>
+<td><strong>Admin</strong></td>
+<td>Manage services, policies, imports/exports, functions, Playground, API keys and ADS fleet; view the member list and workspace audit log; leave the workspace.</td>
+</tr>
+</tbody>
+</table>
+
+<p><strong>Invite a member (Owner only):</strong></p>
+
+<ol>
+<li>Under <strong>Invite someone</strong>, enter the person&rsquo;s <strong>Email address</strong> and choose a <strong>Role</strong> (<strong>Admin</strong> or <strong>Owner</strong>).</li>
+<li>Choose <strong>Send invitation</strong>.</li>
+</ol>
+
+<p><strong>Expected result:</strong> The console sends an email containing a single-use invitation link valid for 7 days and adds the entry to <strong>Pending invitations</strong> (which counts toward the 10-member limit; each inviter can send up to 20 invitations per UTC day). Owners see full invited email addresses; Admins see masked addresses. To cancel a pending invite, choose <strong>Revoke</strong> next to it.</p>
+
+<p>To accept an invitation, the recipient opens the emailed link, signs in with a GitHub or Google account that has that verified email address and chooses <strong>Join workspace</strong>.</p>
+
+<p><strong>Change roles, remove a member or leave a workspace:</strong></p>
+
+<ul>
+<li><strong>Change role (Owner only):</strong> Use the <strong>Role</strong> selector next to a member to promote an Admin to Owner or demote an Owner to Admin.</li>
+<li><strong>Remove a member (Owner only):</strong> Choose <strong>Remove</strong>, review the warning and confirm <strong>Remove member</strong>. Their console access ends on their next request.</li>
+<li><strong>Leave workspace:</strong> Choose <strong>Leave workspace</strong> and confirm.</li>
+</ul>
+
+<blockquote>
+<p><strong>API keys stay active when a member leaves or is removed.</strong> API keys belong to the workspace, not to the person who created them. After you remove a member, the console lists any active API keys that person created (name, ID and expiry, without secrets). Review them on the <strong>API keys</strong> page and revoke or rotate any key that should no longer be trusted.</p>
+</blockquote>
+
+<p><strong>Recovery:</strong></p>
+
+<ul>
+<li><strong>Verify your identity (<code>reauth_required</code>):</strong> Changing roles, removing members and leaving a workspace require a sign-in within the last 10 minutes. Choose a connected provider to verify, then repeat the action.</li>
+<li><strong>Last owner (<code>last_owner</code>):</strong> A workspace must keep at least one Owner. Promote another member to <strong>Owner</strong> before demoting yourself or leaving.</li>
+<li><strong>Invitation mismatch or invalid link:</strong> Ask the invited person to sign in with an account where the invited email is verified (any verified GitHub email qualifies), or send a new invitation if the 7-day link expired or was revoked.</li>
+</ul>
+
+<h2 id="manage-services-and-policies">Manage services and policies</h2>
+
+<p>The walkthrough below uses a small <code>books</code> service with one role assignment and one authorization policy.</p>
+
+<h3 id="create-a-service">Create a service</h3>
+
+<ol>
+<li>Open <strong>Services &amp; policies</strong> in the left sidebar.</li>
+<li>If the workspace has no services yet, enter <code>books</code> as the <strong>Service name</strong> and choose <strong>Create service</strong>. If services already exist, open the <strong>Current service</strong> selector, choose <strong>Add another service</strong>, enter <code>books</code> and choose <strong>Create service</strong>.</li>
+</ol>
+
+<p>Service names must be 1–64 characters using letters, numbers, dots, underscores or hyphens, starting with a letter or number. The name <code>global</code> is reserved for <strong>Global roles</strong>. Applications send this name as <code>serviceName</code> in authorization requests.</p>
+
+<h3 id="create-authorization-and-role-policies">Create authorization and role policies</h3>
+
+<ol>
+<li>With <code>books</code> selected, open the <strong>Policies</strong> tab and choose <strong>Create policy</strong>.</li>
+<li>Optionally enter a <strong>Policy name</strong> (up to 128 Unicode characters), such as <code>reader-role</code>. Leave it empty to generate a name automatically.</li>
+<li>In <strong>SPDL source</strong>, enter one SPDL statement (up to 1,024 UTF-8 bytes):</li>
+</ol>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant user alice from corp Reader</code></pre></div>
+<ol>
+<li>Wait briefly for live validation. The editor validates automatically after you pause typing and displays the detected policy type (<strong>Valid · role policy</strong> or <strong>Valid · authorization policy</strong>) along with any syntax errors or review warnings (such as an ungranted role or an unanchored regular expression).</li>
+<li>Choose <strong>Save policy</strong>.</li>
+<li>Repeat to create an authorization policy (for example <code>read-books</code>) that grants the role permission:</li>
+</ol>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant role Reader get /books</code></pre></div>
+<p><strong>Expected result:</strong> Both policies appear in the policy table for <code>books</code>. Saved policies are available immediately in the <strong>Playground</strong> and propagate to the hosted authorization API in roughly 60 seconds.</p>
+
+<p>You can switch between the code editor and <strong>Use plain text editor</strong>, search or filter the policy table by effect, principal, action, resource, role or condition, and open <strong>Edit</strong>, <strong>Details</strong>, <strong>Test</strong> or <strong>Delete</strong> from each row.</p>
+
+<h3 id="use-global-roles-across-services">Use Global roles across services</h3>
+
+<p>When multiple services in the same workspace share a role assignment, define it once in <strong>Global roles</strong>:</p>
+
+<ol>
+<li>Open the <strong>Current service</strong> selector and choose <strong>Global roles</strong> at the top of the list.</li>
+<li>Create a role policy, such as <code>grant user alice from corp BookAdmin</code>.</li>
+<li>Switch to each ordinary service that should honor that role (such as <code>books</code>) and create an authorization policy granting permissions to <code>BookAdmin</code>.</li>
+</ol>
+
+<p><strong>Global roles</strong> accepts role policies only; it cannot be renamed or deleted. A global role grants no permissions until an ordinary service defines an authorization policy for that role. See <a href="/docs/cloud/global-roles/">Global roles</a> for full rules and ADS sync behavior.</p>
+
+<h3 id="inspect-relationships-in-the-access-map">Inspect relationships in the Access map</h3>
+
+<p>Open the <strong>Access map</strong> tab inside <strong>Services &amp; policies</strong> to visualize how principals, roles and resources connect in the selected service&rsquo;s saved policies. You can filter the graph, switch to a table view, focus on a node and send a path directly to the <strong>Playground</strong> to run a <strong>Diagnose</strong> check.</p>
+
+<h3 id="import-and-export-policies">Import and export policies</h3>
+
+<p>Open the <strong>Import &amp; export</strong> tab inside <strong>Services &amp; policies</strong>:</p>
+
+<ul>
+<li><strong>Download SPDL</strong> or <strong>Download JSON:</strong> Exports the selected service&rsquo;s saved policies. Keep downloaded files private and maintain your own backups during the beta.</li>
+<li><strong>Import policies:</strong> Choose a Speedle Cloud JSON export file (up to 32 MiB), review the preview counts and choose <strong>Confirm policy import</strong>. Imports are atomic: existing policies are never overwritten, and duplicate display names (within the batch or matching existing policies) are allowed because every imported policy receives a new server-generated ID. Any invalid policy or excess over the 200-policy workspace cap rejects the entire batch.</li>
+</ul>
+
+<p>If an import&rsquo;s outcome is interrupted or uncertain, keep the page open and use <strong>Retry the same import</strong> — it reuses the same idempotency key so confirmed policies are not inserted twice. Starting a fresh import of the same file (with a new idempotency key) after a completed import creates duplicate policies and consumes policy slots.</p>
+
+<h3 id="rename-or-delete-a-service">Rename or delete a service</h3>
+
+<p>Use the <strong>Service actions</strong> menu next to the service header:</p>
+
+<ul>
+<li><strong>Rename…:</strong> Changes the service name. Policy IDs, API keys and ADS instance identities stay intact, but calling applications must update <code>serviceName</code> to the new name and propagation is not immediate.</li>
+<li><strong>Delete service…:</strong> Permanently deletes the service and all of its policies, and removes it from associated ADS instances. Type the service name to confirm. Deleting a service requires authentication within the last 10 minutes; if prompted, verify with a connected provider and confirm deletion again. Workspace API keys and ADS instances remain.</li>
+</ul>
+
+<p><strong>Recovery:</strong></p>
+
+<ul>
+<li><strong>Editing cannot change policy type:</strong> A saved authorization policy cannot be turned into a role policy (or vice versa) in place. Delete the policy and create a new one.</li>
+<li><strong>Stale policy edit:</strong> If another session modified or deleted the policy while you were editing, your draft stays on screen. Refresh the workspace and open the latest version before saving.</li>
+<li><strong>Revision limit reached (<code>revision_exhausted</code>):</strong> Export the service&rsquo;s policies, create a new service, import the export, switch callers to the new <code>serviceName</code> and optionally delete the old service. See <a href="/docs/cloud/limits-and-errors/#revision-exhausted">Limits and errors</a>.</li>
+</ul>
+
+<h2 id="test-decisions-in-the-playground">Test decisions in the Playground</h2>
+
+<ol>
+<li>Select <code>books</code> in <strong>Services &amp; policies</strong> and open the <strong>Playground</strong> tab.</li>
+<li>Choose an <strong>Operation</strong>:
+
+<ul>
+<li><strong>Is allowed:</strong> Returns Allowed or Denied and the reason code.</li>
+<li><strong>Diagnose:</strong> Shows the decision plus a trace of how policies, roles and conditions contributed.</li>
+<li><strong>All granted roles:</strong> Lists all roles granted to the subject in this service (including Global roles).</li>
+<li><strong>All granted permissions:</strong> Lists all granted resources and actions for the subject.</li>
+</ul></li>
+<li>Fill in the test inputs:
+
+<ul>
+<li><strong>Principals (JSON):</strong> <code>[{&quot;type&quot;:&quot;user&quot;,&quot;name&quot;:&quot;alice&quot;,&quot;idd&quot;:&quot;corp&quot;}]</code></li>
+<li><strong>Resource:</strong> <code>/books</code></li>
+<li><strong>Action:</strong> <code>get</code></li>
+<li><strong>Attributes (JSON):</strong> <code>[]</code></li>
+</ul></li>
+<li>Choose <strong>Run test</strong>.</li>
+</ol>
+
+<p><strong>Expected result:</strong> <strong>Is allowed</strong> displays <strong>Allowed.</strong> with reason <strong>A grant policy applies.</strong> and the full JSON result. Changing <strong>Action</strong> to <code>delete</code> and running again displays <strong>Denied.</strong> with <strong>No applicable policies were found.</strong></p>
+
+<p>You can also click <strong>Test</strong> on a policy row or prefill a diagnosis from <strong>Access map</strong>; prefilling populates the inputs without spending an API call until you click <strong>Run test</strong>.</p>
+
+<p><strong>Keep in mind:</strong></p>
+
+<ul>
+<li>Playground evaluates <strong>saved</strong> policies immediately; unsaved editor drafts are ignored.</li>
+<li>Each Playground run uses one API call from the workspace&rsquo;s daily quota and never modifies policies.</li>
+<li>Testing against <strong>Global roles</strong> itself always denies; test global roles in the Playground of an ordinary service.</li>
+<li>A passing Playground check does not prove that published ADS snapshots have finished propagating (allow ~60 seconds for the hosted <a href="/docs/cloud/authorization-api/">Authorization API</a>).</li>
+</ul>
+
+<h2 id="manage-workspace-api-keys">Manage workspace API keys</h2>
+
+<p>API keys authenticate server-side applications and self-hosted ADS instances to the active workspace. Managing keys always requires a signed-in console session.</p>
+
+<h3 id="create-an-api-key">Create an API key</h3>
+
+<ol>
+<li>Open <strong>API keys</strong> in the left sidebar.</li>
+<li>Choose <strong>Create API key</strong>.</li>
+<li>Enter a descriptive <strong>API key name</strong> (1–128 characters, such as <code>books-app</code>). Do not enter a secret as the name.</li>
+<li>Select a <strong>Scope</strong> (fixed at creation):
+
+<ul>
+<li><strong>Authorization checks only (ADS)</strong> (<code>ads</code>, default): calls <code>/authz-check/v1/*</code> only.</li>
+<li><strong>Policy management: read</strong> (<code>pms:read</code>): reads workspace services and policies.</li>
+<li><strong>Policy management: write</strong> (<code>pms:write</code>): reads, creates and deletes workspace services and policies.</li>
+<li><strong>ADS sync</strong> (<code>pms:read+ads</code>): syncs policy snapshots for Speedle Cloud ADS (<code>speedle-cloud</code>), reads policies and runs authorization checks; no writes.</li>
+</ul></li>
+<li>Select <strong>Expires after</strong> (<code>1 week</code>, <code>1 month</code>, <code>3 months</code> [default], <code>6 months</code> or <code>1 year</code>) and verify <strong>Preview expiry (UTC)</strong>. Non-expiring keys are not supported.</li>
+<li>Choose <strong>Create API key</strong>. Creating a key requires provider verification within the last 10 minutes; if prompted, choose <strong>Verify with GitHub</strong> or <strong>Verify with Google</strong>, then submit <strong>Create API key</strong> again.</li>
+<li>Copy the <strong>One-time API key</strong> immediately, store it in your server&rsquo;s secret manager (for example <code>SPEEDLE_API_KEY</code>) and choose <strong>I have saved it — clear this display</strong>.</li>
+</ol>
+
+<p><strong>Expected result:</strong> The key appears under <strong>Active API keys</strong> with its ID, scope, creation time, approximate last-used time and <strong>Expires (UTC)</strong>. The secret is never shown again and cannot be recovered from metadata.</p>
+
+<h3 id="rotate-and-revoke-api-keys">Rotate and revoke API keys</h3>
+
+<p>Each workspace can have up to <strong>10 active API keys</strong> across all scopes. Keys expiring within 7 days are labeled <strong>Expires soon</strong>; expired keys move to <strong>Expired API keys</strong>.</p>
+
+<p>To rotate a key without downtime:</p>
+
+<ol>
+<li>Create a replacement key with the required scope and expiry.</li>
+<li>Update your application or ADS configuration to use the new key.</li>
+<li>On the <strong>API keys</strong> page, choose <strong>Revoke</strong> next to the old key, confirm the name and ID, and choose <strong>Revoke API key</strong>.</li>
+</ol>
+
+<p><strong>Recovery:</strong></p>
+
+<ul>
+<li><strong>Propagation delay:</strong> Cached verification can remain valid for up to 60 seconds after revocation; revocation is not instantaneous worldwide.</li>
+<li><strong>Limit reached (<code>quota_exceeded</code>):</strong> Revoke an unused key or let an expiring key lapse to free a slot. Revoked and expired keys remain listed for history and do not count toward the 10-key cap.</li>
+<li><strong>Uncertain creation or revocation:</strong> If a network error interrupts creation or revocation, refresh the metadata list and check the active and history groups before acting again. Never assume a matching name identifies a lost secret.</li>
+</ul>
+
+<p>For full API key contract details, see <a href="/docs/cloud/tokens/">API keys</a>.</p>
+
+<h2 id="check-usage-and-quotas">Check usage and quotas</h2>
+
+<p>In the public beta, resource caps and the daily API call allowance apply per workspace:</p>
+
+<ul>
+<li><strong>Services:</strong> 100 per workspace (including <strong>Global roles</strong>).</li>
+<li><strong>Policies:</strong> 200 authorization and role policies combined across all services in the workspace (each SPDL statement up to 1,024 UTF-8 bytes).</li>
+<li><strong>Active API keys:</strong> 10 per workspace across all scopes.</li>
+<li><strong>Daily API calls:</strong> 10,000 per workspace per UTC day (resets at <code>00:00 UTC</code>). Management reads/writes, live validation, Playground tests, imports/exports and authorization checks share this allowance.</li>
+</ul>
+
+<p>Where to check usage in the console:</p>
+
+<ul>
+<li><strong>Account → Account overview (<code>/account</code>):</strong> Displays the <strong>Daily quota</strong> card with a progress bar and the next UTC reset time for your Personal workspace.</li>
+<li><strong>Services &amp; policies:</strong> Displays service counts, policy counts and approximate remaining daily calls for the active workspace after workspace operations.</li>
+</ul>
+
+<p>If you reach the daily allowance (<code>429 daily_quota_exceeded</code>), wait until <code>00:00 UTC</code>; switching API keys in the same workspace does not add quota. See <a href="/docs/cloud/limits-and-errors/">Limits and errors</a> for burst rate limits and error recovery.</p>
+
+<h2 id="custom-functions-per-service">Custom functions (per service)</h2>
+
+<blockquote>
+<p>When custom functions are enabled on the stage, ordinary services display a <strong>Functions</strong> tab between <strong>Access map</strong> and <strong>Playground</strong>.</p>
+</blockquote>
+
+<p>Custom functions let SPDL conditions call external HTTPS endpoints during evaluation. Each ordinary service can register up to <strong>20 functions</strong>.</p>
+
+<h3 id="register-and-manage-a-function">Register and manage a function</h3>
+
+<ol>
+<li>Select an ordinary service and open the <strong>Functions</strong> tab.</li>
+<li>Choose <strong>Register function</strong>.</li>
+<li>Configure:
+
+<ul>
+<li><strong>Name:</strong> 1–64 character SPDL identifier (cannot be a reserved word).</li>
+<li><strong>Endpoint URL:</strong> HTTPS endpoint (up to 2,048 UTF-8 bytes; plain HTTP is not supported) that receives condition arguments. The console itself never calls the endpoint. URL rules depend on <strong>Invocation</strong>:
+
+<ul>
+<li><strong>Hosted and ADS:</strong> Requires <code>https://</code> on the default port <code>443</code> with a public, non-reserved DNS hostname (at least two labels; rejects IP literals, non-443 ports and internal or reserved hosts such as <code>localhost</code>, <code>*.local</code>, <code>*.internal</code>, <code>*.home.arpa</code>, <code>.test</code>, <code>.example</code>, <code>.invalid</code>, <code>.alt</code> and <code>.onion</code>).</li>
+<li><strong>ADS only:</strong> Requires <code>https://</code>, and allows any port as well as IP literals and private or internal hostnames (for example <code>https://10.20.30.40:8443/func/check</code>).</li>
+<li>Both modes reject userinfo (<code>user@host</code>), fragments (<code>#...</code>), whitespace, control characters and backslashes.</li>
+</ul></li>
+<li><strong>Invocation:</strong> <strong>Hosted and ADS</strong> (callable by hosted Cloud evaluation, Playground and self-hosted ADS) or <strong>ADS only</strong> (called only by self-hosted ADS; hosted evaluation and Playground fail if a condition reaches an ADS-only function).</li>
+<li><strong>Declared types (optional):</strong> Add up to 16 <strong>Parameters</strong> and a <strong>Result</strong> type. Undeclared parameters skip type checking; declared type mismatches fail evaluation.</li>
+<li><strong>Cache results (optional):</strong> Evaluator-local cache TTL (1–86,400 seconds; failures are not cached).</li>
+<li><strong>Hosted timeout (ms):</strong> 100–2,000 ms (default 1,000 ms), applied to hosted calls only.</li>
+<li><strong>Sign hosted requests (optional):</strong> Enables HMAC signing for hosted Cloud requests only. Self-hosted ADS always sends unsigned requests, even when <strong>Hosted and ADS</strong> is selected.</li>
+</ul></li>
+<li>Choose <strong>Save function</strong>. If signing is enabled, copy and store the one-time <strong>Signing secret</strong> before closing the dialog.</li>
+</ol>
+
+<p>From the functions table, you can <strong>Edit</strong> a function, <strong>Rotate signing secret</strong> (the previous secret stops working immediately; requires recent re-authentication if prompted) or <strong>Delete function</strong>.</p>
+
+<p><strong>Important rules and recovery:</strong></p>
+
+<ul>
+<li><strong><code>function_url_rejected</code>:</strong> Confirm the URL uses <code>https://</code> without userinfo, fragments, whitespace or backslashes. For IP literals, internal hostnames or non-443 ports, select <strong>ADS only</strong>; for <strong>Hosted and ADS</strong>, use a public DNS hostname on port <code>443</code>.</li>
+<li>Register a function in the target service <strong>before</strong> saving or importing a policy that calls it. Policy exports do not include function definitions.</li>
+<li>A function still referenced by a policy cannot be deleted; edit or delete the referencing policies first.</li>
+</ul>
+
+<h2 id="monitor-and-control-the-ads-fleet">Monitor and control the ADS fleet</h2>
+
+<p>Open <strong>ADS fleet</strong> in the left sidebar to monitor self-hosted Speedle Cloud ADS (<code>speedle-cloud</code>) instances that sync policies from the active workspace. Cloud never initiates connections into your network; commands travel over the channel each instance opens.</p>
+
+<h3 id="connect-your-first-ads-instance">Connect your first ADS instance</h3>
+
+<p>There is no manual registration step. When the fleet is empty, the <strong>ADS fleet</strong> page shows a three-step onboarding guide and a copyable configuration snippet:</p>
+
+<ol>
+<li>Create an API key with the <strong>ADS sync</strong> (<code>pms:read+ads</code>) scope on the <strong>API keys</strong> page.</li>
+<li>Put the key into your ADS configuration (<code>0600</code> file permissions) with a persistent <code>CacheDir</code> so restarts keep the same instance identity.</li>
+<li>Start <code>speedle-cloud</code> with your configuration and application listener TLS settings. It appears automatically in <strong>ADS fleet</strong> on first connection.</li>
+</ol>
+
+<p>Each workspace supports up to <strong>10 online ADS instances</strong> and keeps up to <strong>100 instance records</strong> (instances offline for 7 days are removed automatically).</p>
+
+<h3 id="inspect-instances-and-run-distribution-actions">Inspect instances and run distribution actions</h3>
+
+<p>Use <strong>Service filter</strong> to view instances syncing a specific service, or <strong>Refresh fleet</strong> for an immediate update (the page auto-refreshes every 5 minutes while visible).</p>
+
+<p>Choose <strong>Details</strong> on an instance row to inspect:</p>
+
+<ul>
+<li><strong>Live state</strong>, <strong>Last heartbeat received (UTC)</strong>, <strong>Channel</strong> and <strong>Transport</strong> (WebSocket or Long poll).</li>
+<li><strong>Service set</strong> with head revision, reported revision, sync lag and <strong>Global roles</strong> (always synced).</li>
+<li><strong>Distribution chain</strong> (upstream and direct downstream instances, if any), <strong>Event timeline</strong>, <strong>Fallback history</strong> and reported <strong>Host</strong> details.</li>
+</ul>
+
+<p>Available actions (each requires confirmation):</p>
+
+<ul>
+<li><strong>Assign services:</strong> Sync <strong>All services, including services created later</strong> or <strong>Only the selected services</strong>. Changes apply on the next heartbeat without restarting the ADS.</li>
+<li><strong>Resync from a snapshot:</strong> Discards the instance&rsquo;s local copy and reloads from a snapshot. <strong>Availability impact:</strong> the affected service immediately stops serving local authorization decisions until a fresh snapshot has been downloaded and verified.</li>
+<li><strong>Pause distribution / Resume distribution:</strong> Stops or resumes serving policies to downstream ADS instances while local sync and evaluation continue.</li>
+<li><strong>Stop this ADS:</strong> Instructs the instance to deny authorization requests and stop reconnecting until restarted.</li>
+<li><strong>Delete this instance:</strong> Removes the instance record and history (a still-running instance re-registers on its next connection unless stopped or its API key is revoked).</li>
+</ul>
+
+<h2 id="review-audit-logs-and-manage-account-settings">Review audit logs and manage account settings</h2>
+
+<h3 id="audit-logs">Audit logs</h3>
+
+<p>Speedle Cloud keeps two separate audit logs, both newest first with <strong>180-day retention</strong> and pagination (<strong>Previous page</strong>, <strong>Next page</strong>, <strong>Restart audit log</strong>):</p>
+
+<ul>
+<li><strong>Workspace Audit log</strong> (left sidebar → <strong>Audit log</strong>): Records administrative activity inside the active workspace — service and policy changes, API key creation/revocation, ADS actions, workspace creation/renaming and member/invitation changes. Readable by both Owners and Admins.</li>
+<li><strong>Personal activity</strong> (top-bar <strong>Account</strong> menu → <strong>Account overview</strong> → <strong>Personal activity</strong>, at <code>/account/audit</code>): Records your personal account events — sign-in, sign-out, sign-out everywhere, connecting/disconnecting sign-in providers and account creation/deletion.</li>
+</ul>
+
+<h3 id="account-settings">Account settings</h3>
+
+<p>Open the top-bar <strong>Account</strong> menu and choose <strong>Account settings</strong> (<code>/account/settings</code>):</p>
+
+<ul>
+<li><strong>Connected identities:</strong> Connect both <strong>GitHub</strong> and <strong>Google</strong> so you have a backup sign-in method. You must keep at least one connected identity; disconnecting a provider requires authentication within the last 10 minutes.</li>
+<li><strong>Sign out / Sign out everywhere:</strong> Available from the top-bar <strong>Account</strong> menu to end either the current browser session or all active sessions.</li>
+<li><strong>Delete account:</strong> Permanently deletes your personal account, connected identities, personal-only workspaces and sessions. Choose <strong>Delete account</strong>, verify your identity if prompted, type <code>DELETE</code> and confirm <strong>Permanently delete account</strong>. Export any policies you want to keep first.</li>
+</ul>
+
+<p><strong>Recovery for account deletion:</strong> If you are the sole <strong>Owner</strong> of a workspace that still has other members, account deletion is blocked (<code>last_owner</code>). Open that workspace&rsquo;s <strong>Members</strong> page and promote another member to <strong>Owner</strong> before deleting your account.</p>
+</div>
+</div>
+</main>
+        </div>
+    </div>
+    <div class="docs-nav-backdrop" hidden></div>
+    <footer class="site-footer">
+    <div class="wrap footer-main">
+      <div class="footer-brand">
+        <a class="footer-lockup" href="/" aria-label="Speedle Engine home"><img src="/img/speedle/Speedle_logo_home_bold.svg?v=4" width="304" height="104" alt="Speedle"><span class="footer-divider" aria-hidden="true"></span><span class="footer-product">Engine</span></a>
+        <p class="footer-tagline">Open-source authorization engine</p>
+        <nav class="social" aria-label="Community links">
+          <a href="mailto:contact@speedle.io" aria-label="Email contact@speedle.io" title="contact@speedle.io"><img src="/img/speedle/28.%20Mail.svg" width="40" height="40" alt=""></a>
+          <a href="https://groups.google.com/forum/#!forum/speedle-users" aria-label="Google Groups" title="Google Groups — speedle-users"><img src="/img/speedle/Google-Groups.svg" width="24" height="24" alt=""></a>
+          <a href="https://github.com/teramoby/speedle-plus" aria-label="GitHub"><img src="/img/speedle/18.%20Github.svg" width="40" height="40" alt=""></a>
+          <a href="https://discord.gg/uaY2xVsbbT" aria-label="Discord"><img src="/img/speedle/Discord.svg" width="64" height="48" alt=""></a>
+        </nav>
+      </div>
+      <nav class="footer-family" aria-label="Speedle products"><svg class="sphere-sprite" width="0" height="0" aria-hidden="true" focusable="false"><symbol id="i-speedle-sphere" viewBox="22 22 114 114"><!-- Source: img/speedle/Speedle_logo_home_bold.svg, sphere group only. Colours changed only (stroke currentColor). No path edits. --><g fill="none" stroke="currentColor" stroke-linejoin="miter" stroke-miterlimit="3" stroke-linecap="butt"><polygon stroke-width="3.6" points="41.83 47.82 30.67 80.15 42.9 112.09 72.8 128.69 106.38 122.19 127.93 95.63 127.36 61.43 104.94 35.6 71.16 30.23"/><g stroke-width="2.4"><polygon points="81.97 43.92 52.19 57.23 44.03 88.8 63.62 114.87 96.22 115.81 117.28 90.9 110.94 58.91"/><polygon points="68.57 60.42 57.6 86.19 78.73 104.59 102.75 90.18 96.47 62.88"/><path d="M41.83 47.82L52.19 57.23 68.57 60.42 81.97 43.92 71.16 30.23 M30.67 80.15L44.03 88.8 42.9 112.09 M52.19 57.23L57.6 86.19 44.03 88.8 78.73 104.59 63.62 114.87 72.8 128.69 M78.73 104.59L96.22 115.81 106.38 122.19 M96.22 115.81L102.75 90.18 117.28 90.9 127.93 95.63 M117.28 90.9L127.36 61.43 110.94 58.91 104.94 35.6 81.97 43.92 M110.94 58.91L96.47 62.88 117.28 90.9"/></g></g></symbol></svg>
+        <ul>
+          <li><a class="footer-card" href="https://engine.speedle.io/" aria-current="page"><svg class="product-sphere product-engine" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Engine</span><span class="footer-card-description">Open-source authorization engine</span><svg class="footer-card-check" width="15" height="15" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 8.5 6.5 11.5 12.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a></li>
+          <li><a class="footer-card" href="https://cloud.speedle.io/"><svg class="product-sphere product-cloud" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle Cloud<span class="product-badge">Beta</span></span><span class="footer-card-description">Hosted authorization for developers</span></a></li>
+          <li><a class="footer-card" href="https://ai.speedle.io/"><svg class="product-sphere product-ai" aria-hidden="true" focusable="false"><use href="#i-speedle-sphere"/></svg><span class="footer-card-name">Speedle AI</span><span class="footer-card-description">AI for access control, access control for AI</span></a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="wrap footer-bar">
+      <p class="footer-legal"><span>Licensed under the Universal Permissive License v1.0.</span><span class="footer-legal-sep"> · </span><span>Copyright &copy; 2019–2026 The Speedle Authors. All rights reserved.</span></p>
+    </div>
+  </footer>
+<!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "a7a746c498b940e58425123082a20520"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+
+</html>
