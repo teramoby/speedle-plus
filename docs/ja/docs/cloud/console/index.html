@@ -203,6 +203,10 @@
 
 <p>このマニュアルでは、<a href="https://cloud.speedle.io/ja/">cloud.speedle.io</a> の <strong>Speedle Cloud Console（SCC）</strong> での日常操作を説明します。サーバーから素早く API を呼び出す手順は<a href="/ja/docs/cloud/getting-started/">クイックスタート</a>を、リクエスト仕様・エラーコード・利用上限の詳細は<a href="/ja/docs/cloud/authorization-api/">認可 API</a>、<a href="/ja/docs/cloud/api-reference/">API リファレンス</a>、<a href="/ja/docs/cloud/limits-and-errors/">制限とエラー</a>を参照してください。</p>
 
+<blockquote>
+<p><strong>スクリーンショットについて：</strong> 本マニュアルの図は、実際の Speedle Cloud Console を英語 UI とデモデータ（<code>example.test</code> アカウント、<code>books</code> サンプルサービス、サンプルエンドポイント、サンプル使用量）でレンダリングしたものです。</p>
+</blockquote>
+
 <h2 id="サインインとコンソール構成">サインインとコンソール構成</h2>
 
 <h3 id="前提条件">前提条件</h3>
@@ -241,7 +245,7 @@
 <ul>
 <li><strong>Speedle | Cloud</strong> ロゴ：アクティブなワークスペースの <strong>サービスとポリシー</strong> に戻ります。</li>
 <li><strong>ワークスペース</strong> 切替メニュー：現在のワークスペース名とロール（<strong>オーナー</strong> または <strong>管理者</strong>）を表示し、ワークスペースの切り替えと <strong>ワークスペースを作成</strong> を提供します。</li>
-<li>ヘルプリンク、<strong>言語</strong> 切替、<strong>アカウント</strong> メニュー（メールアドレス、<strong>アカウント概要</strong>、<strong>アカウント設定</strong>、<strong>サインアウト</strong>、<strong>すべてのデバイスからサインアウト</strong>）。</li>
+<li><strong>お困りですか？お気軽にご連絡ください！</strong> ヘルプリンク、<strong>言語</strong> 切替、<strong>アカウント</strong> メニュー（メールアドレス、<strong>アカウント概要</strong>、<strong>アカウント設定</strong>、<strong>サインアウト</strong>、<strong>すべてのデバイスからサインアウト</strong>）。</li>
 </ul></li>
 <li><strong>左サイドバー：</strong>
 
@@ -252,6 +256,10 @@
 </ul></li>
 </ul>
 
+<p><img src="/img/cloud/console/01-console-shell-workspace-switcher.png" alt="Speedle Cloud Console のトップバーでワークスペース切替メニューを開いた状態と左サイドバー" /></p>
+
+<p>*トップバーの <strong>ワークスペース</strong> 切替メニューを開いたコンソール構成と左サイドバー（デモデータ、英語 UI）。*</p>
+
 <h2 id="個人アカウントとワークスペース">個人アカウントとワークスペース</h2>
 
 <p>Speedle Cloud は<strong>個人アカウント</strong>と<strong>ワークスペース</strong>を分離しています。</p>
@@ -260,6 +268,10 @@
 <li><strong>個人アカウント</strong>は、確認済みメールアドレス、接続済みのサインインプロバイダー（GitHub / Google）、ブラウザーセッション、<strong>個人のアクティビティ</strong>（<code>/account/audit</code>）を保持します。</li>
 <li><strong>ワークスペース</strong>は、サービス、認可・ロールポリシー（<strong>グローバルロール</strong>を含む）、カスタム関数、API キー、ADS フリートインスタンス、ワークスペースの <strong>監査ログ</strong>、1 日の API 割り当てを分離管理するコンテナです。</li>
 </ul>
+
+<blockquote>
+<p>現在のコンソール UI には一部「アカウント」表記が残っています。リソース上限、ポリシー、サービス、ADS インスタンス、API キーは選択中のワークスペース単位で適用され、サインイン ID とセッションは個人アカウント単位で管理されます。</p>
+</blockquote>
 
 <p>すべてのアカウントは <strong>パーソナル</strong> ワークスペースから始まります。1 人のユーザーは最大 10 個のワークスペースに所属でき、各ワークスペースには保留中の招待を含めて最大 10 名のメンバーを登録できます。</p>
 
@@ -276,6 +288,10 @@
 <h3 id="ワークスペースのメンバーとロール管理">ワークスペースのメンバーとロール管理</h3>
 
 <p>左サイドバーから <strong>ワークスペース設定 → メンバー</strong> を開きます。</p>
+
+<p><img src="/img/cloud/console/02-workspace-members-page.png" alt="ワークスペースのメンバーページ（オーナーと管理者、招待フォーム、保留中の招待、ワークスペースを退出カード）" /></p>
+
+<p>*ワークスペースの <strong>メンバー</strong> ページ（メンバー一覧、招待フォーム、保留中の招待、<strong>ワークスペースを退出</strong> 操作。デモデータ、英語 UI）。*</p>
 
 <table>
 <thead>
@@ -358,6 +374,14 @@
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant role Reader get /books</code></pre></div>
 <p><strong>期待される結果：</strong> 両方のポリシーが <code>books</code> のポリシー一覧に表示されます。保存されたポリシーは <strong>プレイグラウンド</strong> で即座に利用でき、ホスト型認可 API へは約 60 秒で反映されます。</p>
 
+<p><img src="/img/cloud/console/04-policy-editor-live-validation.png" alt="read-books ポリシー作成エディター（自動リアルタイム検証の有効表示とポリシーを保存ボタン）" /></p>
+
+<p><em><code>read-books</code> 保存前に自動リアルタイム SPDL 検証結果を表示するポリシーエディター（デモデータ、英語 UI）。</em></p>
+
+<p><img src="/img/cloud/console/03-service-policies-list.png" alt="books サービスのサービスとポリシー一覧（reader-role と read-books および各タブ）" /></p>
+
+<p>*<code>books</code> サービスの <strong>サービスとポリシー</strong> 一覧（<code>reader-role</code> と <code>read-books</code>、サービスタブ。デモデータ、英語 UI）。*</p>
+
 <p>コードエディターとプレーンテキストエディターの切り替え、効果・プリンシパル・アクション・リソース・ロール・条件の有無による検索・フィルター、各行からの編集・詳細・テスト・削除が可能です。</p>
 
 <h3 id="複数サービスでグローバルロールを使用">複数サービスでグローバルロールを使用</h3>
@@ -375,6 +399,10 @@
 <h3 id="アクセスマップで関係を確認">アクセスマップで関係を確認</h3>
 
 <p><strong>サービスとポリシー</strong> 内の <strong>アクセスマップ</strong> タブでは、保存済みポリシーのプリンシパル・ロール・リソースの関係を可視化できます。フィルター、テーブル表示切替、ノードフォーカスに対応し、選択パスを <strong>プレイグラウンド</strong> に送って <strong>診断</strong> を実行できます。</p>
+
+<p><img src="/img/cloud/console/05-access-map.png" alt="books サービスのアクセスマップ（alice → Reader → /books の関係グラフ）" /></p>
+
+<p>*保存済みポリシーから <code>alice</code> → <code>Reader</code> → <code>/books</code> を可視化した <strong>アクセスマップ</strong>（デモデータ、英語 UI）。*</p>
 
 <h3 id="ポリシーのインポートとエクスポート">ポリシーのインポートとエクスポート</h3>
 
@@ -429,6 +457,10 @@
 
 <p><strong>期待される結果：</strong> <strong>許可確認</strong> で許可判定と完全な JSON 結果が表示されます。<strong>アクション</strong> を <code>delete</code> に変えて再実行すると、一致するポリシーがないため拒否になります。</p>
 
+<p><img src="/img/cloud/console/06-playground-is-allowed-and-diagnose.png" alt="プレイグラウンドで corp ドメインの alice の /books get に対する許可確認結果と完全な JSON" /></p>
+
+<p>*<strong>プレイグラウンド</strong> の <strong>許可確認</strong> 実行結果（<code>alice</code> / <code>corp</code>、<code>/books</code>、<code>get</code> に対する許可判定と完全な JSON。デモデータ、英語 UI）。*</p>
+
 <p>ポリシー一覧の各行や <strong>アクセスマップ</strong> から入力を事前入力でき、<strong>テストを実行</strong> を押すまで API 呼び出しは消費されません。</p>
 
 <p><strong>注意点：</strong></p>
@@ -464,6 +496,10 @@
 </ol>
 
 <p><strong>期待される結果：</strong> 新しいキーが <strong>有効な API キー</strong> に ID、スコープ、作成日時、おおよその最終使用日時、有効期限（UTC）とともに表示されます。シークレットは二度と表示されず、メタデータから復元できません。</p>
+
+<p><img src="/img/cloud/console/07-api-keys-list-and-create-form.png" alt="API キーページ（作成フォームと有効なキーのメタデータ一覧、シークレット非表示）" /></p>
+
+<p>*<strong>API キー</strong> ページ（<strong>API キーを作成</strong> フォームと有効なキーのメタデータ一覧。デモデータ、英語 UI、シークレット非表示）。*</p>
 
 <h3 id="api-キーのローテーションと取り消し">API キーのローテーションと取り消し</h3>
 
@@ -505,6 +541,10 @@
 <li><strong>サービスとポリシー：</strong> アクティブなワークスペースのサービス数・ポリシー数と、操作後の残り呼び出し回数目安を表示します。</li>
 </ul>
 
+<p><img src="/img/cloud/console/10b-account-overview-quota.png" alt="アカウント概要ページ（プロフィールと 1 日の割り当てメーター、UTC リセット時刻）" /></p>
+
+<p>*<strong>アカウント概要</strong> のプロフィールとパーソナルワークスペースの <strong>1日の割り当て</strong> メーター（デモデータ、英語 UI）。*</p>
+
 <p>日次枠に達した場合（<code>429 daily_quota_exceeded</code>）は <code>00:00 UTC</code> まで待機してください。同じワークスペース内で API キーを変えても枠は増えません。詳細は<a href="/ja/docs/cloud/limits-and-errors/">制限とエラー</a>を参照してください。</p>
 
 <h2 id="カスタム関数-サービス単位">カスタム関数（サービス単位）</h2>
@@ -542,6 +582,10 @@
 
 <p>一覧から関数の編集、<strong>署名シークレットを更新</strong>（旧シークレットは即時失効、最近の再認証が必要な場合あり）、<strong>関数を削除</strong> を行えます。</p>
 
+<p><img src="/img/cloud/console/08-functions-tab.png" alt="books サービスの関数タブ（ホスト型と ADS および ADS のみのサンプル関数一覧）" /></p>
+
+<p>*<code>books</code> サービスの <strong>関数</strong> タブ（<strong>ホスト型と ADS</strong> と <strong>ADS のみ</strong> のサンプル関数。デモデータ、英語 UI、実エンドポイント未呼出）。*</p>
+
 <p><strong>重要な規則と復旧：</strong></p>
 
 <ul>
@@ -570,6 +614,10 @@
 
 <p><strong>サービスフィルター</strong> で特定サービスを同期するインスタンスを絞り込むか、<strong>フリートを更新</strong> で即時更新できます（表示中は 5 分ごとに自動更新）。</p>
 
+<p><img src="/img/cloud/console/09-ads-fleet-view.png" alt="ADS フリートページ（books を同期中のオンラインデモ ADS インスタンス一覧）" /></p>
+
+<p>*<code>books</code> を同期中のデモオンラインインスタンスを表示する <strong>ADS フリート</strong> 画面（デモデータ、英語 UI）。*</p>
+
 <p>各行の <strong>詳細</strong> を開くと、ライブ状態、最終ハートビート（UTC）、チャネルとトランスポート（WebSocket / ロングポーリング）、リビジョン遅延と <strong>グローバルロール</strong>（常に同期）を含むサービスセット、配信チェーン、イベントタイムライン、フォールバック履歴、ホスト情報を確認できます。</p>
 
 <p>実行可能な操作（すべて確認あり）：</p>
@@ -593,6 +641,10 @@
 <li><strong>個人のアクティビティ</strong>（トップバー <strong>アカウント</strong> メニュー → <strong>アカウント概要</strong> → <strong>個人のアクティビティ</strong>、<code>/account/audit</code>）：サインイン、サインアウト、全デバイスからのサインアウト、ログインプロバイダーの接続/解除、アカウント作成/削除など個人イベントを記録します。</li>
 </ul>
 
+<p><img src="/img/cloud/console/10a-workspace-audit-log.png" alt="ワークスペース監査ログテーブル（UTC 時刻、操作、対象、結果）" /></p>
+
+<p>*ワークスペース <strong>監査ログ</strong>（最近の管理イベントを UTC で表示。デモデータ、英語 UI）。*</p>
+
 <h3 id="アカウント設定">アカウント設定</h3>
 
 <p>トップバーの <strong>アカウント</strong> メニューから <strong>アカウント設定</strong>（<code>/account/settings</code>）を開きます。</p>
@@ -602,6 +654,10 @@
 <li><strong>サインアウト / すべてのデバイスからサインアウト：</strong> トップバーの <strong>アカウント</strong> メニューから現在のセッションまたは全セッションを終了できます。</li>
 <li><strong>アカウントの削除：</strong> 個人アカウント、接続済み ID、自分のみが所属するワークスペース、全セッションを完全削除します。<strong>アカウントの削除</strong> を選択し、求められた場合は再認証のうえ <code>DELETE</code> と入力して確定します。残したいポリシーは事前にエクスポートしてください。</li>
 </ul>
+
+<p><img src="/img/cloud/console/10c-account-settings.png" alt="アカウント設定ページ（GitHub と Google の接続済み ID とアカウント削除カード）" /></p>
+
+<p>*<strong>アカウント設定</strong> ページ（<strong>接続済みのID</strong> と <strong>アカウントの削除</strong>。デモデータ、英語 UI）。*</p>
 
 <p><strong>アカウント削除がブロックされた場合の復旧：</strong> 他メンバーが残っているワークスペースの唯一の <strong>オーナー</strong> である場合、削除は拒否されます（<code>last_owner</code>）。そのワークスペースの <strong>メンバー</strong> ページで別メンバーを <strong>オーナー</strong> に昇格してから削除してください。</p>
 </div>

@@ -16,6 +16,8 @@ bref = "Gestione espacios de trabajo, servicios, políticas, pruebas en Playgrou
 
 Este manual explica las tareas diarias en **Speedle Cloud Console (SCC)** en [cloud.speedle.io](https://cloud.speedle.io/es/). Para realizar rápidamente una llamada a la API desde su servidor, consulte [Primeros pasos](/es/docs/cloud/getting-started/). Para conocer los cuerpos de solicitud, códigos de error y cuotas, consulte la [API de autorización](/es/docs/cloud/authorization-api/), la [Referencia de la API](/es/docs/cloud/api-reference/) y [Límites y errores](/es/docs/cloud/limits-and-errors/).
 
+> **Sobre las capturas de pantalla:** Las figuras de este manual muestran la Speedle Cloud Console real renderizada en inglés con datos de demostración (cuentas `example.test`, el servicio de ejemplo `books`, endpoints de ejemplo y valores de uso de ejemplo).
+
 ## Iniciar sesión y diseño de la consola
 
 ### Requisitos previos
@@ -45,11 +47,15 @@ La consola autenticada tiene dos áreas de navegación:
 - **Barra superior:**
   - Logotipo **Speedle | Cloud**: vuelve a **Servicios y políticas** en el espacio de trabajo activo.
   - Selector **Espacio de trabajo**: muestra el nombre del espacio de trabajo activo y su rol (**Propietario** o **Administrador**), permite cambiar de espacio de trabajo y abrir **Crear espacio de trabajo**.
-  - Enlace de ayuda, selector de **Idioma** y menú **Cuenta** (correo electrónico, **Resumen de la cuenta**, **Configuración de la cuenta**, **Cerrar sesión** y **Cerrar sesión en todos los dispositivos**).
+  - Enlace de ayuda **¿Tienes problemas? ¡Escríbenos!**, selector de **Idioma** y menú **Cuenta** (correo electrónico, **Resumen de la cuenta**, **Configuración de la cuenta**, **Cerrar sesión** y **Cerrar sesión en todos los dispositivos**).
 - **Barra lateral izquierda:**
   - **Consola:** **Servicios y políticas**, **Claves de API**, **Flota de ADS** y **Registro de auditoría**, todos limitados al espacio de trabajo activo.
   - **Ajustes del espacio de trabajo:** **Miembros**, para consultar o gestionar la membresía.
   - **Documentación de Cloud:** abre esta documentación.
+
+![Barra superior de Speedle Cloud Console con el selector Espacio de trabajo desplegado y la barra lateral izquierda](/img/cloud/console/01-console-shell-workspace-switcher.png)
+
+*Diseño de la consola con el menú **Espacio de trabajo** abierto y la navegación en la barra lateral izquierda (datos de demostración, interfaz en inglés).*
 
 ## Identidad personal y espacios de trabajo
 
@@ -57,6 +63,8 @@ Speedle Cloud separa su **cuenta personal** de sus **espacios de trabajo**:
 
 - Su **cuenta personal** guarda su correo verificado, los proveedores de inicio de sesión conectados (GitHub y/o Google), las sesiones del navegador y el registro **Actividad personal** (`/account/audit`).
 - Un **espacio de trabajo** es un contenedor aislado para servicios, políticas de autorización y de roles (incluidos **Roles globales**), funciones personalizadas, claves de API, instancias de la flota de ADS, el **Registro de auditoría** del espacio de trabajo y la cuota diaria de API.
+
+> Algunas etiquetas de la interfaz actual todavía muestran «cuenta». Los límites de recursos, políticas, servicios, instancias ADS y claves de API se aplican al espacio de trabajo seleccionado, mientras que la identidad personal y las sesiones pertenecen a la cuenta.
 
 Cada cuenta comienza con un espacio de trabajo **Personal**. Puede pertenecer a hasta 10 espacios de trabajo y cada espacio de trabajo admite hasta 10 miembros (contando invitaciones pendientes).
 
@@ -71,6 +79,10 @@ Cada cuenta comienza con un espacio de trabajo **Personal**. Puede pertenecer a 
 ### Gestionar miembros y roles del espacio de trabajo
 
 Abra **Ajustes del espacio de trabajo → Miembros** en la barra lateral izquierda.
+
+![Página Miembros del espacio de trabajo con roles de Propietario y Administrador, formulario de invitación, invitaciones pendientes y Salir del espacio de trabajo](/img/cloud/console/02-workspace-members-page.png)
+
+*Página **Miembros** con roles, formulario de invitación, invitaciones pendientes y **Salir del espacio de trabajo** (datos de demostración, interfaz en inglés).*
 
 | Rol | Qué puede hacer el miembro |
 | --- | --- |
@@ -131,6 +143,14 @@ grant role Reader get /books
 
 **Resultado esperado:** Ambas políticas aparecen en la tabla de `books`. Las políticas guardadas se aplican de inmediato en **Playground** y se propagan a la API de autorización alojada en unos 60 segundos.
 
+![Editor Crear política con read-books, código SPDL, validación automática válida y botón Guardar política](/img/cloud/console/04-policy-editor-live-validation.png)
+
+*Editor de políticas mostrando la validación automática SPDL antes de guardar `read-books` (datos de demostración, interfaz en inglés).*
+
+![Vista Servicios y políticas para books con reader-role, read-books y pestañas del servicio](/img/cloud/console/03-service-policies-list.png)
+
+*Tabla **Servicios y políticas** de `books` con `reader-role` y `read-books` junto a las pestañas del servicio (datos de demostración, interfaz en inglés).*
+
 Puede alternar entre el editor de código y el editor de texto plano, buscar o filtrar por efecto, entidad principal, acción, recurso, rol o condición, y editar, inspeccionar detalles, probar o eliminar desde cada fila.
 
 ### Usar Roles globales entre servicios
@@ -146,6 +166,10 @@ Cuando varios servicios del mismo espacio de trabajo comparten una asignación d
 ### Inspeccionar relaciones en el Mapa de acceso
 
 Abra la pestaña **Mapa de acceso** dentro de **Servicios y políticas** para visualizar cómo se conectan entidades principales, roles y recursos en las políticas guardadas del servicio. Puede filtrar el grafo, cambiar a la vista de tabla, enfocar un nodo y enviar una ruta directamente a **Playground** para ejecutar un diagnóstico.
+
+![Grafo Mapa de acceso de books conectando a alice mediante el rol Reader con /books](/img/cloud/console/05-access-map.png)
+
+***Mapa de acceso** de `books` mostrando `alice` → `Reader` → `/books` desde políticas guardadas (datos de demostración, interfaz en inglés).*
 
 ### Importar y exportar políticas
 
@@ -186,6 +210,10 @@ Use el menú **Acciones del servicio** junto al encabezado del servicio:
 
 **Resultado esperado:** **Está permitido** muestra permitido con el resultado JSON completo. Al cambiar **Acción** a `delete` y volver a ejecutar, muestra denegado porque ninguna política coincide.
 
+![Prueba Está permitido en Playground para alice en corp sobre /books devolviendo Allowed y resultado JSON completo](/img/cloud/console/06-playground-is-allowed-and-diagnose.png)
+
+*Comprobación **Está permitido** en **Playground** para `alice` (`corp`) en `/books` (`get`) con resultado permitido y JSON completo (datos de demostración, interfaz en inglés).*
+
 También puede probar una fila de política o precargar un diagnóstico desde **Mapa de acceso** sin consumir una llamada hasta pulsar **Ejecutar prueba**.
 
 **Tenga en cuenta:**
@@ -214,6 +242,10 @@ Las claves de API autentican aplicaciones de servidor e instancias autoalojadas 
 7. Copie el secreto de un solo uso de inmediato, guárdelo en el almacén de secretos de su servidor (por ejemplo `SPEEDLE_API_KEY`) y cierre la ventana tras confirmar que lo guardó.
 
 **Resultado esperado:** La clave aparece en **Claves de API activas** con su ID, ámbito, creación, último uso aproximado y fecha de caducidad (UTC). El secreto nunca vuelve a mostrarse ni puede recuperarse desde los metadatos.
+
+![Página Claves de API con el formulario Crear clave de API y la lista de metadatos activos sin secretos](/img/cloud/console/07-api-keys-list-and-create-form.png)
+
+*Página **Claves de API** con el formulario **Crear clave de API** y la lista de metadatos activos (datos de demostración, interfaz en inglés; no se muestra ningún secreto).*
 
 ### Rotar y revocar claves de API
 
@@ -247,6 +279,10 @@ Dónde consultar el uso en la consola:
 - **Cuenta → Resumen de la cuenta (`/account`):** Muestra la tarjeta **Cuota diaria** con barra de progreso y la próxima hora de restablecimiento UTC de su espacio de trabajo Personal.
 - **Servicios y políticas:** Muestra el recuento de servicios y políticas y las llamadas diarias restantes aproximadas del espacio de trabajo activo tras las operaciones.
 
+![Resumen de la cuenta mostrando el perfil y la tarjeta Cuota diaria con barra de uso y hora de restablecimiento UTC](/img/cloud/console/10b-account-overview-quota.png)
+
+***Resumen de la cuenta** con el perfil y el medidor de **Cuota diaria** del espacio de trabajo Personal (datos de demostración, interfaz en inglés).*
+
 Si agota la cuota diaria (`429 daily_quota_exceeded`), espere hasta las `00:00 UTC`; cambiar de clave de API en el mismo espacio de trabajo no añade cuota. Consulte [Límites y errores](/es/docs/cloud/limits-and-errors/).
 
 ## Funciones personalizadas (por servicio)
@@ -274,6 +310,10 @@ Las funciones personalizadas permiten que las condiciones SPDL llamen a endpoint
 
 Desde la tabla de funciones puede editar una función, **Rotar secreto de firma** (el secreto anterior deja de funcionar de inmediato; puede requerir autenticación reciente) o **Eliminar función**.
 
+![Pestaña Funciones de books listando funciones personalizadas Alojado y ADS y Solo ADS](/img/cloud/console/08-functions-tab.png)
+
+*Pestaña **Funciones** de `books` mostrando funciones de ejemplo **Alojado y ADS** y **Solo ADS** (datos de demostración, interfaz en inglés; sin llamadas a endpoints reales).*
+
 **Reglas importantes y recuperación:**
 
 - **`function_url_rejected`:** Compruebe que la URL usa `https://` sin información de usuario, fragmentos, espacios ni barras invertidas. Para IP literales, nombres internos o puertos distintos de 443, elija **Solo ADS**; para **Alojado y ADS**, use un nombre DNS público en el puerto `443`.
@@ -298,6 +338,10 @@ Cada espacio de trabajo admite hasta **10 instancias ADS en línea** y conserva 
 
 Use **Filtro de servicio** para ver instancias que sincronizan un servicio concreto o **Actualizar flota** para refrescar de inmediato (la página se actualiza automáticamente cada 5 minutos mientras es visible).
 
+![Página Flota de ADS mostrando una instancia ADS en línea sincronizando books](/img/cloud/console/09-ads-fleet-view.png)
+
+*Vista **Flota de ADS** con una instancia en línea de demostración sincronizando `books` (datos de demostración, interfaz en inglés).*
+
 Elija **Detalles** en una instancia para revisar el estado en tiempo real, el último latido (UTC), el canal y transporte (WebSocket o sondeo largo), el conjunto de servicios con retraso de revisión y **Roles globales** (siempre sincronizados), la cadena de distribución, la cronología de eventos, el historial de respaldo y los datos del host.
 
 Acciones disponibles (cada una pide confirmación):
@@ -317,6 +361,10 @@ Speedle Cloud mantiene dos registros de auditoría independientes, ordenados del
 - **Registro de auditoría del espacio de trabajo** (barra lateral izquierda → **Registro de auditoría**): Registra la actividad administrativa del espacio de trabajo activo: cambios en servicios y políticas, creación/revocación de claves de API, acciones de ADS, cambios de espacio de trabajo y cambios de miembros/invitaciones. Legible por Propietarios y Administradores.
 - **Actividad personal** (barra superior → **Cuenta** → **Resumen de la cuenta** → **Actividad personal**, en `/account/audit`): Registra los eventos personales de su cuenta: inicio/cierre de sesión, cierre en todos los dispositivos, conexión/desconexión de proveedores y creación/eliminación de la cuenta.
 
+![Tabla del Registro de auditoría del espacio de trabajo con hora UTC, acción, objetivo y resultado](/img/cloud/console/10a-workspace-audit-log.png)
+
+***Registro de auditoría** del espacio de trabajo con eventos administrativos recientes en UTC (datos de demostración, interfaz en inglés).*
+
 ### Configuración de la cuenta
 
 Abra el menú **Cuenta** en la barra superior y elija **Configuración de la cuenta** (`/account/settings`):
@@ -324,5 +372,9 @@ Abra el menú **Cuenta** en la barra superior y elija **Configuración de la cue
 - **Identidades conectadas:** Conecte tanto **GitHub** como **Google** para disponer de un método de acceso de respaldo. Debe conservar al menos una identidad conectada; desconectar un proveedor requiere autenticación en los últimos 10 minutos.
 - **Cerrar sesión / Cerrar sesión en todos los dispositivos:** Disponibles en el menú **Cuenta** de la barra superior.
 - **Eliminar cuenta:** Elimina permanentemente su cuenta personal, identidades conectadas, espacios de trabajo en los que sea el único miembro y sesiones. Elija **Eliminar cuenta**, verifique su identidad si se solicita, escriba `DELETE` y confirme. Exporte antes las políticas que desee conservar.
+
+![Configuración de la cuenta mostrando Identidades conectadas (GitHub y Google) y la tarjeta Eliminar cuenta](/img/cloud/console/10c-account-settings.png)
+
+***Configuración de la cuenta** con **Identidades conectadas** y **Eliminar cuenta** (datos de demostración, interfaz en inglés).*
 
 **Recuperación al eliminar la cuenta:** Si es el único **Propietario** de un espacio de trabajo que aún tiene otros miembros, la eliminación queda bloqueada (`last_owner`). Abra **Miembros** en ese espacio de trabajo y ascienda a otro miembro a **Propietario** antes de eliminar su cuenta.

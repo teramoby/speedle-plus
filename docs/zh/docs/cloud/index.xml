@@ -35,7 +35,8 @@ grant user alice from corp get /books 这条策略允许 corp 身份域中的 al
       <guid>https://engine.speedle.io/zh/docs/cloud/console/</guid>
       <description>Speedle Cloud 已开放公开测试版。 免费公开测试版用于试用、学习和评估，不提供 SLA，不建议用于生产环境。功能和限额可能调整。
 本手册介绍 Speedle Cloud 控制台（SCC）（cloud.speedle.io）的日常操作流程。如需快速从服务端完成一次 API 调用，请参阅快速入门。接口载荷、错误码与配额详情请参阅授权 API、API 参考和限额与错误。
-登录与控制台布局 前置条件  启用了 JavaScript 与 Cookie 的浏览器。 拥有已验证邮箱的 GitHub 或 Google 账号。  登录或创建账号  打开 cloud.speedle.io，选择 开始使用（或直接访问 /login）。 选择 使用 GitHub 登录 或 使用 Google 登录，并在登录提供方处完成身份验证。 如果这是你首次使用尚未绑定的已验证邮箱登录，请查看服务条款与隐私政策链接，并确认 创建账号。  预期结果： 控制台打开当前工作区的 服务与策略 页面（路径为 /w/&amp;lt;workspaceId&amp;gt;/service）。新账号默认带有一个名为 个人 的工作区，你在其中的角色为 所有者。
+ 关于配图： 本手册中的配图展示的是实际 Speedle Cloud 控制台在英文界面下使用演示数据渲染的效果（example.test 账号、books 示例服务、示例端点与示例用量数值）。
+ 登录与控制台布局 前置条件  启用了 JavaScript 与 Cookie 的浏览器。 拥有已验证邮箱的 GitHub 或 Google 账号。  登录或创建账号  打开 cloud.speedle.io，选择 开始使用（或直接访问 /login）。 选择 使用 GitHub 登录 或 使用 Google 登录，并在登录提供方处完成身份验证。 如果这是你首次使用尚未绑定的已验证邮箱登录，请查看服务条款与隐私政策链接，并确认 创建账号。  预期结果： 控制台打开当前工作区的 服务与策略 页面（路径为 /w/&amp;lt;workspaceId&amp;gt;/service）。新账号默认带有一个名为 个人 的工作区，你在其中的角色为 所有者。
 故障恢复：
  此邮箱已有账号： 请先用控制台提示的已关联登录方式登录，再前往 账号设置 关联第二种登录方式。 需要已验证邮箱： 请先在 GitHub 或 Google 账号设置中完成邮箱验证，再重新登录。 暂停新用户注册： 公测版已达到新账号上限；已有账号仍可正常登录。 会话已结束： 会话在连续 7 天无活动或创建满 30 天时失效（以先到者为准），重新登录即可继续。  控制台导航 登录后的控制台包含两个主要导航区域：</description>
     </item>

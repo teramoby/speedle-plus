@@ -3334,6 +3334,8 @@ Source: https://engine.speedle.io/docs/cloud/console/
 
 This manual walks through everyday tasks in the **Speedle Cloud Console (SCC)** at [cloud.speedle.io](https://cloud.speedle.io/). For a quick end-to-end API call from your server, see [Getting started](https://engine.speedle.io/docs/cloud/getting-started/). For endpoint payloads, error codes and quotas, see the [Authorization API](https://engine.speedle.io/docs/cloud/authorization-api/), [API reference](https://engine.speedle.io/docs/cloud/api-reference/) and [Limits and errors](https://engine.speedle.io/docs/cloud/limits-and-errors/).
 
+> **About the screenshots:** Figures in this manual show the actual Speedle Cloud Console rendered in the English UI using demonstration data (`example.test` accounts, the `books` example service, sample endpoints and sample usage values).
+
 ### Sign in and console layout
 
 #### Prerequisites
@@ -3363,11 +3365,15 @@ The signed-in console has two navigation areas:
 - **Top bar:**
   - **Speedle | Cloud** logo: returns to **Services & policies** in the active workspace.
   - **Workspace** switcher: displays the active workspace name and your role (**Owner** or **Admin**), switches between workspaces and opens **Create workspace**.
-  - **Need help?** link, **Language** switcher and **Account** menu (email address, **Account overview**, **Account settings**, **Sign out** and **Sign out everywhere**).
+  - **Having trouble? Give us a shout!** help link, **Language** switcher and **Account** menu (email address, **Account overview**, **Account settings**, **Sign out** and **Sign out everywhere**).
 - **Left sidebar:**
   - **Console:** **Services & policies**, **API keys**, **ADS fleet** and **Audit log** — all scoped to the active workspace.
   - **Workspace settings:** **Members** — view or manage workspace membership.
   - **Cloud docs:** opens this documentation.
+
+![Speedle Cloud Console top bar with the Workspace switcher expanded and the left sidebar showing Console and Workspace settings sections](https://engine.speedle.io/img/cloud/console/01-console-shell-workspace-switcher.png)
+
+*Console layout with the **Workspace** switcher open and workspace-scoped navigation in the left sidebar (demonstration data, English UI).*
 
 ### Personal identity and workspaces
 
@@ -3375,6 +3381,8 @@ Speedle Cloud separates your **personal account** from your **workspaces**:
 
 - Your **personal account** holds your verified email address, connected sign-in providers (GitHub and/or Google), browser sessions and **Personal activity** log (`/account/audit`).
 - A **workspace** is an isolated container for services, authorization and role policies (including **Global roles**), custom functions, API keys, ADS fleet instances, the workspace **Audit log** and daily API quota.
+
+> Some labels in the current Console UI still read "account" or "account-wide". Resource limits, policies, services, ADS instances and API keys apply to the selected workspace, while personal sign-in identity and sessions stay at the account level.
 
 Every account starts with a **Personal** workspace. You can belong to up to 10 workspaces, and each workspace can have up to 10 members (counting pending invitations).
 
@@ -3389,6 +3397,10 @@ Every account starts with a **Personal** workspace. You can belong to up to 10 w
 #### Manage workspace members and roles
 
 Open **Workspace settings → Members** in the left sidebar.
+
+![Workspace Members page showing Owner and Admin members, Invite someone form, Pending invitations and Leave workspace card](https://engine.speedle.io/img/cloud/console/02-workspace-members-page.png)
+
+*Workspace **Members** page with member roles, invitation form, pending invitations and **Leave workspace** controls (demonstration data, English UI).*
 
 | Role | What the member can do |
 | --- | --- |
@@ -3449,6 +3461,14 @@ grant role Reader get /books
 
 **Expected result:** Both policies appear in the policy table for `books`. Saved policies are available immediately in the **Playground** and propagate to the hosted authorization API in roughly 60 seconds.
 
+![Create policy editor with Policy name read-books, SPDL source, automatic Valid · authorization policy badge and Save policy button](https://engine.speedle.io/img/cloud/console/04-policy-editor-live-validation.png)
+
+*Policy editor showing automatic live SPDL validation (**Valid · authorization policy**) before saving `read-books` (demonstration data, English UI).*
+
+![Services & policies view for the books service listing reader-role and read-books policies with section tabs](https://engine.speedle.io/img/cloud/console/03-service-policies-list.png)
+
+***Services & policies** table for `books` showing `reader-role` and `read-books` alongside the service tabs (demonstration data, English UI).*
+
 You can switch between the code editor and **Use plain text editor**, search or filter the policy table by effect, principal, action, resource, role or condition, and open **Edit**, **Details**, **Test** or **Delete** from each row.
 
 #### Use Global roles across services
@@ -3464,6 +3484,10 @@ When multiple services in the same workspace share a role assignment, define it 
 #### Inspect relationships in the Access map
 
 Open the **Access map** tab inside **Services & policies** to visualize how principals, roles and resources connect in the selected service's saved policies. You can filter the graph, switch to a table view, focus on a node and send a path directly to the **Playground** to run a **Diagnose** check.
+
+![Access map graph for the books service showing user alice connected through role Reader to resource /books](https://engine.speedle.io/img/cloud/console/05-access-map.png)
+
+***Access map** for `books` visualizing `alice` → `Reader` → `/books` from saved policies (demonstration data, English UI).*
 
 #### Import and export policies
 
@@ -3504,6 +3528,10 @@ Use the **Service actions** menu next to the service header:
 
 **Expected result:** **Is allowed** displays **Allowed.** with reason **A grant policy applies.** and the full JSON result. Changing **Action** to `delete` and running again displays **Denied.** with **No applicable policies were found.**
 
+![Playground Is allowed test for alice in corp requesting get on /books returning Allowed. A grant policy applies. and Full result JSON](https://engine.speedle.io/img/cloud/console/06-playground-is-allowed-and-diagnose.png)
+
+***Playground** **Is allowed** check for `alice` (`corp`) on `/books` (`get`) showing **Allowed. A grant policy applies.** and **Full result (JSON)** (demonstration data, English UI).*
+
 You can also click **Test** on a policy row or prefill a diagnosis from **Access map**; prefilling populates the inputs without spending an API call until you click **Run test**.
 
 **Keep in mind:**
@@ -3532,6 +3560,10 @@ API keys authenticate server-side applications and self-hosted ADS instances to 
 7. Copy the **One-time API key** immediately, store it in your server's secret manager (for example `SPEEDLE_API_KEY`) and choose **I have saved it — clear this display**.
 
 **Expected result:** The key appears under **Active API keys** with its ID, scope, creation time, approximate last-used time and **Expires (UTC)**. The secret is never shown again and cannot be recovered from metadata.
+
+![API keys page showing the Create API key form with name, fixed scope, expiry preview and active key metadata list without secrets](https://engine.speedle.io/img/cloud/console/07-api-keys-list-and-create-form.png)
+
+***API keys** page with the **Create API key** form (scope, expiry and UTC preview) and active key metadata (demonstration data, English UI; no secret shown).*
 
 #### Rotate and revoke API keys
 
@@ -3565,6 +3597,10 @@ Where to check usage in the console:
 - **Account → Account overview (`/account`):** Displays the **Daily quota** card with a progress bar and the next UTC reset time for your Personal workspace.
 - **Services & policies:** Displays service counts, policy counts and approximate remaining daily calls for the active workspace after workspace operations.
 
+![Account overview page displaying profile details and the Daily quota card with usage meter and UTC reset time](https://engine.speedle.io/img/cloud/console/10b-account-overview-quota.png)
+
+***Account overview** showing profile metadata and the **Daily quota** meter for the Personal workspace (demonstration data, English UI).*
+
 If you reach the daily allowance (`429 daily_quota_exceeded`), wait until `00:00 UTC`; switching API keys in the same workspace does not add quota. See [Limits and errors](https://engine.speedle.io/docs/cloud/limits-and-errors/) for burst rate limits and error recovery.
 
 ### Custom functions (per service)
@@ -3592,6 +3628,10 @@ Custom functions let SPDL conditions call external HTTPS endpoints during evalua
 
 From the functions table, you can **Edit** a function, **Rotate signing secret** (the previous secret stops working immediately; requires recent re-authentication if prompted) or **Delete function**.
 
+![Functions tab for the books service listing Hosted and ADS and ADS only custom functions](https://engine.speedle.io/img/cloud/console/08-functions-tab.png)
+
+***Functions** tab for `books` showing both **Hosted and ADS** and **ADS only** example functions (demonstration data, English UI; no live endpoints called).*
+
 **Important rules and recovery:**
 
 - **`function_url_rejected`:** Confirm the URL uses `https://` without userinfo, fragments, whitespace or backslashes. For IP literals, internal hostnames or non-443 ports, select **ADS only**; for **Hosted and ADS**, use a public DNS hostname on port `443`.
@@ -3616,6 +3656,10 @@ Each workspace supports up to **10 online ADS instances** and keeps up to **100 
 
 Use **Service filter** to view instances syncing a specific service, or **Refresh fleet** for an immediate update (the page auto-refreshes every 5 minutes while visible).
 
+![ADS fleet page showing a live demonstration ADS instance syncing books with Service filter and Refresh fleet controls](https://engine.speedle.io/img/cloud/console/09-ads-fleet-view.png)
+
+***ADS fleet** view listing a demonstration **Live** instance syncing `books` (demonstration data, English UI).*
+
 Choose **Details** on an instance row to inspect:
 
 - **Live state**, **Last heartbeat received (UTC)**, **Channel** and **Transport** (WebSocket or Long poll).
@@ -3639,6 +3683,10 @@ Speedle Cloud keeps two separate audit logs, both newest first with **180-day re
 - **Workspace Audit log** (left sidebar → **Audit log**): Records administrative activity inside the active workspace — service and policy changes, API key creation/revocation, ADS actions, workspace creation/renaming and member/invitation changes. Readable by both Owners and Admins.
 - **Personal activity** (top-bar **Account** menu → **Account overview** → **Personal activity**, at `/account/audit`): Records your personal account events — sign-in, sign-out, sign-out everywhere, connecting/disconnecting sign-in providers and account creation/deletion.
 
+![Workspace Audit log table listing recent administrative actions with UTC time, action, target and outcome](https://engine.speedle.io/img/cloud/console/10a-workspace-audit-log.png)
+
+*Workspace **Audit log** showing recent administrative events in UTC (demonstration data, English UI).*
+
 #### Account settings
 
 Open the top-bar **Account** menu and choose **Account settings** (`/account/settings`):
@@ -3646,6 +3694,10 @@ Open the top-bar **Account** menu and choose **Account settings** (`/account/set
 - **Connected identities:** Connect both **GitHub** and **Google** so you have a backup sign-in method. You must keep at least one connected identity; disconnecting a provider requires authentication within the last 10 minutes.
 - **Sign out / Sign out everywhere:** Available from the top-bar **Account** menu to end either the current browser session or all active sessions.
 - **Delete account:** Permanently deletes your personal account, connected identities, personal-only workspaces and sessions. Choose **Delete account**, verify your identity if prompted, type `DELETE` and confirm **Permanently delete account**. Export any policies you want to keep first.
+
+![Account settings page showing Connected identities for GitHub and Google and the Delete account card](https://engine.speedle.io/img/cloud/console/10c-account-settings.png)
+
+***Account settings** with **Connected identities** and **Delete account** controls (demonstration data, English UI).*
 
 **Recovery for account deletion:** If you are the sole **Owner** of a workspace that still has other members, account deletion is blocked (`last_owner`). Open that workspace's **Members** page and promote another member to **Owner** before deleting your account.
 
