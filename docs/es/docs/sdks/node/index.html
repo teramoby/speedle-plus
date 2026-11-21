@@ -197,7 +197,7 @@
 
   <div id="kube-component" class="content">
 
-<p>El SDK de Node.js requiere Node.js 22 o posterior, incluye distribuciones ESM y CommonJS con tipos de TypeScript, y no tiene dependencias de tiempo de ejecución. Paquete: <a href="https://www.npmjs.com/package/@speedle/sdk"><code>@speedle/sdk</code></a>, publicado en npm. Referencia: <a href="https://github.com/teramoby/speedle-sdk/tree/main/node">speedle-sdk/node</a>.</p>
+<p>El SDK de Node.js requiere Node.js 22 o posterior, admite todas las versiones de Node.js publicadas en los últimos tres años, incluye distribuciones ESM y CommonJS con tipos de TypeScript y no tiene dependencias de tiempo de ejecución. Paquete: <a href="https://www.npmjs.com/package/@speedle/sdk"><code>@speedle/sdk</code></a>, publicado en npm. Referencia: <a href="https://github.com/teramoby/speedle-sdk/tree/main/node">speedle-sdk/node</a>.</p>
 
 <p>Los ejemplos comprueban la política descrita en la <a href="/es/docs/sdks/#example-policy">descripción general de los SDK</a>.</p>
 
@@ -208,7 +208,7 @@
 <span style="color:#8be9fd;font-style:italic">cd</span> speedle-example
 npm init -y
 npm pkg <span style="color:#8be9fd;font-style:italic">set</span> <span style="color:#8be9fd;font-style:italic">type</span><span style="color:#ff79c6">=</span>module
-npm install @speedle/sdk@0.2.1</code></pre></div>
+npm install @speedle/sdk@1.9.0</code></pre></div>
 <h2 id="llamar-a-un-speedle-local">Llamar a un Speedle local</h2>
 
 <p>Inicie Speedle y cree la política de ejemplo como se describe en la <a href="/es/docs/sdks/#example-policy">descripción general de los SDK</a>. Guarde este programa como <code>main.ts</code>:</p>
@@ -243,10 +243,10 @@ alice delete /docs/public: allowed=false reason=NoApplicablePolicies</code></pre
 <h2 id="speedle-mcp">Speedle MCP</h2>
 
 <p><a href="https://www.npmjs.com/package/@speedle/mcp"><code>@speedle/mcp</code></a> está publicado en npm. Speedle MCP (vista previa de lanzamiento) es un paquete con modos <code>check</code> y <code>manage</code>. Instálelo con npm:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">npm install @speedle/mcp@0.2.1</code></pre></div>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">npm install @speedle/mcp@1.9.0</code></pre></div>
 <p>O ejecute el binario <code>speedle-mcp</code> directamente. El modo <code>check</code> lee la URL de ADS de <code>SPEEDLE_ENDPOINT</code> y el nombre del servicio de <code>SPEEDLE_SERVICE_NAME</code>; este ejemplo usa el ADS local de la <a href="/es/docs/sdks/#example-policy">descripción general de los SDK</a>:</p>
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">SPEEDLE_ENDPOINT</span><span style="color:#ff79c6">=</span>http://127.0.0.1:6734 <span style="color:#8be9fd;font-style:italic">SPEEDLE_SERVICE_NAME</span><span style="color:#ff79c6">=</span>docs npx @speedle/mcp@0.2.1 check</code></pre></div>
-<p>Sin <code>SPEEDLE_ENDPOINT</code>, el comando termina con <code>speedle-mcp: SPEEDLE_ENDPOINT is required</code>. El comando inicia un servidor MCP por stdio y espera a un cliente, por lo que un inicio correcto no imprime nada. Ejecutar <code>speedle-mcp</code> sin especificar un modo muestra las instrucciones de uso y finaliza con un estado distinto de cero. Referencia: <a href="https://github.com/teramoby/speedle-mcp">speedle-mcp</a>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash"><span style="color:#8be9fd;font-style:italic">SPEEDLE_ENDPOINT</span><span style="color:#ff79c6">=</span>http://127.0.0.1:6734 <span style="color:#8be9fd;font-style:italic">SPEEDLE_SERVICE_NAME</span><span style="color:#ff79c6">=</span>docs npx @speedle/mcp@1.9.0 check</code></pre></div>
+<p>Sin <code>SPEEDLE_ENDPOINT</code>, el comando termina con <code>speedle-mcp: SPEEDLE_ENDPOINT is required (for example https://cloud.speedle.io or http://127.0.0.1:6734)</code>. El comando inicia un servidor MCP por stdio y espera a un cliente, por lo que un inicio correcto no imprime nada. Ejecutar <code>speedle-mcp</code> sin especificar un modo muestra las instrucciones de uso y finaliza con un estado distinto de cero. Referencia: <a href="https://github.com/teramoby/speedle-mcp">speedle-mcp</a>.</p>
 
 <h2 id="gestión-de-errores">Gestión de errores</h2>
 

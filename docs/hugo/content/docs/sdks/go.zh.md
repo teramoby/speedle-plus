@@ -8,11 +8,12 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "用 go get 添加 github.com/teramoby/speedle-sdk/go v0.2.0，再向本地 Speedle 调用 IsAllowed 与 Check。"
+bref = "用 go get 添加 github.com/teramoby/speedle-sdk/go v1.9.1，再向本地 Speedle 调用 IsAllowed 与 Check。"
+summary = "用 go get 添加 github.com/teramoby/speedle-sdk/go v1.9.1，再向本地 Speedle 调用 IsAllowed 与 Check。"
 lastmod = 2026-11-08T11:21:16+08:00
 +++
 
-Go SDK 支持最新的两个 Go 版本，只使用标准库。模块：[`github.com/teramoby/speedle-sdk/go`](https://pkg.go.dev/github.com/teramoby/speedle-sdk/go) v0.2.0，包名 `speedle`。参考文档：[speedle-sdk/go](https://github.com/teramoby/speedle-sdk/tree/main/go)。
+Go SDK 支持过去三年内发布的所有 Go 版本，声明的最低版本为 Go 1.22。它只使用标准库。模块：[`github.com/teramoby/speedle-sdk/go`](https://pkg.go.dev/github.com/teramoby/speedle-sdk/go) v1.9.1，包名 `speedle`。参考文档：[speedle-sdk/go](https://github.com/teramoby/speedle-sdk/tree/main/go)。
 
 示例使用的策略见 [SDK 概览](/docs/sdks/#示例策略)。
 
@@ -22,7 +23,7 @@ Go SDK 支持最新的两个 Go 版本，只使用标准库。模块：[`github.
 
 ```bash
 go mod init example.com/speedle-example
-go get github.com/teramoby/speedle-sdk/go@v0.2.0
+go get github.com/teramoby/speedle-sdk/go@v1.9.1
 ```
 
 ## 调用本地 Speedle

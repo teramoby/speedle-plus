@@ -9,10 +9,11 @@ tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
 bref = "npm으로 @speedle/sdk를 설치하고 로컬 Speedle에 대해 isAllowed 및 check를 호출합니다."
+summary = "npm으로 @speedle/sdk를 설치하고 로컬 Speedle에 대해 isAllowed 및 check를 호출합니다."
 lastmod = 2026-11-10T09:48:45+08:00
 +++
 
-Node.js SDK는 Node.js 22 이상이 필요하며 TypeScript 타입 정의를 포함한 ESM 및 CommonJS 빌드를 제공하고 런타임 의존성이 없습니다. 패키지: npm의 [`@speedle/sdk`](https://www.npmjs.com/package/@speedle/sdk). 참조 문서: [speedle-sdk/node](https://github.com/teramoby/speedle-sdk/tree/main/node).
+Node.js SDK는 Node.js 22 이상이 필요하고 지난 3년 동안 릴리스된 모든 Node.js 버전을 지원합니다. TypeScript 타입 정의를 포함한 ESM 및 CommonJS 빌드를 제공하고 런타임 의존성이 없습니다. 패키지: npm의 [`@speedle/sdk`](https://www.npmjs.com/package/@speedle/sdk). 참조 문서: [speedle-sdk/node](https://github.com/teramoby/speedle-sdk/tree/main/node).
 
 예제에서는 [SDK 개요](/docs/sdks/#example-policy)에서 설명한 정책을 확인합니다.
 
@@ -25,7 +26,7 @@ mkdir speedle-example
 cd speedle-example
 npm init -y
 npm pkg set type=module
-npm install @speedle/sdk@0.2.1
+npm install @speedle/sdk@1.9.0
 ```
 
 ## 로컬 Speedle 호출
@@ -77,16 +78,16 @@ alice delete /docs/public: allowed=false reason=NoApplicablePolicies
 [`@speedle/mcp`](https://www.npmjs.com/package/@speedle/mcp)는 npm에 공개되어 있습니다. Speedle MCP(출시 프리뷰)는 `check` 및 `manage` 모드를 제공하는 단일 패키지입니다. npm으로 설치합니다:
 
 ```bash
-npm install @speedle/mcp@0.2.1
+npm install @speedle/mcp@1.9.0
 ```
 
 또는 `speedle-mcp` 바이너리를 직접 실행합니다. `check` 모드는 `SPEEDLE_ENDPOINT`에서 ADS URL을, `SPEEDLE_SERVICE_NAME`에서 서비스 이름을 읽습니다. 이 예제는 [SDK 개요](/docs/sdks/#example-policy)의 로컬 ADS에 대해 실행합니다:
 
 ```bash
-SPEEDLE_ENDPOINT=http://127.0.0.1:6734 SPEEDLE_SERVICE_NAME=docs npx @speedle/mcp@0.2.1 check
+SPEEDLE_ENDPOINT=http://127.0.0.1:6734 SPEEDLE_SERVICE_NAME=docs npx @speedle/mcp@1.9.0 check
 ```
 
-`SPEEDLE_ENDPOINT`가 없으면 명령은 `speedle-mcp: SPEEDLE_ENDPOINT is required`로 종료됩니다. 이 명령은 stdio MCP 서버를 시작해 클라이언트를 기다리므로 성공적으로 시작해도 아무것도 출력하지 않습니다. 모드를 지정하지 않고 `speedle-mcp`를 실행하면 사용법을 출력하고 0이 아닌 상태 코드로 종료합니다. 참조 문서: [speedle-mcp](https://github.com/teramoby/speedle-mcp).
+`SPEEDLE_ENDPOINT`가 없으면 명령은 `speedle-mcp: SPEEDLE_ENDPOINT is required (for example https://cloud.speedle.io or http://127.0.0.1:6734)`로 종료됩니다. 이 명령은 stdio MCP 서버를 시작해 클라이언트를 기다리므로 성공적으로 시작해도 아무것도 출력하지 않습니다. 모드를 지정하지 않고 `speedle-mcp`를 실행하면 사용법을 출력하고 0이 아닌 상태 코드로 종료합니다. 참조 문서: [speedle-mcp](https://github.com/teramoby/speedle-mcp).
 
 ## 오류 처리
 

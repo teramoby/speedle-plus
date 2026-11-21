@@ -16,7 +16,7 @@ Speedle SDK は、決定 API `POST /authz-check/v1/is-allowed` のクライア�
 
 ## パッケージ
 
-Java、Python、Go、.NET、Rust はバージョン 0.2.0、Node.js/TypeScript SDK はバージョン 0.2.1 です。`@speedle/sdk` は npm で公開されています。各言語のインストールコマンドは各ページに記載されています。
+6 つの SDK はすべて公開されています。Go モジュールは v1.9.1、残りの 5 つは 1.9.0 です。各言語のインストールコマンドは各ページに記載されています。
 
 - [Java](/ja/docs/sdks/java/): Maven Central `io.speedle:speedle-sdk`、公開済み。
 - [Python](/ja/docs/sdks/python/): PyPI `speedle`、公開済み。
@@ -24,6 +24,19 @@ Java、Python、Go、.NET、Rust はバージョン 0.2.0、Node.js/TypeScript S
 - [C#/.NET](/ja/docs/sdks/dotnet/): NuGet `Speedle.Sdk`、公開済み。
 - [Rust](/ja/docs/sdks/rust/): crates.io `speedle`、公開済み。
 - [Node.js / TypeScript](/ja/docs/sdks/node/): npm `@speedle/sdk`、公開済み。
+
+## ランタイムサポート
+
+各 SDK は 2026-11-19 を終点とする過去 3 年間にリリースされた言語またはランタイムのバージョンをサポートします。より古いバージョンも動作する場合があります。宣言された最小バージョンと CI のビルド・テスト対象バージョンは [speedle-sdk README](https://github.com/teramoby/speedle-sdk#runtime-support) に記載されています。
+
+| SDK | 最小バージョン | CI テストバージョン |
+| --- | --- | --- |
+| Go | Go 1.22 | 1.22, 1.27 |
+| Python | Python 3.10 | 3.10, 3.11, 3.12, 3.13, 3.14, 3.15 |
+| Node.js | Node.js 22 | 22, 24, 26 |
+| Java | Java 17 | 17, 21, 25, 27 |
+| .NET | .NET 8 | net8.0, net10.0, net11.0 |
+| Rust | Rust 1.75 | 1.75, stable |
 
 ## 機能
 

@@ -178,7 +178,7 @@ def check_llms(root, external):
         if line.startswith("- ["):
             if not BULLET_LINK.match(line):
                 failures.append(f"llms.txt bullet is not an annotated absolute link: {line}")
-    for fact in ("0.2.0", "@speedle/sdk", "@speedle/mcp"):
+    for fact in ("1.9.0", "@speedle/sdk", "@speedle/mcp"):
         if fact not in text:
             failures.append(f"llms.txt is missing the current statement containing {fact!r}")
     for cross in ("https://ai.speedle.io/llms.txt",):

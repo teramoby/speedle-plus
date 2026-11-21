@@ -184,7 +184,7 @@
 <div id="main">
 
   <h1>Rust SDK</h1>
-  <p class="docs-lead">cargo add로 speedle 0.2.0 크레이트를 추가하고 로컬 Speedle에 대해 is_allowed 및 check를 호출합니다.</p>
+  <p class="docs-lead">cargo add로 speedle 1.9.0 크레이트를 추가하고 로컬 Speedle에 대해 is_allowed 및 check를 호출합니다.</p>
 
 
 
@@ -197,7 +197,7 @@
 
   <div id="kube-component" class="content">
 
-<p>Rust SDK는 Rust 1.75 이상이 필요합니다. <code>tokio</code>와 <code>reqwest</code>(rustls)를 기반으로 한 비동기 구성을 제공합니다. <code>blocking</code> 기능 플래그를 통해 아래 예제에서 사용하는 동기식 블로킹 클라이언트가 추가됩니다. 크레이트: crates.io의 <a href="https://crates.io/crates/speedle"><code>speedle</code></a> 0.2.0. 참조 문서: <a href="https://github.com/teramoby/speedle-sdk/tree/main/rust">speedle-sdk/rust</a>.</p>
+<p>Rust SDK는 Rust 1.75 이상이 필요하고 지난 3년 동안 릴리스된 모든 Rust 버전을 지원합니다. <code>tokio</code>와 <code>reqwest</code>(rustls)를 기반으로 한 비동기 구성을 제공합니다. <code>blocking</code> 기능 플래그를 통해 아래 예제에서 사용하는 동기식 블로킹 클라이언트가 추가됩니다. 크레이트: crates.io의 <a href="https://crates.io/crates/speedle"><code>speedle</code></a> 1.9.0. 참조 문서: <a href="https://github.com/teramoby/speedle-sdk/tree/main/rust">speedle-sdk/rust</a>.</p>
 
 <p>예제에서는 <a href="/ko/docs/sdks/#example-policy">SDK 개요</a>에서 설명한 정책을 확인합니다.</p>
 
@@ -206,7 +206,7 @@
 <p>새 패키지를 생성하고 의존성을 추가합니다:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">cargo new speedle-example
 <span style="color:#8be9fd;font-style:italic">cd</span> speedle-example
-cargo add speedle@0.2.0 --features blocking</code></pre></div>
+cargo add speedle@1.9.0 --features blocking</code></pre></div>
 <h2 id="로컬-speedle-호출">로컬 Speedle 호출</h2>
 
 <p><a href="/ko/docs/sdks/#example-policy">SDK 개요</a>의 설명에 따라 Speedle을 시작하고 예제 정책을 생성합니다. <code>src/main.rs</code>를 다음과 같이 대체합니다:</p>

@@ -8,11 +8,12 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "Add the speedle 0.2.0 crate with cargo add, then call is_allowed and check against a local Speedle."
+bref = "Add the speedle 1.9.0 crate with cargo add, then call is_allowed and check against a local Speedle."
+summary = "Add the speedle 1.9.0 crate with cargo add, then call is_allowed and check against a local Speedle."
 lastmod = 2026-11-07T19:43:15+08:00
 +++
 
-The Rust SDK needs Rust 1.75 or later. It is async on `tokio` and `reqwest` (rustls); the `blocking` feature adds the blocking client used below. Crate: [`speedle`](https://crates.io/crates/speedle) 0.2.0 on crates.io. Reference: [speedle-sdk/rust](https://github.com/teramoby/speedle-sdk/tree/main/rust).
+The Rust SDK needs Rust 1.75 or later and supports every Rust release from the past three years. It is async on `tokio` and `reqwest` (rustls); the `blocking` feature adds the blocking client used below. Crate: [`speedle`](https://crates.io/crates/speedle) 1.9.0 on crates.io. Reference: [speedle-sdk/rust](https://github.com/teramoby/speedle-sdk/tree/main/rust).
 
 The examples check the policy described in the [SDKs overview](/docs/sdks/#example-policy).
 
@@ -23,7 +24,7 @@ In a new package:
 ```bash
 cargo new speedle-example
 cd speedle-example
-cargo add speedle@0.2.0 --features blocking
+cargo add speedle@1.9.0 --features blocking
 ```
 
 ## Call a local Speedle

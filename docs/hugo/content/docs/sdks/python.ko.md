@@ -8,11 +8,12 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "pip 또는 uv로 speedle 0.2.0을 설치하고 로컬 Speedle에 대해 is_allowed 및 check를 호출합니다."
+bref = "pip 또는 uv로 speedle 1.9.0을 설치하고 로컬 Speedle에 대해 is_allowed 및 check를 호출합니다."
+summary = "pip 또는 uv로 speedle 1.9.0을 설치하고 로컬 Speedle에 대해 is_allowed 및 check를 호출합니다."
 lastmod = 2026-11-07T19:43:15+08:00
 +++
 
-Python SDK는 Python 3.10 이상이 필요합니다. 런타임 의존성은 `httpx`뿐입니다. 동일한 인수를 사용하는 동기식 `Client`와 asyncio용 `AsyncClient`를 모두 제공합니다. 패키지: PyPI의 [`speedle`](https://pypi.org/project/speedle/) 0.2.0. 참조 문서: [speedle-sdk/python](https://github.com/teramoby/speedle-sdk/tree/main/python).
+Python SDK는 Python 3.10 이상이 필요하고 지난 3년 동안 릴리스된 모든 Python 버전을 지원합니다. 런타임 의존성은 `httpx`뿐입니다. 동일한 인수를 사용하는 동기식 `Client`와 asyncio용 `AsyncClient`를 모두 제공합니다. 패키지: PyPI의 [`speedle`](https://pypi.org/project/speedle/) 1.9.0. 참조 문서: [speedle-sdk/python](https://github.com/teramoby/speedle-sdk/tree/main/python).
 
 예제에서는 [SDK 개요](/docs/sdks/#example-policy)에서 설명한 정책을 확인합니다.
 
@@ -23,13 +24,13 @@ Python SDK는 Python 3.10 이상이 필요합니다. 런타임 의존성은 `htt
 ```bash
 python3 -m venv .venv
 . .venv/bin/activate
-pip install speedle==0.2.0
+pip install speedle==1.9.0
 ```
 
 또는 uv 프로젝트에서 uv를 사용하는 경우:
 
 ```bash
-uv add speedle==0.2.0
+uv add speedle==1.9.0
 ```
 
 ## 로컬 Speedle 호출

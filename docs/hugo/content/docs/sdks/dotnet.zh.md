@@ -8,11 +8,12 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "用 dotnet add package 添加 Speedle.Sdk 0.2.0，再向本地 Speedle 调用 IsAllowedAsync 与 CheckAsync。"
+bref = "用 dotnet add package 添加 Speedle.Sdk 1.9.0，再向本地 Speedle 调用 IsAllowedAsync 与 CheckAsync。"
+summary = "用 dotnet add package 添加 Speedle.Sdk 1.9.0，再向本地 Speedle 调用 IsAllowedAsync 与 CheckAsync。"
 lastmod = 2026-11-08T11:21:16+08:00
 +++
 
-.NET SDK 面向 .NET 8 或更高版本，没有依赖。软件包：NuGet 上的 [`Speedle.Sdk`](https://www.nuget.org/packages/Speedle.Sdk) 0.2.0，命名空间 `Speedle.Sdk`。参考文档：[speedle-sdk/dotnet](https://github.com/teramoby/speedle-sdk/tree/main/dotnet)。
+.NET SDK 面向 .NET 8 或更高版本，支持过去三年内发布的所有 .NET 版本，没有依赖。软件包：NuGet 上的 [`Speedle.Sdk`](https://www.nuget.org/packages/Speedle.Sdk) 1.9.0，命名空间 `Speedle.Sdk`。参考文档：[speedle-sdk/dotnet](https://github.com/teramoby/speedle-sdk/tree/main/dotnet)。
 
 示例使用的策略见 [SDK 概览](/docs/sdks/#示例策略)。
 
@@ -23,7 +24,7 @@ lastmod = 2026-11-08T11:21:16+08:00
 ```bash
 dotnet new console -o SpeedleExample
 cd SpeedleExample
-dotnet add package Speedle.Sdk --version 0.2.0
+dotnet add package Speedle.Sdk --version 1.9.0
 ```
 
 ## 调用本地 Speedle

@@ -206,7 +206,7 @@ Instale el paquete publicado en `speedle-example` y ejecute `main.mjs` allí. La
 ```bash
 npm init -y
 npm pkg set type=module
-npm install @speedle/sdk@0.2.1
+npm install @speedle/sdk@1.9.0
 node main.mjs
 ```
 

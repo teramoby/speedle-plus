@@ -184,7 +184,7 @@
 <div id="main">
 
   <h1>Rust SDK</h1>
-  <p class="docs-lead">Add the speedle 0.2.0 crate with cargo add, then call is_allowed and check against a local Speedle.</p>
+  <p class="docs-lead">Add the speedle 1.9.0 crate with cargo add, then call is_allowed and check against a local Speedle.</p>
 
 
 
@@ -197,7 +197,7 @@
 
   <div id="kube-component" class="content">
 
-<p>The Rust SDK needs Rust 1.75 or later. It is async on <code>tokio</code> and <code>reqwest</code> (rustls); the <code>blocking</code> feature adds the blocking client used below. Crate: <a href="https://crates.io/crates/speedle"><code>speedle</code></a> 0.2.0 on crates.io. Reference: <a href="https://github.com/teramoby/speedle-sdk/tree/main/rust">speedle-sdk/rust</a>.</p>
+<p>The Rust SDK needs Rust 1.75 or later and supports every Rust release from the past three years. It is async on <code>tokio</code> and <code>reqwest</code> (rustls); the <code>blocking</code> feature adds the blocking client used below. Crate: <a href="https://crates.io/crates/speedle"><code>speedle</code></a> 1.9.0 on crates.io. Reference: <a href="https://github.com/teramoby/speedle-sdk/tree/main/rust">speedle-sdk/rust</a>.</p>
 
 <p>The examples check the policy described in the <a href="/docs/sdks/#example-policy">SDKs overview</a>.</p>
 
@@ -206,7 +206,7 @@
 <p>In a new package:</p>
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-bash" data-lang="bash">cargo new speedle-example
 <span style="color:#8be9fd;font-style:italic">cd</span> speedle-example
-cargo add speedle@0.2.0 --features blocking</code></pre></div>
+cargo add speedle@1.9.0 --features blocking</code></pre></div>
 <h2 id="call-a-local-speedle">Call a local Speedle</h2>
 
 <p>Start Speedle and create the example policy as described in the <a href="/docs/sdks/#example-policy">SDKs overview</a>. Replace <code>src/main.rs</code> with:</p>

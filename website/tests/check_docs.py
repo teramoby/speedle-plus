@@ -90,7 +90,11 @@ def static_checks():
         assert steps(page,'en')==steps(page,'zh'), (page,'English/Chinese command drift')
     for path in DOCS.rglob('*.md'):
         text=path.read_text()
-        assert not re.search(r'(?:Go|Golang)\s+1\.(?:[0-9]|1[0-9]|2[0-4])\b',text), (path,'obsolete Go prerequisite')
+        # The SDK pages document each SDK's own runtime minimum, not the
+        # engine's Go build prerequisite, so the obsolete-Go rule covers every
+        # page outside sdks/. The SDK overview must keep those minimums.
+        if 'sdks' not in path.parts:
+            assert not re.search(r'(?:Go|Golang)\s+1\.(?:[0-9]|1[0-9]|2[0-4])\b',text), (path,'obsolete Go prerequisite')
         # The Release workflow publishes one image; these per-service
         # repositories never existed and an anonymous pull fails.
         for unpublished in ['ghcr.io/teramoby/speedle-pms','ghcr.io/teramoby/speedle-ads']:
@@ -106,6 +110,9 @@ def static_checks():
             assert result.returncode==0,(path,result.stderr)
         for match in re.finditer(r'^```json\n(.*?)\n```',text,re.S|re.M):
             json.loads(match[1])
+    sdk_index = (DOCS / 'sdks' / '_index.md').read_text()
+    for minimum in ['Go 1.22','Python 3.10','Node.js 22','Java 17','.NET 8','Rust 1.75']:
+        assert minimum in sdk_index, ('SDK runtime minimum missing', minimum)
     check_proto_contracts()
     print('PASS paired commands, complete sample sources, JSON blocks, Content-Type and public proto copies',flush=True)
 

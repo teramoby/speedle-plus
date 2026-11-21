@@ -187,7 +187,7 @@
 
 <h2 id="paquetes">Paquetes</h2>
 
-<p>Java, Python, Go, .NET y Rust están en la versión 0.2.0, y el SDK de Node.js/TypeScript está en la versión 0.2.1. <code>@speedle/sdk</code> está publicado en npm. Cada página de lenguaje muestra el comando de instalación correspondiente.</p>
+<p>Los seis SDK están publicados: el módulo de Go está en v1.9.1 y los otros cinco en 1.9.0. Cada página de lenguaje muestra el comando de instalación correspondiente.</p>
 
 <ul>
 <li><a href="/es/docs/sdks/java/">Java</a>: Maven Central <code>io.speedle:speedle-sdk</code>, publicado.</li>
@@ -197,6 +197,58 @@
 <li><a href="/es/docs/sdks/rust/">Rust</a>: crates.io <code>speedle</code>, publicado.</li>
 <li><a href="/es/docs/sdks/node/">Node.js / TypeScript</a>: npm <code>@speedle/sdk</code>, publicado.</li>
 </ul>
+
+<h2 id="requisitos-de-ejecución">Requisitos de ejecución</h2>
+
+<p>Cada SDK admite todas las versiones del lenguaje o del entorno de ejecución publicadas en los tres años anteriores al 2026-11-19; las versiones anteriores también pueden funcionar. Los mínimos declarados y las versiones que CI compila y prueba proceden del <a href="https://github.com/teramoby/speedle-sdk#runtime-support">README de speedle-sdk</a>.</p>
+
+<table>
+<thead>
+<tr>
+<th>SDK</th>
+<th>Versión mínima</th>
+<th>Versiones probadas en CI</th>
+</tr>
+</thead>
+
+<tbody>
+<tr>
+<td>Go</td>
+<td>Go 1.22</td>
+<td>1.22, 1.27</td>
+</tr>
+
+<tr>
+<td>Python</td>
+<td>Python 3.10</td>
+<td>3.10, 3.11, 3.12, 3.13, 3.14, 3.15</td>
+</tr>
+
+<tr>
+<td>Node.js</td>
+<td>Node.js 22</td>
+<td>22, 24, 26</td>
+</tr>
+
+<tr>
+<td>Java</td>
+<td>Java 17</td>
+<td>17, 21, 25, 27</td>
+</tr>
+
+<tr>
+<td>.NET</td>
+<td>.NET 8</td>
+<td>net8.0, net10.0, net11.0</td>
+</tr>
+
+<tr>
+<td>Rust</td>
+<td>Rust 1.75</td>
+<td>1.75, stable</td>
+</tr>
+</tbody>
+</table>
 
 <h2 id="funcionalidades">Funcionalidades</h2>
 

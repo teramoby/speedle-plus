@@ -8,11 +8,12 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "Añada io.speedle:speedle-sdk 0.2.0 con Maven o Gradle, y luego llame a isAllowed y check frente a un Speedle local."
+bref = "Añada io.speedle:speedle-sdk 1.9.0 con Maven o Gradle, y luego llame a isAllowed y check frente a un Speedle local."
+summary = "Añada io.speedle:speedle-sdk 1.9.0 con Maven o Gradle, y luego llame a isAllowed y check frente a un Speedle local."
 lastmod = 2026-11-08T19:23:52+08:00
 +++
 
-El SDK de Java requiere Java 17 o posterior y no tiene dependencias de tiempo de ejecución. Paquete: [`io.speedle:speedle-sdk`](https://repo1.maven.org/maven2/io/speedle/speedle-sdk/0.2.0/) 0.2.0 en Maven Central. Referencia: [speedle-sdk/java](https://github.com/teramoby/speedle-sdk/tree/main/java).
+El SDK de Java requiere Java 17 o posterior, admite todas las versiones de Java publicadas en los últimos tres años y no tiene dependencias de tiempo de ejecución. Paquete: [`io.speedle:speedle-sdk`](https://repo1.maven.org/maven2/io/speedle/speedle-sdk/1.9.0/) 1.9.0 en Maven Central. Referencia: [speedle-sdk/java](https://github.com/teramoby/speedle-sdk/tree/main/java).
 
 Los ejemplos comprueban la política descrita en la [descripción general de los SDK](/es/docs/sdks/#example-policy).
 
@@ -39,7 +40,7 @@ Maven, un `pom.xml` completo:
     <dependency>
       <groupId>io.speedle</groupId>
       <artifactId>speedle-sdk</artifactId>
-      <version>0.2.0</version>
+      <version>1.9.0</version>
     </dependency>
   </dependencies>
 </project>
@@ -57,7 +58,7 @@ repositories {
 }
 
 dependencies {
-    implementation("io.speedle:speedle-sdk:0.2.0")
+    implementation("io.speedle:speedle-sdk:1.9.0")
 }
 
 application {

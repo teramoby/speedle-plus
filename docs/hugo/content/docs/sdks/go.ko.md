@@ -8,11 +8,12 @@ toc = true
 tocheading = "h2"
 tags = ["api", "sdk"]
 categories = ["docs"]
-bref = "go get으로 github.com/teramoby/speedle-sdk/go v0.2.0을 추가하고 로컬 Speedle에 대해 IsAllowed 및 Check를 호출합니다."
+bref = "go get으로 github.com/teramoby/speedle-sdk/go v1.9.1을 추가하고 로컬 Speedle에 대해 IsAllowed 및 Check를 호출합니다."
+summary = "go get으로 github.com/teramoby/speedle-sdk/go v1.9.1을 추가하고 로컬 Speedle에 대해 IsAllowed 및 Check를 호출합니다."
 lastmod = 2026-11-07T19:43:15+08:00
 +++
 
-Go SDK는 최신 두 개의 Go 릴리스를 지원하며 표준 라이브러리만 사용합니다. 모듈: [`github.com/teramoby/speedle-sdk/go`](https://pkg.go.dev/github.com/teramoby/speedle-sdk/go) v0.2.0, 패키지 이름 `speedle`. 참조 문서: [speedle-sdk/go](https://github.com/teramoby/speedle-sdk/tree/main/go).
+Go SDK는 지난 3년 동안 릴리스된 모든 Go 버전을 지원하며, 선언된 최소 버전은 Go 1.22입니다. 표준 라이브러리만 사용합니다. 모듈: [`github.com/teramoby/speedle-sdk/go`](https://pkg.go.dev/github.com/teramoby/speedle-sdk/go) v1.9.1, 패키지 이름 `speedle`. 참조 문서: [speedle-sdk/go](https://github.com/teramoby/speedle-sdk/tree/main/go).
 
 예제에서는 [SDK 개요](/docs/sdks/#example-policy)에서 설명한 정책을 확인합니다.
 
@@ -22,7 +23,7 @@ Go SDK는 최신 두 개의 Go 릴리스를 지원하며 표준 라이브러리�
 
 ```bash
 go mod init example.com/speedle-example
-go get github.com/teramoby/speedle-sdk/go@v0.2.0
+go get github.com/teramoby/speedle-sdk/go@v1.9.1
 ```
 
 ## 로컬 Speedle 호출
