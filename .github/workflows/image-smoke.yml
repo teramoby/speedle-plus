@@ -74,10 +74,12 @@ jobs:
         with:
           persist-credentials: false
 
+      # The smoke build mirrors the Release workflow, so it also uses the
+      # latest stable Go release rather than the module's declared minimum.
       - name: Setup Go
         uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
-          go-version-file: go.mod
+          go-version: '1.27.4'
           cache: false
 
       - name: Build the image for both architectures and load the host architecture

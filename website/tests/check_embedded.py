@@ -94,7 +94,10 @@ def verify(locale, steps, toolchain, candidate=False):
     # metadata must not affect an external-module compilation (or runtime).
     env["GOFLAGS"] = (env.get("GOFLAGS", "") + " -buildvcs=false").strip()
     if toolchain:
-        env["GOTOOLCHAIN"] = toolchain
+        # The published release this guide builds may declare a newer toolchain
+        # than the one under test; +auto lets that module select it while the
+        # documented commands otherwise run on the named toolchain.
+        env["GOTOOLCHAIN"] = toolchain + "+auto"
     setup_before, get, setup_after = split_network_command(steps["setup"], "go get")
     build_before, tidy, build_after = split_network_command(steps["build"], "go mod tidy")
     with tempfile.TemporaryDirectory(prefix="speedle-embedded-") as temporary:

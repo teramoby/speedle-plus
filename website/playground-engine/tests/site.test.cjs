@@ -122,8 +122,10 @@ const originNote = /        <p class="license origin-note"><em>.*<\/em><\/p>\n/;
 // block keeps one sentence linking there.
 const statusBar = /    <div class="status">\n      <div class="wrap status-inner">\n        <div class="status-copy"><span class="status-dot"><\/span><span>.*<\/span><\/div>\n        <a class="text-link" href="[^"]+">.*<\/a>\n      <\/div>\n    <\/div>\n/;
 for (const [name, release, link] of [
-  ['docs/index.html', '<span>v1.9.0 · Go 1.27.4+ · six SDKs · Playground runs in your browser</span>', '<a class="text-link" href="https://github.com/teramoby/speedle-plus/releases/tag/v1.9.0">Release notes</a>'],
-  ['docs/zh/index.html', '<span>v1.9.0 · Go 1.27.4+ · 六种 SDK · Playground 在浏览器中运行</span>', '<a class="text-link" href="https://github.com/teramoby/speedle-plus/releases/tag/v1.9.0">发行说明</a>'],
+  // The status bar pairs the current release with the current source
+  // requirement; the published release keeps its own toolchain requirement.
+  ['docs/index.html', '<span>v1.9.0 · Source Go 1.26.0+ · six SDKs · Playground runs in your browser</span>', '<a class="text-link" href="https://github.com/teramoby/speedle-plus/releases/tag/v1.9.0">Release notes</a>'],
+  ['docs/zh/index.html', '<span>v1.9.0 · 源码 Go 1.26.0+ · 六种 SDK · Playground 在浏览器中运行</span>', '<a class="text-link" href="https://github.com/teramoby/speedle-plus/releases/tag/v1.9.0">发行说明</a>'],
 ]) {
   const bar = read(name).match(statusBar)?.[0];
   assert.ok(bar && bar.includes(release) && bar.includes(link), `Release status bar in ${name}`);

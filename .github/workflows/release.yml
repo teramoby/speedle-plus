@@ -137,10 +137,12 @@ jobs:
           set -euo pipefail
           git checkout --detach "${COMMIT}"
 
+      # Releases always build with the latest stable Go release, never with the
+      # module's declared minimum (https://go.dev/dl/?mode=json).
       - name: Setup Go
         uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
-          go-version-file: go.mod
+          go-version: '1.27.4'
           cache: true
 
       # macOS and Linux, amd64 and arm64, for the three public commands. The

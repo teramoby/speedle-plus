@@ -476,8 +476,15 @@ jobs:
             sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
           fi
           toolchain=$(go env GOVERSION)
+          # The Quick Start install route installs the published release,
+          # whose go.mod may declare a newer toolchain; the checker lets that
+          # release select it and asserts that the source build stayed on the
+          # installed go.mod toolchain.
           python3 -I website/tests/check_quick_start.py --toolchain "${toolchain}"
-          python3 -I website/tests/check_embedded.py --toolchain "${toolchain}" --candidate
+          # The embedded guide builds the published v1.9.0 module, whose go.mod
+          # declares Go 1.27.4; keep this leg on the latest toolchain until a
+          # release that declares the new minimum exists (#484).
+          python3 -I website/tests/check_embedded.py --toolchain go1.27.4 --candidate
           go test -count=1 ./website/tests/docscheck
           python3 -I website/tests/check_docs.py
 

@@ -790,8 +790,15 @@ test('nightly runs every suite even after a failure, records checks and fails at
     assert.ok(records.some(r => r.tool === 'bash' && r.args[0] === launcher), launcher);
   }
   for (const backend of ['file', 'etcd', 'mysql', 'mongodb']) assert.match(checks, new RegExp(`^${backend}-full=0:${backend}-full\\.log$`, 'm'));
-  for (const toolchain of ['go1.27.4']) assert.match(checks, new RegExp(`quick-start-${toolchain}=\\d+:`));
+  // The quick start runs on the declared minimum and on the latest release.
+  const quickStarts = records.filter(r => r.tool === 'python3' && r.args.includes('website/tests/check_quick_start.py'));
+  assert.ok(quickStarts.some(r => r.args.includes('go1.26.0')), 'quick start runs on the declared minimum');
+  assert.ok(quickStarts.some(r => r.args.includes('go1.27.4')), 'quick start runs on the latest release');
+  assert.match(checks, /^quick-start-go1\.26\.0=0:/m);
   assert.match(checks, /quick-start-go1\.27\.4=7:/);
+  const govulncheck = records.find(r => r.tool === 'go' && r.args.includes('golang.org/x/vuln/cmd/govulncheck@v1.9.0'));
+  assert.ok(govulncheck, 'govulncheck runs in the nightly');
+  assert.equal(govulncheck.env.GOTOOLCHAIN, 'go1.27.4', 'govulncheck runs on the latest toolchain');
   assert.match(checks, /mysql-full=0:mysql-full\.log/);
   assert.match(checks, /^etcd-docs=0:etcd-docs\.log$/m);
   assert.match(checks, /^mongodb-docs=0:mongodb-docs\.log$/m);
@@ -845,6 +852,10 @@ test('weekly tests the current supported Go release, compares benchmarks with th
   const bench = records.find(r => r.tool === 'python3' && r.args[0] === '-I' && r.args[1] === 'scripts/ci/benchmark.py');
   assert.ok(bench, 'the benchmark comparison runs');
   assert.equal(bench.args[2], '--results');
+  assert.equal(bench.env.GOTOOLCHAIN, 'go1.27.4', 'the benchmark measures the latest toolchain');
+  const staticcheck = records.find(r => r.tool === 'go' && r.args.some(a => a.includes('staticcheck@v0.8.2')));
+  assert.ok(staticcheck, 'staticcheck runs in the weekly job');
+  assert.equal(staticcheck.env.GOTOOLCHAIN, 'go1.27.4', 'staticcheck runs on the latest toolchain');
   assert.match(checks, /^performance=0:performance\.log$/m);
   assert.match(checks, /^staticcheck=0:staticcheck\.log$/m);
   // A performance regression fails the weekly run but not the checks after it.
@@ -1002,7 +1013,11 @@ test('quick content checks select documentation walkthroughs and propagate walkt
       assert.equal(calls.length, failure ? commands.indexOf(failure) + 2 : 5);
       if (!failure) {
         assert.deepEqual(calls.slice(1), [
-          ['-I', commands[0], '--toolchain', 'go1.26.11'], ['-I', commands[1], '--toolchain', 'go1.26.11', '--candidate'],
+          // Quick start builds this checkout with the installed toolchain; the
+          // embedded guide builds published v1.9.0, which needs the latest
+          // toolchain until a release declares the new minimum (#484).
+          ['-I', commands[0], '--toolchain', 'go1.26.11'],
+          ['-I', commands[1], '--toolchain', 'go1.27.4', '--candidate'],
           ['test', '-count=1', commands[2]], ['-I', commands[3]],
         ]);
       }

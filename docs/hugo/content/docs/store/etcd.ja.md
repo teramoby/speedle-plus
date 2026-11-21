@@ -15,7 +15,7 @@ lastmod = 2026-10-31T22:36:36+08:00
 
 ## 1. Speedle のビルド
 
-Bash、Git、curl、Docker、および Go 1.27.4 を準備します。Docker を起動し、ネイティブサービスをビルドします:
+Bash、Git、curl、Docker、および Go 1.26.0 を準備します。Docker を起動し、ネイティブサービスをビルドします:
 
 <!-- etcd-step: build -->
 ```bash

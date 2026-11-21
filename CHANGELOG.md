@@ -17,6 +17,13 @@
   Decisions are unchanged, but `Tokens()` and `Vars()` return nothing for
   those conditions and `ToSQLQuery()` returns an empty query. Off by default.
 
+- Source builds now require Go 1.26.0 or newer. CI builds and tests the
+  minimum declared in `go.mod` and the latest Go release; release binaries and
+  container images keep building with the latest release. Older Go releases
+  are not supported, because their dependency sets require module versions
+  with known security advisories. Published releases retain their own
+  toolchain requirements.
+
 ## v1.9.0
 
 - **Behavior change:** custom function failures now fail the decision. A
