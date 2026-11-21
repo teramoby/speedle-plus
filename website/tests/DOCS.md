@@ -5,8 +5,8 @@ Every PR and master push runs these checks in the global test gate (`scripts/ci/
 ```sh
 go test -count=1 ./website/tests/docscheck
 python3 website/tests/check_docs.py
-python3 website/tests/check_quick_start.py --toolchain go1.26.10
-python3 website/tests/check_embedded.py --toolchain go1.26.10 --candidate
+python3 website/tests/check_quick_start.py --toolchain go1.26.0
+python3 website/tests/check_embedded.py --toolchain go1.27.4 --candidate
 ```
 
 The current docs inventory is 82 Markdown pages (41 English/Chinese pairs). Historical snapshot directories are unchanged. No shared stylesheet, template, logo or homepage design changes are part of this repair.

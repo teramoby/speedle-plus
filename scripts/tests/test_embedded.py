@@ -16,14 +16,14 @@ SETUP = (
     "mkdir speedle-embedded-demo\n"
     "cd speedle-embedded-demo\n"
     "go mod init example.com/speedle-embedded-demo\n"
-    "go get github.com/teramoby/speedle-plus/pkg/eval@v1.6.0"
+    "go get github.com/teramoby/speedle-plus/pkg/eval@v1.9.0"
 )
 SETUP_PREFIX = (
     "mkdir speedle-embedded-demo\n"
     "cd speedle-embedded-demo\n"
     "go mod init example.com/speedle-embedded-demo"
 )
-GET = "go get github.com/teramoby/speedle-plus/pkg/eval@v1.6.0"
+GET = "go get github.com/teramoby/speedle-plus/pkg/eval@v1.9.0"
 BUILD = "go mod tidy\ngo build -o ./bin/embedded-demo ."
 TIDY = "go mod tidy"
 BUILD_COMMAND = "go build -o ./bin/embedded-demo ."
@@ -38,10 +38,10 @@ STEPS = {
     "run": RUN,
 }
 VERSION = "go version go1.26.10 darwin/arm64\n"
-MODULE = {"Path": "github.com/teramoby/speedle-plus", "Version": "v1.6.0"}
+MODULE = {"Path": "github.com/teramoby/speedle-plus", "Version": "v1.9.0"}
 REPLACED_MODULE = {
     "Path": "github.com/teramoby/speedle-plus",
-    "Version": "v1.6.0",
+    "Version": "v1.9.0",
     "Replace": {"Dir": str(ROOT)},
 }
 ALLOWED = "alice allowed=true\nbob allowed=false\n"

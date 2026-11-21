@@ -8,11 +8,12 @@
 #            package under the race detector, then the tagged ADS
 #            runtime/cache suites against native PMS/ADS) with file, etcd,
 #            MySQL and MongoDB, each on a store this run owns; the etcd and
-#            MongoDB setup guides, the quick start with every supported Go
-#            release, govulncheck and the CI script tests; on Linux with Docker
-#   weekly   every package with the newest supported Go release
-#            (the gate uses the go.mod/CI release), the evaluation benchmarks
-#            against master as of May 2026, and staticcheck; on the macOS runner
+#            MongoDB setup guides, the quick start with the declared minimum
+#            and the latest Go release, govulncheck and the CI script tests;
+#            on Linux with Docker
+#   weekly   every package with the latest Go release (the gate uses the
+#            go.mod/CI release), the evaluation benchmarks against master as
+#            of May 2026, and staticcheck; on the macOS runner
 #   regression
 #            after every merge to master: race-detector run of every package
 #            with the file store and the executable guides from docs/; on Linux
@@ -53,9 +54,15 @@ results=${RESULTS_DIR:-test-results}
 # The gate reruns only these packages with etcd; nightly reruns every
 # package, whose STORE_TYPE-aware fixtures (testutil/storetest) then use etcd.
 store_dependent=(./pkg/eval ./cmd/spctl/command)
-# Exact supported toolchains for the current source module.
-weekly_toolchains=(go1.27.4)
-all_toolchains=(go1.27.4)
+# Exact supported toolchains for the current source module: the declared
+# minimum (go.mod) and the latest stable release (https://go.dev/dl/?mode=json).
+# The gate, quick and nightly regression build the module with the installed
+# go.mod toolchain; nightly also exercises the documentation guides on both
+# toolchains and weekly rebuilds every package on the latest release.
+minimum_toolchain=go1.26.0
+latest_toolchain=go1.27.4
+weekly_toolchains=("${latest_toolchain}")
+all_toolchains=("${minimum_toolchain}" "${latest_toolchain}")
 
 packages() {
   # MongoDB runs in the nightly Linux job; generated protobuf packages,
@@ -130,9 +137,15 @@ case "${mode}" in
     bash scripts/ci/condition-conformance.sh
     # Read the candidate's documentation on every run. These execute the actual
     # fenced commands/program/policy blocks; failures block the same test job.
+    # The Quick Start install route installs the published release, whose
+    # go.mod may declare a newer toolchain; the checker lets that release
+    # select it and asserts that the source build stayed on the installed
+    # go.mod toolchain. The embedded guide builds the published v1.9.0 module,
+    # whose go.mod declares Go 1.27.4, so it needs the latest toolchain until a
+    # release that declares the new minimum exists (#484).
     toolchain=$(go env GOVERSION)
     python3 -I website/tests/check_quick_start.py --toolchain "${toolchain}"
-    python3 -I website/tests/check_embedded.py --toolchain "${toolchain}" --candidate
+    python3 -I website/tests/check_embedded.py --toolchain "${latest_toolchain}" --candidate
     go test -count=1 ./website/tests/docscheck
     python3 -I website/tests/check_docs.py
     ;;
@@ -188,10 +201,17 @@ case "${mode}" in
     fi
     check etcd-docs with_docker python3 -I website/tests/check_etcd.py
     check mongodb-docs with_docker python3 -I website/tests/check_mongodb.py
+    # The install route installs the published release, whose go.mod may
+    # declare a newer toolchain; the checker lets that release select it and
+    # asserts that the source build stayed on the named toolchain.
     for toolchain in "${all_toolchains[@]}"; do
       check "quick-start-${toolchain}" python3 -I website/tests/check_quick_start.py --toolchain "${toolchain}"
     done
-    check govulncheck go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./pkg/... ./cmd/... ./api/...
+    # govulncheck matches its database and the standard library against the
+    # toolchain in use, so analyze with the latest release, the same toolchain
+    # releases are built with.
+    check govulncheck env GOTOOLCHAIN="${latest_toolchain}" \
+      go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./pkg/... ./cmd/... ./api/...
     check ci-script-tests bash -c 'python3 -I -m unittest discover -s scripts/tests -p "test_*.py" && node --test scripts/tests/*.cjs'
     exit "${failed}"
     ;;
@@ -201,8 +221,12 @@ case "${mode}" in
     set_race
     gotest_json go-file STORE_TYPE=file -- -p 1 -count=1 -timeout 600s "${race[@]}" "${pkgs[@]}"
     toolchain=$(go env GOVERSION)
+    # The published release the guide installs may declare its own newer
+    # toolchain; the checker lets that module select it.
     check quick-start python3 -I website/tests/check_quick_start.py --toolchain "${toolchain}"
-    check embedded python3 -I website/tests/check_embedded.py --toolchain "${toolchain}" --candidate
+    # The published v1.9.0 module the embedded guide builds declares Go 1.27.4;
+    # use the latest toolchain until a release declares the new minimum (#484).
+    check embedded python3 -I website/tests/check_embedded.py --toolchain "${latest_toolchain}" --candidate
     check docs-contract go test -count=1 ./website/tests/docscheck
     check docs python3 -I website/tests/check_docs.py
     exit "${failed}"
@@ -215,9 +239,15 @@ case "${mode}" in
     done
     gotest_json feature-large STORE_TYPE=file SPEEDLE_STRESS_POLICIES=100000 -- -race -count=1 -timeout 1200s -tags feature_stress ./pkg/eval -run '^TestFeatureLargePolicyRoleSets$'
     # Evaluation speed against master as it stood in May 2026, measured on
-    # this runner in this run (scripts/ci/benchmark.py).
-    check performance python3 -I scripts/ci/benchmark.py --results "${results}"
-    check staticcheck go run honnef.co/go/tools/cmd/staticcheck@v0.8.2 ./pkg/... ./cmd/... ./api/...
+    # this runner in this run (scripts/ci/benchmark.py). Measure the latest
+    # release, like the rest of this job, so the toolchain does not change the
+    # baseline comparison.
+    check performance env GOTOOLCHAIN="${latest_toolchain}" \
+      python3 -I scripts/ci/benchmark.py --results "${results}"
+    # Run the analyzer on the latest release, like govulncheck, so the analysis
+    # is not limited to the minimum toolchain.
+    check staticcheck env GOTOOLCHAIN="${latest_toolchain}" \
+      go run honnef.co/go/tools/cmd/staticcheck@v0.8.2 ./pkg/... ./cmd/... ./api/...
     exit "${failed}"
     ;;
   *)

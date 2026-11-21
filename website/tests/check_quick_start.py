@@ -310,6 +310,11 @@ def verify(locale, toolchain, env):
         # `go build` below runs once, failing on the first compile error.
         run_with_retry(lambda: run(["go", "mod", "download"], checkout, env, timeout=600))
         run(build_command, checkout, env, timeout=600)
+        if toolchain:
+            # Only the published release may select a newer toolchain; the
+            # source build under test must run on the named one.
+            selected = run(["go", "env", "GOVERSION"], checkout, env).strip()
+            assert selected == toolchain, (checkout, selected, toolchain)
         output = run(after, checkout, env) if after else ""
         for binary in ("spctl", "speedle-pms", "speedle-ads"):
             assert binary in output and os.access(checkout / "bin" / binary, os.X_OK), binary
@@ -410,14 +415,20 @@ def exercise(locale, steps, checkout, env, isolated=False):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--toolchain", help="Exact Go toolchain, for example go1.27.3")
+    parser.add_argument("--toolchain", help="Default Go toolchain, for example go1.27.4; "
+                                            "a published module that declares a newer "
+                                            "release selects it (GOTOOLCHAIN=<toolchain>+auto)")
     parser.add_argument("--report", type=Path)
     parser.add_argument("--exercise", type=Path, help=argparse.SUPPRESS)
     parser.add_argument("--locale", choices=("en", "zh"), help=argparse.SUPPRESS)
     args = parser.parse_args()
     env = {key: value for key, value in os.environ.items() if not key.startswith("SPDL_")}
     if args.toolchain:
-        env["GOTOOLCHAIN"] = args.toolchain
+        # The documented install route installs a published release, whose
+        # go.mod may declare a newer toolchain than the one under test. +auto
+        # keeps everything else (the source build in particular) on the named
+        # toolchain while that release selects the one it declares.
+        env["GOTOOLCHAIN"] = args.toolchain + "+auto"
     env["NO_PROXY"] = env["no_proxy"] = "127.0.0.1,localhost" + ("," + env["NO_PROXY"] if env.get("NO_PROXY") else "")
     if args.exercise:
         assert sys.platform.startswith("linux") and args.locale and args.report
