@@ -51,14 +51,14 @@ Los errores son JSON plano, por ejemplo `{"error":"rate_limited"}`. Si no obtien
 | `403 reauth_required` | Autenticarse de nuevo con un proveedor vinculado antes de crear la clave. |
 | `403 insufficient_scope` | Usar una clave con el ámbito requerido. |
 | `403 csrf_failed` | Comprobar sesión, origen y cabecera CSRF. |
-| `404 service_not_found` (ADS) / `404 not_found` (gestión) | Elegir un servicio de la cuenta. Los ID de clave desconocidos, ajenos o revocados también devuelven `404 not_found`. |
+| `404 service_not_found` (ADS) / `404 not_found` (gestión) | Elegir un servicio del espacio de trabajo correspondiente. Los ID de clave desconocidos, de otro espacio de trabajo o revocados también devuelven `404 not_found`. |
 | `409 quota_exceeded` | Libere una plaza de servicio o de política eliminando un elemento sin uso; el tiempo no restablece esos límites. Revoque una clave API sin uso, o deje que caduque, para liberar esa plaza. |
 | `409 revision_exhausted` | La revisión del servicio alcanzó su máximo; sigue siendo legible y exportable. Siga los [pasos de recuperación](#revision-exhausted). |
 | `413 request_too_large` | Reducir el cuerpo. |
 | `429 rate_limited` / `429 daily_quota_exceeded` | Respetar `Retry-After` y usar espera incremental acotada; la cuota diaria se restablece a medianoche UTC. |
 | `503 quota_unavailable` / `503 snapshot_unavailable` / `500 internal_error` | Denegar el acceso y reintentar con espera acotada, respetando `Retry-After` si existe. |
 
-En solicitudes con clave verificada, `X-RateLimit-Limit` es 600. No hay un `X-RateLimit-Remaining` exacto. `X-Quota-Daily-Remaining` es una estimación de saldo de la cuenta; la concurrencia y las reservas sin uso pueden hacer que difiera del saldo utilizable. No garantiza la siguiente solicitud y se omite en rechazos tempranos.
+En solicitudes con clave verificada, `X-RateLimit-Limit` es 600. No hay un `X-RateLimit-Remaining` exacto. `X-Quota-Daily-Remaining` es una estimación del saldo del espacio de trabajo de la clave API; la concurrencia y las reservas sin uso pueden hacer que difiera del saldo utilizable. No garantiza la siguiente solicitud y se omite en rechazos tempranos.
 
 ADS usa `Cache-Control: no-store`. No guarde decisiones ni credenciales en cachés compartidas. Use POST; otros métodos pueden recibir `405 method_not_allowed` o un bloqueo previo que no sea JSON. Consulte la [API de autorización](/es/docs/cloud/authorization-api/).
 
@@ -75,4 +75,4 @@ Para recuperarse:
 4. Cambie las llamadas al nombre nuevo.
 5. Después, si lo desea, elimine el servicio antiguo.
 
-Los límites de servicios y políticas de la cuenta también se aplican a estos pasos. Antes de los pasos 2 y 3, compruebe que haya una plaza de servicio libre y suficientes plazas de políticas para la importación; si es necesario, elimine servicios o políticas sin uso. Si no puede liberar otras plazas, confirme la exportación, elimine el servicio antiguo y realice los pasos 2–4. Eliminar el servicio antiguo antes de que el reemplazo esté listo interrumpe el acceso al servicio.
+Los límites de servicios y políticas del espacio de trabajo también se aplican a estos pasos. Antes de los pasos 2 y 3, compruebe que el espacio de trabajo tenga una plaza de servicio libre y suficientes plazas de políticas para la importación; si es necesario, elimine servicios o políticas sin uso. Si no puede liberar otras plazas, confirme la exportación, elimine el servicio antiguo y realice los pasos 2–4. Eliminar el servicio antiguo antes de que el reemplazo esté listo interrumpe el acceso al servicio.

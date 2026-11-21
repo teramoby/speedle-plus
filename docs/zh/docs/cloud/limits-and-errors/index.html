@@ -331,7 +331,7 @@
 
 <tr>
 <td><code>404 service_not_found</code>（ADS）/ <code>404 not_found</code>（管理）</td>
-<td>选择当前账号中存在的服务。密钥 ID 未知、属于其他账号或已撤销时也返回 <code>404 not_found</code>。</td>
+<td>选择对应工作区中存在的服务。密钥 ID 未知、属于其他工作区或已撤销时也返回 <code>404 not_found</code>。</td>
 </tr>
 
 <tr>
@@ -361,7 +361,7 @@
 </tbody>
 </table>
 
-<p>API 密钥验证通过后，<code>X-RateLimit-Limit</code> 为 600，不提供精确的 <code>X-RateLimit-Remaining</code>。如果有 <code>X-Quota-Daily-Remaining</code>，它只是账号级剩余额度的估计值；并发调用和未使用的预留可能使它偏离实际可用次数。它不保证下一次请求成功，提前拒绝的响应不带此头。</p>
+<p>API 密钥验证通过后，<code>X-RateLimit-Limit</code> 为 600，不提供精确的 <code>X-RateLimit-Remaining</code>。如果有 <code>X-Quota-Daily-Remaining</code>，它只是该 API 密钥所属工作区剩余额度的估计值；并发调用和未使用的预留可能使它偏离实际可用次数。它不保证下一次请求成功，提前拒绝的响应不带此头。</p>
 
 <p>ADS 响应使用 <code>Cache-Control: no-store</code>，不要共享缓存判定或凭据。请使用 POST；其他方法可能收到 <code>405 method_not_allowed</code>，或更早被拦截并返回非 JSON 响应。参见<a href="/zh/docs/cloud/authorization-api/">授权 API</a>。</p>
 
@@ -381,7 +381,7 @@
 <li>之后可以删除旧服务。</li>
 </ol>
 
-<p>账号的服务和策略限额仍适用于上述步骤。执行第 2、3 步前，确认账号有一个空闲服务名额和足够的策略名额来完成导入；如有必要，先删除不用的服务或策略。如果没有其他名额可释放，请确认导出文件可用，删除旧服务，再执行第 2–4 步。在新服务就绪前删除旧服务会中断其调用方的访问。</p>
+<p>工作区的服务和策略限额仍适用于上述步骤。执行第 2、3 步前，确认工作区有一个空闲服务名额和足够的策略名额来完成导入；如有必要，先删除不用的服务或策略。如果没有其他名额可释放，请确认导出文件可用，删除旧服务，再执行第 2–4 步。在新服务就绪前删除旧服务会中断其调用方的访问。</p>
 </div>
 </div>
 </main>

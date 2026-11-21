@@ -51,14 +51,14 @@ Errors are flat JSON, for example `{"error":"rate_limited"}`. An error is not an
 | `403 reauth_required` | Authenticate with a linked provider again before creating a key. |
 | `403 insufficient_scope` | Use a key with the required scope. |
 | `403 csrf_failed` | Use the console session with the required origin and CSRF header. |
-| `404 service_not_found` (ADS) / `404 not_found` (management) | Select an existing service in your account. Unknown, other-account or already-revoked key IDs also return `404 not_found`. |
+| `404 service_not_found` (ADS) / `404 not_found` (management) | Select an existing service in the matching workspace. Unknown, other-workspace or already-revoked key IDs also return `404 not_found`. |
 | `409 quota_exceeded` | Free a service or policy slot by deleting an unused item; time does not reset those caps. Free an API-key slot by revoking the key or letting it expire. |
 | `409 revision_exhausted` | The service's revision reached its maximum; it stays readable and exportable. [Follow the recovery steps](#revision-exhausted). |
 | `413 request_too_large` | Reduce the body size. |
 | `429 rate_limited` / `429 daily_quota_exceeded` | Respect `Retry-After` and use bounded backoff; the daily limit resets at UTC midnight. |
 | `503 quota_unavailable` / `503 snapshot_unavailable` / `500 internal_error` | Fail closed and retry with bounded backoff, respecting `Retry-After` when present. |
 
-For verified API-key requests, `X-RateLimit-Limit` is 600. There is no exact `X-RateLimit-Remaining`. `X-Quota-Daily-Remaining`, when present, is an approximate account-wide balance; concurrent calls and unused reservations can make it differ from what you can actually use. It does not guarantee that the next request will succeed, and early rejections omit it.
+For verified API-key requests, `X-RateLimit-Limit` is 600. There is no exact `X-RateLimit-Remaining`. `X-Quota-Daily-Remaining`, when present, is an approximate balance for the API key's workspace; concurrent calls and unused reservations can make it differ from what you can actually use. It does not guarantee that the next request will succeed, and early rejections omit it.
 
 ADS responses use `Cache-Control: no-store`. Keep decisions and credentials out of shared caches. Use POST; other methods can receive `405 method_not_allowed` or an earlier non-JSON block response. See the [Authorization API](/docs/cloud/authorization-api/).
 
@@ -75,4 +75,4 @@ To recover:
 4. Switch callers to the new service name.
 5. Optionally, delete the old service afterwards.
 
-Account service and policy limits still apply. Before steps 2 and 3, make sure the account has a free service slot and enough policy slots for the import; delete unused services or policies if necessary. If no other capacity can be freed, confirm the export, delete the old service, and then perform steps 2–4. Deleting the old service before the replacement is ready interrupts access for its callers.
+Workspace service and policy limits still apply. Before steps 2 and 3, make sure the workspace has a free service slot and enough policy slots for the import; delete unused services or policies if necessary. If no other capacity can be freed, confirm the export, delete the old service, and then perform steps 2–4. Deleting the old service before the replacement is ready interrupts access for its callers.

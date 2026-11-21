@@ -331,7 +331,7 @@
 
 <tr>
 <td><code>404 service_not_found</code> (ADS) / <code>404 not_found</code> (gestión)</td>
-<td>Elegir un servicio de la cuenta. Los ID de clave desconocidos, ajenos o revocados también devuelven <code>404 not_found</code>.</td>
+<td>Elegir un servicio del espacio de trabajo correspondiente. Los ID de clave desconocidos, de otro espacio de trabajo o revocados también devuelven <code>404 not_found</code>.</td>
 </tr>
 
 <tr>
@@ -361,7 +361,7 @@
 </tbody>
 </table>
 
-<p>En solicitudes con clave verificada, <code>X-RateLimit-Limit</code> es 600. No hay un <code>X-RateLimit-Remaining</code> exacto. <code>X-Quota-Daily-Remaining</code> es una estimación de saldo de la cuenta; la concurrencia y las reservas sin uso pueden hacer que difiera del saldo utilizable. No garantiza la siguiente solicitud y se omite en rechazos tempranos.</p>
+<p>En solicitudes con clave verificada, <code>X-RateLimit-Limit</code> es 600. No hay un <code>X-RateLimit-Remaining</code> exacto. <code>X-Quota-Daily-Remaining</code> es una estimación del saldo del espacio de trabajo de la clave API; la concurrencia y las reservas sin uso pueden hacer que difiera del saldo utilizable. No garantiza la siguiente solicitud y se omite en rechazos tempranos.</p>
 
 <p>ADS usa <code>Cache-Control: no-store</code>. No guarde decisiones ni credenciales en cachés compartidas. Use POST; otros métodos pueden recibir <code>405 method_not_allowed</code> o un bloqueo previo que no sea JSON. Consulte la <a href="/es/docs/cloud/authorization-api/">API de autorización</a>.</p>
 
@@ -381,7 +381,7 @@
 <li>Después, si lo desea, elimine el servicio antiguo.</li>
 </ol>
 
-<p>Los límites de servicios y políticas de la cuenta también se aplican a estos pasos. Antes de los pasos 2 y 3, compruebe que haya una plaza de servicio libre y suficientes plazas de políticas para la importación; si es necesario, elimine servicios o políticas sin uso. Si no puede liberar otras plazas, confirme la exportación, elimine el servicio antiguo y realice los pasos 2–4. Eliminar el servicio antiguo antes de que el reemplazo esté listo interrumpe el acceso al servicio.</p>
+<p>Los límites de servicios y políticas del espacio de trabajo también se aplican a estos pasos. Antes de los pasos 2 y 3, compruebe que el espacio de trabajo tenga una plaza de servicio libre y suficientes plazas de políticas para la importación; si es necesario, elimine servicios o políticas sin uso. Si no puede liberar otras plazas, confirme la exportación, elimine el servicio antiguo y realice los pasos 2–4. Eliminar el servicio antiguo antes de que el reemplazo esté listo interrumpe el acceso al servicio.</p>
 </div>
 </div>
 </main>

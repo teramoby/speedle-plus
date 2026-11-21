@@ -331,7 +331,7 @@
 
 <tr>
 <td><code>404 service_not_found</code> (ADS) / <code>404 not_found</code> (management)</td>
-<td>Select an existing service in your account. Unknown, other-account or already-revoked key IDs also return <code>404 not_found</code>.</td>
+<td>Select an existing service in the matching workspace. Unknown, other-workspace or already-revoked key IDs also return <code>404 not_found</code>.</td>
 </tr>
 
 <tr>
@@ -361,7 +361,7 @@
 </tbody>
 </table>
 
-<p>For verified API-key requests, <code>X-RateLimit-Limit</code> is 600. There is no exact <code>X-RateLimit-Remaining</code>. <code>X-Quota-Daily-Remaining</code>, when present, is an approximate account-wide balance; concurrent calls and unused reservations can make it differ from what you can actually use. It does not guarantee that the next request will succeed, and early rejections omit it.</p>
+<p>For verified API-key requests, <code>X-RateLimit-Limit</code> is 600. There is no exact <code>X-RateLimit-Remaining</code>. <code>X-Quota-Daily-Remaining</code>, when present, is an approximate balance for the API key&rsquo;s workspace; concurrent calls and unused reservations can make it differ from what you can actually use. It does not guarantee that the next request will succeed, and early rejections omit it.</p>
 
 <p>ADS responses use <code>Cache-Control: no-store</code>. Keep decisions and credentials out of shared caches. Use POST; other methods can receive <code>405 method_not_allowed</code> or an earlier non-JSON block response. See the <a href="/docs/cloud/authorization-api/">Authorization API</a>.</p>
 
@@ -381,7 +381,7 @@
 <li>Optionally, delete the old service afterwards.</li>
 </ol>
 
-<p>Account service and policy limits still apply. Before steps 2 and 3, make sure the account has a free service slot and enough policy slots for the import; delete unused services or policies if necessary. If no other capacity can be freed, confirm the export, delete the old service, and then perform steps 2–4. Deleting the old service before the replacement is ready interrupts access for its callers.</p>
+<p>Workspace service and policy limits still apply. Before steps 2 and 3, make sure the workspace has a free service slot and enough policy slots for the import; delete unused services or policies if necessary. If no other capacity can be freed, confirm the export, delete the old service, and then perform steps 2–4. Deleting the old service before the replacement is ready interrupts access for its callers.</p>
 </div>
 </div>
 </main>
