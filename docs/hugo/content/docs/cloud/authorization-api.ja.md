@@ -1,18 +1,18 @@
 +++
 title = "Speedle Cloud 認可 API"
 linkTitle = "認可 API"
-description = "アカウント API キーによる IsAllowed、呼び出し元の ID と Node.js 22 の例。"
+description = "ワークスペース API キーによる IsAllowed、呼び出し元の ID と Node.js 22 の例。"
 weight = 30
 draft = false
 toc = true
 tocheading = "h2"
 categories = ["docs"]
-lastmod = 2026-11-12T00:00:00+08:00
+lastmod = 2026-11-21T00:00:00+08:00
 +++
 
 **Speedle Cloud はパブリックベータを提供中です。** このガイドでは、稼働中のサービスでの手順を説明します。
 
-アカウント API キーを使い、サーバーから認可を確認します。キーの作成にはサインインが必要です。ADS チェックには `ads` または `pms:read+ads` を使用します。`pms:read` と `pms:write` は `403 insufficient_scope` です。`pms:read+ads` は PMS の読み取りも許可し、Speedle Cloud ADS（`speedle-cloud`）のポリシー同期に必要ですが、書き込みは許可しません。
+ワークスペース API キーを使い、サーバーから認可を確認します。サインインして対象ワークスペースを選択し、そこでキーを作成します。ADS チェックには `ads` または `pms:read+ads` を使用します。`pms:read` と `pms:write` は `403 insufficient_scope` です。`pms:read+ads` は PMS の読み取りも許可し、Speedle Cloud ADS（`speedle-cloud`）のポリシー同期に必要ですが、書き込みは許可しません。
 
 ## サーバーから IsAllowed を呼び出す
 
@@ -30,13 +30,13 @@ Content-Type: application/json
 
 `idd` はアプリケーションが認証した ID ドメインです。信頼できるサーバー側の認証情報から設定してください。`grant user alice from corp get /books` は `corp` のみで一致します。`from` のないポリシーは全ドメインの同名ユーザーに一致します。`idd` を省略した principal も全ドメインに一致するため、複数の ID ソースでは必ず送信してください。
 
-`serviceName` は必須で既定値はありません。キーのアカウント内のサービスを選びます。未指定、空、不明、別アカウントの場合は `404 {"error":"service_not_found"}` です。キーは単一サービスには結び付きません。[入門ポリシー](/ja/docs/cloud/getting-started/)の例では `books` を指定します。
+`serviceName` は必須で既定値はありません。キーのワークスペース内のサービスを選びます。未指定、空、不明、別ワークスペースの場合は `404 {"error":"service_not_found"}` です。キーはスコープに応じてワークスペース全体を対象とし、単一サービスには結び付きません。[入門ポリシー](/ja/docs/cloud/getting-started/)の例では `books` を指定します。
 
 ## 判定とユーザー ID
 
 成功時は `allowed` が真偽値、`reason` が数値です。ポリシーによる拒否も HTTP 200 になり、`allowed` は `false` です。保護対象の操作前に `allowed` を確認し、例外や無効な応答は拒否してください。
 
-API キーはアカウントと API スコープを認証し、エンドユーザーはアプリケーションで認証します。ブラウザから渡された principal を信用しないでください。Cloud は `subject.token` と `tokenType` を検証せず破棄します。principal のみで判定するので、これらのフィールドをユーザー認証の証拠にしないでください。
+API キーはワークスペースと API スコープを識別し、エンドユーザーはアプリケーションで認証します。ブラウザから渡された principal を信用しないでください。Cloud は `subject.token` と `tokenType` を検証せず破棄します。principal のみで判定するので、これらのフィールドをユーザー認証の証拠にしないでください。
 
 Playground は現在の保存済みポリシー、ADS は公開済みスナップショットを使用します。Playground の成功はすべての ADS 拠点への反映を保証しません。公開 ADS Diagnose API はありません。
 

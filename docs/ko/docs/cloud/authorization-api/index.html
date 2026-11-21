@@ -11,7 +11,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1"><title>Speedle Cloud 인가 API · Speedle Engine</title>
-<meta name="description" content="계정 API 키를 사용한 IsAllowed, 호출자 신원, Node.js 22 예제.">
+<meta name="description" content="워크스페이스 API 키를 사용한 IsAllowed, 호출자 신원, Node.js 22 예제.">
 <meta name="generator" content="Hugo 0.48" />
 <link href="https://engine.speedle.io/index.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://engine.speedle.io/ko/docs/cloud/authorization-api/">
@@ -23,10 +23,10 @@
 <link rel="alternate" hreflang="zh-CN" href="https://engine.speedle.io/zh/docs/cloud/authorization-api/">
 <link rel="alternate" hreflang="x-default" href="https://engine.speedle.io/docs/cloud/authorization-api/">
 <meta property="og:type" content="article">
-<meta property="article:modified_time" content="2026-11-12T00:00:00&#43;08:00">
+<meta property="article:modified_time" content="2026-11-21T00:00:00&#43;08:00">
 <meta property="og:site_name" content="Speedle Engine">
 <meta property="og:title" content="Speedle Cloud 인가 API · Speedle Engine">
-<meta property="og:description" content="계정 API 키를 사용한 IsAllowed, 호출자 신원, Node.js 22 예제.">
+<meta property="og:description" content="워크스페이스 API 키를 사용한 IsAllowed, 호출자 신원, Node.js 22 예제.">
 <meta property="og:url" content="https://engine.speedle.io/ko/docs/cloud/authorization-api/">
 <meta property="og:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta property="og:image:width" content="1200">
@@ -35,11 +35,11 @@
 <meta property="og:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Speedle Cloud 인가 API · Speedle Engine">
-<meta name="twitter:description" content="계정 API 키를 사용한 IsAllowed, 호출자 신원, Node.js 22 예제.">
+<meta name="twitter:description" content="워크스페이스 API 키를 사용한 IsAllowed, 호출자 신원, Node.js 22 예제.">
 <meta name="twitter:image" content="https://engine.speedle.io/img/social/engine-en.png">
 <meta name="twitter:image:alt" content="Speedle Engine — Fast. Simple. Access control">
 
-<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ko/docs/cloud/authorization-api/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-12T00:00:00+08:00","description":"계정 API 키를 사용한 IsAllowed, 호출자 신원, Node.js 22 예제.","headline":"Speedle Cloud 인가 API","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ko","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ko/docs/cloud/authorization-api/","@type":"WebPage"},"name":"Speedle Cloud 인가 API","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ko/docs/cloud/authorization-api/"}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ko/docs/cloud/authorization-api/#article","@type":"TechArticle","about":{"@id":"https://engine.speedle.io/#software"},"author":{"@type":"Organization","name":"Speedle","url":"https://engine.speedle.io/"},"dateModified":"2026-11-21T00:00:00+08:00","description":"워크스페이스 API 키를 사용한 IsAllowed, 호출자 신원, Node.js 22 예제.","headline":"Speedle Cloud 인가 API","image":"https://engine.speedle.io/img/social/engine-en.png","inLanguage":"ko","isPartOf":{"@id":"https://engine.speedle.io/#website"},"mainEntityOfPage":{"@id":"https://engine.speedle.io/ko/docs/cloud/authorization-api/","@type":"WebPage"},"name":"Speedle Cloud 인가 API","publisher":{"@type":"Organization","logo":{"@type":"ImageObject","height":180,"url":"https://engine.speedle.io/apple-touch-icon.png","width":180},"name":"Speedle","url":"https://engine.speedle.io/"},"url":"https://engine.speedle.io/ko/docs/cloud/authorization-api/"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@id":"https://engine.speedle.io/ko/docs/cloud/authorization-api/#breadcrumb","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","item":"https://engine.speedle.io/ko/","name":"홈","position":1},{"@type":"ListItem","item":"https://engine.speedle.io/ko/docs/","name":"문서","position":2},{"@type":"ListItem","item":"https://engine.speedle.io/ko/docs/cloud/","name":"Speedle Cloud","position":3},{"@type":"ListItem","item":"https://engine.speedle.io/ko/docs/cloud/authorization-api/","name":"Speedle Cloud 인가 API","position":4}]}</script><link href="/css/docs.css" rel="stylesheet" type="text/css">
 
 
@@ -200,7 +200,7 @@
 
 <p><strong>Speedle Cloud는 공개 베타로 제공 중입니다.</strong> 이 가이드는 실제 서비스에서의 사용 절차를 설명합니다.</p>
 
-<p>계정 API 키로 서버에서 인가를 확인합니다. 키를 생성하려면 로그인이 필요합니다. ADS 확인에는 <code>ads</code> 또는 <code>pms:read+ads</code>를 사용합니다. <code>pms:read</code>와 <code>pms:write</code>는 <code>403 insufficient_scope</code>입니다. <code>pms:read+ads</code>는 PMS 읽기도 허용하며 Speedle Cloud ADS(<code>speedle-cloud</code>)의 정책 동기화에 필요하지만 쓰기는 허용하지 않습니다.</p>
+<p>워크스페이스 API 키로 서버에서 인가를 확인합니다. 로그인한 뒤 대상 워크스페이스를 선택해 키를 생성합니다. ADS 확인에는 <code>ads</code> 또는 <code>pms:read+ads</code>를 사용합니다. <code>pms:read</code>와 <code>pms:write</code>는 <code>403 insufficient_scope</code>입니다. <code>pms:read+ads</code>는 PMS 읽기도 허용하며 Speedle Cloud ADS(<code>speedle-cloud</code>)의 정책 동기화에 필요하지만 쓰기는 허용하지 않습니다.</p>
 
 <h2 id="서버에서-isallowed-호출">서버에서 IsAllowed 호출</h2>
 
@@ -214,13 +214,13 @@ Content-Type: application/json
 
 <p><code>idd</code>는 애플리케이션이 사용자를 인증한 신원 도메인입니다. 신뢰할 수 있는 서버 인증 정보로 설정하세요. <code>grant user alice from corp get /books</code>는 <code>corp</code>에서만 일치합니다. <code>from</code>이 없는 정책은 모든 도메인의 같은 이름과 일치합니다. <code>idd</code>가 없는 principal도 모든 도메인과 일치하므로 여러 신원 소스를 사용하면 반드시 전송하세요.</p>
 
-<p><code>serviceName</code>은 필수이며 기본값이 없습니다. 키 계정의 서비스를 선택하세요. 누락, 빈 값, 알 수 없거나 다른 계정의 이름은 <code>404 {&quot;error&quot;:&quot;service_not_found&quot;}</code>입니다. 키는 한 서비스에 묶이지 않습니다. <a href="/ko/docs/cloud/getting-started/">시작 정책</a>에서는 <code>books</code>를 지정합니다.</p>
+<p><code>serviceName</code>은 필수이며 기본값이 없습니다. 키의 워크스페이스에 있는 서비스를 선택하세요. 누락, 빈 값, 알 수 없거나 다른 워크스페이스의 이름은 <code>404 {&quot;error&quot;:&quot;service_not_found&quot;}</code>입니다. 키는 범위에 따라 워크스페이스 전체에 적용되며 한 서비스에 묶이지 않습니다. <a href="/ko/docs/cloud/getting-started/">시작 정책</a>에서는 <code>books</code>를 지정합니다.</p>
 
 <h2 id="판정과-사용자-신원">판정과 사용자 신원</h2>
 
 <p>성공 응답에는 불리언 <code>allowed</code>와 숫자 <code>reason</code>이 있습니다. 정책 거부도 HTTP 200이며 <code>allowed</code>가 <code>false</code>입니다. 보호 작업 전에 <code>allowed</code>를 확인하고 예외나 잘못된 응답은 거부하세요.</p>
 
-<p>API 키는 계정과 API 범위를 인증하고 최종 사용자는 애플리케이션이 인증합니다. 브라우저가 제공한 principal을 신뢰하지 마세요. Cloud는 <code>subject.token</code>과 <code>tokenType</code>을 검증하지 않고 버립니다. principal만 판정에 사용하므로 이 필드를 사용자 인증의 증거로 사용하지 마세요.</p>
+<p>API 키는 워크스페이스와 API 범위를 식별하고 최종 사용자는 애플리케이션이 인증합니다. 브라우저가 제공한 principal을 신뢰하지 마세요. Cloud는 <code>subject.token</code>과 <code>tokenType</code>을 검증하지 않고 버립니다. principal만 판정에 사용하므로 이 필드를 사용자 인증의 증거로 사용하지 마세요.</p>
 
 <p>Playground는 현재 저장된 정책을, ADS는 게시된 스냅샷을 사용합니다. Playground 성공이 모든 ADS 위치에 반영되었음을 보장하지 않습니다. 공개 ADS Diagnose API는 없습니다.</p>
 

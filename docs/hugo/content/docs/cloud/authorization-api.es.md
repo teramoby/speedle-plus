@@ -3,22 +3,22 @@ title = "API de autorización de Speedle Cloud"
 linkTitle = "API de autorización"
 description = "Solicitud y respuesta de IsAllowed de Speedle Cloud ADS, integración con Node.js 22, instantáneas de políticas y restricciones de transporte."
 date = 2026-11-08T00:00:00+08:00
-lastmod = 2026-11-12T00:00:00+08:00
+lastmod = 2026-11-21T00:00:00+08:00
 weight = 30
 draft = false
 toc = true
 tocheading = "h2"
 categories = ["docs"]
-bref = "Autorización del servidor con una clave API de cuenta."
+bref = "Autorización del servidor con una clave API de espacio de trabajo."
 +++
 
 **Speedle Cloud está en beta pública.** Esta guía describe el flujo de trabajo del servicio en línea.
 
-Use una clave API de cuenta para llamadas de autorización desde el servidor. Inicie sesión en la cuenta para crear claves. Use `ads` o `pms:read+ads` para las comprobaciones ADS; `pms:read` y `pms:write` devuelven `403 insufficient_scope`. `pms:read+ads` también permite lecturas PMS y es necesario para sincronizar políticas con Speedle Cloud ADS (`speedle-cloud`); no permite escrituras.
+Use una clave API de espacio de trabajo para llamadas de autorización desde el servidor. Inicie sesión en su cuenta, seleccione el espacio de trabajo correspondiente y cree claves allí. Use `ads` o `pms:read+ads` para las comprobaciones ADS; `pms:read` y `pms:write` devuelven `403 insufficient_scope`. `pms:read+ads` también permite lecturas PMS y es necesario para sincronizar políticas con Speedle Cloud ADS (`speedle-cloud`); no permite escrituras.
 
 ## Invocar IsAllowed desde su servidor
 
-Envíe una clave API de cuenta con ámbito `ads` o `pms:read+ads` en un encabezado `Authorization: Bearer` y realice una solicitud POST:
+Envíe una clave API de espacio de trabajo con ámbito `ads` o `pms:read+ads` en un encabezado `Authorization: Bearer` y realice una solicitud POST:
 
 ```http
 POST /authz-check/v1/is-allowed
@@ -34,7 +34,7 @@ El cuerpo es la solicitud REST de Speedle, con los mismos campos y tipos que un 
 
 La política de primeros pasos, `grant user alice from corp get /books`, coincide con la solicitud anterior únicamente en el dominio `corp`. Una política sin `from` coincide con el nombre en todos los dominios. Una entidad principal sin `idd` coincide también con todos los dominios, lo que hace indistinguibles a dos usuarios distintos que compartan el mismo nombre cuando la aplicación acepta más de una fuente de identidades. Las integraciones multiinquilino deben enviar `idd` en cada solicitud.
 
-`serviceName` es obligatorio y nunca se asigna por defecto. Elija un servicio de la cuenta de la clave API. Un nombre ausente, vacío, desconocido o de otra cuenta devuelve `404 {"error":"service_not_found"}`. La clave API no se vincula a un solo servicio.
+`serviceName` es obligatorio y nunca se asigna por defecto. Elija un servicio del espacio de trabajo de la clave API. Un nombre ausente, vacío, desconocido o de otro espacio de trabajo devuelve `404 {"error":"service_not_found"}`. Una clave API de espacio de trabajo cubre el espacio de trabajo según su ámbito y no se vincula a un solo servicio.
 
 La [política de primeros pasos](/es/docs/cloud/getting-started/#crear-un-servicio-y-una-política) autoriza la solicitud de ejemplo:
 
@@ -46,7 +46,7 @@ La [política de primeros pasos](/es/docs/cloud/getting-started/#crear-un-servic
 
 Una denegación de política también devuelve HTTP 200, con `allowed` establecido en `false`. Su aplicación debe verificar `allowed` antes de ejecutar la acción protegida y debe fallar de forma restrictiva (fail closed) ante excepciones o respuestas no válidas.
 
-La aplicación determina las entidades principales mediante su propia autenticación de usuarios. La clave API identifica la cuenta y el ámbito permitido, no al usuario final. No confíe en identidades proporcionadas por un navegador no autenticado.
+La aplicación determina las entidades principales mediante su propia autenticación de usuarios. La clave API identifica el espacio de trabajo y el ámbito permitido, no al usuario final. No confíe en identidades proporcionadas por un navegador no autenticado.
 
 Speedle Cloud no valida tokens de sujetos. Al igual que el Speedle autohospedado sin un asertor de tokens, acepta `subject.token` y `tokenType` y los descarta sin validación, por lo que un campo de token no vacío nunca es prueba de que la autenticación haya tenido lugar; las decisiones solo utilizan las entidades principales. No reenvíe un token de usuario final ni trate la llamada como validada por aserción.
 

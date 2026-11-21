@@ -230,7 +230,7 @@ Solo se admiten políticas de rol. Una asignación global no concede ninguna ope
       
       <guid>https://engine.speedle.io/es/docs/cloud/authorization-api/</guid>
       <description>Speedle Cloud está en beta pública. Esta guía describe el flujo de trabajo del servicio en línea.
-Use una clave API de cuenta para llamadas de autorización desde el servidor. Inicie sesión en la cuenta para crear claves. Use ads o pms:read+ads para las comprobaciones ADS; pms:read y pms:write devuelven 403 insufficient_scope. pms:read+ads también permite lecturas PMS y es necesario para sincronizar políticas con Speedle Cloud ADS (speedle-cloud); no permite escrituras.</description>
+Use una clave API de espacio de trabajo para llamadas de autorización desde el servidor. Inicie sesión en su cuenta, seleccione el espacio de trabajo correspondiente y cree claves allí. Use ads o pms:read+ads para las comprobaciones ADS; pms:read y pms:write devuelven 403 insufficient_scope. pms:read+ads también permite lecturas PMS y es necesario para sincronizar políticas con Speedle Cloud ADS (speedle-cloud); no permite escrituras.</description>
     </item>
     
     <item>

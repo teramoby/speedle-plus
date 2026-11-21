@@ -62,7 +62,7 @@ API 키 생성 API 키에서 앞뒤 공백을 제외한 1–128자 이름, 범�
       
       <guid>https://engine.speedle.io/ko/docs/cloud/authorization-api/</guid>
       <description>Speedle Cloud는 공개 베타로 제공 중입니다. 이 가이드는 실제 서비스에서의 사용 절차를 설명합니다.
-계정 API 키로 서버에서 인가를 확인합니다. 키를 생성하려면 로그인이 필요합니다. ADS 확인에는 ads 또는 pms:read+ads를 사용합니다. pms:read와 pms:write는 403 insufficient_scope입니다. pms:read+ads는 PMS 읽기도 허용하며 Speedle Cloud ADS(speedle-cloud)의 정책 동기화에 필요하지만 쓰기는 허용하지 않습니다.
+워크스페이스 API 키로 서버에서 인가를 확인합니다. 로그인한 뒤 대상 워크스페이스를 선택해 키를 생성합니다. ADS 확인에는 ads 또는 pms:read+ads를 사용합니다. pms:read와 pms:write는 403 insufficient_scope입니다. pms:read+ads는 PMS 읽기도 허용하며 Speedle Cloud ADS(speedle-cloud)의 정책 동기화에 필요하지만 쓰기는 허용하지 않습니다.
 서버에서 IsAllowed 호출 ads 또는 pms:read+ads 범위 API 키를 하나의 Authorization: Bearer 헤더에 넣고 POST로 보냅니다.
 POST /authz-check/v1/is-allowed Authorization: Bearer &amp;lt;API key&amp;gt; Content-Type: application/json {&amp;#34;subject&amp;#34;:{&amp;#34;principals&amp;#34;:[{&amp;#34;type&amp;#34;:&amp;#34;user&amp;#34;,&amp;#34;name&amp;#34;:&amp;#34;alice&amp;#34;,&amp;#34;idd&amp;#34;:&amp;#34;corp&amp;#34;}]},&amp;#34;serviceName&amp;#34;:&amp;#34;books&amp;#34;,&amp;#34;resource&amp;#34;:&amp;#34;/books&amp;#34;,&amp;#34;action&amp;#34;:&amp;#34;get&amp;#34;,&amp;#34;attributes&amp;#34;:[{&amp;#34;name&amp;#34;:&amp;#34;level&amp;#34;,&amp;#34;type&amp;#34;:&amp;#34;numeric&amp;#34;,&amp;#34;value&amp;#34;:3},{&amp;#34;name&amp;#34;:&amp;#34;when&amp;#34;,&amp;#34;type&amp;#34;:&amp;#34;datetime&amp;#34;,&amp;#34;value&amp;#34;:&amp;#34;2026-11-05T03:00:00Z&amp;#34;}]} 본문은 자체 호스팅 Speedle ADS와 같은 REST 형식입니다.</description>
     </item>

@@ -239,8 +239,7 @@ Only role policies are supported there. A global role assignment does not grant 
       
       <guid>https://engine.speedle.io/docs/cloud/authorization-api/</guid>
       <description>Speedle Cloud is in public beta. This guide describes the workflow for the live service.
-Use an account API key for server-side authorization calls. Sign in to the account to create keys. Use ads or pms:read+ads for ADS checks; pms:read and pms:write return 403 insufficient_scope. The combined pms:read+ads scope also permits PMS reads and is required for policy synchronization with Speedle Cloud ADS (speedle-cloud); it cannot write policies.
-Call IsAllowed from your server Send an account API key with the ads or pms:read+ads scope in one Authorization: Bearer header and make a POST request:</description>
+Use a workspace API key for server-side authorization calls. Sign in to your account, select the target workspace and create keys there. Use ads or pms:read+ads for ADS checks; pms:read and pms:write return 403 insufficient_scope. The combined pms:read+ads scope also permits PMS reads and is required for policy synchronization with Speedle Cloud ADS (speedle-cloud); it cannot write policies.</description>
     </item>
     
     <item>
