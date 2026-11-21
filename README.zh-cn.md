@@ -143,7 +143,7 @@ brew install teramoby/tap/speedle
 
 启动服务和演示步骤见 [Homebrew](https://engine.speedle.io/zh/docs/deployment/homebrew/)。
 
-需要 Go 1.26.0 或 Go 1.26 的更新补丁版本：
+需要满足所安装版本 `go.mod` 中最低要求的 Go 工具链（从检出的仓库构建见[前期准备](#前期准备)）：
 
 ```
 go install github.com/teramoby/speedle-plus/cmd/...@latest
