@@ -511,7 +511,8 @@ size, social box size.
   Engine and AI navigate to that locale's homepage; Cloud applies its catalog
   before revealing the prerendered page. Explicit localized URLs take priority
   and remain shareable. English can be selected explicitly to reset the shared
-  preference. Preserve query strings and fragments on homepage navigation.
+  preference. Static-site homepage redirects preserve query strings and
+  fragments; Cloud retains its existing pre-network URL sanitization.
 - Existing Cloud localStorage preferences remain a fallback when there is no
   valid shared choice. Cookie reads precede that legacy storage; both the
   prepaint script and the application must use the same resolution. The
