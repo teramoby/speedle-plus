@@ -204,7 +204,7 @@
 <p>本手册介绍 <strong>Speedle Cloud 控制台（SCC）</strong>（<a href="https://cloud.speedle.io/zh-CN/">cloud.speedle.io</a>）的日常操作流程。如需快速从服务端完成一次 API 调用，请参阅<a href="/zh/docs/cloud/getting-started/">快速入门</a>。接口载荷、错误码与配额详情请参阅<a href="/zh/docs/cloud/authorization-api/">授权 API</a>、<a href="/zh/docs/cloud/api-reference/">API 参考</a>和<a href="/zh/docs/cloud/limits-and-errors/">限额与错误</a>。</p>
 
 <blockquote>
-<p><strong>关于配图：</strong> 本手册中的配图展示的是实际 Speedle Cloud 控制台在英文界面下使用演示数据渲染的效果（<code>example.test</code> 账号、<code>books</code> 示例服务、示例端点与示例用量数值）。</p>
+<p><strong>关于配图：</strong> 本手册中的配图展示的是实际 Speedle Cloud 控制台在中文界面下使用演示数据渲染的效果（<code>example.test</code> 账号、<code>books</code> 示例服务、示例端点与示例用量数值）。</p>
 </blockquote>
 
 <h2 id="登录与控制台布局">登录与控制台布局</h2>
@@ -256,9 +256,9 @@
 </ul></li>
 </ul>
 
-<p><a href="/img/cloud/console/01-console-shell-workspace-switcher.png"><img src="/img/cloud/console/01-console-shell-workspace-switcher.png" alt="Speedle Cloud 控制台顶部栏展开工作区切换器与左侧导航栏" /></a></p>
+<p><a href="/img/cloud/console/zh/01-console-shell-workspace-switcher.png"><img src="/img/cloud/console/zh/01-console-shell-workspace-switcher.png" alt="Speedle Cloud 控制台顶部栏展开工作区切换器与左侧导航栏" /></a></p>
 
-<p>展开顶部 <strong>工作区</strong> 切换器后的控制台布局与左侧导航栏（演示数据，英文界面）。</p>
+<p>展开顶部 <strong>工作区</strong> 切换器后的控制台布局与左侧导航栏（演示数据，中文界面）。</p>
 
 <h2 id="个人身份与工作区">个人身份与工作区</h2>
 
@@ -289,9 +289,9 @@
 
 <p>在左侧导航栏打开 <strong>工作区设置 → 成员</strong>。</p>
 
-<p><a href="/img/cloud/console/02-workspace-members-page.png"><img src="/img/cloud/console/02-workspace-members-page.png" alt="工作区成员页面显示所有者与管理员成员、邀请表单、待接受邀请和退出工作区卡片" /></a></p>
+<p><a href="/img/cloud/console/zh/02-workspace-members-page.png"><img src="/img/cloud/console/zh/02-workspace-members-page.png" alt="工作区成员页面显示所有者与管理员成员、邀请表单、待接受邀请和退出工作区卡片" /></a></p>
 
-<p>工作区 <strong>成员</strong> 页面，展示成员角色、邀请表单、待接受邀请与 <strong>退出工作区</strong> 操作（演示数据，英文界面）。</p>
+<p>工作区 <strong>成员</strong> 页面，展示成员角色、邀请表单、待接受邀请与 <strong>退出工作区</strong> 操作（演示数据，中文界面）。</p>
 
 <table>
 <thead>
@@ -374,13 +374,13 @@
 <div class="highlight"><pre style="color:#f8f8f2;background-color:#282a36;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-text" data-lang="text">grant role Reader get /books</code></pre></div>
 <p><strong>预期结果：</strong> 两条策略都会出现在 <code>books</code> 的策略列表中。已保存的策略会立即在 <strong>策略试运行</strong> 中生效，并约在 60 秒内同步到托管授权 API。</p>
 
-<p><a href="/img/cloud/console/04-policy-editor-live-validation.png"><img src="/img/cloud/console/04-policy-editor-live-validation.png" alt="创建策略编辑器显示策略名称 read-books、SPDL 源码、自动校验有效标记和保存策略按钮" /></a></p>
+<p><a href="/img/cloud/console/zh/04-policy-editor-live-validation.png"><img src="/img/cloud/console/zh/04-policy-editor-live-validation.png" alt="创建策略编辑器显示策略名称 read-books、SPDL 源码、自动校验有效标记和保存策略按钮" /></a></p>
 
-<p>策略编辑器在保存 <code>read-books</code> 前自动完成实时 SPDL 校验并显示有效标记（演示数据，英文界面）。</p>
+<p>策略编辑器在保存 <code>read-books</code> 前自动完成实时 SPDL 校验并显示有效标记（演示数据，中文界面）。</p>
 
-<p><a href="/img/cloud/console/03-service-policies-list.png"><img src="/img/cloud/console/03-service-policies-list.png" alt="books 服务的服务与策略列表显示 reader-role 和 read-books 策略以及服务标签页" /></a></p>
+<p><a href="/img/cloud/console/zh/03-service-policies-list.png"><img src="/img/cloud/console/zh/03-service-policies-list.png" alt="books 服务的服务与策略列表显示 reader-role 和 read-books 策略以及服务标签页" /></a></p>
 
-<p><code>books</code> 服务的 <strong>服务与策略</strong> 列表，展示 <code>reader-role</code> 与 <code>read-books</code> 及各服务标签页（演示数据，英文界面）。</p>
+<p><code>books</code> 服务的 <strong>服务与策略</strong> 列表，展示 <code>reader-role</code> 与 <code>read-books</code> 及各服务标签页（演示数据，中文界面）。</p>
 
 <p>你可以在代码编辑器与 <strong>使用纯文本编辑器</strong> 之间切换，按效果、主体、动作、资源、角色或是否包含条件搜索和筛选策略列表，并在每行执行 <strong>编辑</strong>、<strong>详情</strong>、<strong>测试</strong> 或 <strong>删除</strong>。</p>
 
@@ -400,9 +400,9 @@
 
 <p>在 <strong>服务与策略</strong> 中切换到 <strong>权限关系图</strong> 标签页，可直观查看当前服务已保存策略中主体、角色与资源的关联。你可以筛选图谱、切换表格视图、聚焦特定节点，并将某条路径直接带入 <strong>策略试运行</strong> 执行 <strong>诊断</strong>。</p>
 
-<p><a href="/img/cloud/console/05-access-map.png"><img src="/img/cloud/console/05-access-map.png" alt="books 服务的权限关系图展示用户 alice 通过角色 Reader 关联到资源 /books" /></a></p>
+<p><a href="/img/cloud/console/zh/05-access-map.png"><img src="/img/cloud/console/zh/05-access-map.png" alt="books 服务的权限关系图展示用户 alice 通过角色 Reader 关联到资源 /books" /></a></p>
 
-<p><code>books</code> 服务的 <strong>权限关系图</strong>，可视化展示 <code>alice</code> → <code>Reader</code> → <code>/books</code>（演示数据，英文界面）。</p>
+<p><code>books</code> 服务的 <strong>权限关系图</strong>，可视化展示 <code>alice</code> → <code>Reader</code> → <code>/books</code>（演示数据，中文界面）。</p>
 
 <h3 id="导入与导出策略">导入与导出策略</h3>
 
@@ -457,9 +457,9 @@
 
 <p><strong>预期结果：</strong> <strong>是否允许</strong> 显示 <strong>允许。</strong>、原因 <strong>命中允许策略。</strong> 以及完整 JSON 结果。将 <strong>操作</strong> 改为 <code>delete</code> 后重新运行，会显示 <strong>拒绝。</strong> 和 <strong>没有匹配的策略。</strong>。</p>
 
-<p><a href="/img/cloud/console/06-playground-is-allowed-and-diagnose.png"><img src="/img/cloud/console/06-playground-is-allowed-and-diagnose.png" alt="策略试运行对 corp 域的 alice 访问 /books 执行 get 返回允许与完整 JSON 结果" /></a></p>
+<p><a href="/img/cloud/console/zh/06-playground-is-allowed-and-diagnose.png"><img src="/img/cloud/console/zh/06-playground-is-allowed-and-diagnose.png" alt="策略试运行对 corp 域的 alice 访问 /books 执行 get 返回允许与完整 JSON 结果" /></a></p>
 
-<p><strong>策略试运行</strong> 中对 <code>alice</code>（<code>corp</code>）执行 <code>/books</code> 的 <code>get</code> 检查，返回允许判定与完整 JSON 结果（演示数据，英文界面）。</p>
+<p><strong>策略试运行</strong> 中对 <code>alice</code>（<code>corp</code>）执行 <code>/books</code> 的 <code>get</code> 检查，返回允许判定与完整 JSON 结果（演示数据，中文界面）。</p>
 
 <p>你也可以在策略列表行点击 <strong>测试</strong>，或从 <strong>权限关系图</strong> 预填诊断请求；预填仅填充输入框，在点击 <strong>运行测试</strong> 前不会消耗 API 额度。</p>
 
@@ -497,9 +497,9 @@
 
 <p><strong>预期结果：</strong> 新密钥出现在 <strong>有效的 API key</strong> 列表中，显示 ID、权限范围、创建时间、近似最近使用时间和 <strong>到期时间（UTC）</strong>。密钥明文仅此一次展示，无法从元数据找回。</p>
 
-<p><a href="/img/cloud/console/07-api-keys-list-and-create-form.png"><img src="/img/cloud/console/07-api-keys-list-and-create-form.png" alt="API key 页面展示创建表单（名称、权限范围、有效期预览）与有效密钥元数据列表，不含密钥明文" /></a></p>
+<p><a href="/img/cloud/console/zh/07-api-keys-list-and-create-form.png"><img src="/img/cloud/console/zh/07-api-keys-list-and-create-form.png" alt="API key 页面展示创建表单（名称、权限范围、有效期预览）与有效密钥元数据列表，不含密钥明文" /></a></p>
 
-<p><strong>API key</strong> 页面，展示 <strong>创建 API key</strong> 表单（权限范围、有效期与 UTC 预计到期时间）及有效密钥元数据（演示数据，英文界面；不显示密钥明文）。</p>
+<p><strong>API key</strong> 页面，展示 <strong>创建 API key</strong> 表单（权限范围、有效期与 UTC 预计到期时间）及有效密钥元数据（演示数据，中文界面；不显示密钥明文）。</p>
 
 <h3 id="轮换与撤销-api-key">轮换与撤销 API key</h3>
 
@@ -541,9 +541,9 @@
 <li><strong>服务与策略：</strong> 显示当前工作区的服务数、策略数，并在执行工作区操作后显示当日剩余调用次数估计值。</li>
 </ul>
 
-<p><a href="/img/cloud/console/10b-account-overview-quota.png"><img src="/img/cloud/console/10b-account-overview-quota.png" alt="账号概览页面展示账号信息与每日额度进度条及 UTC 重置时间" /></a></p>
+<p><a href="/img/cloud/console/zh/10b-account-overview-quota.png"><img src="/img/cloud/console/zh/10b-account-overview-quota.png" alt="账号概览页面展示账号信息与每日额度进度条及 UTC 重置时间" /></a></p>
 
-<p><strong>账号概览</strong> 页面，展示账号信息及个人工作区的 <strong>每日额度</strong> 进度条（演示数据，英文界面）。</p>
+<p><strong>账号概览</strong> 页面，展示账号信息及个人工作区的 <strong>每日额度</strong> 进度条（演示数据，中文界面）。</p>
 
 <p>如遇每日额度耗尽（<code>429 daily_quota_exceeded</code>），请等待 <code>00:00 UTC</code> 重置；在同一工作区内更换 API key 不会增加额度。突发限流与错误恢复见<a href="/zh/docs/cloud/limits-and-errors/">限额与错误</a>。</p>
 
@@ -582,9 +582,9 @@
 
 <p>在函数列表中，你可以 <strong>编辑</strong> 函数、<strong>轮换签名密钥</strong>（旧密钥立即失效，可能需要近期身份验证）或 <strong>删除函数</strong>。</p>
 
-<p><a href="/img/cloud/console/08-functions-tab.png"><img src="/img/cloud/console/08-functions-tab.png" alt="books 服务的函数标签页展示托管与 ADS 及仅 ADS 自定义函数示例" /></a></p>
+<p><a href="/img/cloud/console/zh/08-functions-tab.png"><img src="/img/cloud/console/zh/08-functions-tab.png" alt="books 服务的函数标签页展示托管与 ADS 及仅 ADS 自定义函数示例" /></a></p>
 
-<p><code>books</code> 服务的 <strong>函数</strong> 标签页，展示 <strong>托管与 ADS</strong> 与 <strong>仅 ADS</strong> 示例函数（演示数据，英文界面；未调用真实端点）。</p>
+<p><code>books</code> 服务的 <strong>函数</strong> 标签页，展示 <strong>托管与 ADS</strong> 与 <strong>仅 ADS</strong> 示例函数（演示数据，中文界面；未调用真实端点）。</p>
 
 <p><strong>重要规则与故障恢复：</strong></p>
 
@@ -614,9 +614,9 @@
 
 <p>可使用 <strong>服务筛选</strong> 查看同步特定服务的实例，或点击 <strong>刷新舰队</strong> 立即更新（页面可见时每 5 分钟自动刷新）。</p>
 
-<p><a href="/img/cloud/console/09-ads-fleet-view.png"><img src="/img/cloud/console/09-ads-fleet-view.png" alt="ADS 舰队页面展示同步 books 服务的在线演示 ADS 实例以及服务筛选与刷新按钮" /></a></p>
+<p><a href="/img/cloud/console/zh/09-ads-fleet-view.png"><img src="/img/cloud/console/zh/09-ads-fleet-view.png" alt="ADS 舰队页面展示同步 books 服务的在线演示 ADS 实例以及服务筛选与刷新按钮" /></a></p>
 
-<p><strong>ADS 舰队</strong> 视图，展示正在同步 <code>books</code> 的演示在线实例（演示数据，英文界面）。</p>
+<p><strong>ADS 舰队</strong> 视图，展示正在同步 <code>books</code> 的演示在线实例（演示数据，中文界面）。</p>
 
 <p>点击实例行的 <strong>详情</strong>，可查看：</p>
 
@@ -647,9 +647,9 @@
 <li><strong>个人活动</strong>（顶部栏 <strong>账号</strong> 菜单 → <strong>账号概览</strong> → <strong>个人活动</strong>，路径 <code>/account/audit</code>）：记录个人账号事件——登录、退出登录、在所有设备上退出、关联或取消关联登录方式以及账号创建与删除。</li>
 </ul>
 
-<p><a href="/img/cloud/console/10a-workspace-audit-log.png"><img src="/img/cloud/console/10a-workspace-audit-log.png" alt="工作区审计日志表格按 UTC 时间倒序展示近期管理操作、目标与结果" /></a></p>
+<p><a href="/img/cloud/console/zh/10a-workspace-audit-log.png"><img src="/img/cloud/console/zh/10a-workspace-audit-log.png" alt="工作区审计日志表格按 UTC 时间倒序展示近期管理操作、目标与结果" /></a></p>
 
-<p>工作区 <strong>审计日志</strong>，按 UTC 时间展示近期管理事件（演示数据，英文界面）。</p>
+<p>工作区 <strong>审计日志</strong>，按 UTC 时间展示近期管理事件（演示数据，中文界面）。</p>
 
 <h3 id="账号设置">账号设置</h3>
 
@@ -661,9 +661,9 @@
 <li><strong>删除账号：</strong> 永久删除个人账号、已关联登录方式、仅由你一人拥有的工作区以及所有会话。选择 <strong>删除账号</strong>，按提示验证身份后输入 <code>DELETE</code> 并确认 <strong>永久删除账号</strong>。删除前请先导出需要保留的策略。</li>
 </ul>
 
-<p><a href="/img/cloud/console/10c-account-settings.png"><img src="/img/cloud/console/10c-account-settings.png" alt="账号设置页面展示 GitHub 与 Google 已关联登录方式及删除账号卡片" /></a></p>
+<p><a href="/img/cloud/console/zh/10c-account-settings.png"><img src="/img/cloud/console/zh/10c-account-settings.png" alt="账号设置页面展示 GitHub 与 Google 已关联登录方式及删除账号卡片" /></a></p>
 
-<p><strong>账号设置</strong> 页面，展示 <strong>已关联的登录方式</strong> 与 <strong>删除账号</strong> 操作（演示数据，英文界面）。</p>
+<p><strong>账号设置</strong> 页面，展示 <strong>已关联的登录方式</strong> 与 <strong>删除账号</strong> 操作（演示数据，中文界面）。</p>
 
 <p><strong>删除账号受阻时的恢复：</strong> 如果你是某个仍有其他成员的工作区的唯一 <strong>所有者</strong>，系统会阻止删除账号（<code>last_owner</code>）。请先前往该工作区的 <strong>成员</strong> 页面，将另一名成员提升为 <strong>所有者</strong> 后再删除账号。</p>
 </div>
