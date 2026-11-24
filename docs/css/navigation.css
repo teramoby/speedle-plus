@@ -464,3 +464,47 @@ html .site-footer .footer-card[aria-current="page"] { border-color: #01e7cb; bac
 @media (max-width: 700px) {
   .site-footer .footer-main, .site-footer .footer-bar { width: min(100% - 28px, 1160px); }
 }
+
+/* The optional language memory control uses the shared menu typography. */
+.site-header .language-preferences {
+  box-sizing: border-box;
+  width: 260px;
+  max-width: 100%;
+  margin-top: 8px;
+  padding: 12px;
+  border-top: 1px solid rgba(255,255,255,.14);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  white-space: normal;
+}
+.site-header .language-remember {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+  white-space: normal;
+}
+.site-header .language-remember-input {
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+  margin: 3px 0 0;
+  accent-color: #01e7cb;
+}
+.site-header .language-clear {
+  display: block;
+  margin-top: 8px;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.site-header .language-remember-input:focus-visible,
+.site-header .language-clear:focus-visible { outline: 2px solid #01e7cb; outline-offset: 3px; }
+.site-header .language-preference-status { display: block; margin-top: 4px; }
