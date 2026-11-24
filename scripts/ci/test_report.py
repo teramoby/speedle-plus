@@ -162,6 +162,23 @@ def parse_check(spec):
     return {"name": name, "passed": int(status) == 0, "output": tail(text)}
 
 
+def missing_results(job, result, name):
+    """The output of the failed check for results that never reached the report.
+
+    The job's result is the only evidence of why nothing can be read, so the
+    check names it. An empty output shows a failure without a cause, and the
+    analysis then guesses that tests were not found.
+    """
+    if result == "success":
+        return (f"The {job} job succeeded, but {name} does not exist: "
+                "its results were not uploaded or could not be downloaded.")
+    if result:
+        return (f"The {job} job ended with {result} before any result reached this report: {name} does not exist. "
+                "Its tests did not run, or their results were not uploaded; "
+                "the job on the run page shows whether it ran at all.")
+    return f"No results: {name} does not exist."
+
+
 def expand_results_dir(directory):
     """Return the go test -json streams and check specs a results directory holds."""
     if not directory.is_dir():
@@ -204,6 +221,10 @@ def summarize(kind, packages, failures, checks, run_url, commit_url="", performa
         lines += [f"Run: {run_url}", ""]
     lines += [f"Go tests: {total['pass']} passed, {total['fail']} failed, {total['skip']} skipped "
               f"in {len(packages)} packages.", ""]
+    if not packages:
+        # Zero everywhere is no suite at all: say so before it reads as one
+        # that found nothing to test.
+        lines += ["No test result was read, so nothing here says whether the tests pass.", ""]
     if skips is not None:
         lines += [f"Skipped: {len(skips['not_run'])} not run in any pass; {skips['elsewhere']} skipped in one "
                   f"store's pass but run in another's; {skips['not_applicable']} not applicable to their store.", ""]
@@ -667,6 +688,14 @@ def main(argv=None, env=os.environ):
                 merged[key] += counts[key]
         failures += job_failures
         checks += job_checks
+        if not path.exists():
+            # Nothing of this job can be read, and the job's result is the
+            # only evidence of why. Name it on collect()'s failed check, which
+            # has no log to show; the check stays, so the run is still failed
+            # and tracked.
+            for check in job_checks:
+                if check["name"] == f"results {path.name}" and not check["passed"]:
+                    check["output"] = missing_results(job, result, path.name)
         if result not in ("", "success") and not job_failures and all(c["passed"] for c in job_checks):
             checks.append({"name": f"{job} job", "passed": False,
                            "output": f"The {job} job ended with {result} and its results show no failure; "
