@@ -1,0 +1,39 @@
+[Unit]
+Description=Speedle Policy Management Service (PMS)
+Documentation=https://engine.speedle.io/docs/deployment/
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=speedle
+Group=speedle
+UMask=0027
+WorkingDirectory=/var/lib/speedle
+StateDirectory=speedle
+StateDirectoryMode=0750
+LogsDirectory=speedle
+LogsDirectoryMode=0750
+EnvironmentFile=-/etc/default/speedle-pms
+ExecStart=/usr/bin/speedle-pms --config-file /etc/speedle/pms.json $SPEEDLE_PMS_ARGS
+KillSignal=SIGINT
+TimeoutStopSec=15
+Restart=on-failure
+RestartSec=5s
+
+# Hardening: /etc (including /etc/speedle) stays read-only via ProtectSystem=strict.
+# Do not set ConfigurationDirectory=, which would chown /etc/speedle to speedle and mount it writable.
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+
+[Install]
+WantedBy=multi-user.target

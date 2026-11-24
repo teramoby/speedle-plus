@@ -1,0 +1,44 @@
+{
+  "version": "{VERSION}",
+  "description": "Command-line tool for Speedle authorization policies",
+  "homepage": "https://engine.speedle.io",
+  "license": "UPL-1.0",
+  "architecture": {
+    "64bit": {
+      "url": "https://github.com/teramoby/speedle-plus/releases/download/v{VERSION}/spctl_windows_amd64.exe#/spctl.exe",
+      "hash": "{SHA256_AMD64}"
+    },
+    "arm64": {
+      "url": "https://github.com/teramoby/speedle-plus/releases/download/v{VERSION}/spctl_windows_arm64.exe#/spctl.exe",
+      "hash": "{SHA256_ARM64}"
+    }
+  },
+  "bin": [
+    "spctl.exe",
+    [
+      "spctl.exe",
+      "speedle-spctl"
+    ]
+  ],
+  "checkver": {
+    "github": "https://github.com/teramoby/speedle-plus"
+  },
+  "autoupdate": {
+    "architecture": {
+      "64bit": {
+        "url": "https://github.com/teramoby/speedle-plus/releases/download/v$version/spctl_windows_amd64.exe#/spctl.exe",
+        "hash": {
+          "url": "$baseurl/checksums.txt",
+          "regex": "(?m)^([a-fA-F0-9]{64})\\s+spctl_windows_amd64\\.exe$"
+        }
+      },
+      "arm64": {
+        "url": "https://github.com/teramoby/speedle-plus/releases/download/v$version/spctl_windows_arm64.exe#/spctl.exe",
+        "hash": {
+          "url": "$baseurl/checksums.txt",
+          "regex": "(?m)^([a-fA-F0-9]{64})\\s+spctl_windows_arm64\\.exe$"
+        }
+      }
+    }
+  }
+}

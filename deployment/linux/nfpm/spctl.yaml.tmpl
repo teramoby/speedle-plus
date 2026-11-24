@@ -1,0 +1,37 @@
+name: "spctl"
+arch: "{ARCH}"
+platform: "linux"
+version: "{VERSION}"
+release: 1
+section: "admin"
+priority: "optional"
+maintainer: "The Speedle Authors <contact@speedle.io>"
+description: "Command-line tool for Speedle authorization policies"
+vendor: "The Speedle Authors"
+homepage: "https://engine.speedle.io"
+license: "UPL-1.0"
+mtime: "{MTIME}"
+provides:
+  - "speedle-spctl"
+rpm:
+  compression: "gzip"
+contents:
+  - src: "{BINARY_SRC}"
+    dst: "/usr/bin/spctl"
+    file_info:
+      mode: 0755
+      owner: "root"
+      group: "root"
+      mtime: "{MTIME}"
+  - src: "spctl"
+    dst: "/usr/bin/speedle-spctl"
+    type: "symlink"
+    file_info:
+      mtime: "{MTIME}"
+  - src: "{LICENSE_SRC}"
+    dst: "/usr/share/doc/spctl/LICENSE"
+    file_info:
+      mode: 0644
+      owner: "root"
+      group: "root"
+      mtime: "{MTIME}"

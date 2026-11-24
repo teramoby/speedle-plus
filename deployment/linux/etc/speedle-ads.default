@@ -1,0 +1,3 @@
+# Optional extra command-line arguments or SPDL_* environment variables for speedle-ads.service.
+# Keep 127.0.0.1 binding unless TLS/mTLS is configured in /etc/speedle/ads.json.
+SPEEDLE_ADS_ARGS=""

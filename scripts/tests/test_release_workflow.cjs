@@ -145,10 +145,10 @@ test('the first release can create latest and an unresolved master blocks publis
   assert.equal(unresolved.builds.length, 0);
 });
 
-test('every macOS and Linux release keeps spctl and adds an identical speedle-spctl alias', () => {
+test('every macOS and Linux release keeps spctl and adds an identical speedle-spctl alias, plus Windows spctl binaries', () => {
   const {result, artifacts} = runBuild();
   assert.equal(result.status, 0, result.stderr);
-  assert.equal(Object.keys(artifacts).length, 16);
+  assert.equal(Object.keys(artifacts).length, 18);
   for (const target of ['darwin_amd64', 'darwin_arm64', 'linux_amd64', 'linux_arm64']) {
     const original = `spctl_${target}`;
     const alias = `speedle-spctl_${target}`;
@@ -160,17 +160,83 @@ test('every macOS and Linux release keeps spctl and adds an identical speedle-sp
     assert.equal(build.cgo, '0');
     assert.ok(build.args.includes('./cmd/spctl'));
   }
+  for (const arch of ['amd64', 'arm64']) {
+    const winName = `spctl_windows_${arch}.exe`;
+    assert.ok(artifacts[winName], `Missing ${winName}`);
+    const build = JSON.parse(artifacts[winName]);
+    assert.equal(build.goos, 'windows');
+    assert.equal(build.goarch, arch);
+    assert.equal(build.cgo, '0');
+    assert.ok(build.args.includes('./cmd/spctl'));
+  }
 });
 
-test('release checksums and uploaded assets include both spctl names', () => {
+test('release checksums, preserved packaging generators, and uploaded assets cover binaries, deb/rpm archives, and Windows manifests without duplicates', () => {
   assert.match(script('Write checksums'), /sha256sum spctl_\* speedle-spctl_\* speedle-ads_\* speedle-pms_\*/);
-  assert.match(script('Publish the GitHub release'), /assets=\(dist\/spctl_\* dist\/speedle-spctl_\* dist\/speedle-pms_\* dist\/speedle-ads_\* dist\/checksums\.txt\)/);
+  const keepPkg = step('Keep the Linux and Windows packaging files');
+  const buildPkg = step('Build Linux packages and Windows manifests');
+  assert.ok(source.indexOf('- name: Checkout master') < source.indexOf('- name: Keep the Linux and Windows packaging files'));
+  assert.ok(source.indexOf('- name: Keep the Linux and Windows packaging files') < source.indexOf('- name: Check out the release commit'));
+  assert.ok(source.indexOf('- name: Write checksums') < source.indexOf('- name: Build Linux packages and Windows manifests'));
+  assert.ok(source.indexOf('- name: Build Linux packages and Windows manifests') < source.indexOf('- name: Create and push the tag'));
+  assert.match(keepPkg, /cp -R deployment\/linux\/\. "\$\{RUNNER_TEMP\}\/packaging\/linux\/"/);
+  assert.match(keepPkg, /cp -R deployment\/scoop\/\. "\$\{RUNNER_TEMP\}\/packaging\/scoop\/"/);
+  assert.match(keepPkg, /cp -R deployment\/winget\/\. "\$\{RUNNER_TEMP\}\/packaging\/winget\/"/);
+  assert.match(buildPkg, /LICENSE_PATH="\$\{PWD\}\/LICENSE"/);
+  assert.match(buildPkg, /SOURCE_DATE_EPOCH="\$\{source_epoch\}"/);
+  assert.match(buildPkg, /bash "\$\{RUNNER_TEMP\}\/packaging\/linux\/build-release-packages\.sh"/);
+
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-release-upload-'));
+  try {
+    const dist = path.join(directory, 'dist');
+    fs.mkdirSync(dist, {recursive: true});
+    const expectedFiles = [
+      'spctl_darwin_amd64', 'spctl_darwin_arm64', 'spctl_linux_amd64', 'spctl_linux_arm64',
+      'spctl_windows_amd64.exe', 'spctl_windows_arm64.exe',
+      'speedle-spctl_darwin_amd64', 'speedle-spctl_darwin_arm64', 'speedle-spctl_linux_amd64', 'speedle-spctl_linux_arm64',
+      'speedle-pms_darwin_amd64', 'speedle-pms_darwin_arm64', 'speedle-pms_linux_amd64', 'speedle-pms_linux_arm64',
+      'speedle-ads_darwin_amd64', 'speedle-ads_darwin_arm64', 'speedle-ads_linux_amd64', 'speedle-ads_linux_arm64',
+      'spctl_1.9.1-1_amd64.deb', 'spctl_1.9.1-1_arm64.deb',
+      'speedle-pms_1.9.1-1_amd64.deb', 'speedle-pms_1.9.1-1_arm64.deb',
+      'speedle-ads_1.9.1-1_amd64.deb', 'speedle-ads_1.9.1-1_arm64.deb',
+      'spctl-1.9.1-1.x86_64.rpm', 'spctl-1.9.1-1.aarch64.rpm',
+      'speedle-pms-1.9.1-1.x86_64.rpm', 'speedle-pms-1.9.1-1.aarch64.rpm',
+      'speedle-ads-1.9.1-1.x86_64.rpm', 'speedle-ads-1.9.1-1.aarch64.rpm',
+      'spctl.json', 'spctl-winget-manifests.zip', 'checksums.txt',
+    ];
+    for (const file of expectedFiles) fs.writeFileSync(path.join(dist, file), 'fixture\n');
+    const calls = path.join(directory, 'gh.json');
+    const gh = path.join(directory, 'gh');
+    fs.writeFileSync(gh, `#!${process.execPath}
+const fs = require('node:fs');
+const args = process.argv.slice(2);
+if (args[0] === 'release' && args[1] === 'view') process.exit(1);
+fs.writeFileSync(process.env.FIXTURE_GH, JSON.stringify(args));
+`);
+    fs.chmodSync(gh, 0o755);
+    const result = spawnSync('bash', ['-c', script('Publish the GitHub release')], {
+      cwd: directory, encoding: 'utf8',
+      env: {...process.env, PATH: `${directory}${path.delimiter}${process.env.PATH}`, FIXTURE_GH: calls, VERSION: 'v1.9.1', GITHUB_REPOSITORY: 'teramoby/speedle-plus', GH_TOKEN: 'fixture'},
+    });
+    assert.equal(result.status, 0, result.stderr);
+    const ghArgs = JSON.parse(fs.readFileSync(calls, 'utf8'));
+    const uploaded = ghArgs.filter(arg => arg.startsWith('dist/')).map(arg => arg.slice('dist/'.length));
+    assert.equal(uploaded.length, expectedFiles.length, `Expected ${expectedFiles.length} unique assets, got ${uploaded.length}`);
+    assert.equal(new Set(uploaded).size, expectedFiles.length, 'Uploaded asset list must not contain duplicates');
+    assert.deepEqual([...uploaded].sort(), [...expectedFiles].sort());
+  } finally {
+    fs.rmSync(directory, {recursive: true, force: true});
+  }
 });
 
 test('changed release shell blocks parse before any publishing or container operation', () => {
-  for (const name of ['Build release binaries', 'Write checksums', 'Require Docker Hub credentials', 'Keep the Homebrew tap files', 'Verify the container image builds and starts', 'Log in to container registries', 'Publish the GitHub release', 'Publish the container image', 'Publish the Helm chart', 'Check for the Homebrew tap token']) {
+  for (const name of ['Build release binaries', 'Write checksums', 'Build Linux packages and Windows manifests', 'Require Docker Hub credentials', 'Keep the Homebrew tap files', 'Keep the Linux and Windows packaging files', 'Verify the container image builds and starts', 'Log in to container registries', 'Publish the GitHub release', 'Publish the container image', 'Publish the Helm chart', 'Check for the Homebrew tap token']) {
     const result = spawnSync('bash', ['-n'], {input: script(name), encoding: 'utf8'});
     assert.equal(result.status, 0, `${name}: ${result.stderr}`);
+  }
+  for (const rel of ['deployment/linux/install-nfpm.sh', 'deployment/linux/build-release-packages.sh']) {
+    const result = spawnSync('bash', ['-n', path.resolve(__dirname, '../..', rel)], {encoding: 'utf8'});
+    assert.equal(result.status, 0, `${rel}: ${result.stderr}`);
   }
 });
 

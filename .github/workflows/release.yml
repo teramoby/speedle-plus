@@ -99,6 +99,17 @@ jobs:
           mkdir -p "${RUNNER_TEMP}/homebrew"
           cp -R deployment/homebrew/. "${RUNNER_TEMP}/homebrew/"
 
+      # Keep the Linux and Windows packaging generators from master before
+      # detaching to the tagged commit. Packaged LICENSE files are still read
+      # from the checked-out release commit so license text matches the source.
+      - name: Keep the Linux and Windows packaging files
+        run: |
+          set -euo pipefail
+          mkdir -p "${RUNNER_TEMP}/packaging/linux" "${RUNNER_TEMP}/packaging/scoop" "${RUNNER_TEMP}/packaging/winget"
+          cp -R deployment/linux/. "${RUNNER_TEMP}/packaging/linux/"
+          cp -R deployment/scoop/. "${RUNNER_TEMP}/packaging/scoop/"
+          cp -R deployment/winget/. "${RUNNER_TEMP}/packaging/winget/"
+
       - name: Check the commit, module path and tag
         env:
           VERSION: ${{ inputs.version }}
@@ -145,9 +156,9 @@ jobs:
           go-version: '1.27.4'
           cache: true
 
-      # macOS and Linux, amd64 and arm64, for the three public commands. The
-      # binaries are static where the target allows it and are never installed
-      # into a shared GOBIN.
+      # macOS and Linux, amd64 and arm64, for the three public commands, plus
+      # Windows amd64 and arm64 for spctl. The binaries are static where the
+      # target allows it and are never installed into a shared GOBIN.
       - name: Build release binaries
         run: |
           set -euo pipefail
@@ -161,12 +172,31 @@ jobs:
             done
             cp "dist/spctl_${goos}_${goarch}" "dist/speedle-spctl_${goos}_${goarch}"
           done
+          for goarch in amd64 arm64; do
+            CGO_ENABLED=0 GOOS=windows GOARCH="${goarch}" go build -trimpath -o "dist/spctl_windows_${goarch}.exe" "./cmd/spctl"
+          done
 
       - name: Write checksums
         run: |
           set -euo pipefail
           (cd dist && sha256sum spctl_* speedle-spctl_* speedle-ads_* speedle-pms_* > checksums.txt)
           cat dist/checksums.txt
+
+      # Verify the Linux and Windows binaries against checksums.txt, build the
+      # deterministic .deb/.rpm archives and Scoop/winget manifests before a tag
+      # exists, and append their SHA-256 digests to checksums.txt.
+      - name: Build Linux packages and Windows manifests
+        env:
+          VERSION: ${{ inputs.version }}
+          COMMIT: ${{ inputs.commit }}
+        run: |
+          set -euo pipefail
+          source_epoch=$(git show -s --format=%ct "${COMMIT}")
+          SOURCE_DATE_EPOCH="${source_epoch}" \
+            LICENSE_PATH="${PWD}/LICENSE" \
+            DIST_DIR="${PWD}/dist" \
+            CHECKSUMS="${PWD}/dist/checksums.txt" \
+            bash "${RUNNER_TEMP}/packaging/linux/build-release-packages.sh"
 
       - name: Prepare the container build context
         run: |
@@ -239,14 +269,23 @@ jobs:
             git push origin "refs/tags/${VERSION}"
           fi
 
-      # Re-runs replace the assets of an existing release instead of failing.
+      # Re-runs replace individual assets sequentially on an existing release
+      # (--clobber is not an atomic transaction across assets).
       - name: Publish the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
-          assets=(dist/spctl_* dist/speedle-spctl_* dist/speedle-pms_* dist/speedle-ads_* dist/checksums.txt)
+          assets=(
+            dist/spctl_darwin_* dist/spctl_linux_* dist/spctl_windows_*.exe
+            dist/speedle-spctl_darwin_* dist/speedle-spctl_linux_*
+            dist/speedle-pms_darwin_* dist/speedle-pms_linux_*
+            dist/speedle-ads_darwin_* dist/speedle-ads_linux_*
+            dist/*.deb dist/*.rpm
+            dist/spctl.json dist/spctl-winget-manifests.zip
+            dist/checksums.txt
+          )
           if gh release view "${VERSION}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
             gh release upload "${VERSION}" --repo "${GITHUB_REPOSITORY}" --clobber "${assets[@]}"
           else

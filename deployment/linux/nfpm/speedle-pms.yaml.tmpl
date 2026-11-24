@@ -1,0 +1,74 @@
+name: "speedle-pms"
+arch: "{ARCH}"
+platform: "linux"
+version: "{VERSION}"
+release: 1
+section: "admin"
+priority: "optional"
+maintainer: "The Speedle Authors <contact@speedle.io>"
+description: "Policy management service for Speedle"
+vendor: "The Speedle Authors"
+homepage: "https://engine.speedle.io"
+license: "UPL-1.0"
+mtime: "{MTIME}"
+overrides:
+  deb:
+    depends:
+      - "passwd"
+      - "systemd"
+  rpm:
+    depends:
+      - "shadow-utils"
+      - "systemd"
+rpm:
+  compression: "gzip"
+scripts:
+  preinstall: "{SCRIPTS_DIR}/preinstall.sh"
+  postinstall: "{SCRIPTS_DIR}/pms-postinstall.sh"
+  preremove: "{SCRIPTS_DIR}/pms-preremove.sh"
+  postremove: "{SCRIPTS_DIR}/pms-postremove.sh"
+contents:
+  - src: "{BINARY_SRC}"
+    dst: "/usr/bin/speedle-pms"
+    file_info:
+      mode: 0755
+      owner: "root"
+      group: "root"
+      mtime: "{MTIME}"
+  - src: "{SYSTEMD_DIR}/speedle-pms.service"
+    dst: "/usr/lib/systemd/system/speedle-pms.service"
+    file_info:
+      mode: 0644
+      owner: "root"
+      group: "root"
+      mtime: "{MTIME}"
+  - dst: "/etc/speedle"
+    type: "dir"
+    file_info:
+      mode: 0750
+      owner: "root"
+      group: "speedle"
+      mtime: "{MTIME}"
+  - src: "{ETC_DIR}/pms.json"
+    dst: "/etc/speedle/pms.json"
+    type: "config|noreplace"
+    file_info:
+      mode: 0640
+      owner: "root"
+      group: "speedle"
+      mtime: "{MTIME}"
+  - src: "{ETC_DIR}/speedle-pms.default"
+    dst: "/etc/default/speedle-pms"
+    type: "config|noreplace"
+    file_info:
+      mode: 0640
+      owner: "root"
+      group: "speedle"
+      mtime: "{MTIME}"
+  - src: "{LICENSE_SRC}"
+    dst: "/usr/share/doc/speedle-pms/LICENSE"
+    file_info:
+      mode: 0644
+      owner: "root"
+      group: "root"
+      mtime: "{MTIME}"

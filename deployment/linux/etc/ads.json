@@ -1,0 +1,17 @@
+{
+  "storeConfig": {
+    "storeType": "file",
+    "storeProps": {
+      "FileLocation": "/var/lib/speedle/policies.json"
+    }
+  },
+  "enableWatch": true,
+  "serverConfig": {
+    "endpoint": "127.0.0.1:6734",
+    "insecure": "true"
+  },
+  "logConfig": {
+    "level": "info",
+    "formatter": "json"
+  }
+}

@@ -1,0 +1,74 @@
+name: "speedle-ads"
+arch: "{ARCH}"
+platform: "linux"
+version: "{VERSION}"
+release: 1
+section: "admin"
+priority: "optional"
+maintainer: "The Speedle Authors <contact@speedle.io>"
+description: "Authorization decision service for Speedle"
+vendor: "The Speedle Authors"
+homepage: "https://engine.speedle.io"
+license: "UPL-1.0"
+mtime: "{MTIME}"
+overrides:
+  deb:
+    depends:
+      - "passwd"
+      - "systemd"
+  rpm:
+    depends:
+      - "shadow-utils"
+      - "systemd"
+rpm:
+  compression: "gzip"
+scripts:
+  preinstall: "{SCRIPTS_DIR}/preinstall.sh"
+  postinstall: "{SCRIPTS_DIR}/ads-postinstall.sh"
+  preremove: "{SCRIPTS_DIR}/ads-preremove.sh"
+  postremove: "{SCRIPTS_DIR}/ads-postremove.sh"
+contents:
+  - src: "{BINARY_SRC}"
+    dst: "/usr/bin/speedle-ads"
+    file_info:
+      mode: 0755
+      owner: "root"
+      group: "root"
+      mtime: "{MTIME}"
+  - src: "{SYSTEMD_DIR}/speedle-ads.service"
+    dst: "/usr/lib/systemd/system/speedle-ads.service"
+    file_info:
+      mode: 0644
+      owner: "root"
+      group: "root"
+      mtime: "{MTIME}"
+  - dst: "/etc/speedle"
+    type: "dir"
+    file_info:
+      mode: 0750
+      owner: "root"
+      group: "speedle"
+      mtime: "{MTIME}"
+  - src: "{ETC_DIR}/ads.json"
+    dst: "/etc/speedle/ads.json"
+    type: "config|noreplace"
+    file_info:
+      mode: 0640
+      owner: "root"
+      group: "speedle"
+      mtime: "{MTIME}"
+  - src: "{ETC_DIR}/speedle-ads.default"
+    dst: "/etc/default/speedle-ads"
+    type: "config|noreplace"
+    file_info:
+      mode: 0640
+      owner: "root"
+      group: "speedle"
+      mtime: "{MTIME}"
+  - src: "{LICENSE_SRC}"
+    dst: "/usr/share/doc/speedle-ads/LICENSE"
+    file_info:
+      mode: 0644
+      owner: "root"
+      group: "root"
+      mtime: "{MTIME}"

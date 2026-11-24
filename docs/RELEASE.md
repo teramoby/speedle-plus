@@ -18,14 +18,17 @@ later tag only when `go.mod` at that commit ends in the major version.
 
 Re-dispatch the same version and commit to resume a failed run. An existing tag
 is left in place when it already points at that commit. Image tags are
-published again. Release assets are replaced. The workflow does not move a tag
-or create a second GitHub release.
+published again. Release assets are replaced sequentially (`gh release upload
+--clobber` is not an atomic transaction across files, so an interrupted re-run
+can leave partially replaced assets until a complete re-run finishes). The
+workflow does not move a tag or create a second GitHub release.
 
 ## Order
 
 1. Check the version, the commit and the Docker Hub credentials.
-2. Build the binaries and the image, then start PMS and ADS from that image
-   against one shared volume.
+2. Build the binaries (including Windows `spctl`), write binary checksums, build
+   the deterministic `.deb`/`.rpm` packages and Windows Scoop/winget manifests,
+   and build and smoke-test the container image against one shared volume.
 3. Create the git tag and the GitHub release.
 4. Log in and push the image.
 5. Package the Helm chart and push it to the chart registry.
@@ -233,11 +236,38 @@ update was skipped and the release still succeeds. `brew install` reads the
 tap's `main` branch, so `teramoby/homebrew-tap` must already exist and its
 default branch must be `main` before the token is set.
 
-## Binaries
+## Binaries, Linux packages and Windows manifests
 
-Each GitHub release attaches `spctl`, `speedle-spctl` (the same bytes as
-`spctl`), `speedle-pms` and `speedle-ads` for macOS and Linux on amd64 and
-arm64, named `<command>_<os>_<arch>`, plus `checksums.txt`.
+Each GitHub release attaches:
+
+- Raw binaries: `spctl`, `speedle-spctl` (the same bytes as `spctl`),
+  `speedle-pms` and `speedle-ads` for macOS and Linux on `amd64` and `arm64`,
+  named `<command>_<os>_<arch>`, plus `spctl_windows_amd64.exe` and
+  `spctl_windows_arm64.exe`.
+- Linux packages (`deployment/linux/`): `.deb` (`amd64`, `arm64`) and `.rpm`
+  (`x86_64`, `aarch64`) archives for `spctl`, `speedle-pms` and `speedle-ads`,
+  built reproducibly with SHA-256-pinned `nFPM v2.49.0` at `SOURCE_DATE_EPOCH`
+  from the checked-out commit's timestamp and `LICENSE`, after verifying each
+  Linux binary against `checksums.txt`. `speedle-pms` and `speedle-ads` ship
+  hardened systemd units (`User=speedle`, `KillSignal=SIGINT`, loopback
+  `127.0.0.1:6733` and `127.0.0.1:6734` defaults, disabled and stopped on
+  initial install, and user data in `/var/lib/speedle` preserved on remove and
+  purge).
+- Windows manifests (`deployment/scoop/` and `deployment/winget/`): `spctl.json`
+  (Scoop manifest) and `spctl-winget-manifests.zip` (WinGet `1.6.0` multi-file
+  manifests for `Teramoby.spctl`), generated from the release's Windows binary
+  digests in `checksums.txt`. External catalog publication (`teramoby/scoop-bucket`
+  and `microsoft/winget-pkgs` with Microsoft CLA) is a separate manual step; see
+  `deployment/scoop/README.md` and `deployment/winget/README.md`.
+- `checksums.txt`, listing the SHA-256 digest of every attached binary, `.deb`,
+  `.rpm`, `spctl.json` and `spctl-winget-manifests.zip`.
+
+Packaging generators in `deployment/linux/`, `deployment/scoop/` and
+`deployment/winget/` are copied from `master` into `RUNNER_TEMP` before the
+workflow detaches to the tagged commit, while the packaged `LICENSE` file is
+read from the tagged commit itself. Releases published before this step was
+added (`v1.9.0` and earlier) contain only the macOS and Linux raw binaries and
+`checksums.txt`.
 
 ## Local images
 
