@@ -1,40 +1,129 @@
-/* Share only an explicit language-menu choice across the production sites. */
+/* Share language for this session; remember it only after an explicit opt-in. */
 (function () {
+  if (typeof location === 'undefined') return;
   var hosts = ['speedle.io', 'engine.speedle.io', 'ai.speedle.io', 'cloud.speedle.io'];
-  if (typeof location === 'undefined' || location.protocol !== 'https:' || hosts.indexOf(location.hostname) < 0) return;
+  var shared = location.protocol === 'https:' && hosts.indexOf(location.hostname) >= 0;
   var locales = ['en', 'ja', 'ko', 'es', 'zh-CN'];
-  var preference = null;
-  try {
-    document.cookie.split(';').some(function (part) {
-      var pair = part.trim().split('=');
-      if (pair[0] !== 'speedle_locale' || pair.length !== 2) return false;
-      if (locales.indexOf(pair[1]) < 0) return false;
-      preference = pair[1];
-      return true;
+  var attributes = '; Domain=speedle.io; Path=/; SameSite=Lax; Secure';
+  var controls = [];
+  var messages = {
+    en: ['Remember my language across Speedle Engine, AI and Cloud (uses cookies, up to one year)', 'Clear saved language', 'Saved language cleared.'],
+    'zh-CN': ['记住我的语言，并在 Speedle Engine、AI 和 Cloud 间同步（使用 Cookie，最长保存一年）。', '清除已保存的语言', '已清除保存的语言。'],
+    ja: ['言語設定を Speedle Engine、AI、Cloud 間で記憶する（Cookie を使用、最長1年間）', '保存した言語設定を削除', '保存した言語設定を削除しました。'],
+    ko: ['Speedle Engine, AI, Cloud에서 내 언어 기억하기(Cookie 사용, 최대 1년)', '저장된 언어 지우기', '저장된 언어를 지웠습니다.'],
+    es: ['Recordar mi idioma en Speedle Engine, AI y Cloud (usa cookies, hasta un año)', 'Borrar el idioma guardado', 'Se ha borrado el idioma guardado.']
+  };
+  function cookie(name) {
+    if (!shared) return null;
+    try {
+      var parts = document.cookie.split(';');
+      for (var i = 0; i < parts.length; i++) {
+        var pair = parts[i].trim().split('=');
+        if (pair.length === 2 && pair[0] === name) return pair[1];
+      }
+    } catch (error) { /* Storage restrictions must not block language links. */ }
+    return null;
+  }
+  function remembers() { return cookie('speedle_locale_remember') === '1'; }
+  function put(name, value, persistent) {
+    if (!shared) return;
+    try { document.cookie = name + '=' + value + attributes + (persistent ? '; Max-Age=31536000' : ''); }
+    catch (error) { /* Ordinary localized navigation remains available. */ }
+  }
+  function remove(name) {
+    if (!shared) return;
+    try { document.cookie = name + '=' + attributes + '; Max-Age=0'; }
+    catch (error) { /* Controls still work when storage is unavailable. */ }
+  }
+  function cleanLegacyStorage() {
+    ['localStorage', 'sessionStorage'].forEach(function (name) {
+      try { window[name].removeItem('speedle-cloud.locale'); }
+      catch (error) { /* This origin may not expose browser storage. */ }
     });
-  } catch (error) {
-    // A language link must still work when cookies are unavailable.
+  }
+  function currentLocale() {
+    var locale = document.documentElement.lang;
+    return locales.indexOf(locale) >= 0 ? locale : 'en';
+  }
+  function refresh() {
+    controls.forEach(function (control) { control.checked = remembers(); });
+  }
+  var preference = cookie('speedle_locale');
+  if (locales.indexOf(preference) < 0) preference = null;
+  if (!remembers()) {
+    cleanLegacyStorage();
+    // A legacy one-year value is not consent: shorten it to this session.
+    if (preference) put('speedle_locale', preference, false);
   }
 
-  function rememberChoice(event) {
+  document.querySelectorAll('.languages-panel').forEach(function (panel) {
+    var text = messages[currentLocale()];
+    var group = document.createElement('div');
+    group.className = 'language-preferences';
+    var label = document.createElement('label');
+    label.className = 'language-remember';
+    var checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'language-remember-input';
+    checkbox.disabled = !shared;
+    checkbox.checked = remembers();
+    var description = document.createElement('span');
+    description.textContent = text[0];
+    label.append(checkbox, description);
+    var clear = document.createElement('button');
+    clear.type = 'button';
+    clear.className = 'language-clear';
+    clear.textContent = text[1];
+    var status = document.createElement('span');
+    status.className = 'language-preference-status';
+    status.setAttribute('role', 'status');
+    group.append(label, clear, status);
+    panel.append(group);
+    controls.push(checkbox);
+    checkbox.addEventListener('change', function () {
+      if (checkbox.checked) {
+        put('speedle_locale_remember', '1', true);
+        put('speedle_locale', currentLocale(), remembers());
+      } else {
+        remove('speedle_locale_remember');
+        cleanLegacyStorage();
+        put('speedle_locale', currentLocale(), false);
+      }
+      status.textContent = '';
+      refresh();
+    });
+    clear.addEventListener('click', function () {
+      remove('speedle_locale_remember');
+      remove('speedle_locale');
+      cleanLegacyStorage();
+      refresh();
+      status.textContent = text[2];
+    });
+  });
+  function selectLanguage(event) {
     if (event.type === 'auxclick' && event.button !== 1) return;
     if (event.type === 'click' && event.button > 0) return;
     var target = event.target;
-    var link = target && typeof target.closest === 'function' && target.closest('.languages a[hreflang], #top-nav-lang a[hreflang]');
+    if (!target || typeof target.closest !== 'function') return;
+    if (target.closest('.languages-button, .menu')) refresh();
+    var link = target.closest('.languages a[hreflang], #top-nav-lang a[hreflang]');
     if (!link || event.defaultPrevented) return;
     var locale = link.getAttribute('hreflang');
     if (locales.indexOf(locale) < 0) return;
-    try {
-      document.cookie = 'speedle_locale=' + locale + '; Domain=speedle.io; Path=/; Max-Age=31536000; SameSite=Lax; Secure';
-    } catch (error) {
-      // The real localized href remains the fallback; do not prevent navigation.
+    var persistent = remembers();
+    if (!persistent) {
+      remove('speedle_locale_remember');
+      cleanLegacyStorage();
     }
+    put('speedle_locale', locale, persistent);
   }
-  document.addEventListener('click', rememberChoice, true);
-  document.addEventListener('auxclick', rememberChoice, true);
-
-  // Only the neutral homepage follows a saved choice. A specific language URL
-  // or documentation link remains stable and never overwrites the preference.
+  document.addEventListener('click', selectLanguage, true);
+  document.addEventListener('auxclick', selectLanguage, true);
+  if (typeof window.addEventListener === 'function') {
+    window.addEventListener('focus', refresh);
+    window.addEventListener('pageshow', refresh);
+  }
+  // Explicit localized URLs remain stable and never create a saved choice.
   if (preference && preference !== 'en' && (location.pathname === '/' || location.pathname === '/index.html')) {
     var prefix = preference === 'zh-CN' ? 'zh' : preference;
     location.replace('/' + prefix + '/' + location.search + location.hash);
