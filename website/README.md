@@ -3,8 +3,10 @@
 The public English site uses `/`; Chinese pages use `/zh/` with the same logical
 path. Page and taxonomy counterparts must exist in both languages. Language
 switches link to the current page's counterpart, including pagination; ordinary
-internal links stay in the current language. URLs carry the language, so no
-cookie, browser storage or language-detection redirect is needed.
+internal links stay in the current language. URLs carry the language. Explicit language-menu choices also persist in the
+secure functional `speedle_locale` cookie shared by the three production sites.
+A neutral homepage visit honors that choice; explicit localized pages remain
+stable. Cookie restrictions leave the real language links usable.
 The header shows a single direct link to the other language (`English` on Chinese
 pages, `中文` on English pages), including inside the mobile navigation menu.
 

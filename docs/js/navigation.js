@@ -1,3 +1,46 @@
+/* Share only an explicit language-menu choice across the production sites. */
+(function () {
+  var hosts = ['speedle.io', 'engine.speedle.io', 'ai.speedle.io', 'cloud.speedle.io'];
+  if (typeof location === 'undefined' || location.protocol !== 'https:' || hosts.indexOf(location.hostname) < 0) return;
+  var locales = ['en', 'ja', 'ko', 'es', 'zh-CN'];
+  var preference = null;
+  try {
+    document.cookie.split(';').some(function (part) {
+      var pair = part.trim().split('=');
+      if (pair[0] !== 'speedle_locale' || pair.length !== 2) return false;
+      if (locales.indexOf(pair[1]) < 0) return false;
+      preference = pair[1];
+      return true;
+    });
+  } catch (error) {
+    // A language link must still work when cookies are unavailable.
+  }
+
+  function rememberChoice(event) {
+    if (event.type === 'auxclick' && event.button !== 1) return;
+    if (event.type === 'click' && event.button > 0) return;
+    var target = event.target;
+    var link = target && typeof target.closest === 'function' && target.closest('.languages a[hreflang], #top-nav-lang a[hreflang]');
+    if (!link || event.defaultPrevented) return;
+    var locale = link.getAttribute('hreflang');
+    if (locales.indexOf(locale) < 0) return;
+    try {
+      document.cookie = 'speedle_locale=' + locale + '; Domain=speedle.io; Path=/; Max-Age=31536000; SameSite=Lax; Secure';
+    } catch (error) {
+      // The real localized href remains the fallback; do not prevent navigation.
+    }
+  }
+  document.addEventListener('click', rememberChoice, true);
+  document.addEventListener('auxclick', rememberChoice, true);
+
+  // Only the neutral homepage follows a saved choice. A specific language URL
+  // or documentation link remains stable and never overwrites the preference.
+  if (preference && preference !== 'en' && (location.pathname === '/' || location.pathname === '/index.html')) {
+    var prefix = preference === 'zh-CN' ? 'zh' : preference;
+    location.replace('/' + prefix + '/' + location.search + location.hash);
+  }
+})();
+
 /* One accessible menu controller for the homepage, Playground and Hugo pages. */
 document.querySelectorAll('header.site-header').forEach(function(header) {
   var button = header.querySelector('.menu');
