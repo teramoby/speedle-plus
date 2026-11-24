@@ -502,24 +502,46 @@ size, social box size.
 - Every page has a counterpart in the other language. URLs carry the language:
   `/` and `/zh/` on Engine and AI; Cloud keeps its existing `/zh-CN/…` routes.
   An explicit language selection is shared across the three production sites
-  using the functional `speedle_locale` cookie. Its value is exactly `en`,
-  `ja`, `ko`, `es` or `zh-CN`; its attributes are `Domain=speedle.io`, `Path=/`,
-  `Max-Age=31536000`, `SameSite=Lax` and `Secure`. Only a language-menu
-  selection writes this cookie. Page rendering and browser-language fallback
-  never overwrite it. Invalid values and unavailable cookie storage are ignored.
+  using the functional `speedle_locale` cookie, containing exactly `en`, `ja`,
+  `ko`, `es` or `zh-CN`. By default it is a **session cookie**: `Domain=speedle.io`,
+  `Path=/`, `SameSite=Lax`, `Secure`, with no `Max-Age` or `Expires`.
+- In the language menu, an unchecked-by-default checkbox offers: "Remember my
+  language across Speedle Engine, AI and Cloud (uses cookies, up to one year)" /
+  "记住我的语言，并在 Speedle Engine、AI 和 Cloud 间同步（使用 Cookie，最长保存一年）。"
+  Localize the same choice in Japanese, Korean and Spanish. Changing languages
+  remains available without opting in. Do not require a general Cookie banner
+  or an acknowledgement dialog to use the site.
+- Only explicitly checking that control grants long-term persistence. It writes
+  `speedle_locale_remember=1` plus the locale cookie with `Max-Age=31536000`
+  and the same scope/flags. Ordinary visits, browser fallback, URL language,
+  legacy storage and selecting a language without opt-in do not grant consent.
+  A language selection honors the **current** shared marker, so an old tab
+  cannot silently re-grant consent withdrawn elsewhere. Refresh control state
+  when its menu opens or the page regains focus.
+- Unchecking removes the marker, removes any unconsented localStorage language,
+  and rewrites the current language as a session cookie. Provide "Clear saved
+  language" / "清除已保存的语言" to remove both shared cookies and the origin's
+  language storage, without changing the displayed page or immediately
+  recreating a saved choice. Controls must be keyboard accessible and fit at
+  320 px. Clear is available even when storage is blocked.
+- Legacy localStorage does not prove consent and cannot restore a persistent
+  preference without a current valid marker. Shorten an existing language
+  cookie with no marker to session lifetime; do not infer consent. Prefer the
+  shared cookie over origin storage on production, preventing another site's
+  stale storage from resurrecting a cleared preference. Nonproduction keeps
+  session-only per-origin behavior and disables the cross-site persistence
+  checkbox. Blocked storage never prevents ordinary language navigation.
 - The locale-neutral homepage `/` honors the shared choice on the next visit.
   Engine and AI navigate to that locale's homepage; Cloud applies its catalog
   before revealing the prerendered page. Explicit localized URLs take priority
-  and remain shareable. English can be selected explicitly to reset the shared
-  preference. Static-site homepage redirects preserve query strings and
-  fragments; Cloud retains its existing pre-network URL sanitization.
-- Existing Cloud localStorage preferences remain a fallback when there is no
-  valid shared choice. Cookie reads precede that legacy storage; both the
-  prepaint script and the application must use the same resolution. The
-  production preference is read/written only on `engine.speedle.io`,
+  and remain shareable. Static-site homepage redirects preserve query strings
+  and fragments; Cloud retains its existing pre-network URL sanitization.
+- The production preference is read/written only on `engine.speedle.io`,
   `ai.speedle.io`, `cloud.speedle.io` and the `speedle.io` alias, so preview and
-  staging choices do not change production preferences. No auth or identity
-  data is placed in this cookie.
+  staging choices do not change production preferences. No auth, identity,
+  analytics or advertising data is placed in these cookies. Cookie boot and
+  application resolution must agree; no inferred persistence or automatic
+  renewal is allowed on ordinary page rendering.
 - The header has **one** text link to the other language, the last nav item
   before the GitHub pill (or the last item on Cloud and AI, which have no
   pill). Same
