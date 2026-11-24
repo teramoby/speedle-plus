@@ -501,7 +501,24 @@ size, social box size.
 
 - Every page has a counterpart in the other language. URLs carry the language:
   `/` and `/zh/` on Engine and AI; Cloud keeps its existing `/zh-CN/…` routes.
-  No cookie, browser storage or language-detection redirect.
+  An explicit language selection is shared across the three production sites
+  using the functional `speedle_locale` cookie. Its value is exactly `en`,
+  `ja`, `ko`, `es` or `zh-CN`; its attributes are `Domain=speedle.io`, `Path=/`,
+  `Max-Age=31536000`, `SameSite=Lax` and `Secure`. Only a language-menu
+  selection writes this cookie. Page rendering and browser-language fallback
+  never overwrite it. Invalid values and unavailable cookie storage are ignored.
+- The locale-neutral homepage `/` honors the shared choice on the next visit.
+  Engine and AI navigate to that locale's homepage; Cloud applies its catalog
+  before revealing the prerendered page. Explicit localized URLs take priority
+  and remain shareable. English can be selected explicitly to reset the shared
+  preference. Preserve query strings and fragments on homepage navigation.
+- Existing Cloud localStorage preferences remain a fallback when there is no
+  valid shared choice. Cookie reads precede that legacy storage; both the
+  prepaint script and the application must use the same resolution. The
+  production preference is read/written only on `engine.speedle.io`,
+  `ai.speedle.io`, `cloud.speedle.io` and the `speedle.io` alias, so preview and
+  staging choices do not change production preferences. No auth or identity
+  data is placed in this cookie.
 - The header has **one** text link to the other language, the last nav item
   before the GitHub pill (or the last item on Cloud and AI, which have no
   pill). Same
