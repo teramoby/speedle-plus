@@ -497,34 +497,86 @@ size, social box size.
 - Check the 16, 32 and 48 px renders on light and dark tab bars. **Rollout is
   pending**: the v13 favicon fix merges last, after the other site PRs.
 
-## 9. Language and bilingual pages
+## 9. Language and localized pages
 
-- Every page has a counterpart in the other language. URLs carry the language:
-  `/` and `/zh/` on Engine and AI; Cloud keeps its existing `/zh-CN/…` routes.
-  No cookie, browser storage or language-detection redirect.
-- The header has **one** text link to the other language, the last nav item
-  before the GitHub pill (or the last item on Cloud and AI, which have no
-  pill). Same
-  font, size, weight and colour as the other nav links; no flag, icon,
-  dropdown or two-link toggle.
-- The link shows the *other* language, written in that language:
-  - English pages: `中文`, `lang="zh-CN" hreflang="zh-CN"`,
-    `aria-label="切换到中文"`.
-  - Chinese pages: `English`, `lang="en" hreflang="en"`,
-    `aria-label="Switch to English"`.
-- It links to the **same page** in the other language (for example
-  `/docs/` ↔ `/zh/docs/`), falling back to that language's home page only when
-  no counterpart exists.
-- Every page carries `<link rel="alternate">` entries with `hreflang="en"`,
-  `hreflang="zh-CN"` and `hreflang="x-default"` for its counterparts. No
-  automatic redirects by browser language.
-- In the collapsed menu (≤ 1160 px) the link keeps the same position in the
-  list.
-- Chinese pages use the Chinese labels throughout the header and footer
-  (Products → 产品) and the Chinese descriptions in the Products panel and
-  footer cards.
-- Cloud replaces its two-link "中文 / English" toggle with this single link.
-  AI gets the link when its Chinese pages exist.
+The three current sites support five languages. These homepage destinations
+already exist; use the same prefixes for published page counterparts:
+
+| Locale / native menu label | Engine | AI | Cloud |
+| --- | --- | --- | --- |
+| `en` / English | `/` | `/` | `/` |
+| `ja` / 日本語 | `/ja/` | `/ja/` | `/ja/` |
+| `ko` / 한국어 | `/ko/` | `/ko/` | `/ko/` |
+| `es` / Español | `/es/` | `/es/` | `/es/` |
+| `zh-CN` / 中文 | `/zh/` | `/zh/` | `/zh-CN/` |
+
+- URLs carry the page language. An explicit language selection is shared
+  across the three production sites
+  using the functional `speedle_locale` cookie, containing exactly `en`, `ja`,
+  `ko`, `es` or `zh-CN`. By default it is a **session cookie**: `Domain=speedle.io`,
+  `Path=/`, `SameSite=Lax`, `Secure`, with no `Max-Age` or `Expires`.
+- In the language menu, an unchecked-by-default checkbox offers: "Remember my
+  language across Speedle Engine, AI and Cloud (uses cookies, up to one year)" /
+  "记住我的语言，并在 Speedle Engine、AI 和 Cloud 间同步（使用 Cookie，最长保存一年）。"
+  Localize the same choice in Japanese, Korean and Spanish. Changing languages
+  remains available without opting in. Do not require a general Cookie banner
+  or an acknowledgement dialog to use the site.
+- Only explicitly checking that control grants long-term persistence. It writes
+  `speedle_locale_remember=1` plus the locale cookie with `Max-Age=31536000`
+  and the same scope/flags. Ordinary visits, browser fallback, URL language,
+  legacy storage and selecting a language without opt-in do not grant consent.
+  A language selection honors the **current** shared marker, so an old tab
+  cannot silently re-grant consent withdrawn elsewhere. Refresh control state
+  when its menu opens or the page regains focus.
+- Unchecking removes the marker, removes any unconsented localStorage language,
+  and rewrites the current language as a session cookie. Provide "Clear saved
+  language" / "清除已保存的语言" to remove both shared cookies and the origin's
+  language storage, without changing the displayed page or immediately
+  recreating a saved choice. Controls must be keyboard accessible and fit at
+  320 px. Clear is available even when storage is blocked.
+- Legacy localStorage does not prove consent and cannot restore a persistent
+  preference without a current valid marker. Shorten an existing language
+  cookie with no marker to session lifetime; do not infer consent. Prefer the
+  shared cookie over origin storage on production, preventing another site's
+  stale storage from resurrecting a cleared preference. Nonproduction keeps
+  session-only per-origin behavior and disables the cross-site persistence
+  checkbox. Blocked storage never prevents ordinary language navigation.
+- The locale-neutral homepage `/` honors the shared choice on the next visit.
+  Engine and AI navigate to that locale's homepage; Cloud applies its catalog
+  before revealing the prerendered page. Explicit localized URLs take priority
+  and remain shareable. Static-site homepage redirects preserve query strings
+  and fragments; Cloud retains its existing pre-network URL sanitization.
+- The production preference is read/written only on `engine.speedle.io`,
+  `ai.speedle.io`, `cloud.speedle.io` and the `speedle.io` alias, so preview and
+  staging choices do not change production preferences. No auth, identity,
+  analytics or advertising data is placed in these cookies. Cookie boot and
+  application resolution must agree; no inferred persistence or automatic
+  renewal is allowed on ordinary page rendering.
+- The header language menu occupies the last navigation position before the
+  Engine GitHub pill (Cloud and AI have no pill). Its trigger shows the current
+  language in its native spelling, with the same navigation type and colours.
+  The panel lists native labels in the table's order, Chinese last, and marks
+  the current locale with `aria-current`. Never use national flags as languages.
+- Every menu row is a real link with the matching `lang` and `hreflang` locale.
+  It links to the same logical page in that language (for example
+  `/docs/` ↔ `/ja/docs/` on Engine); use the language's published homepage only
+  when that page has no counterpart. Older archived snapshots may omit locales
+  that the snapshot never published. The current five localized homepages must
+  always exist before a locale is offered as a saved homepage choice.
+- Preserve existing canonical and published `<link rel="alternate">` metadata.
+  Supported `hreflang` values are `en`, `ja`, `ko`, `es`, `zh-CN` and
+  `x-default`; each advertised alternate must point to its actual published
+  counterpart, and `x-default` points to the neutral entry. Do not fabricate
+  alternate metadata for untranslated fallbacks. Do not redirect by inferred
+  browser language; Cloud may apply its existing reader-language fallback on
+  the neutral entry without redirecting.
+- The menu is keyboard operable: Enter/Space opens it, Escape closes it,
+  arrow keys navigate language rows, and Tab reaches remember/reset controls.
+  At ≤ 1160 px it stays in the same navigation position in the collapsed menu.
+- Localize navigation, product descriptions and preference controls for each
+  page's language. Keep the five published locale versions in sync for facts,
+  counterpart links and layout; preserve documented fallback behavior on
+  untranslated legacy pages.
 
 ## 10. Analytics
 
@@ -600,8 +652,8 @@ public page. It is cookieless.
 - [ ] WCAG AA (axe): 0 violations; text 4.5:1; large text 3:1; UI and focus
       3:1; every menu and link reachable by keyboard with a visible focus ring.
 - [ ] No console errors and no 404 assets.
-- [ ] English and Chinese pages match; the language link points to the same
-      page; `hreflang` alternates are present.
+- [ ] Published locale pages match; menu rows reach their same-page counterpart
+      or the documented localized fallback; advertised `hreflang` targets exist.
 - [ ] Favicons: `favicon.svg`, `favicon.ico` (16/32/48), `apple-touch-icon.png`
       (180), sphere only in the site colour, no underlay polygon or dark
       outline; strengthened sphere strokes keep the 16 px render legible. The
