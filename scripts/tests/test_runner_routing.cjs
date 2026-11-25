@@ -269,7 +269,7 @@ test('every Go task uses the protected worker; only classification and reporting
       assert.equal(value(block, 'uses'), worker, `${kind}.${id} must run through the protected worker`);
     }
   }
-  assert.deepEqual(Object.keys(job.mongodb), ['mongodb']);
+  assert.deepEqual(Object.keys(job.mongodb), ['mongodb', 'shared-inventory']);
   assert.equal(route(job.mongodb.mongodb), 'speedle-runner');
   // A manual run may pin one Speedle runner by its label, such as speedle-macos.
   const pinned = github('workflow_dispatch', canonical, {event: {inputs: {runner: 'speedle-macos'}}});
@@ -282,7 +282,7 @@ test('every Go task uses the protected worker; only classification and reporting
   }
   const none = github('workflow_dispatch', canonical, {event: {inputs: {runner: 'speedle-linux', ci_trial: 'none'}}});
   assert.equal(route(job.mongodb.mongodb, none), 'speedle-linux');
-  assert.match(sources.mongodb, /options: \[speedle-runner, speedle-macos, speedle-linux\]/);
+  assert.match(sources.mongodb, /options: \[speedle-runner, speedle-macos, speedle-linux, charming-ci-1, charming-speedle-2, charming-ci-3\]/);
 });
 test('scheduled suites run through the worker and report from a hosted job', () => {
   const cron = {nightly: "'0 17 * * *'", weekly: "'0 11 * * 0'"};  // 01:00 and Sunday 19:00 GMT+8
@@ -338,13 +338,19 @@ test('scheduled suites run through the worker and report from a hosted job', () 
 // A task routed to labels no registered runner carries queues until cancelled;
 // one routed to a host its identity guard rejects fails before any test runs.
 // A runner identity is removed from a guard only after its registration no
-// longer carries a scheduling label, so the guard list must equal the hosts
-// this inventory says a scheduling label can select.
+// longer carries a business scheduling label, so the guard list must equal
+// the business hosts this inventory selects. The explicit inventory-only
+// routes are validated separately and grant no business-job eligibility.
 const runnerInventory = [
   {name: 'charming-speedle-2', os: 'Linux', arch: 'X64',
-    labels: ['self-hosted', 'Linux', 'X64', 'speedle-linux', 'speedle-control', 'speedle-runner', 'reviewbot']},
+    labels: ['self-hosted', 'Linux', 'X64', 'speedle-linux', 'speedle-control', 'speedle-runner',
+      'speedle-shared', 'cloud-ci', 'charming-speedle-2']},
+  {name: 'charming-ci-1', os: 'Linux', arch: 'X64',
+    labels: ['self-hosted', 'Linux', 'X64', 'speedle-shared', 'charming-ci-1', 'cloud-ci', 'cloud-quick']},
+  {name: 'charming-ci-3', os: 'Linux', arch: 'X64',
+    labels: ['self-hosted', 'Linux', 'X64', 'speedle-shared', 'cloud-ci', 'cloud-quick', 'charming-ci-3']},
   {name: 'donkey-speedle', os: 'Linux', arch: 'X64',
-    labels: ['self-hosted', 'Linux', 'X64', 'speedle-linux', 'speedle-control', 'speedle-runner', 'reviewbot']},
+    labels: ['self-hosted', 'Linux', 'X64', 'speedle-linux', 'speedle-control', 'speedle-runner']},
   // The organization ReviewBot runner group's additional host. A
   // REVIEWBOT_RUNS_ON value that selects its labels is checked against this
   // inventory; no workflow default route selects them. The snapshot records
@@ -537,8 +543,16 @@ function declaredRoutes() {
   return workflowFiles.flatMap(workflow => routeLabelSets(workflowSource(workflow))
     .map(labels => ({workflow, labels})));
 }
+const sharedInventoryChoices = ['charming-ci-1', 'charming-speedle-2', 'charming-ci-3'];
+// These exact routes belong only to the no-checkout, zero-permission inventory
+// job below. They do not admit a registration to Go CI or ReviewBot.
+function inventoryOnlyRoute({workflow, labels: routed}) {
+  return workflow === 'mongodb-nightly-validation.yml' && sharedInventoryChoices.some(name =>
+    canonicalLabels(routed) === canonicalLabels([name]) ||
+    canonicalLabels(routed) === canonicalLabels(['self-hosted', 'Linux', 'X64', 'speedle-shared', name]));
+}
 function customRoutingLabels() {
-  const result = new Set(declaredRoutes().flatMap(route => route.labels));
+  const result = new Set(declaredRoutes().filter(route => !inventoryOnlyRoute(route)).flatMap(route => route.labels));
   for (const label of platformLabels) result.delete(label);
   return result;
 }
@@ -564,7 +578,7 @@ function approvedReviewBotRunsOn() {
   return sets;
 }
 const approvedRunsOn = approvedReviewBotRunsOn();
-const canonicalLabels = values => JSON.stringify([...values].sort());
+function canonicalLabels(values) { return JSON.stringify([...values].sort()); }
 function approvedOverride(raw) {
   const values = JSON.parse(raw);
   assert.ok(Array.isArray(values) && values.length > 0 &&
@@ -585,9 +599,9 @@ test('ReviewBot overrides resolve only to recorded ReviewBot runners', () => {
   const liveGroup = JSON.stringify(['self-hosted', 'Linux', 'reviewbot']);
   const x64Group = JSON.stringify(['self-hosted', 'Linux', 'X64', 'reviewbot']);
   assert.deepEqual(reviewBotOverrideCandidates(liveGroup).map(runner => runner.name),
-    ['charming-speedle-2', 'donkey-speedle', 'ecs-light-teramoby']);
+    ['ecs-light-teramoby']);
   assert.deepEqual(reviewBotOverrideCandidates(x64Group).map(runner => runner.name),
-    ['charming-speedle-2', 'donkey-speedle', 'ecs-light-teramoby']);
+    ['ecs-light-teramoby']);
   assert.deepEqual(reviewBotOverrideCandidates(JSON.stringify(labels)).map(runner => runner.name),
     ['charming-speedle-2', 'donkey-speedle', 'fiona']);
   for (const raw of ['not-json', '{}', '[]', '["self-hosted",1]',
@@ -685,13 +699,19 @@ test('the runner inventory covers every scheduling label the workflows declare',
       + 'refresh runnerInventory from the runner API commands above');
   }
 });
-test('no declared workflow route can select a runner its identity guard rejects', () => {
+test('business routes stay inside their identity guards; inventory routes select one named Linux runner', () => {
   const guarded = scheduledHosts();
   for (const {workflow, labels: routed} of declaredRoutes()) {
     const candidates = runnersFor(routed);
     assert.ok(candidates.length > 0,
       `${workflow} routes to ${routed.join(', ')}, which no registered runner carries; `
       + 'refresh runnerInventory from the runner API commands above');
+    if (inventoryOnlyRoute({workflow, labels: routed})) {
+      assert.equal(candidates.length, 1, 'an inventory route must identify exactly one registration');
+      assert.ok(sharedInventoryChoices.includes(candidates[0].name));
+      assert.equal(`${candidates[0].os}/${candidates[0].arch}`, 'Linux/X64');
+      continue;
+    }
     for (const runner of candidates) {
       assert.ok(guarded.includes(`${runner.name}/${runner.os}/${runner.arch}`),
         `${workflow} can select ${runner.name}, which no workflow identity guard accepts`);
@@ -856,4 +876,62 @@ test('Fiona CI trial runs the worker and ReviewBot commands without touching CI 
   assert.ok(nodeCommand[1].trim().split(/\s+/).includes('scripts/tests/test_reviewbot_commands.cjs'),
     'Fiona ReviewBot trial must include the command regression suite');
   assert.doesNotMatch(trial, /secrets\.|ARK_API_KEY|Authorization/);
+});
+
+test('named shared runners are inventory-only, have no token permissions and never run checkout or regression steps', () => {
+  const inventory = job.mongodb['shared-inventory'];
+  assert.equal(value(inventory, 'permissions'), '{}');
+  assert.match(value(inventory, 'if'), /github\.repository == 'teramoby\/speedle-plus'/);
+  assert.match(value(inventory, 'if'), /github\.event_name == 'workflow_dispatch'/);
+  assert.doesNotMatch(inventory, /\buses:|secrets\.|vars\.|GITHUB_TOKEN|actions\/checkout|scripts\//);
+  assert.deepEqual([...inventory.matchAll(/^      - name: (.+)$/gm)].map(match => match[1]),
+    ['Verify shared inventory request and runner', 'Report shared runner tools']);
+  const guard = script(inventory, 'Verify shared inventory request and runner');
+  const normalGuard = script(job.worker.execute, 'Verify self-hosted runner identity');
+  const dispatch = inputs => github('workflow_dispatch', canonical, {event: {inputs}});
+  const enabled = (block, context) => {
+    const raw = value(block, 'if');
+    assert.ok(raw.startsWith('${{') && raw.endsWith('}}'));
+    return evaluate(raw.slice(3, -2).trim(), context);
+  };
+  for (const name of sharedInventoryChoices) {
+    const inputs = {runner: name, inventory_only: 'true', nightly_trial: 'false', ci_trial: 'none', install_flock: 'false'};
+    const context = dispatch(inputs);
+    assert.deepEqual(route(inventory, context), ['self-hosted', 'Linux', 'X64', 'speedle-shared', name]);
+    assert.equal(enabled(job.mongodb.mongodb, context), false,
+      'a named shared runner must not enter the MongoDB execution job');
+    assert.equal(enabled(inventory, context), true);
+    const environment = {SELECTED_RUNNER: name, INVENTORY_ONLY: 'true', NIGHTLY_TRIAL: 'false',
+      CI_TRIAL: 'none', INSTALL_FLOCK: 'false', RUNNER_NAME: name, RUNNER_OS: 'Linux', RUNNER_ARCH: 'X64'};
+    const run = changed => spawnSync('bash', ['-c', guard], {encoding: 'utf8', env: {...process.env, ...environment, ...changed}});
+    assert.equal(run({}).status, 0, name);
+    for (const changed of [{INVENTORY_ONLY: 'false'}, {NIGHTLY_TRIAL: 'true'}, {CI_TRIAL: 'lint'},
+      {INSTALL_FLOCK: 'true'}, {SELECTED_RUNNER: 'unexpected-host'}, {RUNNER_NAME: 'unexpected-host'},
+      {RUNNER_OS: 'macOS', RUNNER_ARCH: 'ARM64'}]) {
+      assert.notEqual(run(changed).status, 0, JSON.stringify({name, changed}));
+    }
+    for (const changed of [{inventory_only: 'false'}, {nightly_trial: 'true'}, {ci_trial: 'lint'}, {install_flock: 'true'}]) {
+      assert.equal(route(inventory, dispatch({...inputs, ...changed})), 'ubuntu-latest',
+        'an invalid inventory request must fail on hosted infrastructure');
+    }
+    if (name !== 'charming-speedle-2') {
+      const normal = spawnSync('bash', ['-c', normalGuard], {encoding: 'utf8',
+        env: {...process.env, RUNNER_NAME: name, RUNNER_OS: 'Linux', RUNNER_ARCH: 'X64', CI_TASK: 'lint'}});
+      assert.notEqual(normal.status, 0, `${name} must remain outside the business Go CI identity allowlist`);
+      assert.match(normal.stderr, /Unexpected runner/);
+    }
+  }
+  for (const runner of ['speedle-runner', 'speedle-linux', 'speedle-macos']) {
+    const context = dispatch({runner, inventory_only: 'true'});
+    assert.equal(enabled(inventory, context), false);
+    assert.equal(enabled(job.mongodb.mongodb, context), true);
+  }
+  const validInputs = {runner: 'charming-ci-1', inventory_only: 'true'};
+  assert.equal(enabled(inventory, github('workflow_dispatch', canonical,
+    {repository: 'outsider/speedle-plus', event: {inputs: validInputs}})), false);
+  assert.equal(enabled(inventory, github('pull_request', canonical, {event: {inputs: validInputs}})), false);
+  const lint = fs.readFileSync(path.join(root, '.github/actionlint.yaml'), 'utf8');
+  for (const label of ['speedle-shared', ...sharedInventoryChoices]) {
+    assert.ok(lint.includes(`    - ${label}\n`), `${label} must be declared for workflow lint`);
+  }
 });
