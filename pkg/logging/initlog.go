@@ -49,6 +49,7 @@ type rotationWriter struct {
 	mu           sync.Mutex
 	logger       *lumberjack.Logger
 	filename     string
+	active       os.FileInfo
 	perm         os.FileMode
 	uid          uint32
 	preservePerm bool
@@ -62,24 +63,34 @@ func newRotationWriter(l *lumberjack.Logger, prev *rotationWriter) *rotationWrit
 	if filename == "" {
 		filename = filepath.Join(os.TempDir(), filepath.Base(os.Args[0])+"-lumberjack.log")
 	}
-	w := &rotationWriter{logger: l, filename: filename}
-	if prev != nil && prev.logger == l && prev.filename == filename && prev.checked {
-		w.perm = prev.perm
-		w.uid = prev.uid
-		w.preservePerm = prev.preservePerm
-		w.checked = true
-		return w
+	if prev != nil && prev.logger == l && prev.filename == filename {
+		return prev
 	}
-	w.captureExistingPerm()
+	w := &rotationWriter{logger: l, filename: filename}
+	_ = w.captureExistingPerm()
 	return w
 }
 
-func (w *rotationWriter) captureExistingPerm() {
-	if perm, uid, ok := inspectRegularFilePerm(w.filename, w.afterOpen); ok {
-		w.perm = perm
+func (w *rotationWriter) captureExistingPerm() error {
+	info, uid, exists, err := inspectRegularFile(w.filename, nil)
+	if err != nil {
+		return err
+	}
+	if exists {
+		w.active = info
+		w.perm = info.Mode().Perm()
 		w.uid = uid
 		w.preservePerm = true
-		w.checked = true
+	}
+	w.checked = true
+	return nil
+}
+
+func (w *rotationWriter) observeActivePerm() {
+	info, uid, exists, err := inspectRegularFile(w.filename, nil)
+	if err == nil && exists && w.active != nil && os.SameFile(w.active, info) && sameOwner(uid, w.uid) {
+		w.active = info
+		w.perm = info.Mode().Perm()
 	}
 }
 
@@ -87,17 +98,22 @@ func (w *rotationWriter) Write(p []byte) (int, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	if !w.checked {
-		w.captureExistingPerm()
-		w.checked = true
+		if err := w.captureExistingPerm(); err != nil {
+			return 0, err
+		}
+	} else if w.preservePerm {
+		w.observeActivePerm()
 	}
 	n, err := w.logger.Write(p)
 	if err != nil {
 		return n, err
 	}
 	if w.preservePerm {
-		if restoreErr := restoreRegularFilePerm(w.filename, w.perm, w.uid, w.chmod, w.afterOpen); restoreErr != nil {
+		active, restoreErr := restoreRegularFilePerm(w.filename, w.active, w.perm, w.uid, w.chmod, w.afterOpen)
+		if restoreErr != nil {
 			return n, restoreErr
 		}
+		w.active = active
 	}
 	return n, nil
 }

@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -194,5 +195,150 @@ func TestRotationPermissionRestoreRejectsPathReplacementAndPropagatesChmodError(
 		if errors.Code(err) != errors.LoggingError || !stderrors.Is(err, sentinelErr) {
 			t.Fatalf("expected wrapped LoggingError with sentinel, got %v", err)
 		}
+	})
+
+	t.Run("honors operator mode tightening on active file without rotation and across later rotation", func(t *testing.T) {
+		dir := t.TempDir()
+		filename1 := filepath.Join(dir, "active-before-write.log")
+		if err := os.WriteFile(filename1, []byte("seed\n"), 0640); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Chmod(filename1, 0640); err != nil {
+			t.Fatal(err)
+		}
+		rot1 := &lumberjack.Logger{Filename: filename1, MaxSize: 1}
+		defer rot1.Close()
+		logger1, err := NewLogger(&LogConfig{Level: "info", Formatter: "json", RotationConfig: rot1})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Chmod(filename1, 0600); err != nil {
+			t.Fatal(err)
+		}
+		logger1.Info("first")
+		info1, err := os.Stat(filename1)
+		if err != nil || info1.Mode().Perm() != 0600 {
+			t.Fatalf("active file mode reverted before first write: %v %v", info1, err)
+		}
+
+		filename2 := filepath.Join(dir, "active-after-write.log")
+		if err := os.WriteFile(filename2, []byte("seed\n"), 0640); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Chmod(filename2, 0640); err != nil {
+			t.Fatal(err)
+		}
+		rot2 := &lumberjack.Logger{Filename: filename2, MaxSize: 1}
+		defer rot2.Close()
+		logger2, err := NewLogger(&LogConfig{Level: "info", Formatter: "json", RotationConfig: rot2})
+		if err != nil {
+			t.Fatal(err)
+		}
+		logger2.Info("first")
+		if err := os.Chmod(filename2, 0600); err != nil {
+			t.Fatal(err)
+		}
+		logger2.Info("second")
+		info2, err := os.Stat(filename2)
+		if err != nil || info2.Mode().Perm() != 0600 {
+			t.Fatalf("active file mode reverted after second write: %v %v", info2, err)
+		}
+		if err := rot2.Rotate(); err != nil {
+			t.Fatal(err)
+		}
+		logger2.Info("third")
+		info2AfterRotate, err := os.Stat(filename2)
+		if err != nil || info2AfterRotate.Mode().Perm() != 0600 {
+			t.Fatalf("rotated file mode reverted to startup mode: %v %v", info2AfterRotate, err)
+		}
+	})
+
+	t.Run("preserves write-only 0200 log across rotation", func(t *testing.T) {
+		if os.Geteuid() == 0 {
+			t.Skip("root bypasses 0200 read restriction")
+		}
+		dir := t.TempDir()
+		filename := filepath.Join(dir, "writeonly.log")
+		if err := os.WriteFile(filename, []byte("seed\n"), 0200); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Chmod(filename, 0200); err != nil {
+			t.Fatal(err)
+		}
+		rotation := &lumberjack.Logger{Filename: filename, MaxSize: 1}
+		defer rotation.Close()
+		logger, err := NewLogger(&LogConfig{Level: "info", Formatter: "json", RotationConfig: rotation})
+		if err != nil {
+			t.Fatal(err)
+		}
+		logger.Info("first")
+		if err := rotation.Rotate(); err != nil {
+			t.Fatal(err)
+		}
+		logger.Info("second")
+		info, err := os.Stat(filename)
+		if err != nil || info.Mode().Perm() != 0200 {
+			t.Fatalf("write-only log mode = %o, want 0200 (err=%v)", info.Mode().Perm(), err)
+		}
+	})
+
+	t.Run("surfaces unexpected initial inspection failure on Write", func(t *testing.T) {
+		dir := t.TempDir()
+		target := filepath.Join(dir, "target.txt")
+		if err := os.WriteFile(target, []byte("secret\n"), 0600); err != nil {
+			t.Fatal(err)
+		}
+		broken := filepath.Join(dir, "broken.log")
+		if err := os.Symlink(target, broken); err != nil {
+			t.Fatal(err)
+		}
+		rotation := &lumberjack.Logger{Filename: broken, MaxSize: 1}
+		defer rotation.Close()
+		w := newRotationWriter(rotation, nil)
+		_, err := w.Write([]byte("line\n"))
+		if errors.Code(err) != errors.LoggingError {
+			t.Fatalf("expected LoggingError on pre-existing symlink, got %v", err)
+		}
+		info, statErr := os.Stat(target)
+		if statErr != nil || info.Mode().Perm() != 0600 {
+			t.Fatalf("target permissions changed: %v %v", info, statErr)
+		}
+		data, readErr := os.ReadFile(target)
+		if readErr != nil || string(data) != "secret\n" {
+			t.Fatalf("target modified unexpectedly: %q %v", data, readErr)
+		}
+	})
+
+	t.Run("concurrent partial InitLog and first Write are race-free", func(t *testing.T) {
+		oldApp, oldAudit := application, audit
+		application, audit = newState(), newState()
+		t.Cleanup(func() { application, audit = oldApp, oldAudit })
+
+		filename := filepath.Join(t.TempDir(), "concurrent.log")
+		rotation := &lumberjack.Logger{Filename: filename, MaxSize: 1}
+		defer rotation.Close()
+		if err := InitLog(&LogConfig{Level: "info", Formatter: "json", RotationConfig: rotation}); err != nil {
+			t.Fatal(err)
+		}
+		var wg sync.WaitGroup
+		for range 4 {
+			wg.Go(func() {
+				for range 25 {
+					Default().Info("concurrent")
+				}
+			})
+			wg.Go(func() {
+				for i := range 25 {
+					level := "debug"
+					if i%2 == 1 {
+						level = "info"
+					}
+					if err := InitLog(&LogConfig{Level: level}); err != nil {
+						t.Errorf("partial InitLog failed: %v", err)
+					}
+				}
+			})
+		}
+		wg.Wait()
 	})
 }

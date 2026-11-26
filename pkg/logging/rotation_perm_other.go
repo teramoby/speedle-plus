@@ -7,10 +7,14 @@ package logging
 
 import "os"
 
-func inspectRegularFilePerm(string, func(string)) (os.FileMode, uint32, bool) {
-	return 0, 0, false
+func sameOwner(uint32, uint32) bool {
+	return false
 }
 
-func restoreRegularFilePerm(string, os.FileMode, uint32, func(*os.File, os.FileMode) error, func(string)) error {
-	return nil
+func inspectRegularFile(string, func(string)) (os.FileInfo, uint32, bool, error) {
+	return nil, 0, false, nil
+}
+
+func restoreRegularFilePerm(path string, active os.FileInfo, want os.FileMode, expectedUID uint32, chmodFn func(*os.File, os.FileMode) error, afterOpen func(string)) (os.FileInfo, error) {
+	return active, nil
 }

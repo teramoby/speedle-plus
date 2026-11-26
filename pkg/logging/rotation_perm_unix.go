@@ -6,14 +6,23 @@
 package logging
 
 import (
+	stderrors "errors"
 	"os"
 	"syscall"
 
 	"github.com/teramoby/speedle-plus/pkg/errors"
 )
 
+func sameOwner(uid, expected uint32) bool {
+	return uid == expected || int(uid) == os.Geteuid()
+}
+
 func openVerifiedRegularFile(path string, afterOpen func(string)) (*os.File, os.FileInfo, uint32, error) {
-	fd, err := syscall.Open(path, syscall.O_RDONLY|syscall.O_NOFOLLOW|syscall.O_NONBLOCK|syscall.O_CLOEXEC, 0)
+	flags := syscall.O_NOFOLLOW | syscall.O_NONBLOCK | syscall.O_CLOEXEC
+	fd, err := syscall.Open(path, syscall.O_RDONLY|flags, 0)
+	if stderrors.Is(err, os.ErrPermission) {
+		fd, err = syscall.Open(path, syscall.O_WRONLY|flags, 0)
+	}
 	if err != nil {
 		return nil, nil, 0, err
 	}
@@ -47,32 +56,43 @@ func openVerifiedRegularFile(path string, afterOpen func(string)) (*os.File, os.
 	return f, fdInfo, stat.Uid, nil
 }
 
-func inspectRegularFilePerm(path string, afterOpen func(string)) (os.FileMode, uint32, bool) {
+func inspectRegularFile(path string, afterOpen func(string)) (os.FileInfo, uint32, bool, error) {
 	f, info, uid, err := openVerifiedRegularFile(path, afterOpen)
 	if err != nil {
-		return 0, 0, false
+		if stderrors.Is(err, os.ErrNotExist) {
+			return nil, 0, false, nil
+		}
+		return nil, 0, false, errors.Wrapf(err, errors.LoggingError, "inspect log file %q permissions", path)
 	}
 	_ = f.Close()
-	return info.Mode().Perm(), uid, true
+	return info, uid, true, nil
 }
 
-func restoreRegularFilePerm(path string, want os.FileMode, expectedUID uint32, chmodFn func(*os.File, os.FileMode) error, afterOpen func(string)) error {
+func restoreRegularFilePerm(path string, active os.FileInfo, want os.FileMode, expectedUID uint32, chmodFn func(*os.File, os.FileMode) error, afterOpen func(string)) (os.FileInfo, error) {
 	f, info, uid, err := openVerifiedRegularFile(path, afterOpen)
 	if err != nil {
-		return errors.Wrapf(err, errors.LoggingError, "open log file %q to restore permissions", path)
+		if stderrors.Is(err, os.ErrNotExist) {
+			return active, nil
+		}
+		return active, errors.Wrapf(err, errors.LoggingError, "open log file %q to restore permissions", path)
 	}
 	defer f.Close()
-	if uid != expectedUID && int(uid) != os.Geteuid() {
-		return errors.Errorf(errors.LoggingError, "log file %q owner uid %d does not match expected uid %d", path, uid, expectedUID)
+	if !sameOwner(uid, expectedUID) {
+		return active, errors.Errorf(errors.LoggingError, "log file %q owner uid %d does not match expected uid %d", path, uid, expectedUID)
 	}
-	if info.Mode().Perm() == want {
-		return nil
+	if active != nil && os.SameFile(active, info) {
+		return info, nil
 	}
-	if chmodFn == nil {
-		chmodFn = (*os.File).Chmod
+	if info.Mode().Perm() != want {
+		if chmodFn == nil {
+			chmodFn = (*os.File).Chmod
+		}
+		if err := chmodFn(f, want); err != nil {
+			return active, errors.Wrapf(err, errors.LoggingError, "restore log file %q permissions", path)
+		}
+		if updated, statErr := f.Stat(); statErr == nil {
+			info = updated
+		}
 	}
-	if err := chmodFn(f, want); err != nil {
-		return errors.Wrapf(err, errors.LoggingError, "restore log file %q permissions", path)
-	}
-	return nil
+	return info, nil
 }
