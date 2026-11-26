@@ -45,17 +45,16 @@ type loggerState struct {
 	logger atomic.Pointer[slog.Logger]
 }
 
-// rotationWriter preserves a pre-existing regular log file's permission bits
-// across lumberjack rotations when the process umask is more restrictive:
-// lumberjack passes the previous file's mode to os.OpenFile without calling
-// Chmod, so the kernel masks group/other bits on replacement.
 type rotationWriter struct {
 	mu           sync.Mutex
 	logger       *lumberjack.Logger
 	filename     string
 	perm         os.FileMode
+	uid          uint32
 	preservePerm bool
 	checked      bool
+	chmod        func(*os.File, os.FileMode) error
+	afterOpen    func(string)
 }
 
 func newRotationWriter(l *lumberjack.Logger, prev *rotationWriter) *rotationWriter {
@@ -66,6 +65,7 @@ func newRotationWriter(l *lumberjack.Logger, prev *rotationWriter) *rotationWrit
 	w := &rotationWriter{logger: l, filename: filename}
 	if prev != nil && prev.logger == l && prev.filename == filename && prev.checked {
 		w.perm = prev.perm
+		w.uid = prev.uid
 		w.preservePerm = prev.preservePerm
 		w.checked = true
 		return w
@@ -75,8 +75,9 @@ func newRotationWriter(l *lumberjack.Logger, prev *rotationWriter) *rotationWrit
 }
 
 func (w *rotationWriter) captureExistingPerm() {
-	if info, err := os.Lstat(w.filename); err == nil && info.Mode().IsRegular() {
-		w.perm = info.Mode().Perm()
+	if perm, uid, ok := inspectRegularFilePerm(w.filename, w.afterOpen); ok {
+		w.perm = perm
+		w.uid = uid
 		w.preservePerm = true
 		w.checked = true
 	}
@@ -90,12 +91,15 @@ func (w *rotationWriter) Write(p []byte) (int, error) {
 		w.checked = true
 	}
 	n, err := w.logger.Write(p)
+	if err != nil {
+		return n, err
+	}
 	if w.preservePerm {
-		if info, statErr := os.Lstat(w.filename); statErr == nil && info.Mode().IsRegular() && info.Mode().Perm() != w.perm {
-			_ = os.Chmod(w.filename, w.perm)
+		if restoreErr := restoreRegularFilePerm(w.filename, w.perm, w.uid, w.chmod, w.afterOpen); restoreErr != nil {
+			return n, restoreErr
 		}
 	}
-	return n, err
+	return n, nil
 }
 
 func newState() *loggerState {
