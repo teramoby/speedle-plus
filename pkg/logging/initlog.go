@@ -62,6 +62,7 @@ type rotationWriter struct {
 	uidSet       bool
 	preservePerm bool
 	checked      bool
+	maintained   bool
 	maxSizeBytes int64
 	chmod        func(*os.File, os.FileMode) error
 	afterOpen    func(string)
@@ -84,6 +85,26 @@ func (w *rotationWriter) Write(p []byte) (int, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	return w.writePlatform(p)
+}
+
+func (w *rotationWriter) Rotate() error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	return w.rotatePlatform()
+}
+
+// Rotate triggers a synchronized rotation on the application logger's
+// configured rotation writer. When no rotation config is installed, it is a no-op.
+func Rotate() error { return application.rotate() }
+
+func (s *loggerState) rotate() error {
+	s.mu.Lock()
+	w := s.writer
+	s.mu.Unlock()
+	if w == nil {
+		return nil
+	}
+	return w.Rotate()
 }
 
 func newState() *loggerState {

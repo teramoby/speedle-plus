@@ -9,6 +9,7 @@ import (
 	"compress/gzip"
 	"context"
 	stderrors "errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"os"
@@ -189,10 +190,6 @@ func TestRotationPermissionRestoreRejectsPathReplacementAndPropagatesChmodError(
 	t.Run("rejects regular file replacement after open", func(t *testing.T) {
 		dir := t.TempDir()
 		filename, rotation, w := seedLog(t, dir, "engine.log")
-		other := filepath.Join(dir, "other.log")
-		if err := os.WriteFile(other, []byte("other\n"), 0600); err != nil {
-			t.Fatal(err)
-		}
 		if err := rotation.Rotate(); err != nil {
 			t.Fatal(err)
 		}
@@ -201,7 +198,11 @@ func TestRotationPermissionRestoreRejectsPathReplacementAndPropagatesChmodError(
 			chmodCalls++
 			return nil
 		}
+		seq := 0
 		w.afterOpen = func(path string) {
+			seq++
+			other := fmt.Sprintf("%s.%d", filepath.Join(dir, "other.log"), seq)
+			_ = os.WriteFile(other, []byte("other\n"), 0600)
 			_ = os.Rename(other, path)
 		}
 		_, err := w.Write([]byte("after-rotate\n"))
@@ -397,6 +398,172 @@ func TestRotationPermissionRestoreRejectsPathReplacementAndPropagatesChmodError(
 		decompressed, err := io.ReadAll(gz)
 		if err != nil || !strings.Contains(string(decompressed), "bbbbbbbb") {
 			t.Fatalf("unexpected compressed backup content: %q %v", decompressed, err)
+		}
+	})
+
+	t.Run("synchronized Rotate preserves 0640 immediately and concurrent Write+Rotate loses no records", func(t *testing.T) {
+		oldApp, oldAudit := application, audit
+		application, audit = newState(), newState()
+		t.Cleanup(func() { application, audit = oldApp, oldAudit })
+
+		dir := t.TempDir()
+		filename := filepath.Join(dir, "sync.log")
+		if err := os.WriteFile(filename, []byte("seed\n"), 0640); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Chmod(filename, 0640); err != nil {
+			t.Fatal(err)
+		}
+		rotation := &lumberjack.Logger{Filename: filename, MaxSize: 1}
+		defer rotation.Close()
+		if err := InitLog(&LogConfig{Level: "info", Formatter: "json", RotationConfig: rotation}); err != nil {
+			t.Fatal(err)
+		}
+		if err := Rotate(); err != nil {
+			t.Fatal(err)
+		}
+		info, err := os.Stat(filename)
+		if err != nil || info.Mode().Perm() != 0640 {
+			t.Fatalf("mode immediately after synchronized Rotate = %o, want 0640 (err=%v)", info.Mode().Perm(), err)
+		}
+
+		const writers = 4
+		const perWriter = 50
+		var wg sync.WaitGroup
+		for g := range writers {
+			wg.Go(func() {
+				for i := range perWriter {
+					Default().Info("sync", "id", fmt.Sprintf("rec-%d-%d", g, i))
+				}
+			})
+		}
+		wg.Go(func() {
+			for range 20 {
+				if err := Rotate(); err != nil {
+					t.Errorf("concurrent Rotate failed: %v", err)
+				}
+			}
+		})
+		wg.Wait()
+
+		files, err := filepath.Glob(filepath.Join(dir, "sync*.log"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		var combined strings.Builder
+		for _, f := range files {
+			raw, readErr := os.ReadFile(f)
+			if readErr != nil {
+				t.Fatal(readErr)
+			}
+			combined.Write(raw)
+		}
+		all := combined.String()
+		for g := range writers {
+			for i := range perWriter {
+				needle := fmt.Sprintf("rec-%d-%d", g, i)
+				if !strings.Contains(all, needle) {
+					t.Fatalf("missing log record %q across active+backup logs", needle)
+				}
+			}
+		}
+		info, err = os.Stat(filename)
+		if err != nil || info.Mode().Perm() != 0640 {
+			t.Fatalf("final active log mode = %o, want 0640 (err=%v)", info.Mode().Perm(), err)
+		}
+	})
+
+	t.Run("concurrent Write and external RotationConfig.Rotate return no write errors", func(t *testing.T) {
+		dir := t.TempDir()
+		filename := filepath.Join(dir, "ext.log")
+		if err := os.WriteFile(filename, []byte("seed\n"), 0640); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Chmod(filename, 0640); err != nil {
+			t.Fatal(err)
+		}
+		rotation := &lumberjack.Logger{Filename: filename, MaxSize: 1}
+		defer rotation.Close()
+		w := newRotationWriter(rotation, nil)
+		w.maxSizeBytes = 128
+
+		var wg sync.WaitGroup
+		for range 4 {
+			wg.Go(func() {
+				for i := range 25 {
+					if _, err := fmt.Fprintf(w, "external-race-line-%d\n", i); err != nil {
+						t.Errorf("concurrent Write returned error: %v", err)
+					}
+				}
+			})
+		}
+		wg.Go(func() {
+			for range 10 {
+				if err := rotation.Rotate(); err != nil {
+					t.Errorf("external Rotate returned error: %v", err)
+				}
+				time.Sleep(time.Millisecond)
+			}
+		})
+		wg.Wait()
+
+		info, err := os.Stat(filename)
+		if err != nil || info.Mode().Perm() != 0640 {
+			t.Fatalf("final external-rotated log mode = %o, want 0640 (err=%v)", info.Mode().Perm(), err)
+		}
+	})
+
+	t.Run("startup first write runs backup maintenance without waiting for rotation", func(t *testing.T) {
+		dir := t.TempDir()
+		filename := filepath.Join(dir, "startup.log")
+		oldBackup := filepath.Join(dir, "startup-2020-01-01T00-00-00.000.log")
+		recentTS := time.Now().UTC().Add(-time.Minute).Format(lumberjackBackupTimeFormat)
+		recentBackup := filepath.Join(dir, "startup-"+recentTS+".log")
+		for _, p := range []string{filename, oldBackup, recentBackup} {
+			if err := os.WriteFile(p, []byte("existing\n"), 0640); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Chmod(p, 0640); err != nil {
+				t.Fatal(err)
+			}
+		}
+		rotation := &lumberjack.Logger{Filename: filename, MaxSize: 10, MaxBackups: 1, MaxAge: 7, Compress: true}
+		defer rotation.Close()
+		w := newRotationWriter(rotation, nil)
+		if _, err := w.Write([]byte("small-entry\n")); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := os.Stat(oldBackup); !os.IsNotExist(err) {
+			t.Fatalf("expired backup was not pruned on startup write: %v", err)
+		}
+		if _, err := os.Stat(recentBackup + ".gz"); err != nil {
+			t.Fatalf("retained backup was not compressed on startup write: %v", err)
+		}
+	})
+
+	t.Run("long basename backup probe handles disabled vs enabled compression without hanging", func(t *testing.T) {
+		dir := t.TempDir()
+		longBase := strings.Repeat("a", 225) + ".log"
+		filename := filepath.Join(dir, longBase)
+		if err := os.WriteFile(filename, []byte("seed\n"), 0640); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Chmod(filename, 0640); err != nil {
+			t.Fatal(err)
+		}
+		rotNoComp := &lumberjack.Logger{Filename: filename, MaxSize: 1, Compress: false}
+		defer rotNoComp.Close()
+		wNoComp := newRotationWriter(rotNoComp, nil)
+		if err := wNoComp.Rotate(); err != nil {
+			t.Fatalf("rotation with long basename and Compress=false failed: %v", err)
+		}
+
+		rotComp := &lumberjack.Logger{Filename: filename, MaxSize: 1, Compress: true}
+		defer rotComp.Close()
+		wComp := newRotationWriter(rotComp, nil)
+		err := wComp.Rotate()
+		if errors.Code(err) != errors.LoggingError {
+			t.Fatalf("expected immediate LoggingError when compressed backup exceeds path limit, got %v", err)
 		}
 	})
 

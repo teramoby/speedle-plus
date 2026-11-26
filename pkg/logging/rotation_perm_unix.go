@@ -24,7 +24,11 @@ const (
 	lumberjackCompressSuffix   = ".gz"
 	lumberjackDefaultMaxMB     = 100
 	lumberjackMegabyte         = 1024 * 1024
+	maxRotationRetryAttempts   = 8
+	maxBackupNameAttempts      = 2000
 )
+
+var errConcurrentRotation = stderrors.New("concurrent log rotation")
 
 func sameOwner(uid, expected uint32) bool {
 	return uid == expected || int(uid) == os.Geteuid()
@@ -58,19 +62,29 @@ func verifyDescriptor(fd int, path string, afterOpen func(string)) (*os.File, os
 		_ = f.Close()
 		return nil, nil, 0, errors.Errorf(errors.LoggingError, "log path %q is not a regular file", path)
 	}
-	pathInfo, err := os.Lstat(path)
-	if err != nil {
-		_ = f.Close()
-		return nil, nil, 0, err
-	}
-	if !pathInfo.Mode().IsRegular() || !os.SameFile(fdInfo, pathInfo) {
-		_ = f.Close()
-		return nil, nil, 0, errors.Errorf(errors.LoggingError, "log path %q changed during permission check", path)
-	}
 	stat, ok := fdInfo.Sys().(*syscall.Stat_t)
 	if !ok {
 		_ = f.Close()
 		return nil, nil, 0, errors.Errorf(errors.LoggingError, "missing unix stat metadata for %q", path)
+	}
+	pathInfo, err := os.Lstat(path)
+	if err != nil {
+		_ = f.Close()
+		if stderrors.Is(err, os.ErrNotExist) {
+			return nil, nil, 0, errConcurrentRotation
+		}
+		return nil, nil, 0, err
+	}
+	if !pathInfo.Mode().IsRegular() {
+		_ = f.Close()
+		return nil, nil, 0, errors.Errorf(errors.LoggingError, "log path %q changed during permission check", path)
+	}
+	if !os.SameFile(fdInfo, pathInfo) {
+		_ = f.Close()
+		if pathStat, ok := pathInfo.Sys().(*syscall.Stat_t); ok && sameOwner(pathStat.Uid, stat.Uid) {
+			return nil, nil, 0, errConcurrentRotation
+		}
+		return nil, nil, 0, errors.Errorf(errors.LoggingError, "log path %q changed during permission check", path)
 	}
 	return f, fdInfo, stat.Uid, nil
 }
@@ -124,6 +138,9 @@ func openVerifiedAppendOrCreate(path string, afterOpen func(string)) (*os.File, 
 			created = true
 		} else if stderrors.Is(err, os.ErrExist) {
 			fd, err = syscall.Open(path, flags, 0)
+			if stderrors.Is(err, os.ErrNotExist) {
+				return nil, nil, 0, false, errConcurrentRotation
+			}
 		}
 	}
 	if err != nil {
@@ -136,20 +153,23 @@ func openVerifiedAppendOrCreate(path string, afterOpen func(string)) (*os.File, 
 	return f, info, uid, created, nil
 }
 
-func createVerifiedNewLogFile(path string, afterOpen func(string)) (*os.File, os.FileInfo, error) {
+func createVerifiedNewLogFile(path string, afterOpen func(string)) (*os.File, os.FileInfo, uint32, error) {
 	if mkErr := os.MkdirAll(filepath.Dir(path), 0755); mkErr != nil {
-		return nil, nil, errors.Wrapf(mkErr, errors.LoggingError, "create directory for rotated log file %q", path)
+		return nil, nil, 0, errors.Wrapf(mkErr, errors.LoggingError, "create directory for rotated log file %q", path)
 	}
 	flags := syscall.O_WRONLY | syscall.O_APPEND | syscall.O_CREAT | syscall.O_EXCL | syscall.O_NOFOLLOW | syscall.O_NONBLOCK | syscall.O_CLOEXEC
 	fd, err := syscall.Open(path, flags, 0600)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, errors.LoggingError, "create rotated log file %q", path)
+		if stderrors.Is(err, os.ErrExist) {
+			return nil, nil, 0, errConcurrentRotation
+		}
+		return nil, nil, 0, errors.Wrapf(err, errors.LoggingError, "create rotated log file %q", path)
 	}
-	f, info, _, verifyErr := verifyDescriptor(fd, path, afterOpen)
+	f, info, uid, verifyErr := verifyDescriptor(fd, path, afterOpen)
 	if verifyErr != nil {
-		return nil, nil, errors.Wrapf(verifyErr, errors.LoggingError, "verify rotated log file %q", path)
+		return nil, nil, 0, errors.Wrapf(verifyErr, errors.LoggingError, "verify rotated log file %q", path)
 	}
-	return f, info, nil
+	return f, info, uid, nil
 }
 
 func applyDescriptorPerm(f *os.File, path string, want os.FileMode, chmodFn func(*os.File, os.FileMode) error) (os.FileInfo, error) {
@@ -166,24 +186,36 @@ func applyDescriptorPerm(f *os.File, path string, want os.FileMode, chmodFn func
 	return updated, nil
 }
 
-func (w *rotationWriter) nextBackupName() string {
+func (w *rotationWriter) nextBackupName() (string, error) {
 	dir := filepath.Dir(w.filename)
 	base := filepath.Base(w.filename)
 	ext := filepath.Ext(base)
 	prefix := base[:len(base)-len(ext)] + "-"
-	for {
+	for range maxBackupNameAttempts {
 		now := time.Now()
 		if !w.logger.LocalTime {
 			now = now.UTC()
 		}
 		candidate := filepath.Join(dir, prefix+now.Format(lumberjackBackupTimeFormat)+ext)
 		_, err := os.Lstat(candidate)
-		_, gzErr := os.Lstat(candidate + lumberjackCompressSuffix)
-		if stderrors.Is(err, os.ErrNotExist) && stderrors.Is(gzErr, os.ErrNotExist) {
-			return candidate
+		if err != nil && !stderrors.Is(err, os.ErrNotExist) {
+			return "", errors.Wrapf(err, errors.LoggingError, "probe backup log path %q", candidate)
+		}
+		exists := err == nil
+		if w.logger.Compress {
+			gzPath := candidate + lumberjackCompressSuffix
+			_, gzErr := os.Lstat(gzPath)
+			if gzErr != nil && !stderrors.Is(gzErr, os.ErrNotExist) {
+				return "", errors.Wrapf(gzErr, errors.LoggingError, "probe compressed backup log path %q", gzPath)
+			}
+			exists = exists || gzErr == nil
+		}
+		if !exists {
+			return candidate, nil
 		}
 		time.Sleep(time.Millisecond)
 	}
+	return "", errors.Errorf(errors.LoggingError, "exhausted backup filenames for %q", w.filename)
 }
 
 func (w *rotationWriter) rotateVerifiedFile(prevInfo os.FileInfo) (*os.File, os.FileInfo, error) {
@@ -191,18 +223,26 @@ func (w *rotationWriter) rotateVerifiedFile(prevInfo os.FileInfo) (*os.File, os.
 	if err != nil {
 		return nil, nil, err
 	}
-	if exists {
-		if !os.SameFile(prevInfo, curInfo) {
-			return nil, nil, errors.Errorf(errors.LoggingError, "log path %q changed before rotation", w.filename)
-		}
-		if w.uidSet && !sameOwner(curUID, w.uid) {
-			return nil, nil, errors.Errorf(errors.LoggingError, "log file %q owner uid %d does not match expected uid %d", w.filename, curUID, w.uid)
-		}
-		if err := os.Rename(w.filename, w.nextBackupName()); err != nil {
-			return nil, nil, errors.Wrapf(err, errors.LoggingError, "rename rotated log file %q", w.filename)
-		}
+	if !exists {
+		return nil, nil, errConcurrentRotation
 	}
-	f, newInfo, err := createVerifiedNewLogFile(w.filename, nil)
+	if w.uidSet && !sameOwner(curUID, w.uid) {
+		return nil, nil, errors.Errorf(errors.LoggingError, "log file %q owner uid %d does not match expected uid %d", w.filename, curUID, w.uid)
+	}
+	if !os.SameFile(prevInfo, curInfo) {
+		return nil, nil, errConcurrentRotation
+	}
+	backup, err := w.nextBackupName()
+	if err != nil {
+		return nil, nil, err
+	}
+	if err := os.Rename(w.filename, backup); err != nil {
+		if stderrors.Is(err, os.ErrNotExist) {
+			return nil, nil, errConcurrentRotation
+		}
+		return nil, nil, errors.Wrapf(err, errors.LoggingError, "rename rotated log file %q", w.filename)
+	}
+	f, newInfo, _, err := createVerifiedNewLogFile(w.filename, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -215,8 +255,65 @@ func (w *rotationWriter) rotateVerifiedFile(prevInfo os.FileInfo) (*os.File, os.
 		newInfo = updated
 	}
 	w.active = newInfo
+	w.maintained = true
 	w.maintainBackups()
 	return f, newInfo, nil
+}
+
+func (w *rotationWriter) rotatePlatform() error {
+	if !w.checked {
+		if err := w.captureExistingPerm(); err != nil {
+			return err
+		}
+	}
+	_ = w.logger.Close()
+	curInfo, curUID, exists, err := inspectRegularFile(w.filename)
+	if err != nil {
+		return err
+	}
+	if exists {
+		if w.uidSet && !sameOwner(curUID, w.uid) {
+			return errors.Errorf(errors.LoggingError, "log file %q owner uid %d does not match expected uid %d", w.filename, curUID, w.uid)
+		}
+		if !w.uidSet {
+			w.uid = curUID
+			w.uidSet = true
+		}
+		if w.preservePerm && w.active != nil && os.SameFile(w.active, curInfo) {
+			w.active = curInfo
+			w.perm = curInfo.Mode().Perm()
+		}
+		backup, err := w.nextBackupName()
+		if err != nil {
+			return err
+		}
+		if err := os.Rename(w.filename, backup); err != nil && !stderrors.Is(err, os.ErrNotExist) {
+			return errors.Wrapf(err, errors.LoggingError, "rename rotated log file %q", w.filename)
+		}
+	}
+	f, newInfo, newUID, err := createVerifiedNewLogFile(w.filename, w.afterOpen)
+	if err != nil {
+		return err
+	}
+	if !w.uidSet {
+		w.uid = newUID
+		w.uidSet = true
+	}
+	if w.preservePerm && newInfo.Mode().Perm() != w.perm {
+		updated, chmodErr := applyDescriptorPerm(f, w.filename, w.perm, w.chmod)
+		if chmodErr != nil {
+			_ = f.Close()
+			return chmodErr
+		}
+		newInfo = updated
+	}
+	w.active = newInfo
+	w.maintained = true
+	if closeErr := f.Close(); closeErr != nil {
+		return errors.Wrapf(closeErr, errors.LoggingError, "close rotated log file %q", w.filename)
+	}
+	w.maintainBackups()
+	return nil
 }
 
 type backupEntry struct {
@@ -363,59 +460,78 @@ func (w *rotationWriter) writePlatform(p []byte) (int, error) {
 			return 0, err
 		}
 	}
-	f, info, uid, created, err := openVerifiedAppendOrCreate(w.filename, w.afterOpen)
-	if err != nil {
-		return 0, err
-	}
-	if w.uidSet && !sameOwner(uid, w.uid) {
-		_ = f.Close()
-		return 0, errors.Errorf(errors.LoggingError, "log file %q owner uid %d does not match expected uid %d", w.filename, uid, w.uid)
-	}
-	if !w.uidSet {
-		w.uid = uid
-		w.uidSet = true
-	}
-	if w.preservePerm {
-		if !created && w.active != nil && os.SameFile(w.active, info) {
-			w.active = info
-			w.perm = info.Mode().Perm()
-		} else {
-			if info.Mode().Perm() != w.perm {
-				updated, chmodErr := applyDescriptorPerm(f, w.filename, w.perm, w.chmod)
-				if chmodErr != nil {
-					_ = f.Close()
-					return 0, chmodErr
-				}
-				info = updated
+	for attempt := range maxRotationRetryAttempts {
+		f, info, uid, created, err := openVerifiedAppendOrCreate(w.filename, w.afterOpen)
+		if err != nil {
+			if stderrors.Is(err, errConcurrentRotation) && attempt < maxRotationRetryAttempts-1 {
+				continue
 			}
-			w.active = info
+			if stderrors.Is(err, errConcurrentRotation) {
+				return 0, errors.Wrapf(err, errors.LoggingError, "log path %q changed during permission check", w.filename)
+			}
+			return 0, err
 		}
-	} else {
-		w.active = info
-	}
-
-	if info.Size()+int64(len(p)) > maxBytes {
-		_ = f.Close()
-		_ = w.logger.Close()
-		rotated, rotatedInfo, rotErr := w.rotateVerifiedFile(info)
-		if rotErr != nil {
-			return 0, rotErr
+		if w.uidSet && !sameOwner(uid, w.uid) {
+			_ = f.Close()
+			return 0, errors.Errorf(errors.LoggingError, "log file %q owner uid %d does not match expected uid %d", w.filename, uid, w.uid)
 		}
-		f = rotated
-		info = rotatedInfo
-	}
-
-	n, writeErr := f.Write(p)
-	if writeErr == nil {
-		if updated, statErr := f.Stat(); statErr == nil {
-			w.active = updated
+		if !w.uidSet {
+			w.uid = uid
+			w.uidSet = true
+		}
+		if w.preservePerm {
+			if !created && w.active != nil && os.SameFile(w.active, info) {
+				w.active = info
+				w.perm = info.Mode().Perm()
+			} else {
+				if info.Mode().Perm() != w.perm {
+					updated, chmodErr := applyDescriptorPerm(f, w.filename, w.perm, w.chmod)
+					if chmodErr != nil {
+						_ = f.Close()
+						return 0, chmodErr
+					}
+					info = updated
+				}
+				w.active = info
+			}
 		} else {
 			w.active = info
 		}
+		if !w.maintained {
+			w.maintained = true
+			w.maintainBackups()
+		}
+
+		if info.Size()+int64(len(p)) > maxBytes {
+			_ = f.Close()
+			_ = w.logger.Close()
+			rotated, rotatedInfo, rotErr := w.rotateVerifiedFile(info)
+			if rotErr != nil {
+				if stderrors.Is(rotErr, errConcurrentRotation) && attempt < maxRotationRetryAttempts-1 {
+					continue
+				}
+				if stderrors.Is(rotErr, errConcurrentRotation) {
+					return 0, errors.Wrapf(rotErr, errors.LoggingError, "log path %q changed during rotation", w.filename)
+				}
+				return 0, rotErr
+			}
+			f = rotated
+			info = rotatedInfo
+		}
+
+		n, writeErr := f.Write(p)
+		if writeErr == nil {
+			if updated, statErr := f.Stat(); statErr == nil {
+				w.active = updated
+			} else {
+				w.active = info
+			}
+		}
+		closeErr := f.Close()
+		if writeErr != nil {
+			return n, writeErr
+		}
+		return n, closeErr
 	}
-	closeErr := f.Close()
-	if writeErr != nil {
-		return n, writeErr
-	}
-	return n, closeErr
+	return 0, errors.Errorf(errors.LoggingError, "log path %q changed during permission check", w.filename)
 }
