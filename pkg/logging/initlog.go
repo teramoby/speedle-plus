@@ -9,6 +9,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -40,7 +41,61 @@ type LogConfig struct {
 type loggerState struct {
 	mu     sync.Mutex
 	config LogConfig
+	writer *rotationWriter
 	logger atomic.Pointer[slog.Logger]
+}
+
+// rotationWriter preserves a pre-existing regular log file's permission bits
+// across lumberjack rotations when the process umask is more restrictive:
+// lumberjack passes the previous file's mode to os.OpenFile without calling
+// Chmod, so the kernel masks group/other bits on replacement.
+type rotationWriter struct {
+	mu           sync.Mutex
+	logger       *lumberjack.Logger
+	filename     string
+	perm         os.FileMode
+	preservePerm bool
+	checked      bool
+}
+
+func newRotationWriter(l *lumberjack.Logger, prev *rotationWriter) *rotationWriter {
+	filename := l.Filename
+	if filename == "" {
+		filename = filepath.Join(os.TempDir(), filepath.Base(os.Args[0])+"-lumberjack.log")
+	}
+	w := &rotationWriter{logger: l, filename: filename}
+	if prev != nil && prev.logger == l && prev.filename == filename && prev.checked {
+		w.perm = prev.perm
+		w.preservePerm = prev.preservePerm
+		w.checked = true
+		return w
+	}
+	w.captureExistingPerm()
+	return w
+}
+
+func (w *rotationWriter) captureExistingPerm() {
+	if info, err := os.Lstat(w.filename); err == nil && info.Mode().IsRegular() {
+		w.perm = info.Mode().Perm()
+		w.preservePerm = true
+		w.checked = true
+	}
+}
+
+func (w *rotationWriter) Write(p []byte) (int, error) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	if !w.checked {
+		w.captureExistingPerm()
+		w.checked = true
+	}
+	n, err := w.logger.Write(p)
+	if w.preservePerm {
+		if info, statErr := os.Lstat(w.filename); statErr == nil && info.Mode().IsRegular() && info.Mode().Perm() != w.perm {
+			_ = os.Chmod(w.filename, w.perm)
+		}
+	}
+	return n, err
 }
 
 func newState() *loggerState {
@@ -103,11 +158,12 @@ func (s *loggerState) init(cfg *LogConfig) error {
 	if cfg.RotationConfig != nil {
 		next.RotationConfig = cfg.RotationConfig
 	}
-	logger, err := NewLogger(&next)
+	logger, writer, err := newLogger(&next, s.writer)
 	if err != nil {
 		return err
 	}
 	s.config = next
+	s.writer = writer
 	s.logger.Store(logger)
 	return nil
 }
@@ -134,19 +190,26 @@ func parseLevel(value string) (slog.Level, error) {
 // NewLogger constructs an independent slog logger. Its defaults are info, text,
 // stderr and no caller reporting. Invalid values never install a partial config.
 func NewLogger(cfg *LogConfig) (*slog.Logger, error) {
+	logger, _, err := newLogger(cfg, nil)
+	return logger, err
+}
+
+func newLogger(cfg *LogConfig, prev *rotationWriter) (*slog.Logger, *rotationWriter, error) {
 	var config LogConfig
 	if cfg != nil {
 		config = *cfg
 	}
 	var writer io.Writer = os.Stderr
+	var rotWriter *rotationWriter
 	if config.RotationConfig != nil {
-		writer = config.RotationConfig
+		rotWriter = newRotationWriter(config.RotationConfig, prev)
+		writer = rotWriter
 	}
 	handler, err := newHandler(writer, config)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return slog.New(handler), nil
+	return slog.New(handler), rotWriter, nil
 }
 
 func newHandler(writer io.Writer, cfg LogConfig) (slog.Handler, error) {

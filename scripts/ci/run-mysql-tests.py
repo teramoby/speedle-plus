@@ -45,6 +45,7 @@ run_regression = _load_sibling("store_regression").run_regression
 
 ROOT = Path(__file__).resolve().parents[2]
 IMAGE = "mysql:8.4@sha256:a0225d1ea6631c8bc2385dc4c2faba17bbf1834ecf369e1659a9a382bd8d5dd7"
+PULL_RETRY_DELAYS = (5, 15, 30, 60)
 CLIENT = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
 
@@ -78,6 +79,27 @@ def ensure_docker_access():
 
 def run(args, **kwargs):
     return subprocess.run(args, cwd=ROOT, check=True, text=True, **kwargs)
+
+
+def ensure_image(image, log, delays=PULL_RETRY_DELAYS):
+    """Ensure the pinned fixture image is cached locally, retrying transient pull failures."""
+    if subprocess.run(["docker", "image", "inspect", image], cwd=ROOT,
+                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0:
+        return
+    attempts = len(delays) + 1
+    for attempt in range(1, attempts + 1):
+        try:
+            run(["docker", "pull", image], stdout=log, stderr=log, timeout=300)
+            return
+        except subprocess.CalledProcessError as error:
+            if attempt > len(delays):
+                raise
+            delay = delays[attempt - 1]
+            message = f"Docker pull failed (attempt {attempt}/{attempts}); retrying in {delay}s: exit {error.returncode}\n"
+            log.write(message)
+            log.flush()
+            print(message, end="", flush=True)
+            time.sleep(delay)
 
 
 def count_test_events(results):
@@ -150,6 +172,7 @@ def main():
         with tempfile.TemporaryDirectory(prefix="speedle-mysql-nightly-") as temporary:
             work = Path(temporary)
             with (results / "mysql-docker.log").open("w") as log:
+                ensure_image(IMAGE, log)
                 run(["docker", "run", "--rm", "--detach", "--name", container,
                      "--label", "com.speedle.fixture=mysql-nightly",
                      "--label", "com.speedle.mysql.run=" + environment.get("GITHUB_RUN_ID", container) + "-" + environment.get("GITHUB_RUN_ATTEMPT", "1"),

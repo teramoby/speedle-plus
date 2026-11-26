@@ -372,6 +372,46 @@ class DocumentedBuildTest(unittest.TestCase):
         self.assertIn("cd speedle-plus", calls)
         self.assertIn("ls bin", calls)
 
+    def test_linux_namespace_reexec_omits_mount_proc(self):
+        steps = QUICK_START.blocks(ROOT / "docs/hugo/content/quick-start.md")
+        version = dict(steps)["version"]
+        unshare_calls = []
+
+        def run(command, cwd, env, timeout=60):
+            if isinstance(command, list) and command and command[0] == "unshare":
+                unshare_calls.append(command)
+                report = Path(command[command.index("--report") + 1])
+                report.write_text(json.dumps({"steps": [], "decisions": {}}))
+                return ""
+            if isinstance(command, list):
+                return "deadbeef\n" if command == ["git", "rev-parse", "HEAD"] else ""
+            if command == version:
+                return "go version go1.26.10 linux/amd64\n"
+            if command.startswith("git clone "):
+                for binary in ("spctl", "speedle-pms", "speedle-ads"):
+                    path = Path(cwd) / "speedle-plus" / "bin" / binary
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.touch()
+                    path.chmod(0o755)
+                return ""
+            if command == "ls bin":
+                return "spctl\nspeedle-ads\nspeedle-pms\n"
+            if command in {"cd speedle-plus", "mkdir -p bin"} or command.startswith("go build "):
+                return ""
+            raise AssertionError(f"unexpected command: {command}")
+
+        with mock.patch.object(QUICK_START, "run", run), \
+                mock.patch.object(QUICK_START, "run_with_retry", lambda action, reset=None, delays=(5, 15, 30, 60): action()), \
+                mock.patch.object(QUICK_START.sys, "platform", "linux"), \
+                mock.patch.object(QUICK_START.shutil, "which", return_value="/usr/bin/tool"), \
+                contextlib.redirect_stdout(io.StringIO()):
+            QUICK_START.verify("en", None, dict(os.environ))
+        self.assertEqual(len(unshare_calls), 1)
+        command = unshare_calls[0]
+        for flag in ("--user", "--map-root-user", "--net", "--pid", "--fork", "--kill-child=SIGKILL"):
+            self.assertIn(flag, command)
+        self.assertNotIn("--mount-proc", command)
+
 
 if __name__ == "__main__":
     unittest.main()

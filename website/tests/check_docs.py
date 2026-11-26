@@ -301,7 +301,8 @@ def main():
             # Warm every literal Go example before entering a namespace without egress.
             run(['go','build','-o',str(binaries)+'/', './website/tests/examples/...'],ROOT,env)
             if sys.platform.startswith('linux'):
-                command=['unshare','--user','--map-root-user','--net','--pid','--fork','--mount-proc','--kill-child=SIGKILL',sys.executable,str(Path(__file__).resolve()),'--inside','--bin',str(binaries),'--work',str(work)]
+                # Omit --mount-proc so user/net/PID isolation works under service sandboxes that mask /proc.
+                command=['unshare','--user','--map-root-user','--net','--pid','--fork','--kill-child=SIGKILL',sys.executable,str(Path(__file__).resolve()),'--inside','--bin',str(binaries),'--work',str(work)]
                 print(run(command,ROOT,env,timeout=600).stdout,end='');return
             args.bin,args.work=binaries,work
             count=sum(verify_page(page,locale,binaries,env,work,False) for locale in ['en','zh'] for page in PAGES)
