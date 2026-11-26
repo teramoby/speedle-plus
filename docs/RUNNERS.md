@@ -232,7 +232,9 @@ report as an attachment, capped at 17 MiB with a note when it had to be cut.
 
 The report job reads only the worker job's result and the contents of its
 `*-results` artifact. A worker that never starts, or that fails before
-`scripts/ci/run-go-tests.sh` creates its results directory, uploads nothing.
+`scripts/ci/run-go-tests.sh` creates its results directory, uploads nothing; an
+incomplete upload can also leave an existing results directory with no readable
+test results.
 GitHub cancels a self-hosted job that stays queued for 24 hours: no eligible
 runner accepted it in time, because runners were offline or busy, none
 carried the job's labels, or the runner group's workflow or repository

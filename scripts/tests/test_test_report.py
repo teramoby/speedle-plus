@@ -1068,6 +1068,53 @@ class WorkerResultsTest(unittest.TestCase):
         self.assertIn("were not uploaded or could not be downloaded", text)
         self.assertNotIn("(no output)", text)
 
+    def test_a_job_that_succeeded_with_an_empty_results_directory_fails(self):
+        empty = Path(tempfile.mkdtemp()) / "test-results"
+        empty.mkdir()
+        unreadable = Path(tempfile.mkdtemp()) / "test-results"
+        unreadable.mkdir()
+        (unreadable / "checks.txt").write_text("")
+        (unreadable / "go-file.json").write_text("")
+        for label, source in (("empty", f"run:success:{empty}"),
+                              ("empty stream", f"run:success:{unreadable}"),
+                              ("no result", f"run::{empty}")):
+            with self.subTest(case=label):
+                code, text, _ = self.report(source)
+                self.assertEqual(code, 0)
+                self.assertIn("test report: FAILED", text)
+                self.assertEqual(failed_checks(text), ["- results test-results: FAILED"])
+                self.assertIn("contains no readable test results", text)
+                self.assertIn("No test result was read", text)
+                self.assertNotIn("(no output)", text)
+
+    def test_an_empty_results_directory_preserves_explicit_checks(self):
+        empty = Path(tempfile.mkdtemp()) / "test-results"
+        empty.mkdir()
+        extra_log = Path(tempfile.mkdtemp()) / "extra.log"
+        extra_log.write_text("extra ok\n")
+        summary = Path(tempfile.mkdtemp()) / "report.txt"
+        with mock.patch.object(test_report, "send_email", return_value=True), mock.patch("builtins.print"):
+            code = test_report.main(["--kind", "nightly", "--check", f"extra=0:{extra_log}",
+                                     "--source", f"run:success:{empty}", "--summary-file", str(summary)], env={})
+        self.assertEqual(code, 0)
+        text = summary.read_text()
+        self.assertIn("test report: FAILED", text)
+        self.assertIn("- extra: passed", text)
+        self.assertEqual(failed_checks(text), ["- results test-results: FAILED"])
+        self.assertIn("contains no readable test results", text)
+
+        results = worker_results(Path(tempfile.mkdtemp()) / "test-results",
+                                 checks=[("quick", 0, "quick.log"), ("lint", 1, "lint.log")],
+                                 streams=[("go-file", "")])
+        with mock.patch.object(test_report, "send_email", return_value=True), mock.patch("builtins.print"):
+            code = test_report.main(["--kind", "nightly", "--source", f"run:success:{results}",
+                                     "--summary-file", str(summary)], env={})
+        self.assertEqual(code, 0)
+        text = summary.read_text()
+        self.assertIn("- quick: passed", text)
+        self.assertEqual(failed_checks(text), ["- lint: FAILED", "- results test-results: FAILED"])
+        self.assertIn("lint: exit 1", text)
+
     def test_a_missing_stream_of_an_ended_job_keeps_its_issue(self):
         # The old weekly layout handed the report one stream file per job.
         _, text, _ = self.report("run:cancelled:/nonexistent/go-mongodb.json")
@@ -1201,6 +1248,20 @@ class ReportStepTest(unittest.TestCase):
                 self.assertIn(f"# Speedle {self.TITLES[kind]} test report: PASSED", report)
                 self.assertNotIn("No test result was read", report)
                 self.assertIn("test report: PASSED", step_summary)
+
+    def test_a_worker_that_uploaded_an_empty_directory_fails_the_step(self):
+        empty = Path(tempfile.mkdtemp()) / "empty-results"
+        empty.mkdir()
+        for workflow, step, kind in self.JOBS:
+            with self.subTest(workflow=workflow):
+                process, report, step_summary = self.run_step(workflow, step, "success", empty)
+                self.assertEqual(process.returncode, 0, process.stderr)
+                self.assertIn(f"# Speedle {self.TITLES[kind]} test report: FAILED", report)
+                self.assertEqual(failed_checks(report), ["- results test-results: FAILED"])
+                self.assertIn("contains no readable test results", report)
+                self.assertIn("No test result was read", report)
+                self.assertNotIn("(no output)", report)
+                self.assertIn("test report: FAILED", step_summary)
 
 
 class DedupeTest(unittest.TestCase):
@@ -1337,6 +1398,30 @@ class RegressionTest(unittest.TestCase):
             test_report.main(["--kind", "regression", "--source", f"run:failure:{directory / 'missing'}"],
                              env={"GITHUB_TOKEN": "t", "GITHUB_REPOSITORY": "o/r"})
         self.assertEqual([c[2]["title"] for c in github.calls], ["Test failure: check results missing"])
+
+    def test_an_empty_results_directory_is_not_quiet_on_pass(self):
+        directory = Path(tempfile.mkdtemp()) / "test-results"
+        directory.mkdir()
+        summary = directory.parent / "report.txt"
+        github = FakeGitHub()
+        with mock.patch.object(test_report, "GitHub", return_value=github), \
+                mock.patch.object(test_report, "ark_analyze", return_value="No tests ran.") as ark, \
+                mock.patch.object(test_report, "send_email", return_value=True) as email, \
+                mock.patch("builtins.print"):
+            code = test_report.main(["--kind", "regression", "--source", f"run:success:{directory}",
+                                     "--summary-file", str(summary)], env=self.env)
+        self.assertEqual(code, 0)
+        ark.assert_called_once()
+        email.assert_called_once()
+        subject, body = email.call_args[0][:2]
+        self.assertEqual(subject, "[Speedle post-merge regression] FAILED")
+        self.assertIn("post-merge regression test report: FAILED", body)
+        self.assertIn("contains no readable test results", body)
+        (method, path, data), = github.calls
+        self.assertEqual((method, path, data["title"]),
+                         ("POST", "/issues", "Test failure: check results test-results"))
+        self.assertIn("contains no readable test results", data["body"])
+        self.assertNotIn("(no output)", data["body"])
 
     def test_a_failed_send_still_tracks_the_failure(self):
         directory = Path(tempfile.mkdtemp())

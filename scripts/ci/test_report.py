@@ -179,6 +179,15 @@ def missing_results(job, result, name):
     return f"No results: {name} does not exist."
 
 
+def empty_results(job, result, name):
+    """The output of the failed check when a source exists but holds no readable
+    test results."""
+    if result == "success":
+        return (f"The {job} job succeeded, but {name} contains no readable test results: "
+                "its results were not written or are incomplete.")
+    return f"No results: {name} contains no readable test results."
+
+
 def expand_results_dir(directory):
     """Return the go test -json streams and check specs a results directory holds."""
     if not directory.is_dir():
@@ -676,7 +685,8 @@ def main(argv=None, env=os.environ):
         job, _, rest = spec.partition(":")
         result, _, path = rest.partition(":")
         path = Path(path)
-        if path.is_dir() or not path.suffix:
+        name = path.name or str(path)
+        if path.is_dir() or (not path.exists() and not path.suffix):
             streams, specs = expand_results_dir(path)
         else:
             streams, specs = [str(path)], []
@@ -694,8 +704,18 @@ def main(argv=None, env=os.environ):
             # has no log to show; the check stays, so the run is still failed
             # and tracked.
             for check in job_checks:
-                if check["name"] == f"results {path.name}" and not check["passed"]:
-                    check["output"] = missing_results(job, result, path.name)
+                if check["name"] == f"results {name}" and not check["passed"]:
+                    check["output"] = missing_results(job, result, name)
+        elif result in ("", "success") and not job_packages and (streams or not job_checks):
+            # An existing empty directory, or a stream file with no readable Go
+            # test events, would otherwise leave a successful job with no failed
+            # check and turn an incomplete artifact into PASSED. Keep any
+            # explicit checks alongside this one; a check-only directory with no
+            # stream files is still governed by its checks.txt entries.
+            empty_check = {"name": f"results {name}", "passed": False,
+                           "output": empty_results(job, result, name)}
+            job_checks.append(empty_check)
+            checks.append(empty_check)
         if result not in ("", "success") and not job_failures and all(c["passed"] for c in job_checks):
             checks.append({"name": f"{job} job", "passed": False,
                            "output": f"The {job} job ended with {result} and its results show no failure; "
