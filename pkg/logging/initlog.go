@@ -49,8 +49,9 @@ type loggerState struct {
 // across lumberjack rotations when the process umask is more restrictive.
 // LogConfig.RotationConfig exposes *lumberjack.Logger directly (callers may
 // invoke Rotate or Close on it) and lumberjack.v2 offers no custom file-open
-// hook, so Write validates the target with O_NOFOLLOW before delegating to
-// lumberjack and re-verifies descriptor/inode identity before File.Chmod.
+// hook; on Unix, Write performs the open/create, O_NOFOLLOW verification,
+// File.Chmod, size-based rotation, and write through the same verified file
+// descriptor instead of delegating path-based writes to lumberjack.
 type rotationWriter struct {
 	mu           sync.Mutex
 	logger       *lumberjack.Logger
@@ -61,6 +62,7 @@ type rotationWriter struct {
 	uidSet       bool
 	preservePerm bool
 	checked      bool
+	maxSizeBytes int64
 	chmod        func(*os.File, os.FileMode) error
 	afterOpen    func(string)
 }
@@ -74,75 +76,14 @@ func newRotationWriter(l *lumberjack.Logger, prev *rotationWriter) *rotationWrit
 		return prev
 	}
 	w := &rotationWriter{logger: l, filename: filename}
-	_ = w.captureExistingPerm()
+	w.initPlatform()
 	return w
-}
-
-func (w *rotationWriter) captureExistingPerm() error {
-	info, uid, exists, err := inspectRegularFile(w.filename, nil)
-	if err != nil {
-		return err
-	}
-	if exists {
-		w.active = info
-		w.perm = info.Mode().Perm()
-		w.uid = uid
-		w.uidSet = true
-		w.preservePerm = true
-	}
-	w.checked = true
-	return nil
-}
-
-func (w *rotationWriter) verifyBeforeWrite() error {
-	info, uid, exists, err := inspectRegularFile(w.filename, nil)
-	if err != nil {
-		return err
-	}
-	if !exists {
-		return nil
-	}
-	if w.uidSet && !sameOwner(uid, w.uid) {
-		return errors.Errorf(errors.LoggingError, "log file %q owner uid %d does not match expected uid %d", w.filename, uid, w.uid)
-	}
-	if !w.uidSet {
-		w.uid = uid
-		w.uidSet = true
-	}
-	if w.preservePerm && w.active != nil && os.SameFile(w.active, info) {
-		w.active = info
-		w.perm = info.Mode().Perm()
-	}
-	return nil
 }
 
 func (w *rotationWriter) Write(p []byte) (int, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	if !w.checked {
-		if err := w.captureExistingPerm(); err != nil {
-			return 0, err
-		}
-	} else if err := w.verifyBeforeWrite(); err != nil {
-		return 0, err
-	}
-	n, err := w.logger.Write(p)
-	if err != nil {
-		return n, err
-	}
-	if w.preservePerm {
-		active, restoreErr := restoreRegularFilePerm(w.filename, w.active, w.perm, w.uid, w.chmod, w.afterOpen)
-		if restoreErr != nil {
-			return n, restoreErr
-		}
-		w.active = active
-	} else if !w.uidSet {
-		if _, uid, exists, inspectErr := inspectRegularFile(w.filename, nil); inspectErr == nil && exists {
-			w.uid = uid
-			w.uidSet = true
-		}
-	}
-	return n, nil
+	return w.writePlatform(p)
 }
 
 func newState() *loggerState {

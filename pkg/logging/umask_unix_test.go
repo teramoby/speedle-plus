@@ -6,8 +6,10 @@
 package logging
 
 import (
+	"compress/gzip"
 	"context"
 	stderrors "errors"
+	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -83,6 +85,18 @@ func TestRotationPermissionRestoreRejectsPathReplacementAndPropagatesChmodError(
 		return filename, rotation, w
 	}
 
+	assertTargetUntouched := func(t *testing.T, target string) {
+		t.Helper()
+		info, statErr := os.Stat(target)
+		if statErr != nil || info.Mode().Perm() != 0600 {
+			t.Fatalf("target permissions changed or unreadable: %v %v", info, statErr)
+		}
+		data, readErr := os.ReadFile(target)
+		if readErr != nil || string(data) != "secret\n" {
+			t.Fatalf("target file modified unexpectedly: %q %v", data, readErr)
+		}
+	}
+
 	t.Run("rejects pre-existing symlink before open", func(t *testing.T) {
 		dir := t.TempDir()
 		filename, rotation, w := seedLog(t, dir, "engine.log")
@@ -111,14 +125,7 @@ func TestRotationPermissionRestoreRejectsPathReplacementAndPropagatesChmodError(
 		if chmodCalls != 0 {
 			t.Fatalf("chmod called %d times on symlink, want 0", chmodCalls)
 		}
-		info, statErr := os.Stat(target)
-		if statErr != nil || info.Mode().Perm() != 0600 {
-			t.Fatalf("target permissions changed or unreadable: %v %v", info, statErr)
-		}
-		data, readErr := os.ReadFile(target)
-		if readErr != nil || string(data) != "secret\n" {
-			t.Fatalf("lumberjack wrote through symlink target: %q %v", data, readErr)
-		}
+		assertTargetUntouched(t, target)
 	})
 
 	t.Run("rejects symlink replacement after Close on newly created log", func(t *testing.T) {
@@ -147,14 +154,7 @@ func TestRotationPermissionRestoreRejectsPathReplacementAndPropagatesChmodError(
 		if errors.Code(err) != errors.LoggingError {
 			t.Fatalf("expected LoggingError after symlink swap, got %v", err)
 		}
-		info, statErr := os.Stat(target)
-		if statErr != nil || info.Mode().Perm() != 0600 {
-			t.Fatalf("target permissions changed: %v %v", info, statErr)
-		}
-		data, readErr := os.ReadFile(target)
-		if readErr != nil || string(data) != "secret\n" {
-			t.Fatalf("lumberjack wrote through replaced symlink target: %q %v", data, readErr)
-		}
+		assertTargetUntouched(t, target)
 	})
 
 	t.Run("rejects symlink replacement after open", func(t *testing.T) {
@@ -183,10 +183,7 @@ func TestRotationPermissionRestoreRejectsPathReplacementAndPropagatesChmodError(
 		if chmodCalls != 0 {
 			t.Fatalf("chmod called %d times after symlink swap, want 0", chmodCalls)
 		}
-		info, statErr := os.Stat(target)
-		if statErr != nil || info.Mode().Perm() != 0600 {
-			t.Fatalf("target permissions changed or unreadable: %v %v", info, statErr)
-		}
+		assertTargetUntouched(t, target)
 	})
 
 	t.Run("rejects regular file replacement after open", func(t *testing.T) {
@@ -218,11 +215,15 @@ func TestRotationPermissionRestoreRejectsPathReplacementAndPropagatesChmodError(
 		if statErr != nil || info.Mode().Perm() != 0600 {
 			t.Fatalf("replacement regular file permissions changed: %v %v", info, statErr)
 		}
+		data, readErr := os.ReadFile(filename)
+		if readErr != nil || string(data) != "other\n" {
+			t.Fatalf("replacement regular file modified unexpectedly: %q %v", data, readErr)
+		}
 	})
 
 	t.Run("propagates File.Chmod failure through slog handler", func(t *testing.T) {
 		dir := t.TempDir()
-		_, rotation, w := seedLog(t, dir, "engine.log")
+		filename, rotation, w := seedLog(t, dir, "engine.log")
 		handler, err := newHandler(w, LogConfig{Formatter: "json"})
 		if err != nil {
 			t.Fatal(err)
@@ -237,6 +238,10 @@ func TestRotationPermissionRestoreRejectsPathReplacementAndPropagatesChmodError(
 		err = handler.Handle(context.Background(), slog.NewRecord(time.Now(), slog.LevelInfo, "msg", 0))
 		if errors.Code(err) != errors.LoggingError || !stderrors.Is(err, sentinelErr) {
 			t.Fatalf("expected wrapped LoggingError with sentinel, got %v", err)
+		}
+		data, readErr := os.ReadFile(filename)
+		if readErr != nil || len(data) != 0 {
+			t.Fatalf("wrote log record despite Chmod failure: %q %v", data, readErr)
 		}
 	})
 
@@ -342,13 +347,56 @@ func TestRotationPermissionRestoreRejectsPathReplacementAndPropagatesChmodError(
 		if errors.Code(err) != errors.LoggingError {
 			t.Fatalf("expected LoggingError on pre-existing symlink, got %v", err)
 		}
-		info, statErr := os.Stat(target)
-		if statErr != nil || info.Mode().Perm() != 0600 {
-			t.Fatalf("target permissions changed: %v %v", info, statErr)
+		assertTargetUntouched(t, target)
+	})
+
+	t.Run("automatic size rotation preserves 0640 mode, compresses and prunes backups under umask 0077", func(t *testing.T) {
+		dir := t.TempDir()
+		filename := filepath.Join(dir, "auto.log")
+		if err := os.WriteFile(filename, []byte("012345678901234567890123456789\n"), 0640); err != nil {
+			t.Fatal(err)
 		}
-		data, readErr := os.ReadFile(target)
-		if readErr != nil || string(data) != "secret\n" {
-			t.Fatalf("target modified unexpectedly: %q %v", data, readErr)
+		if err := os.Chmod(filename, 0640); err != nil {
+			t.Fatal(err)
+		}
+		rotation := &lumberjack.Logger{Filename: filename, MaxSize: 1, MaxBackups: 1, Compress: true}
+		defer rotation.Close()
+		w := newRotationWriter(rotation, nil)
+		w.maxSizeBytes = 64
+		for _, line := range []string{
+			"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n",
+			"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\n",
+			"cccccccccccccccccccccccccccccccccccccccccccc\n",
+		} {
+			if _, err := w.Write([]byte(line)); err != nil {
+				t.Fatal(err)
+			}
+		}
+		info, err := os.Stat(filename)
+		if err != nil || info.Mode().Perm() != 0640 {
+			t.Fatalf("auto-rotated active mode = %o, want 0640 (err=%v)", info.Mode().Perm(), err)
+		}
+		backups, err := filepath.Glob(filepath.Join(dir, "auto-*.log.gz"))
+		if err != nil || len(backups) != 1 {
+			t.Fatalf("compressed backups = %v (err=%v), want 1 retained backup", backups, err)
+		}
+		bInfo, err := os.Stat(backups[0])
+		if err != nil || bInfo.Mode().Perm() != 0640 {
+			t.Fatalf("compressed backup mode = %o, want 0640 (err=%v)", bInfo.Mode().Perm(), err)
+		}
+		rawFile, err := os.Open(backups[0])
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer rawFile.Close()
+		gz, err := gzip.NewReader(rawFile)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer gz.Close()
+		decompressed, err := io.ReadAll(gz)
+		if err != nil || !strings.Contains(string(decompressed), "bbbbbbbb") {
+			t.Fatalf("unexpected compressed backup content: %q %v", decompressed, err)
 		}
 	})
 

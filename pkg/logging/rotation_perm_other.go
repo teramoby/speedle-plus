@@ -5,16 +5,8 @@
 
 package logging
 
-import "os"
+func (w *rotationWriter) initPlatform() {}
 
-func sameOwner(uint32, uint32) bool {
-	return false
-}
-
-func inspectRegularFile(string, func(string)) (os.FileInfo, uint32, bool, error) {
-	return nil, 0, false, nil
-}
-
-func restoreRegularFilePerm(path string, active os.FileInfo, want os.FileMode, expectedUID uint32, chmodFn func(*os.File, os.FileMode) error, afterOpen func(string)) (os.FileInfo, error) {
-	return active, nil
+func (w *rotationWriter) writePlatform(p []byte) (int, error) {
+	return w.logger.Write(p)
 }
