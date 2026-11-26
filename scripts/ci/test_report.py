@@ -72,10 +72,12 @@ def parse_go_json(paths):
             if action == "output":
                 outputs.setdefault(key, []).append(event.get("Output", ""))
                 continue
-            if action not in ("pass", "fail", "skip"):
+            if not pkg or action not in ("pass", "fail", "skip"):
                 continue
-            counts = packages.setdefault(pkg, {"pass": 0, "fail": 0, "skip": 0, "package_failed": False})
+            counts = packages.setdefault(pkg, {"pass": 0, "fail": 0, "skip": 0,
+                                               "package_failed": False, "completed": False})
             if test is None:
+                counts["completed"] = True
                 if action == "fail":
                     counts["package_failed"] = True
                 continue
@@ -177,6 +179,12 @@ def missing_results(job, result, name):
                 "Its tests did not run, or their results were not uploaded; "
                 "the job on the run page shows whether it ran at all.")
     return f"No results: {name} does not exist."
+
+
+def has_readable_results(packages):
+    """True when at least one terminal package or test result was read."""
+    return any(c["completed"] or c["pass"] or c["fail"] or c["skip"]
+               for c in packages.values())
 
 
 def empty_results(job, result, name):
@@ -706,7 +714,7 @@ def main(argv=None, env=os.environ):
             for check in job_checks:
                 if check["name"] == f"results {name}" and not check["passed"]:
                     check["output"] = missing_results(job, result, name)
-        elif result in ("", "success") and not job_packages and (streams or not job_checks):
+        elif result in ("", "success") and not has_readable_results(job_packages) and (streams or not job_checks):
             # An existing empty directory, or a stream file with no readable Go
             # test events, would otherwise leave a successful job with no failed
             # check and turn an incomplete artifact into PASSED. Keep any

@@ -1075,8 +1075,14 @@ class WorkerResultsTest(unittest.TestCase):
         unreadable.mkdir()
         (unreadable / "checks.txt").write_text("")
         (unreadable / "go-file.json").write_text("")
+        started_only = worker_results(
+            Path(tempfile.mkdtemp()) / "test-results",
+            streams=[("go-file", events(("start", self.EVAL, None, None),
+                                        ("run", self.EVAL, "TestA", None),
+                                        ("output", self.EVAL, "TestA", "=== RUN   TestA\n")))])
         for label, source in (("empty", f"run:success:{empty}"),
                               ("empty stream", f"run:success:{unreadable}"),
+                              ("truncated after start", f"run:success:{started_only}"),
                               ("no result", f"run::{empty}")):
             with self.subTest(case=label):
                 code, text, _ = self.report(source)
@@ -1086,6 +1092,22 @@ class WorkerResultsTest(unittest.TestCase):
                 self.assertIn("contains no readable test results", text)
                 self.assertIn("No test result was read", text)
                 self.assertNotIn("(no output)", text)
+
+    def test_a_package_without_test_files_still_counts_as_readable_results(self):
+        for terminal in ("pass", "skip"):
+            with self.subTest(action=terminal):
+                no_tests = worker_results(
+                    Path(tempfile.mkdtemp()) / "test-results",
+                    streams=[("go-file", events(("start", self.EVAL, None, None),
+                                                ("output", self.EVAL, None, f"?   \t{self.EVAL}\t[no test files]\n"),
+                                                (terminal, self.EVAL, None, None)))])
+                code, text, calls = self.report(f"run:success:{no_tests}", kind="regression",
+                                                result_env={"GITHUB_TOKEN": "t", "GITHUB_REPOSITORY": "o/r"})
+                self.assertEqual(code, 0)
+                self.assertIn("post-merge regression test report: PASSED", text)
+                self.assertEqual(failed_checks(text), [])
+                self.assertNotIn("No test result was read", text)
+                self.assertEqual(calls, [])
 
     def test_an_empty_results_directory_preserves_explicit_checks(self):
         empty = Path(tempfile.mkdtemp()) / "test-results"
