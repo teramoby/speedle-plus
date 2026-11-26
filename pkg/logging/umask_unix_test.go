@@ -85,9 +85,12 @@ func TestRotationPermissionRestoreRejectsPathReplacementAndPropagatesChmodError(
 
 	t.Run("rejects pre-existing symlink before open", func(t *testing.T) {
 		dir := t.TempDir()
-		filename, _, w := seedLog(t, dir, "engine.log")
+		filename, rotation, w := seedLog(t, dir, "engine.log")
 		target := filepath.Join(dir, "target.txt")
 		if err := os.WriteFile(target, []byte("secret\n"), 0600); err != nil {
+			t.Fatal(err)
+		}
+		if err := rotation.Close(); err != nil {
 			t.Fatal(err)
 		}
 		if err := os.Remove(filename); err != nil {
@@ -111,6 +114,46 @@ func TestRotationPermissionRestoreRejectsPathReplacementAndPropagatesChmodError(
 		info, statErr := os.Stat(target)
 		if statErr != nil || info.Mode().Perm() != 0600 {
 			t.Fatalf("target permissions changed or unreadable: %v %v", info, statErr)
+		}
+		data, readErr := os.ReadFile(target)
+		if readErr != nil || string(data) != "secret\n" {
+			t.Fatalf("lumberjack wrote through symlink target: %q %v", data, readErr)
+		}
+	})
+
+	t.Run("rejects symlink replacement after Close on newly created log", func(t *testing.T) {
+		dir := t.TempDir()
+		filename := filepath.Join(dir, "new.log")
+		target := filepath.Join(dir, "target.txt")
+		if err := os.WriteFile(target, []byte("secret\n"), 0600); err != nil {
+			t.Fatal(err)
+		}
+		rotation := &lumberjack.Logger{Filename: filename, MaxSize: 1}
+		defer rotation.Close()
+		w := newRotationWriter(rotation, nil)
+		if _, err := w.Write([]byte("first\n")); err != nil {
+			t.Fatal(err)
+		}
+		if err := rotation.Close(); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Remove(filename); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Symlink(target, filename); err != nil {
+			t.Fatal(err)
+		}
+		_, err := w.Write([]byte("second\n"))
+		if errors.Code(err) != errors.LoggingError {
+			t.Fatalf("expected LoggingError after symlink swap, got %v", err)
+		}
+		info, statErr := os.Stat(target)
+		if statErr != nil || info.Mode().Perm() != 0600 {
+			t.Fatalf("target permissions changed: %v %v", info, statErr)
+		}
+		data, readErr := os.ReadFile(target)
+		if readErr != nil || string(data) != "secret\n" {
+			t.Fatalf("lumberjack wrote through replaced symlink target: %q %v", data, readErr)
 		}
 	})
 
