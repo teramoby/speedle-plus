@@ -42,12 +42,12 @@ func TestRotationPreservesExistingModeUnderRestrictiveUmask(t *testing.T) {
 		t.Fatal(err)
 	}
 	rotation := &lumberjack.Logger{Filename: filename, MaxSize: 1}
-	defer rotation.Close()
+	defer func() { _ = CloseLogger(Default()) }()
 	if err := InitLog(&LogConfig{Level: "info", Formatter: "json", RotationConfig: rotation}); err != nil {
 		t.Fatal(err)
 	}
 	Default().Info("before-rotate")
-	if err := rotation.Rotate(); err != nil {
+	if err := Rotate(); err != nil {
 		t.Fatal(err)
 	}
 	// Partial InitLog update after Rotate() must still retain the original 0640 mode.
@@ -68,7 +68,7 @@ func TestRotationPermissionRestoreRejectsPathReplacementAndPropagatesChmodError(
 	previousUmask := syscall.Umask(0077)
 	t.Cleanup(func() { syscall.Umask(previousUmask) })
 
-	seedLog := func(t *testing.T, dir, name string) (string, *lumberjack.Logger, *rotationWriter) {
+	seedLog := func(t *testing.T, dir, name string) (string, *rotationWriter) {
 		t.Helper()
 		filename := filepath.Join(dir, name)
 		if err := os.WriteFile(filename, []byte("seed\n"), 0640); err != nil {
@@ -78,12 +78,12 @@ func TestRotationPermissionRestoreRejectsPathReplacementAndPropagatesChmodError(
 			t.Fatal(err)
 		}
 		rotation := &lumberjack.Logger{Filename: filename, MaxSize: 1}
-		t.Cleanup(func() { _ = rotation.Close() })
 		w := newRotationWriter(rotation, nil)
+		t.Cleanup(func() { _ = w.Close() })
 		if _, err := w.Write([]byte("initial\n")); err != nil {
 			t.Fatal(err)
 		}
-		return filename, rotation, w
+		return filename, w
 	}
 
 	assertTargetUntouched := func(t *testing.T, target string) {
@@ -100,12 +100,12 @@ func TestRotationPermissionRestoreRejectsPathReplacementAndPropagatesChmodError(
 
 	t.Run("rejects pre-existing symlink before open", func(t *testing.T) {
 		dir := t.TempDir()
-		filename, rotation, w := seedLog(t, dir, "engine.log")
+		filename, w := seedLog(t, dir, "engine.log")
 		target := filepath.Join(dir, "target.txt")
 		if err := os.WriteFile(target, []byte("secret\n"), 0600); err != nil {
 			t.Fatal(err)
 		}
-		if err := rotation.Close(); err != nil {
+		if err := w.Close(); err != nil {
 			t.Fatal(err)
 		}
 		if err := os.Remove(filename); err != nil {
@@ -137,12 +137,12 @@ func TestRotationPermissionRestoreRejectsPathReplacementAndPropagatesChmodError(
 			t.Fatal(err)
 		}
 		rotation := &lumberjack.Logger{Filename: filename, MaxSize: 1}
-		defer rotation.Close()
 		w := newRotationWriter(rotation, nil)
+		defer w.Close()
 		if _, err := w.Write([]byte("first\n")); err != nil {
 			t.Fatal(err)
 		}
-		if err := rotation.Close(); err != nil {
+		if err := w.Close(); err != nil {
 			t.Fatal(err)
 		}
 		if err := os.Remove(filename); err != nil {
@@ -160,12 +160,12 @@ func TestRotationPermissionRestoreRejectsPathReplacementAndPropagatesChmodError(
 
 	t.Run("rejects symlink replacement after open", func(t *testing.T) {
 		dir := t.TempDir()
-		_, rotation, w := seedLog(t, dir, "engine.log")
+		_, w := seedLog(t, dir, "engine.log")
 		target := filepath.Join(dir, "target.txt")
 		if err := os.WriteFile(target, []byte("secret\n"), 0600); err != nil {
 			t.Fatal(err)
 		}
-		if err := rotation.Rotate(); err != nil {
+		if err := w.Rotate(); err != nil {
 			t.Fatal(err)
 		}
 		chmodCalls := 0
@@ -189,8 +189,8 @@ func TestRotationPermissionRestoreRejectsPathReplacementAndPropagatesChmodError(
 
 	t.Run("rejects regular file replacement after open", func(t *testing.T) {
 		dir := t.TempDir()
-		filename, rotation, w := seedLog(t, dir, "engine.log")
-		if err := rotation.Rotate(); err != nil {
+		filename, w := seedLog(t, dir, "engine.log")
+		if err := w.Rotate(); err != nil {
 			t.Fatal(err)
 		}
 		chmodCalls := 0
@@ -224,17 +224,24 @@ func TestRotationPermissionRestoreRejectsPathReplacementAndPropagatesChmodError(
 
 	t.Run("propagates File.Chmod failure through slog handler", func(t *testing.T) {
 		dir := t.TempDir()
-		filename, rotation, w := seedLog(t, dir, "engine.log")
+		filename, w := seedLog(t, dir, "engine.log")
 		handler, err := newHandler(w, LogConfig{Formatter: "json"})
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := rotation.Rotate(); err != nil {
+		if err := w.Rotate(); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Chmod(filename, 0600); err != nil {
 			t.Fatal(err)
 		}
 		sentinelErr := stderrors.New("chmod denied")
 		w.chmod = func(*os.File, os.FileMode) error {
 			return sentinelErr
+		}
+		// Force replacement open so Write applies w.perm -> w.chmod before appending.
+		if err := os.Remove(filename); err != nil {
+			t.Fatal(err)
 		}
 		err = handler.Handle(context.Background(), slog.NewRecord(time.Now(), slog.LevelInfo, "msg", 0))
 		if errors.Code(err) != errors.LoggingError || !stderrors.Is(err, sentinelErr) {
@@ -243,6 +250,106 @@ func TestRotationPermissionRestoreRejectsPathReplacementAndPropagatesChmodError(
 		data, readErr := os.ReadFile(filename)
 		if readErr != nil || len(data) != 0 {
 			t.Fatalf("wrote log record despite Chmod failure: %q %v", data, readErr)
+		}
+	})
+
+	t.Run("preserves ownership across rotation and propagates File.Chown error before Write", func(t *testing.T) {
+		dir := t.TempDir()
+		filename, w := seedLog(t, dir, "owner.log")
+
+		// Simulate a rotated/missing replacement file whose newly created inode's
+		// default gid differs from the recorded log gid so rotation restores
+		// ownership before permissions.
+		if err := os.Remove(filename); err != nil {
+			t.Fatal(err)
+		}
+		w.gid++
+		var order []string
+		var gotUID, gotGID int
+		w.chown = func(_ *os.File, uid, gid int) error {
+			order = append(order, "chown")
+			gotUID, gotGID = uid, gid
+			return nil
+		}
+		w.chmod = func(_ *os.File, _ os.FileMode) error {
+			order = append(order, "chmod")
+			return nil
+		}
+		if err := w.Rotate(); err != nil {
+			t.Fatalf("Rotate with owner restore failed: %v", err)
+		}
+		if int(w.uid) != gotUID || int(w.gid) != gotGID {
+			t.Fatalf("chown got (%d, %d), want (%d, %d)", gotUID, gotGID, w.uid, w.gid)
+		}
+		if strings.Join(order, ",") != "chown,chmod" {
+			t.Fatalf("restore call order = %v, want [chown chmod]", order)
+		}
+
+		sentinelErr := stderrors.New("chown denied")
+		w.chown = func(*os.File, int, int) error {
+			return sentinelErr
+		}
+		if err := os.Remove(filename); err != nil {
+			t.Fatal(err)
+		}
+		_, err := w.Write([]byte("blocked-by-chown\n"))
+		if errors.Code(err) != errors.LoggingError || !stderrors.Is(err, sentinelErr) {
+			t.Fatalf("expected wrapped LoggingError with chown sentinel, got %v", err)
+		}
+		data, readErr := os.ReadFile(filename)
+		if readErr != nil || len(data) != 0 {
+			t.Fatalf("wrote log record despite Chown failure: %q %v", data, readErr)
+		}
+
+		// Live File.Chown verification when the current user has a supplementary group.
+		groups, grpErr := os.Getgroups()
+		if grpErr == nil {
+			egid := os.Getegid()
+			altGID := -1
+			liveFile := filepath.Join(dir, "live-chown.log")
+			if err := os.WriteFile(liveFile, []byte("seed\n"), 0640); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Chmod(liveFile, 0640); err != nil {
+				t.Fatal(err)
+			}
+			for _, g := range groups {
+				if g != egid && os.Chown(liveFile, -1, g) == nil {
+					altGID = g
+					break
+				}
+			}
+			if altGID != -1 {
+				liveRot := &lumberjack.Logger{Filename: liveFile, MaxSize: 1, Compress: true}
+				lw := newRotationWriter(liveRot, nil)
+				defer lw.Close()
+				if _, err := lw.Write([]byte("live-entry\n")); err != nil {
+					t.Fatal(err)
+				}
+				if err := lw.Rotate(); err != nil {
+					t.Fatalf("live Rotate failed: %v", err)
+				}
+				rotInfo, err := os.Stat(liveFile)
+				if err != nil {
+					t.Fatal(err)
+				}
+				rotStat, ok := rotInfo.Sys().(*syscall.Stat_t)
+				if !ok || int(rotStat.Gid) != altGID || rotInfo.Mode().Perm() != 0640 {
+					t.Fatalf("live rotated gid=%v mode=%o, want gid=%d mode=0640", rotStat, rotInfo.Mode().Perm(), altGID)
+				}
+				backups, err := filepath.Glob(filepath.Join(dir, "live-chown-*.log.gz"))
+				if err != nil || len(backups) != 1 {
+					t.Fatalf("live backups = %v %v", backups, err)
+				}
+				bInfo, err := os.Stat(backups[0])
+				if err != nil {
+					t.Fatal(err)
+				}
+				bStat, ok := bInfo.Sys().(*syscall.Stat_t)
+				if !ok || int(bStat.Gid) != altGID || bInfo.Mode().Perm() != 0640 {
+					t.Fatalf("live compressed backup gid=%v mode=%o, want gid=%d mode=0640", bStat, bInfo.Mode().Perm(), altGID)
+				}
+			}
 		}
 	})
 
@@ -256,11 +363,11 @@ func TestRotationPermissionRestoreRejectsPathReplacementAndPropagatesChmodError(
 			t.Fatal(err)
 		}
 		rot1 := &lumberjack.Logger{Filename: filename1, MaxSize: 1}
-		defer rot1.Close()
 		logger1, err := NewLogger(&LogConfig{Level: "info", Formatter: "json", RotationConfig: rot1})
 		if err != nil {
 			t.Fatal(err)
 		}
+		defer func() { _ = CloseLogger(logger1) }()
 		if err := os.Chmod(filename1, 0600); err != nil {
 			t.Fatal(err)
 		}
@@ -278,11 +385,11 @@ func TestRotationPermissionRestoreRejectsPathReplacementAndPropagatesChmodError(
 			t.Fatal(err)
 		}
 		rot2 := &lumberjack.Logger{Filename: filename2, MaxSize: 1}
-		defer rot2.Close()
 		logger2, err := NewLogger(&LogConfig{Level: "info", Formatter: "json", RotationConfig: rot2})
 		if err != nil {
 			t.Fatal(err)
 		}
+		defer func() { _ = CloseLogger(logger2) }()
 		logger2.Info("first")
 		if err := os.Chmod(filename2, 0600); err != nil {
 			t.Fatal(err)
@@ -292,7 +399,7 @@ func TestRotationPermissionRestoreRejectsPathReplacementAndPropagatesChmodError(
 		if err != nil || info2.Mode().Perm() != 0600 {
 			t.Fatalf("active file mode reverted after second write: %v %v", info2, err)
 		}
-		if err := rot2.Rotate(); err != nil {
+		if err := RotateLogger(logger2); err != nil {
 			t.Fatal(err)
 		}
 		logger2.Info("third")
@@ -315,13 +422,13 @@ func TestRotationPermissionRestoreRejectsPathReplacementAndPropagatesChmodError(
 			t.Fatal(err)
 		}
 		rotation := &lumberjack.Logger{Filename: filename, MaxSize: 1}
-		defer rotation.Close()
 		logger, err := NewLogger(&LogConfig{Level: "info", Formatter: "json", RotationConfig: rotation})
 		if err != nil {
 			t.Fatal(err)
 		}
+		defer func() { _ = CloseLogger(logger) }()
 		logger.Info("first")
-		if err := rotation.Rotate(); err != nil {
+		if err := RotateLogger(logger); err != nil {
 			t.Fatal(err)
 		}
 		logger.Info("second")
@@ -342,8 +449,8 @@ func TestRotationPermissionRestoreRejectsPathReplacementAndPropagatesChmodError(
 			t.Fatal(err)
 		}
 		rotation := &lumberjack.Logger{Filename: broken, MaxSize: 1}
-		defer rotation.Close()
 		w := newRotationWriter(rotation, nil)
+		defer w.Close()
 		_, err := w.Write([]byte("line\n"))
 		if errors.Code(err) != errors.LoggingError {
 			t.Fatalf("expected LoggingError on pre-existing symlink, got %v", err)
@@ -361,8 +468,8 @@ func TestRotationPermissionRestoreRejectsPathReplacementAndPropagatesChmodError(
 			t.Fatal(err)
 		}
 		rotation := &lumberjack.Logger{Filename: filename, MaxSize: 1, MaxBackups: 1, Compress: true}
-		defer rotation.Close()
 		w := newRotationWriter(rotation, nil)
+		defer w.Close()
 		w.maxSizeBytes = 64
 		for _, line := range []string{
 			"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n",
@@ -401,6 +508,76 @@ func TestRotationPermissionRestoreRejectsPathReplacementAndPropagatesChmodError(
 		}
 	})
 
+	t.Run("publishes compressed backup atomically, repairs truncated gz, and cleans only matching stale temp files", func(t *testing.T) {
+		dir := t.TempDir()
+		filename := filepath.Join(dir, "atomic.log")
+		ts := time.Now().UTC().Add(-time.Minute).Format(lumberjackBackupTimeFormat)
+		backup := filepath.Join(dir, "atomic-"+ts+".log")
+		truncatedGZ := backup + lumberjackCompressSuffix
+		matchingTmp := filepath.Join(dir, compressTempPrefix("atomic.log")+"stale123.tmp")
+		otherTmp := filepath.Join(dir, compressTempPrefix("other.log")+"keep456.tmp")
+
+		if err := os.WriteFile(filename, []byte("seed\n"), 0640); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Chmod(filename, 0640); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(backup, []byte("payload-line\n"), 0640); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Chmod(backup, 0640); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(truncatedGZ, []byte("truncated-gz"), 0600); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(matchingTmp, []byte("stale"), 0600); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(otherTmp, []byte("other"), 0600); err != nil {
+			t.Fatal(err)
+		}
+
+		rotation := &lumberjack.Logger{Filename: filename, MaxSize: 10, MaxBackups: 5, Compress: true}
+		w := newRotationWriter(rotation, nil)
+		defer w.Close()
+		if _, err := w.Write([]byte("trigger-maintain\n")); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := os.Stat(matchingTmp); !os.IsNotExist(err) {
+			t.Fatalf("matching stale temp file was not removed: %v", err)
+		}
+		if _, err := os.Stat(otherTmp); err != nil {
+			t.Fatalf("unrelated temp file was removed unexpectedly: %v", err)
+		}
+		if _, err := os.Stat(backup); !os.IsNotExist(err) {
+			t.Fatalf("compressed source backup still exists: %v", err)
+		}
+		gzInfo, err := os.Stat(truncatedGZ)
+		if err != nil || gzInfo.Mode().Perm() != 0640 {
+			t.Fatalf("repaired gz mode = %v (err=%v), want 0640", gzInfo, err)
+		}
+		rawFile, err := os.Open(truncatedGZ)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer rawFile.Close()
+		gz, err := gzip.NewReader(rawFile)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer gz.Close()
+		decompressed, err := io.ReadAll(gz)
+		if err != nil || string(decompressed) != "payload-line\n" {
+			t.Fatalf("repaired gz content = %q (err=%v), want %q", decompressed, err, "payload-line\n")
+		}
+		leftover, err := filepath.Glob(filepath.Join(dir, compressTempPrefix("atomic.log")+"*.tmp"))
+		if err != nil || len(leftover) != 0 {
+			t.Fatalf("leftover compression temp files = %v %v", leftover, err)
+		}
+	})
+
 	t.Run("synchronized Rotate preserves 0640 immediately and concurrent Write+Rotate loses no records", func(t *testing.T) {
 		oldApp, oldAudit := application, audit
 		application, audit = newState(), newState()
@@ -415,7 +592,7 @@ func TestRotationPermissionRestoreRejectsPathReplacementAndPropagatesChmodError(
 			t.Fatal(err)
 		}
 		rotation := &lumberjack.Logger{Filename: filename, MaxSize: 1}
-		defer rotation.Close()
+		defer func() { _ = CloseLogger(Default()) }()
 		if err := InitLog(&LogConfig{Level: "info", Formatter: "json", RotationConfig: rotation}); err != nil {
 			t.Fatal(err)
 		}
@@ -473,46 +650,6 @@ func TestRotationPermissionRestoreRejectsPathReplacementAndPropagatesChmodError(
 		}
 	})
 
-	t.Run("concurrent Write and external RotationConfig.Rotate return no write errors", func(t *testing.T) {
-		dir := t.TempDir()
-		filename := filepath.Join(dir, "ext.log")
-		if err := os.WriteFile(filename, []byte("seed\n"), 0640); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.Chmod(filename, 0640); err != nil {
-			t.Fatal(err)
-		}
-		rotation := &lumberjack.Logger{Filename: filename, MaxSize: 1}
-		defer rotation.Close()
-		w := newRotationWriter(rotation, nil)
-		w.maxSizeBytes = 128
-
-		var wg sync.WaitGroup
-		for range 4 {
-			wg.Go(func() {
-				for i := range 25 {
-					if _, err := fmt.Fprintf(w, "external-race-line-%d\n", i); err != nil {
-						t.Errorf("concurrent Write returned error: %v", err)
-					}
-				}
-			})
-		}
-		wg.Go(func() {
-			for range 10 {
-				if err := rotation.Rotate(); err != nil {
-					t.Errorf("external Rotate returned error: %v", err)
-				}
-				time.Sleep(time.Millisecond)
-			}
-		})
-		wg.Wait()
-
-		info, err := os.Stat(filename)
-		if err != nil || info.Mode().Perm() != 0640 {
-			t.Fatalf("final external-rotated log mode = %o, want 0640 (err=%v)", info.Mode().Perm(), err)
-		}
-	})
-
 	t.Run("startup first write runs backup maintenance without waiting for rotation", func(t *testing.T) {
 		dir := t.TempDir()
 		filename := filepath.Join(dir, "startup.log")
@@ -528,8 +665,8 @@ func TestRotationPermissionRestoreRejectsPathReplacementAndPropagatesChmodError(
 			}
 		}
 		rotation := &lumberjack.Logger{Filename: filename, MaxSize: 10, MaxBackups: 1, MaxAge: 7, Compress: true}
-		defer rotation.Close()
 		w := newRotationWriter(rotation, nil)
+		defer w.Close()
 		if _, err := w.Write([]byte("small-entry\n")); err != nil {
 			t.Fatal(err)
 		}
@@ -552,15 +689,15 @@ func TestRotationPermissionRestoreRejectsPathReplacementAndPropagatesChmodError(
 			t.Fatal(err)
 		}
 		rotNoComp := &lumberjack.Logger{Filename: filename, MaxSize: 1, Compress: false}
-		defer rotNoComp.Close()
 		wNoComp := newRotationWriter(rotNoComp, nil)
+		defer wNoComp.Close()
 		if err := wNoComp.Rotate(); err != nil {
 			t.Fatalf("rotation with long basename and Compress=false failed: %v", err)
 		}
 
 		rotComp := &lumberjack.Logger{Filename: filename, MaxSize: 1, Compress: true}
-		defer rotComp.Close()
 		wComp := newRotationWriter(rotComp, nil)
+		defer wComp.Close()
 		err := wComp.Rotate()
 		if errors.Code(err) != errors.LoggingError {
 			t.Fatalf("expected immediate LoggingError when compressed backup exceeds path limit, got %v", err)
@@ -574,7 +711,7 @@ func TestRotationPermissionRestoreRejectsPathReplacementAndPropagatesChmodError(
 
 		filename := filepath.Join(t.TempDir(), "concurrent.log")
 		rotation := &lumberjack.Logger{Filename: filename, MaxSize: 1}
-		defer rotation.Close()
+		defer func() { _ = CloseLogger(Default()) }()
 		if err := InitLog(&LogConfig{Level: "info", Formatter: "json", RotationConfig: rotation}); err != nil {
 			t.Fatal(err)
 		}

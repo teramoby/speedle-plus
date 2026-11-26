@@ -14,3 +14,7 @@ func (w *rotationWriter) writePlatform(p []byte) (int, error) {
 func (w *rotationWriter) rotatePlatform() error {
 	return w.logger.Rotate()
 }
+
+func (w *rotationWriter) closePlatform() error {
+	return w.logger.Close()
+}
