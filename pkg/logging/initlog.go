@@ -9,6 +9,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -30,6 +31,13 @@ const (
 // LogConfig retains the Engine's logging flags and JSON configuration keys.
 // RotationConfig uses lumberjack v2; consumers of the former v1 type must
 // update their import to gopkg.in/natefinch/lumberjack.v2.
+//
+// On Unix, RotationConfig supplies the logger's rotation parameters while the
+// logger manages descriptor-verified writes and rotations under the same lock
+// to preserve pre-existing log file ownership and permissions across
+// restrictive umasks. Callers must rotate or close via RotateLogger (or
+// Rotate / RotateAuditLog) and CloseLogger rather than calling
+// RotationConfig.Rotate or RotationConfig.Close directly.
 type LogConfig struct {
 	Level           string             `json:"level,omitempty"`
 	Formatter       string             `json:"formatter,omitempty"`
@@ -40,7 +48,107 @@ type LogConfig struct {
 type loggerState struct {
 	mu     sync.Mutex
 	config LogConfig
+	writer *rotationWriter
 	logger atomic.Pointer[slog.Logger]
+}
+
+// rotationWriter preserves a pre-existing regular log file's ownership and
+// permission bits across lumberjack rotations when the process umask is more
+// restrictive. LogConfig.RotationConfig provides configuration parameters and
+// lumberjack.v2 offers no custom file-open hook; on Unix, Write and Rotate
+// perform open/create, O_NOFOLLOW verification, File.Chown/File.Chmod,
+// size-based rotation, and writes through the same verified file descriptor
+// under w.mu instead of delegating path-based writes to lumberjack.
+type rotationWriter struct {
+	mu           sync.Mutex
+	logger       *lumberjack.Logger
+	filename     string
+	active       os.FileInfo
+	perm         os.FileMode
+	uid          uint32
+	gid          uint32
+	uidSet       bool
+	preservePerm bool
+	checked      bool
+	maintained   bool
+	maxSizeBytes int64
+	chmod        func(*os.File, os.FileMode) error
+	chown        func(*os.File, int, int) error
+	afterOpen    func(string)
+}
+
+func newRotationWriter(l *lumberjack.Logger, prev *rotationWriter) *rotationWriter {
+	filename := l.Filename
+	if filename == "" {
+		filename = filepath.Join(os.TempDir(), filepath.Base(os.Args[0])+"-lumberjack.log")
+	}
+	if prev != nil && prev.logger == l && prev.filename == filename {
+		return prev
+	}
+	w := &rotationWriter{logger: l, filename: filename}
+	w.initPlatform()
+	return w
+}
+
+func (w *rotationWriter) Write(p []byte) (int, error) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	return w.writePlatform(p)
+}
+
+func (w *rotationWriter) Rotate() error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	return w.rotatePlatform()
+}
+
+func (w *rotationWriter) Close() error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	return w.closePlatform()
+}
+
+func loggerRotator(logger *slog.Logger) *rotationWriter {
+	if logger == nil {
+		return nil
+	}
+	if h, ok := logger.Handler().(*compatibleHandler); ok {
+		return h.rotator
+	}
+	return nil
+}
+
+// RotateLogger triggers a synchronized rotation on a logger configured with
+// LogConfig.RotationConfig. When logger is nil or has no rotation config, it is a no-op.
+func RotateLogger(logger *slog.Logger) error {
+	if w := loggerRotator(logger); w != nil {
+		return w.Rotate()
+	}
+	return nil
+}
+
+// CloseLogger closes a logger's synchronized rotation writer. When logger is
+// nil or has no rotation config, it is a no-op.
+func CloseLogger(logger *slog.Logger) error {
+	if w := loggerRotator(logger); w != nil {
+		return w.Close()
+	}
+	return nil
+}
+
+// Rotate triggers a synchronized rotation on the application logger's
+// configured rotation writer. When no rotation config is installed, it is a no-op.
+func Rotate() error {
+	if w := loggerRotator(Default()); w != nil {
+		return w.Rotate()
+	}
+	application.mu.Lock()
+	w := application.writer
+	application.mu.Unlock()
+	if w == nil {
+		return nil
+	}
+	return w.Rotate()
 }
 
 func newState() *loggerState {
@@ -103,11 +211,12 @@ func (s *loggerState) init(cfg *LogConfig) error {
 	if cfg.RotationConfig != nil {
 		next.RotationConfig = cfg.RotationConfig
 	}
-	logger, err := NewLogger(&next)
+	logger, writer, err := newLogger(&next, s.writer)
 	if err != nil {
 		return err
 	}
 	s.config = next
+	s.writer = writer
 	s.logger.Store(logger)
 	return nil
 }
@@ -133,20 +242,29 @@ func parseLevel(value string) (slog.Level, error) {
 
 // NewLogger constructs an independent slog logger. Its defaults are info, text,
 // stderr and no caller reporting. Invalid values never install a partial config.
+// When cfg.RotationConfig is set, use RotateLogger and CloseLogger on the
+// returned logger rather than calling RotationConfig.Rotate or Close directly.
 func NewLogger(cfg *LogConfig) (*slog.Logger, error) {
+	logger, _, err := newLogger(cfg, nil)
+	return logger, err
+}
+
+func newLogger(cfg *LogConfig, prev *rotationWriter) (*slog.Logger, *rotationWriter, error) {
 	var config LogConfig
 	if cfg != nil {
 		config = *cfg
 	}
 	var writer io.Writer = os.Stderr
+	var rotWriter *rotationWriter
 	if config.RotationConfig != nil {
-		writer = config.RotationConfig
+		rotWriter = newRotationWriter(config.RotationConfig, prev)
+		writer = rotWriter
 	}
 	handler, err := newHandler(writer, config)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return slog.New(handler), nil
+	return slog.New(handler), rotWriter, nil
 }
 
 func newHandler(writer io.Writer, cfg LogConfig) (slog.Handler, error) {
@@ -187,7 +305,8 @@ func newHandler(writer io.Writer, cfg LogConfig) (slog.Handler, error) {
 	default:
 		return nil, errors.Errorf(errors.LoggingError, "unknown formatter type: %q", cfg.Formatter)
 	}
-	return &compatibleHandler{Handler: handler, caller: cfg.SetReportCaller, text: !strings.EqualFold(cfg.Formatter, FORMATTER_JSON)}, nil
+	rotator, _ := writer.(*rotationWriter)
+	return &compatibleHandler{Handler: handler, rotator: rotator, caller: cfg.SetReportCaller, text: !strings.EqualFold(cfg.Formatter, FORMATTER_JSON)}, nil
 }
 
 // compatibleHandler keeps logrus metadata names without duplicating those keys
@@ -195,10 +314,11 @@ func newHandler(writer io.Writer, cfg LogConfig) (slog.Handler, error) {
 // user-supplied time/level/msg apart from the handler's own metadata.
 type compatibleHandler struct {
 	slog.Handler
-	caller bool
-	text   bool
-	attrs  []slog.Attr
-	groups []string
+	rotator *rotationWriter
+	caller  bool
+	text    bool
+	attrs   []slog.Attr
+	groups  []string
 }
 
 // resolve copies group slices as well: WithAttrs must not retain mutable

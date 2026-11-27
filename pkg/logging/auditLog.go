@@ -47,6 +47,12 @@ func InitAuditLog(cfg *LogConfig) error {
 	return audit.init(cfg)
 }
 
+// RotateAuditLog triggers a synchronized rotation on the audit logger's
+// configured rotation writer. When no rotation config is installed, it is a no-op.
+func RotateAuditLog() error {
+	return RotateLogger(AuditLog())
+}
+
 // The request or response have only one contextual field
 func WriteSimpleSucceededAuditLog(apiName string, reqField interface{}, respField interface{}) {
 	var reqFields, respFields map[string]interface{}

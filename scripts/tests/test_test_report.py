@@ -4,6 +4,9 @@ import email.errors
 import http.client
 import io
 import json
+import os
+import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -14,9 +17,67 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
 import test_report  # noqa: E402
 
+ROOT = Path(__file__).resolve().parents[2]
+
 
 def events(*items):
     return "\n".join(json.dumps(dict(zip(("Action", "Package", "Test", "Output"), item))) for item in items) + "\n"
+
+
+def go_test_json(package, passed=(), failed=(), skipped=()):
+    """A `go test -json` stream of one package, event by event as go test writes it."""
+
+    def event(action, test=None, output=None, **fields):
+        item = {"Time": "2026-11-22T18:30:00Z", "Action": action, "Package": package}
+        item.update({"Test": test} if test else {})
+        item.update(fields)
+        if output is not None:
+            item["Output"] = output
+        return json.dumps(item)
+
+    lines = [event("start")]
+    for outcome, tests in (("pass", passed), ("fail", failed), ("skip", skipped)):
+        for test in tests:
+            lines += [event("run", test), event("output", test, f"=== RUN   {test}\n"),
+                      event("output", test, f"--- {outcome.upper()}: {test} (0.01s)\n"),
+                      event(outcome, test, Elapsed=0.01)]
+    broken = bool(failed)
+    lines += [event("output", output="FAIL\n" if broken else "PASS\n"),
+              event("fail" if broken else "pass", Elapsed=1.5)]
+    return "".join(line + "\n" for line in lines)
+
+
+def worker_results(directory, checks=(), streams=(), files=()):
+    """Lay out a results directory as scripts/ci/run-go-tests.sh uploads it: a
+    go test -json stream and an empty stderr file per suite, one log per check
+    and checks.txt lines of name=exit_status:log_file."""
+    directory.mkdir(parents=True)
+    (directory / "checks.txt").write_text("".join(f"{name}={status}:{log}\n" for name, status, log in checks))
+    for name, status, log in checks:
+        (directory / log).write_text(f"{name}: ok\n" if status == 0 else f"{name}: exit {status}\n")
+    for name, text in streams:
+        (directory / f"{name}.json").write_text(text)
+        (directory / f"{name}.stderr").write_text("")
+    for name, text in files:
+        (directory / name).write_text(text)
+    return directory
+
+
+def failed_checks(text):
+    """The Checks lines of a report that failed."""
+    return [line for line in text.splitlines() if line.startswith("- ") and line.endswith(": FAILED")]
+
+
+def workflow_step(workflow, step):
+    """The YAML literal block of one `run:` step. No YAML package is needed."""
+    text = (ROOT / ".github/workflows" / workflow).read_text()
+    block = text.split(f"      - name: {step}\n", 1)[1].split("        run: |\n", 1)[1]
+    lines = []
+    for line in block.splitlines():
+        if line and not line.startswith("          "):
+            break
+        lines.append(line[10:])
+    return "\n".join(lines)
 
 
 class FakeGitHub:
@@ -958,6 +1019,273 @@ class SourceTest(unittest.TestCase):
         self.assertNotIn(" job: FAILED", text)
 
 
+class WorkerResultsTest(unittest.TestCase):
+    """Results directories in the layout the worker uploads, read through --source."""
+    EVAL = "github.com/teramoby/speedle-plus/pkg/eval"
+    # A worker that no runner takes is cancelled after 24 hours queued; the
+    # other results are how GitHub reports a job that stopped early.
+    NOT_SUCCEEDED = ("cancelled", "timed_out", "failure", "skipped", "startup_failure", "action_required")
+
+    def report(self, source, result_env=None, github=None, kind="nightly"):
+        """Run the report on one source; return its exit code, summary and issue calls."""
+        summary = Path(tempfile.mkdtemp()) / "report.txt"
+        github = github if github is not None else FakeGitHub()
+        with mock.patch.object(test_report, "GitHub", return_value=github), \
+                mock.patch.object(test_report, "ark_analyze", return_value=None), \
+                mock.patch.object(test_report, "send_email", return_value=True), \
+                mock.patch("builtins.print"):
+            code = test_report.main(["--kind", kind, "--source", source, "--summary-file", str(summary)],
+                                    env=result_env or {})
+        return code, summary.read_text(), github.calls
+
+    def test_a_job_that_ended_without_results_names_its_result(self):
+        # No step of the job ran, so nothing was uploaded: the report must say
+        # that, not show a failure without a cause, and stay failed.
+        for result in self.NOT_SUCCEEDED:
+            with self.subTest(result=result):
+                code, text, _ = self.report(f"run:{result}:/nonexistent/test-results")
+                self.assertEqual(code, 0)
+                self.assertIn("test report: FAILED", text)
+                self.assertEqual(failed_checks(text), ["- results test-results: FAILED"])
+                self.assertIn(f"The run job ended with {result}", text)
+                self.assertIn("test-results does not exist", text)
+                self.assertIn("No test result was read", text)
+                self.assertNotIn("(no output)", text)
+                self.assertNotIn("run job: FAILED", text)
+
+    def test_a_source_without_a_result_still_says_that_nothing_was_read(self):
+        _, text, _ = self.report("run::/nonexistent/test-results")
+        self.assertIn("results test-results: FAILED", text)
+        self.assertIn("test-results does not exist", text)
+        self.assertNotIn("(no output)", text)
+
+    def test_a_job_that_succeeded_without_results_is_still_a_failure(self):
+        code, text, _ = self.report("run:success:/nonexistent/test-results")
+        self.assertEqual(code, 0)
+        self.assertIn("test report: FAILED", text)
+        self.assertEqual(failed_checks(text), ["- results test-results: FAILED"])
+        self.assertIn("The run job succeeded", text)
+        self.assertIn("were not uploaded or could not be downloaded", text)
+        self.assertNotIn("(no output)", text)
+
+    def test_a_job_that_succeeded_with_an_empty_results_directory_fails(self):
+        empty = Path(tempfile.mkdtemp()) / "test-results"
+        empty.mkdir()
+        unreadable = Path(tempfile.mkdtemp()) / "test-results"
+        unreadable.mkdir()
+        (unreadable / "checks.txt").write_text("")
+        (unreadable / "go-file.json").write_text("")
+        started_only = worker_results(
+            Path(tempfile.mkdtemp()) / "test-results",
+            streams=[("go-file", events(("start", self.EVAL, None, None),
+                                        ("run", self.EVAL, "TestA", None),
+                                        ("output", self.EVAL, "TestA", "=== RUN   TestA\n")))])
+        for label, source in (("empty", f"run:success:{empty}"),
+                              ("empty stream", f"run:success:{unreadable}"),
+                              ("truncated after start", f"run:success:{started_only}"),
+                              ("no result", f"run::{empty}")):
+            with self.subTest(case=label):
+                code, text, _ = self.report(source)
+                self.assertEqual(code, 0)
+                self.assertIn("test report: FAILED", text)
+                self.assertEqual(failed_checks(text), ["- results test-results: FAILED"])
+                self.assertIn("contains no readable test results", text)
+                self.assertIn("No test result was read", text)
+                self.assertNotIn("(no output)", text)
+
+    def test_a_package_without_test_files_still_counts_as_readable_results(self):
+        for terminal in ("pass", "skip"):
+            with self.subTest(action=terminal):
+                no_tests = worker_results(
+                    Path(tempfile.mkdtemp()) / "test-results",
+                    streams=[("go-file", events(("start", self.EVAL, None, None),
+                                                ("output", self.EVAL, None, f"?   \t{self.EVAL}\t[no test files]\n"),
+                                                (terminal, self.EVAL, None, None)))])
+                code, text, calls = self.report(f"run:success:{no_tests}", kind="regression",
+                                                result_env={"GITHUB_TOKEN": "t", "GITHUB_REPOSITORY": "o/r"})
+                self.assertEqual(code, 0)
+                self.assertIn("post-merge regression test report: PASSED", text)
+                self.assertEqual(failed_checks(text), [])
+                self.assertNotIn("No test result was read", text)
+                self.assertEqual(calls, [])
+
+    def test_an_empty_results_directory_preserves_explicit_checks(self):
+        empty = Path(tempfile.mkdtemp()) / "test-results"
+        empty.mkdir()
+        extra_log = Path(tempfile.mkdtemp()) / "extra.log"
+        extra_log.write_text("extra ok\n")
+        summary = Path(tempfile.mkdtemp()) / "report.txt"
+        with mock.patch.object(test_report, "send_email", return_value=True), mock.patch("builtins.print"):
+            code = test_report.main(["--kind", "nightly", "--check", f"extra=0:{extra_log}",
+                                     "--source", f"run:success:{empty}", "--summary-file", str(summary)], env={})
+        self.assertEqual(code, 0)
+        text = summary.read_text()
+        self.assertIn("test report: FAILED", text)
+        self.assertIn("- extra: passed", text)
+        self.assertEqual(failed_checks(text), ["- results test-results: FAILED"])
+        self.assertIn("contains no readable test results", text)
+
+        results = worker_results(Path(tempfile.mkdtemp()) / "test-results",
+                                 checks=[("quick", 0, "quick.log"), ("lint", 1, "lint.log")],
+                                 streams=[("go-file", "")])
+        with mock.patch.object(test_report, "send_email", return_value=True), mock.patch("builtins.print"):
+            code = test_report.main(["--kind", "nightly", "--source", f"run:success:{results}",
+                                     "--summary-file", str(summary)], env={})
+        self.assertEqual(code, 0)
+        text = summary.read_text()
+        self.assertIn("- quick: passed", text)
+        self.assertEqual(failed_checks(text), ["- lint: FAILED", "- results test-results: FAILED"])
+        self.assertIn("lint: exit 1", text)
+
+    def test_a_missing_stream_of_an_ended_job_keeps_its_issue(self):
+        # The old weekly layout handed the report one stream file per job.
+        _, text, _ = self.report("run:cancelled:/nonexistent/go-mongodb.json")
+        self.assertIn("results go-mongodb.json: FAILED", text)
+        self.assertIn("The run job ended with cancelled", text)
+        self.assertNotIn("(no output)", text)
+
+    def test_the_tracked_issue_says_why_nothing_was_read(self):
+        env = {"GITHUB_TOKEN": "t", "GITHUB_REPOSITORY": "o/r", "RUN_URL": "http://run"}
+        title = "Test failure: check results test-results"
+        known = FakeGitHub([{"title": title, "number": 490}])
+        self.report("run:cancelled:/nonexistent/test-results", env, github=known)
+        (method, path, data), = known.calls
+        self.assertEqual((method, path), ("POST", "/issues/490/comments"))
+        self.assertIn("The nightly run failed `results test-results` in `check`.", data["body"])
+        self.assertIn("The run job ended with cancelled", data["body"])
+        self.assertNotIn("(no output)", data["body"])
+        new = FakeGitHub()
+        self.report("run:cancelled:/nonexistent/test-results", env, github=new)
+        (method, path, data), = new.calls
+        self.assertEqual((method, path, data["title"]), ("POST", "/issues", title))
+        self.assertIn("The run job ended with cancelled", data["body"])
+        self.assertNotIn("(no output)", data["body"])
+
+    def test_an_uploaded_weekly_layout_passes(self):
+        results = worker_results(Path(tempfile.mkdtemp()) / "test-results",
+                                 checks=[("performance", 0, "performance.log"),
+                                         ("staticcheck", 0, "staticcheck.log")],
+                                 streams=[("go-go1.27.4", go_test_json(self.EVAL, passed=["TestA", "TestB"],
+                                                                       skipped=["TestC"])),
+                                          ("feature-large", go_test_json(self.EVAL, passed=["TestLarge"]))],
+                                 files=[("performance.json", '{"regressed": []}'),
+                                        ("performance.md", "| BenchmarkOne | 100 | 101 | +1.0% |\n")])
+        code, text, calls = self.report(f"run:success:{results}", kind="weekly")
+        self.assertEqual(code, 0)
+        self.assertIn("weekly test report: PASSED", text)
+        self.assertIn("3 passed, 0 failed, 1 skipped in 1 packages.", text)
+        for check in ("performance: passed", "staticcheck: passed"):
+            self.assertIn(check, text)
+        self.assertIn("| BenchmarkOne | 100 | 101 | +1.0% |", text)
+        self.assertNotIn("No test result was read", text)
+        self.assertEqual(calls, [])
+
+    def test_a_cancelled_job_keeps_its_partial_results_and_fails(self):
+        # The worker was cancelled while writing the second suite: its stream
+        # ends in a cut line and checks.txt stops at the checks that ended.
+        cut = go_test_json(self.EVAL, passed=["TestCut"])[:-12]
+        results = worker_results(Path(tempfile.mkdtemp()) / "test-results",
+                                 checks=[("performance", 0, "performance.log")],
+                                 streams=[("go-go1.27.4", go_test_json(self.EVAL, passed=["TestA"])),
+                                          ("feature-large", cut)])
+        code, text, _ = self.report(f"run:cancelled:{results}")
+        self.assertEqual(code, 0)
+        self.assertIn("test report: FAILED", text)
+        self.assertIn("2 passed, 0 failed, 0 skipped in 1 packages.", text)
+        self.assertIn("performance: passed", text)
+        self.assertIn("run job: FAILED", text)
+        self.assertIn("ended with cancelled", text)
+        self.assertNotIn("results test-results", text)
+
+    def test_a_cancelled_job_with_a_failing_test_reports_the_test(self):
+        results = worker_results(Path(tempfile.mkdtemp()) / "test-results",
+                                 checks=[("performance", 1, "performance.log")],
+                                 streams=[("go-go1.27.4", go_test_json(self.EVAL, passed=["TestA"],
+                                                                       failed=["TestFlaky"]))])
+        code, text, calls = self.report(f"run:cancelled:{results}",
+                                        {"GITHUB_TOKEN": "t", "GITHUB_REPOSITORY": "o/r"})
+        self.assertEqual(code, 0)
+        self.assertIn(f"{self.EVAL} TestFlaky", text)
+        self.assertIn("performance: FAILED", text)
+        self.assertIn("performance: exit 1", text)
+        self.assertNotIn("run job: FAILED", text)
+        self.assertEqual(sorted(c[2]["title"] for c in calls),
+                         ["Test failure: check performance", f"Test failure: {self.EVAL} TestFlaky"])
+
+    def test_a_corrupt_checks_file_fails_the_report(self):
+        results = worker_results(Path(tempfile.mkdtemp()) / "test-results")
+        (results / "checks.txt").write_text("performance=0:performance.log\nnot a check line\n")
+        # The report refuses to guess rather than show a run it could not read.
+        with self.assertRaises(ValueError):
+            self.report(f"run:success:{results}")
+
+
+class ReportStepTest(unittest.TestCase):
+    """The report jobs' own step scripts, run as the workflows run them."""
+    JOBS = (("weekly.yml", "Analyze, mail and track failures", "weekly"),
+            ("nightly.yml", "Analyze, mail and track failures", "nightly"),
+            ("post-merge.yml", "Analyze and track failures", "regression"))
+    TITLES = {"weekly": "weekly", "nightly": "nightly", "regression": "post-merge regression"}
+
+    def run_step(self, workflow, step, result, results=None):
+        with tempfile.TemporaryDirectory() as temp:
+            # The step runs the checked-out script. Only the workflow's own
+            # variables reach it: no token, model key or email setting does.
+            checkout = Path(temp) / "checkout"
+            (checkout / "scripts" / "ci").mkdir(parents=True)
+            shutil.copy(ROOT / "scripts" / "ci" / "test_report.py", checkout / "scripts" / "ci")
+            if results is not None:
+                shutil.copytree(results, checkout / "test-results")
+            step_summary = Path(temp) / "step-summary.md"
+            env = {"PATH": os.environ["PATH"], "RUN_URL": "http://run", "RUN_RESULT": result,
+                   "COMMIT_URL": "http://commit/abc", "GITHUB_STEP_SUMMARY": str(step_summary)}
+            process = subprocess.run(["bash", "-e", "-c", workflow_step(workflow, step)], cwd=checkout, env=env,
+                                     capture_output=True, text=True)
+            report = checkout / "report.txt"
+            return (process, report.read_text() if report.is_file() else "",
+                    step_summary.read_text() if step_summary.is_file() else "")
+
+    def test_a_worker_that_left_nothing_is_reported_with_its_result(self):
+        for workflow, step, kind in self.JOBS:
+            for result in ("cancelled", "failure"):
+                with self.subTest(workflow=workflow, result=result):
+                    process, report, step_summary = self.run_step(workflow, step, result)
+                    self.assertEqual(process.returncode, 0, process.stderr)
+                    self.assertIn(f"# Speedle {self.TITLES[kind]} test report: FAILED", report)
+                    self.assertEqual(failed_checks(report), ["- results test-results: FAILED"])
+                    self.assertIn(f"The run job ended with {result}", report)
+                    self.assertIn("No test result was read", report)
+                    self.assertNotIn("(no output)", report)
+                    self.assertIn(f"The run job ended with {result}", step_summary)
+
+    def test_an_uploaded_regression_passes_through_the_step(self):
+        results = worker_results(Path(tempfile.mkdtemp()) / "test-results",
+                                 checks=[("quick-start", 0, "quick-start.log"), ("embedded", 0, "embedded.log"),
+                                         ("docs-contract", 0, "docs-contract.log"), ("docs", 0, "docs.log")],
+                                 streams=[("go-file", go_test_json(WorkerResultsTest.EVAL, passed=["TestA"]))])
+        for workflow, step, kind in self.JOBS:
+            with self.subTest(workflow=workflow):
+                process, report, step_summary = self.run_step(workflow, step, "success", results)
+                self.assertEqual(process.returncode, 0, process.stderr)
+                self.assertIn(f"# Speedle {self.TITLES[kind]} test report: PASSED", report)
+                self.assertNotIn("No test result was read", report)
+                self.assertIn("test report: PASSED", step_summary)
+
+    def test_a_worker_that_uploaded_an_empty_directory_fails_the_step(self):
+        empty = Path(tempfile.mkdtemp()) / "empty-results"
+        empty.mkdir()
+        for workflow, step, kind in self.JOBS:
+            with self.subTest(workflow=workflow):
+                process, report, step_summary = self.run_step(workflow, step, "success", empty)
+                self.assertEqual(process.returncode, 0, process.stderr)
+                self.assertIn(f"# Speedle {self.TITLES[kind]} test report: FAILED", report)
+                self.assertEqual(failed_checks(report), ["- results test-results: FAILED"])
+                self.assertIn("contains no readable test results", report)
+                self.assertIn("No test result was read", report)
+                self.assertNotIn("(no output)", report)
+                self.assertIn("test report: FAILED", step_summary)
+
+
 class DedupeTest(unittest.TestCase):
     def test_a_failure_in_two_streams_opens_one_issue(self):
         github = FakeGitHub()
@@ -1092,6 +1420,30 @@ class RegressionTest(unittest.TestCase):
             test_report.main(["--kind", "regression", "--source", f"run:failure:{directory / 'missing'}"],
                              env={"GITHUB_TOKEN": "t", "GITHUB_REPOSITORY": "o/r"})
         self.assertEqual([c[2]["title"] for c in github.calls], ["Test failure: check results missing"])
+
+    def test_an_empty_results_directory_is_not_quiet_on_pass(self):
+        directory = Path(tempfile.mkdtemp()) / "test-results"
+        directory.mkdir()
+        summary = directory.parent / "report.txt"
+        github = FakeGitHub()
+        with mock.patch.object(test_report, "GitHub", return_value=github), \
+                mock.patch.object(test_report, "ark_analyze", return_value="No tests ran.") as ark, \
+                mock.patch.object(test_report, "send_email", return_value=True) as email, \
+                mock.patch("builtins.print"):
+            code = test_report.main(["--kind", "regression", "--source", f"run:success:{directory}",
+                                     "--summary-file", str(summary)], env=self.env)
+        self.assertEqual(code, 0)
+        ark.assert_called_once()
+        email.assert_called_once()
+        subject, body = email.call_args[0][:2]
+        self.assertEqual(subject, "[Speedle post-merge regression] FAILED")
+        self.assertIn("post-merge regression test report: FAILED", body)
+        self.assertIn("contains no readable test results", body)
+        (method, path, data), = github.calls
+        self.assertEqual((method, path, data["title"]),
+                         ("POST", "/issues", "Test failure: check results test-results"))
+        self.assertIn("contains no readable test results", data["body"])
+        self.assertNotIn("(no output)", data["body"])
 
     def test_a_failed_send_still_tracks_the_failure(self):
         directory = Path(tempfile.mkdtemp())

@@ -72,10 +72,12 @@ def parse_go_json(paths):
             if action == "output":
                 outputs.setdefault(key, []).append(event.get("Output", ""))
                 continue
-            if action not in ("pass", "fail", "skip"):
+            if not pkg or action not in ("pass", "fail", "skip"):
                 continue
-            counts = packages.setdefault(pkg, {"pass": 0, "fail": 0, "skip": 0, "package_failed": False})
+            counts = packages.setdefault(pkg, {"pass": 0, "fail": 0, "skip": 0,
+                                               "package_failed": False, "completed": False})
             if test is None:
+                counts["completed"] = True
                 if action == "fail":
                     counts["package_failed"] = True
                 continue
@@ -162,6 +164,38 @@ def parse_check(spec):
     return {"name": name, "passed": int(status) == 0, "output": tail(text)}
 
 
+def missing_results(job, result, name):
+    """The output of the failed check for results that never reached the report.
+
+    The job's result is the only evidence of why nothing can be read, so the
+    check names it. An empty output shows a failure without a cause, and the
+    analysis then guesses that tests were not found.
+    """
+    if result == "success":
+        return (f"The {job} job succeeded, but {name} does not exist: "
+                "its results were not uploaded or could not be downloaded.")
+    if result:
+        return (f"The {job} job ended with {result} before any result reached this report: {name} does not exist. "
+                "Its tests did not run, or their results were not uploaded; "
+                "the job on the run page shows whether it ran at all.")
+    return f"No results: {name} does not exist."
+
+
+def has_readable_results(packages):
+    """True when at least one terminal package or test result was read."""
+    return any(c["completed"] or c["pass"] or c["fail"] or c["skip"]
+               for c in packages.values())
+
+
+def empty_results(job, result, name):
+    """The output of the failed check when a source exists but holds no readable
+    test results."""
+    if result == "success":
+        return (f"The {job} job succeeded, but {name} contains no readable test results: "
+                "its results were not written or are incomplete.")
+    return f"No results: {name} contains no readable test results."
+
+
 def expand_results_dir(directory):
     """Return the go test -json streams and check specs a results directory holds."""
     if not directory.is_dir():
@@ -204,6 +238,10 @@ def summarize(kind, packages, failures, checks, run_url, commit_url="", performa
         lines += [f"Run: {run_url}", ""]
     lines += [f"Go tests: {total['pass']} passed, {total['fail']} failed, {total['skip']} skipped "
               f"in {len(packages)} packages.", ""]
+    if not packages:
+        # Zero everywhere is no suite at all: say so before it reads as one
+        # that found nothing to test.
+        lines += ["No test result was read, so nothing here says whether the tests pass.", ""]
     if skips is not None:
         lines += [f"Skipped: {len(skips['not_run'])} not run in any pass; {skips['elsewhere']} skipped in one "
                   f"store's pass but run in another's; {skips['not_applicable']} not applicable to their store.", ""]
@@ -655,7 +693,8 @@ def main(argv=None, env=os.environ):
         job, _, rest = spec.partition(":")
         result, _, path = rest.partition(":")
         path = Path(path)
-        if path.is_dir() or not path.suffix:
+        name = path.name or str(path)
+        if path.is_dir() or (not path.exists() and not path.suffix):
             streams, specs = expand_results_dir(path)
         else:
             streams, specs = [str(path)], []
@@ -667,6 +706,24 @@ def main(argv=None, env=os.environ):
                 merged[key] += counts[key]
         failures += job_failures
         checks += job_checks
+        if not path.exists():
+            # Nothing of this job can be read, and the job's result is the
+            # only evidence of why. Name it on collect()'s failed check, which
+            # has no log to show; the check stays, so the run is still failed
+            # and tracked.
+            for check in job_checks:
+                if check["name"] == f"results {name}" and not check["passed"]:
+                    check["output"] = missing_results(job, result, name)
+        elif result in ("", "success") and not has_readable_results(job_packages) and (streams or not job_checks):
+            # An existing empty directory, or a stream file with no readable Go
+            # test events, would otherwise leave a successful job with no failed
+            # check and turn an incomplete artifact into PASSED. Keep any
+            # explicit checks alongside this one; a check-only directory with no
+            # stream files is still governed by its checks.txt entries.
+            empty_check = {"name": f"results {name}", "passed": False,
+                           "output": empty_results(job, result, name)}
+            job_checks.append(empty_check)
+            checks.append(empty_check)
         if result not in ("", "success") and not job_failures and all(c["passed"] for c in job_checks):
             checks.append({"name": f"{job} job", "passed": False,
                            "output": f"The {job} job ended with {result} and its results show no failure; "

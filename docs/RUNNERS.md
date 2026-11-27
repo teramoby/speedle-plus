@@ -228,6 +228,29 @@ or a test without the settings only prints a notice and stays green. The step su
 and with the cut marked when the report is longer; the email carries the full
 report as an attachment, capped at 17 MiB with a note when it had to be cut.
 
+## Reports without results
+
+The report job reads only the worker job's result and the contents of its
+`*-results` artifact. A worker that never starts, or that fails before
+`scripts/ci/run-go-tests.sh` creates its results directory, uploads nothing; an
+incomplete upload can also leave an existing results directory with no readable
+test results.
+GitHub cancels a self-hosted job that stays queued for 24 hours: no eligible
+runner accepted it in time, because runners were offline or busy, none
+carried the job's labels, or the runner group's workflow or repository
+restrictions kept them out. A failed runner identity or toolchain check ends
+the job before any test runs.
+
+Such a run is still reported as `FAILED` and tracked under
+`Test failure: check results test-results`. Its one failed check names the
+worker's result, for example `The run job ended with cancelled before any
+result reached this report`, and the summary says that no test result was
+read. This means no test ran or its results were not uploaded; it is not
+evidence of a failing test. Open the worker job on the run page to see whether
+it ran at all; if it did not, find out why no eligible runner took it and
+rerun the job. The `Download results` step is allowed to fail so that the
+report still runs, so its green check does not mean an artifact was found.
+
 ## macOS full nightly trial
 
 The manual MongoDB validation workflow accepts `nightly_trial: true` to run
