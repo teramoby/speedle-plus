@@ -112,7 +112,7 @@ func TestInitializationIsAtomicAndPartial(t *testing.T) {
 	application, audit = newState(), newState()
 	t.Cleanup(func() { application, audit = oldApp, oldAudit })
 	rotation := &lumberjack.Logger{Filename: filepath.Join(t.TempDir(), "app.log")}
-	defer rotation.Close()
+	defer func() { _ = CloseLogger(Default()) }()
 	if err := InitLog(&LogConfig{Level: "warn", Formatter: "json", SetReportCaller: true, RotationConfig: rotation}); err != nil {
 		t.Fatal(err)
 	}
@@ -201,7 +201,7 @@ func TestRotationAndConfigRoundTrip(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer decoded.RotationConfig.Close()
+			defer func() { _ = CloseLogger(logger) }()
 			logger.Info("first")
 			info, err := os.Stat(filename)
 			if err != nil {
@@ -216,11 +216,20 @@ func TestRotationAndConfigRoundTrip(t *testing.T) {
 				}
 			}
 			mode := info.Mode().Perm()
-			if err := decoded.RotationConfig.Rotate(); err != nil {
+			if err := RotateLogger(logger); err != nil {
 				t.Fatal(err)
 			}
+			if runtime.GOOS != "windows" {
+				rotatedInfo, statErr := os.Stat(filename)
+				if statErr != nil {
+					t.Fatal(statErr)
+				}
+				if rotatedInfo.Mode().Perm() != mode {
+					t.Fatalf("mode immediately after RotateLogger = %o, want %o", rotatedInfo.Mode().Perm(), mode)
+				}
+			}
 			logger.Info("second")
-			if err := decoded.RotationConfig.Close(); err != nil {
+			if err := CloseLogger(logger); err != nil {
 				t.Fatal(err)
 			}
 			logger.Info("reopened")

@@ -98,6 +98,32 @@ with_docker() {
     sg docker -c "$(printf '%q ' "$@")"
   fi
 }
+run_govulncheck() {
+  # Retry transient module-proxy or vulnerability-DB network failures without
+  # retrying vulnerability findings or compile/analysis errors.
+  local attempt=1 delay status output
+  local -a delays=(5 15 30 60)
+  while true; do
+    status=0
+    output=$(env GOTOOLCHAIN="${latest_toolchain}" \
+      go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./pkg/... ./cmd/... ./api/... 2>&1) || status=$?
+    if (( status == 0 )); then
+      [[ -z "${output}" ]] || printf '%s\n' "${output}"
+      return 0
+    fi
+    if (( attempt > ${#delays[@]} )) || ! grep -Eq \
+      'i/o timeout|TLS handshake timeout|unexpected EOF|(: |^)EOF($|[^[:alpha:]])|connection reset by peer|temporary failure in name resolution|no such host|server misbehaving|net/http: request canceled' \
+      <<< "${output}"; then
+      [[ -z "${output}" ]] || printf '%s\n' "${output}"
+      return "${status}"
+    fi
+    delay=${SPEEDLE_NET_RETRY_DELAY:-${delays[$((attempt - 1))]}}
+    printf 'govulncheck failed with transient network error (attempt %d/%d); retrying in %ss:\n%s\n' \
+      "${attempt}" "$(( ${#delays[@]} + 1 ))" "${delay}" "${output}"
+    sleep "${delay}"
+    attempt=$((attempt + 1))
+  done
+}
 set_race() {
   # Sets race to (-race), or to () with a failed check when no C compiler is
   # available for the race detector.
@@ -210,8 +236,7 @@ case "${mode}" in
     # govulncheck matches its database and the standard library against the
     # toolchain in use, so analyze with the latest release, the same toolchain
     # releases are built with.
-    check govulncheck env GOTOOLCHAIN="${latest_toolchain}" \
-      go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./pkg/... ./cmd/... ./api/...
+    check govulncheck run_govulncheck
     check ci-script-tests bash -c 'python3 -I -m unittest discover -s scripts/tests -p "test_*.py" && node --test scripts/tests/*.cjs'
     exit "${failed}"
     ;;

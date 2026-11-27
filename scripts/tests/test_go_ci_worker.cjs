@@ -1043,3 +1043,48 @@ test('quick dispatcher check vets and builds natively and propagates each failur
     }
   } finally {fs.rmSync(dir, {recursive: true, force: true});}
 });
+
+test('nightly govulncheck retries transient network errors and does not retry vulnerability findings', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'speedle-govulncheck-retry-'));
+  try {
+    const bin = path.join(dir, 'bin');
+    fs.mkdirSync(bin);
+    for (const tool of ['python3', 'node', 'docker', 'id', 'sg', 'bash']) {
+      fs.writeFileSync(path.join(bin, tool), `#!${process.execPath}
+const a=process.argv.slice(2);
+if(${JSON.stringify(tool)}==='bash'&&!String(a[0]).startsWith('scripts/ci/validate-')){const r=require('node:child_process').spawnSync(${JSON.stringify(realBash)},a,{stdio:'inherit'});process.exit(r.status===null?1:r.status)}
+if(${JSON.stringify(tool)}==='id'){console.log(a[0]==='-un'?'runner':'runner docker');process.exit(0)}
+process.exit(0);\n`);
+      fs.chmodSync(path.join(bin, tool), 0o755);
+    }
+    fs.writeFileSync(path.join(bin, 'go'), `#!${process.execPath}
+const fs=require('node:fs');const a=process.argv.slice(2);
+if(a[0]==='env'){console.log(a[1]==='CC'?'true':'go1.27.4');process.exit(0)}
+if(a.includes('golang.org/x/vuln/cmd/govulncheck@v1.9.0')){
+  const n=fs.existsSync(process.env.ATTEMPTS)?Number(fs.readFileSync(process.env.ATTEMPTS,'utf8'))+1:1;
+  fs.writeFileSync(process.env.ATTEMPTS,String(n));
+  if(process.env.MODE==='transient'&&n<3){console.error('Get "https://proxy.golang.org/...": dial tcp 142.251.33.81:443: i/o timeout');process.exit(1)}
+  if(process.env.MODE==='finding'){console.error('Vulnerability #1: GO-2026-0001');process.exit(3)}
+}
+process.exit(0);\n`);
+    fs.chmodSync(path.join(bin, 'go'), 0o755);
+
+    for (const [mode, expectedStatus, expectedAttempts, expectedCheck] of [
+      ['transient', 0, 3, /^govulncheck=0:govulncheck\.log$/m],
+      ['finding', 1, 1, /^govulncheck=3:govulncheck\.log$/m],
+    ]) {
+      const results = path.join(dir, 'results-' + mode);
+      const attempts = path.join(dir, 'attempts-' + mode);
+      const run = spawnSync(realBash, [path.join(repoRoot, 'scripts/ci/run-go-tests.sh'), 'nightly'], {
+        cwd: repoRoot, encoding: 'utf8', env: {
+          ...process.env, MODE: mode, ATTEMPTS: attempts, SPEEDLE_NET_RETRY_DELAY: '0',
+          RESULTS_DIR: results, DOCKER_CONFIG: path.join(dir, 'docker-config'),
+          PATH: bin + path.delimiter + process.env.PATH,
+        },
+      });
+      assert.equal(run.status, expectedStatus, run.stderr);
+      assert.equal(Number(fs.readFileSync(attempts, 'utf8')), expectedAttempts, mode);
+      assert.match(fs.readFileSync(path.join(results, 'checks.txt'), 'utf8'), expectedCheck);
+    }
+  } finally {fs.rmSync(dir, {recursive: true, force: true});}
+});

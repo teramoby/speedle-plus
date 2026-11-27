@@ -81,6 +81,9 @@ func TestAtomicWritePreservesModeAndSymlink(t *testing.T) {
 	if err := os.WriteFile(target, []byte(`{}`), 0640); err != nil {
 		t.Fatal(err)
 	}
+	if err := os.Chmod(target, 0640); err != nil {
+		t.Fatal(err)
+	}
 	if err := os.Symlink("target.json", link); err != nil {
 		t.Fatal(err)
 	}
@@ -93,8 +96,11 @@ func TestAtomicWritePreservesModeAndSymlink(t *testing.T) {
 		t.Fatalf("replaced configured symlink: %v", err)
 	}
 	info, err = os.Stat(target)
-	if err != nil || info.Mode().Perm() != 0640 {
-		t.Fatalf("changed policy permissions: %v", err)
+	if err != nil {
+		t.Fatalf("stat policy target: %v", err)
+	}
+	if info.Mode().Perm() != 0640 {
+		t.Fatalf("changed policy permissions: got %o, want 0640", info.Mode().Perm())
 	}
 	result, err := (&Store{FileLocation: target}).ReadPolicyStore()
 	if err != nil || len(result.Services) != 1 || result.Services[0].Name != "updated" {
