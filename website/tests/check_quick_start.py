@@ -323,8 +323,11 @@ def verify(locale, toolchain, env):
             if not shutil.which("unshare") or not shutil.which("ip"):
                 raise RuntimeError("Linux quick-start verification requires unshare and iproute2")
             report = work / "native-results.json"
+            # Omit --mount-proc: service sandboxes that mask /proc reject a new
+            # procfs mount, while loopback setup and PID-namespace teardown do
+            # not read PIDs from /proc.
             command = ["unshare", "--user", "--map-root-user", "--net", "--pid", "--fork",
-                       "--mount-proc", "--kill-child=SIGKILL", "--", sys.executable,
+                       "--kill-child=SIGKILL", "--", sys.executable,
                        str(Path(__file__).resolve()), "--exercise", str(checkout),
                        "--locale", locale, "--report", str(report)]
             print(run(command, checkout, env, timeout=180), end="", flush=True)
