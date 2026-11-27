@@ -4,3 +4,7 @@ self-hosted-runner:
     - speedle-control
     - speedle-runner
     - fiona-speedle
+    - speedle-shared
+    - charming-ci-1
+    - charming-speedle-2
+    - charming-ci-3

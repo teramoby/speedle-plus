@@ -15,9 +15,9 @@ on:
         options: [none, lint, test, regression, weekly, reviewbot]
         default: none
       runner:
-        description: Runner label (speedle-runner lets any Speedle runner take it)
+        description: Runner label (named charming choices require inventory_only)
         type: choice
-        options: [speedle-runner, speedle-macos, speedle-linux]
+        options: [speedle-runner, speedle-macos, speedle-linux, charming-ci-1, charming-speedle-2, charming-ci-3]
         default: speedle-runner
       inventory_only:
         description: Report the runner's tools without running the regression
@@ -41,6 +41,8 @@ concurrency:
 jobs:
   mongodb:
     name: MongoDB
+    # Shared CI registrations are inventory-only and never enter this job.
+    if: ${{ !contains(fromJSON('["charming-ci-1","charming-speedle-2","charming-ci-3"]'), github.event.inputs.runner) }}
     runs-on: ${{ (github.event.inputs.nightly_trial == 'true' || (github.event.inputs.ci_trial != '' && github.event.inputs.ci_trial != 'none')) && 'fiona-speedle' || github.event.inputs.runner || 'speedle-runner' }}
     timeout-minutes: ${{ (github.event.inputs.nightly_trial == 'true' || github.event.inputs.ci_trial == 'weekly') && 150 || 60 }}
     steps:
@@ -228,3 +230,56 @@ jobs:
           name: mongodb-results
           path: mongodb-results/
           if-no-files-found: warn
+
+  # This path runs no checkout, setup action, regression or credentialed job.
+  shared-inventory:
+    name: Shared runner inventory
+    if: >-
+      ${{ github.repository == 'teramoby/speedle-plus' && github.event_name == 'workflow_dispatch' &&
+          contains(fromJSON('["charming-ci-1","charming-speedle-2","charming-ci-3"]'), github.event.inputs.runner) }}
+    permissions: {}
+    runs-on: >-
+      ${{ github.event.inputs.inventory_only == 'true' &&
+          github.event.inputs.nightly_trial != 'true' &&
+          (github.event.inputs.ci_trial == '' || github.event.inputs.ci_trial == 'none') &&
+          github.event.inputs.install_flock != 'true' &&
+          fromJSON(github.event.inputs.runner == 'charming-ci-1' && '["self-hosted","Linux","X64","speedle-shared","charming-ci-1"]' ||
+                   github.event.inputs.runner == 'charming-speedle-2' && '["self-hosted","Linux","X64","speedle-shared","charming-speedle-2"]' ||
+                   github.event.inputs.runner == 'charming-ci-3' && '["self-hosted","Linux","X64","speedle-shared","charming-ci-3"]' ||
+                   '"ubuntu-latest"') || 'ubuntu-latest' }}
+    timeout-minutes: 5
+    steps:
+      - name: Verify shared inventory request and runner
+        env:
+          SELECTED_RUNNER: ${{ github.event.inputs.runner }}
+          INVENTORY_ONLY: ${{ github.event.inputs.inventory_only }}
+          NIGHTLY_TRIAL: ${{ github.event.inputs.nightly_trial }}
+          CI_TRIAL: ${{ github.event.inputs.ci_trial }}
+          INSTALL_FLOCK: ${{ github.event.inputs.install_flock }}
+        run: |
+          set -euo pipefail
+          case "${SELECTED_RUNNER}" in
+            charming-ci-1|charming-speedle-2|charming-ci-3) ;;
+            *) echo 'Unexpected inventory runner choice.' >&2; exit 1 ;;
+          esac
+          if [[ "${INVENTORY_ONLY}" != true || "${NIGHTLY_TRIAL}" == true ||
+                ( -n "${CI_TRIAL}" && "${CI_TRIAL}" != none ) ||
+                "${INSTALL_FLOCK}" == true ]]; then
+            echo 'Named shared runners require inventory_only without trial or install options.' >&2
+            exit 1
+          fi
+          if [[ "${RUNNER_NAME}/${RUNNER_OS}/${RUNNER_ARCH}" != "${SELECTED_RUNNER}/Linux/X64" ]]; then
+            echo 'Unexpected shared runner identity or platform.' >&2
+            exit 1
+          fi
+          printf 'Shared inventory runner: %s (%s/%s)\n' "${RUNNER_NAME}" "${RUNNER_OS}" "${RUNNER_ARCH}"
+
+      - name: Report shared runner tools
+        env:
+          GOTOOLCHAIN: local
+        run: |
+          set -euo pipefail
+          for tool in bash git python3 go; do command -v "${tool}" >/dev/null; done
+          git --version
+          python3 --version
+          go version
